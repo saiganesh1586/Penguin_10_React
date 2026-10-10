@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Event Management and Coordination Platform
 Problem Statement: Event Registration and Attendee Management platform 
 
@@ -129,3 +130,6 @@ The system interacts with the following external systems, which remain outside t
 The Event Registration and Attendee Management platform addresses operational challenges in event planning and execution by providing a structured set of planned features aligned with clearly identified actors. By expressing system functionality in terms of planned features rather than implementation details, this document establishes a strong foundation for subsequent UML modeling and detailed system design.
 
 This document serves as a formal requirements-level description of the system.
+=======
+# Penguin_10_React
+>>>>>>> b306ab7c18a90f616bedc1afc4905eee3592195d
