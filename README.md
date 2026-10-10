@@ -1,135 +1,256 @@
-<<<<<<< HEAD
-# Event Management and Coordination Platform
-Problem Statement: Event Registration and Attendee Management platform 
+# EventFlow — Event Registration & Attendee Management Platform
 
-## 1. Overview
+**A web-based platform for managing event registration, attendee information, event planning, and operational workflows through role-specific interfaces.**
 
-The Event Registration and Attendee Management platform is a software-based information system designed to support the planning, approval, coordination, and execution of events. The system enables structured event registration, approval workflows, staff coordination, attendee registration, and real-time attendee verification in a consistent and centralized manner.
+## Overview
 
-This document presents a formal requirements-level description of the system by identifying the interacting actors and describing their planned features, which collectively define the functional scope of the platform.
+EventFlow is an event registration and attendee management platform designed to simplify event-related activities for clients, event organizers, attendees, staff, and administrators.
 
----
+The platform provides role-specific workspaces to help users manage event requests, discover events, coordinate services, handle registrations, and oversee event operations. The project focuses on structured workflows, role-based access control, data validation, and a maintainable frontend-backend architecture.
 
-## 2. Problem Definition
+The frontend is being migrated from HTML, CSS, and JavaScript to React, while the existing NestJS backend is retained.
 
-Event registration and attendee management are essential for the smooth execution of any event. In many cases, these processes are handled manually or through disconnected systems, leading to long queues, data errors, delayed confirmations, and difficulty in tracking attendance. The primary problem is the absence of a centralized platform dedicated to managing the complete attendee lifecycle—from registration and payment to ticket generation and on-site verification. This project focuses mainly on providing an efficient and secure attendee registration and management system. Additional features such as event planning, staff coordination, and reporting are included to further support overall event operations.
+## Key Features
 
----
+- **Role-Based Workspaces:** Separate interfaces for clients, attendees, event organizers, staff, employees, and administrators.
+- **Event Management:** Create, view, update, and manage event-related information according to user permissions.
+- **Event Discovery:** Browse, search, and filter available events.
+- **Registration Management:** Manage attendee registrations and registration status.
+- **Organizer Coordination:** Support event planning, staff coordination, and operational workflows.
+- **Staff Management:** Manage service information, availability, assignments, and responsibilities where supported.
+- **Authentication and Authorization:** Protect user sessions and restrict access to authorized roles.
+- **Form Validation:** Validate user inputs to improve data quality and prevent invalid submissions.
+- **API Integration:** Connect frontend workflows to backend services.
+- **Responsive Interface:** Design the application to support different screen sizes.
 
-## 3. Identification of System Actors
+*Feature availability depends on the implementation and configuration of the corresponding frontend and backend workflows.*
 
-Actors represent external roles that interact with the system to achieve specific objectives. Actor identification follows UML use-case modeling principles and focuses on roles rather than internal system components or implementation details.
+## User Roles
 
----
+| Role            | Responsibilities                                                              |
+| --------------- | ----------------------------------------------------------------------------- |
+| Client          | Submit event requirements, find organizers, and review event proposals.       |
+| Attendee        | Discover events, register, and access registration information.               |
+| Event Organizer | Coordinate event planning, manage event details, and oversee operations.      |
+| Event Staff     | Manage service information, availability, and assigned responsibilities.      |
+| Employee 1      | Support registration verification and attendee check-in where implemented.    |
+| Employee 2      | Support event operations, schedules, and task coordination where implemented. |
+| Employee 3      | Support customer service and payment-related workflows where implemented.     |
+| Super Admin     | Manage users, permissions, and system-level operations.                       |
 
-## 4. Primary Actors and Planned Features
+## Technology Stack
 
-### 4.1 Client
+### Frontend
 
-**Description**  
-The Client is an end user who initiates event requests and approves event plans.
+- HTML5
+- CSS3
+- JavaScript
+- React (frontend migration target)
+- Vite (planned React development and build tooling)
 
-**Planned Features**
-- Register and authenticate into the system  
-- Initiate event registration requests  
-- Provide event requirements and preferences  
-- Select an event organizer  
-- Review proposed event plans  
-- Approve event plans or request revisions  
-- Receive final event reports  
+### Backend
 
----
+- Node.js
+- NestJS
+- TypeScript
+- REST API architecture
 
-### 4.2 Event Organizer
+### Development Tools
 
-**Description**  
-The Event Organizer is responsible for planning, coordinating, and executing events based on client requirements.
+- Git
+- GitHub
+- npm
+- Visual Studio Code
 
-**Planned Features**
-- Receive event requests from clients  
-- Analyze event requirements  
-- Prepare detailed event plans  
-- Select staff based on availability and budget  
-- Submit plans for client approval  
-- Modify plans based on feedback  
-- Manage attendee eligibility criteria  
-- Generate post-event reports  
+The React and Vite stack represents the migration target. Refer to the frontend's `package.json` to determine which tools are currently configured.
 
----
+## Project Structure
 
-### 4.3 Event Staff
+The repository separates the frontend and backend to support independent development and testing.
 
-**Description**  
-Event Staff are operational users responsible for on-ground execution and service delivery during events.
+```text
+EventFlow/
+├── front-end/
+│   ├── users/                 # Existing role-specific frontend pages
+│   └── ...                    # Frontend assets and scripts
+├── backend/
+│   ├── src/                   # NestJS application source
+│   ├── test/                  # Backend tests, where configured
+│   └── package.json
+└── README.md
+```
 
-**Planned Features**
-- Register and log in as staff  
-- Provide service details  
-- Set pricing and availability  
-- Activate staff profile  
-- Receive event participation requests  
-- Accept or decline requests  
-- Update availability status  
-- Participate in assigned events  
+### Planned React Structure
 
----
+As the frontend migration progresses, the frontend can follow this structure:
 
-### 4.4 Attendee
+```text
+front-end/
+├── public/
+├── src/
+│   ├── app/
+│   │   ├── App.jsx
+│   │   └── routes.jsx
+│   ├── components/
+│   ├── services/
+│   ├── users/
+│   │   ├── client/
+│   │   ├── attendee/
+│   │   ├── organizer/
+│   │   ├── staff/
+│   │   ├── employee1/
+│   │   ├── employee2/
+│   │   ├── employee3/
+│   │   └── super-admin/
+│   └── styles/
+├── package.json
+└── vite.config.js
+```
 
-**Description**  
-The Attendee is an end user who registers for and participates in events.
+Each role should have its own page components and role-specific styling. Reusable components, such as buttons, form controls, navigation elements, and modals, can be shared where appropriate.
 
-**Planned Features**
-- Authenticate into the system  
-- Browse event categories  
-- Check event availability  
-- Register for public or private events  
-- Make payments if required  
-- Receive registration confirmation  
-- Verify entry during event attendance  
+## Getting Started
 
----
+### Prerequisites
 
-### 4.5 System Administrator
+Install the following tools before running the project:
 
-**Description**  
-The System Administrator is responsible for platform maintenance and access control.
+- [Node.js](https://nodejs.org/)
+- npm, included with Node.js
+- [Git](https://git-scm.com/)
+- [Visual Studio Code](https://code.visualstudio.com/) or another code editor
 
-**Planned Features**
-- Manage user accounts and roles  
-- Monitor system operations  
-- Maintain platform availability  
+Verify your installation:
 
----
+```bash
+node --version
+npm --version
+git --version
+```
 
-## 5. External Systems
+### 1. Clone the Repository
 
-The system interacts with the following external systems, which remain outside the system boundary but support core event workflows:
+```bash
+git clone <YOUR_REPOSITORY_URL>
+cd <YOUR_REPOSITORY_FOLDER>
+```
 
-- Payment Gateway – Processes event-related payments securely  
-- Notification Service – Sends confirmations, reminders, and updates  
-- Verification Service – Supports ticket or QR-based attendee verification  
+Replace the placeholders with your GitHub repository URL and local folder name.
 
----
+### 2. Install Backend Dependencies
 
-## 6. Summary of Planned Features by Actor
+```bash
+cd backend
+npm install
+```
 
-| Actor | Planned Features |
-|------|------------------|
-| Client | Initiate events, review and approve plans, receive reports |
-| Event Organizer | Plan events, manage staff, coordinate execution |
-| Event Staff | Manage availability, accept tasks, deliver services |
-| Attendee | Register for events, receive confirmation, attend events |
-| System Administrator | Platform maintenance and access control |
-| External Systems | Payments, notifications, verification |
+If your branch uses a different backend folder name, use the actual folder name in your repository.
 
----
+### 3. Configure Environment Variables
 
-## 7. Conclusion
+Review the backend configuration to identify the environment variables required by your setup.
 
-The Event Registration and Attendee Management platform addresses operational challenges in event planning and execution by providing a structured set of planned features aligned with clearly identified actors. By expressing system functionality in terms of planned features rather than implementation details, this document establishes a strong foundation for subsequent UML modeling and detailed system design.
+Create a local `.env` file if required, and configure the necessary development values, such as database connection details, authentication secrets, and API settings.
 
-This document serves as a formal requirements-level description of the system.
-=======
-# Penguin_10_React
->>>>>>> b306ab7c18a90f616bedc1afc4905eee3592195d
+**Security note:** Never commit real passwords, API keys, authentication secrets, or production credentials to GitHub.
+
+### 4. Start the Backend
+
+From the backend directory, run:
+
+```bash
+npm run start:dev
+```
+
+For a production build, if the corresponding scripts are configured:
+
+```bash
+npm run build
+npm run start:prod
+```
+
+Check the backend configuration for the actual host, port, and API routes.
+
+### 5. Set Up the React Frontend
+
+After the React migration and frontend configuration are complete, open a separate terminal:
+
+```bash
+cd front-end
+npm install
+npm run dev
+```
+
+These commands require a configured React frontend with the corresponding npm scripts.
+
+For a production build, run:
+
+```bash
+npm run build
+```
+
+Open the local development URL displayed in the terminal.
+
+> If the React migration is not complete, use the current frontend's existing execution instructions instead.
+
+## Testing and Quality Assurance
+
+Testing should cover both individual features and complete user workflows.
+
+### Functional Testing
+
+- Verify login, logout, session handling, and role-based navigation.
+- Check that each role accesses only its permitted pages and actions.
+- Test buttons, dropdowns, tabs, sidebars, modals, and notifications.
+- Verify search, combined filters, sorting, and pagination.
+- Validate required fields, email addresses, phone numbers, dates, prices, and quantities.
+- Test create, update, delete, and cancellation workflows.
+- Verify API error handling, loading indicators, and success messages.
+- Confirm that data remains consistent after page refreshes.
+- Check responsive layouts and browser console errors.
+
+### Backend Testing
+
+From the backend directory, run the scripts available in `package.json`. Typical commands include:
+
+```bash
+npm run build
+npm run lint
+npm run test
+```
+
+These commands should be used only when the corresponding scripts are configured. A successful build or lint check does not replace end-to-end testing.
+
+## Security and Validation
+
+The application should follow these principles:
+
+- Enforce role-based authorization on protected backend endpoints.
+- Validate and sanitize incoming data.
+- Keep secrets and sensitive business logic on the server.
+- Prevent unauthorized access to user and event information.
+- Handle duplicate registration and payment submissions safely.
+- Use secure authentication and session management practices.
+
+Frontend validation improves usability but must not replace backend validation and authorization.
+
+## Future Enhancements
+
+Potential enhancements include:
+
+- Event calendar and scheduling management.
+- QR-code ticket verification and attendee check-in.
+- Staff scheduling and task assignment.
+- Event budget and expense tracking.
+- Automated email and notification workflows.
+- Payment gateway integration and transaction tracking.
+- Waitlists and capacity management.
+- Analytics dashboards and downloadable reports.
+- Automated unit, integration, and end-to-end testing.
+- Improved accessibility and responsive design.
+
+These enhancements can be introduced incrementally based on project requirements.
+
+##
+
+##
