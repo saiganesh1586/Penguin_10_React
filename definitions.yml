@@ -1,0 +1,255 @@
+# Domain: Event Management & Coordination
+# Problem Statement: Event Registration & Attendee Management Platform
+# Last Updated: 2026-02-01
+
+Event:
+  name: Event
+  definition: >
+    A planned gathering or activity managed through the platform, with a defined
+    schedule, staff, and registered participants.
+  examples:
+    - "Annual college technical festival scheduled on campus"
+    - "Guest lecture event organized for students"
+  aliases:
+    - Occasion
+    - Program
+
+EventPlan:
+  name: Event Plan
+  definition: >
+    A document or proposal outlining the details of an event, including timetable,
+    goals, and responsibilities, submitted for approval before execution.
+  examples:
+    - "A detailed plan for the workshop submitted by the sponsor"
+  aliases:
+    - Plan
+    - Proposal
+
+EventApproval:
+  name: Event Approval
+  definition: >
+    The authorization given by the sponsor or client that confirms the event plan
+    is accepted and can proceed.
+  examples:
+    - "Sponsor approves the cultural fest plan after review"
+  aliases:
+    - Approval
+
+EventSchedule:
+  name: Event Schedule
+  definition: >
+    The official timeline for an event, including start time, end time, and
+    session breakdowns.
+  examples:
+    - "Event starts at 9 AM and ends at 4 PM with scheduled talks"
+  aliases:
+    - Schedule
+    - Timeline
+
+Attendee:
+  name: Attendee
+  definition: >
+    A person who has registered through the platform to participate in an event.
+  examples:
+    - "A student registers and attends a coding workshop"
+  aliases:
+    - Participant
+    - Guest
+
+EventRegistration:
+  name: Event Registration
+  definition: >
+    The process by which a person signs up to attend an event through the platform.
+  examples:
+    - "Attendee completes online registration for the seminar"
+  aliases:
+    - Registration
+    - Sign-Up
+
+AttendeeCredential:
+  name: Attendee Credential
+  definition: >
+    A proof of valid registration used to verify attendees during event check-in.
+  examples:
+    - "QR code generated after registration"
+    - "E-ticket shown at entrance"
+  aliases:
+    - Ticket
+    - Pass
+
+CheckIn:
+  name: Check-In
+  definition: >
+    The verification process where an attendee’s credential is checked by staff
+    before marking attendance.
+  examples:
+    - "Staff scans QR and marks attendee present"
+  aliases:
+    - Entry Verification
+    - Attendance Check
+
+EventStaff:
+  name: Event Staff
+  definition: >
+    Individuals assigned operational duties during an event, responsible for
+    handling logistics and attendee verification.
+  examples:
+    - "Volunteer staff verifying attendee QR codes"
+  aliases:
+    - Staff
+    - Crew
+
+StaffEnrollment:
+  name: Staff Enrollment
+  definition: >
+    The process of registering staff members into the system for event roles.
+  examples:
+    - "Coordinator enrolls volunteers for the event"
+  aliases:
+    - Staff Assignment
+
+EventManager:
+  name: Event Manager
+  definition: >
+    The person responsible for planning, managing, and overseeing event execution
+    through the platform.
+  examples:
+    - "Manager schedules event and views attendee list"
+  aliases:
+    - Event Organiser
+    - Coordinator
+
+EventReport:
+  name: Event Report
+  definition: >
+    A summary of finalized event outcomes, including attendance statistics and
+    performance insights.
+  examples:
+    - "A post-event report showing total attendees and feedback"
+  aliases:
+    - Report
+    - Summary
+
+EventAnalytics:
+  name: Event Analytics
+  definition: >
+    A data-driven analysis of event performance used by sponsors to evaluate
+    outcomes after the event ends.
+  examples:
+    - "Sponsor reviews analytics for participant satisfaction"
+  aliases:
+    - Analytics
+    - Performance Review
+
+Notification:
+  name: Notification
+  definition: >
+    A message or alert sent by the system to inform participants or staff about
+    upcoming tasks, changes, or updates.
+  examples:
+    - "Attendees receive notification about schedule change"
+  aliases:
+    - Alert
+    - Message
+
+Authentication:
+  name: Authentication
+  definition: >
+    The process of validating a person’s identity before allowing access to
+    platform functions.
+  examples:
+    - "Staff logs into the platform using credentials"
+  aliases:
+    - Login
+    - Identity Verification
+
+Authorization:
+  name: Authorization
+  definition: >
+    The mechanism that determines what actions an authenticated person is
+    permitted to perform within the system.
+  examples:
+    - "Only event manager can generate reports"
+  aliases:
+    - Permission
+    - Access Control
+
+SystemAdministrator:
+  name: System Administrator
+  definition: >
+    The role responsible for managing system configuration, maintenance,
+    security, and user access controls.
+  examples:
+    - "Administrator updates access rights for staff and managers"
+  aliases:
+    - Admin
+    - Platform Admin
+
+Client:
+ name:Client
+definition: >
+  An individual or organization that provides financial, material, or service support to an event in exchange for visibility or association.
+examples:
+  - Company sponsoring a college cultural fest
+  - Brand supporting a sports event
+aliases:
+  - supporter
+  - Event Sponsor
+Payment:
+  name: Payment
+  definition: >
+    The transaction through which an attendee completes the required fee
+    for participating in a paid event.
+  examples:
+    - "An attendee completes payment during event registration"
+    - "Payment confirmation is generated after successful transaction"
+  aliases:
+    - Fee
+    - Transaction
+
+Attendance:
+  name: Attendance
+  definition: >
+    The recorded presence of a registered attendee after successful
+    verification during event check-in.
+  examples:
+    - "The staff marks attendance after verifying the attendee’s QR code"
+  aliases:
+    - Presence
+    - Participation
+
+EventReview:
+  name: Event Review
+  definition: >
+    Feedback provided by attendees or sponsors after an event to evaluate
+    the quality and overall experience of the event.
+  examples:
+    - "Attendees submit an event review after the workshop"
+  aliases:
+    - Event Feedback
+    - Rating
+
+StaffReview:
+  name: Staff Review
+  definition: >
+    An evaluation of the performance and effectiveness of event staff
+    during the execution of an event.
+  examples:
+    - "The event manager submits a staff review after the event ends"
+  aliases:
+    - Staff Evaluation
+    - Performance Review
+
+    SuperAdmin:
+  name: Super Admin
+  definition: >
+    A top-level user with complete control over the entire system, responsible
+    for managing all modules, users, configurations, and overall system operations.
+    The Super Admin has unrestricted access and can perform all CRUD (Create, Read,
+    Update, Delete) actions across the platform.
+  examples:
+    - "The Super Admin created a new admin account and assigned event management permissions"
+    - "Only the Super Admin can delete users or modify system-level settings"
+  aliases:
+    - System Administrator
+    - super user
