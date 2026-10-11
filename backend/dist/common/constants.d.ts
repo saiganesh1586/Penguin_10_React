@@ -67,8 +67,8 @@ export declare const ROLE_PERMISSIONS: {
     };
 };
 export declare enum EmployeeType {
-    REGISTRATION_VERIFICATION = "registration_verification",
-    EVENT_OPERATIONS = "event_operations",
-    SUPPORT_FINANCE = "support_finance"
+    REGISTRATION_VERIFICATION = "REGISTRATION_VERIFICATION",
+    EVENT_OPERATIONS = "EVENT_OPERATIONS",
+    SUPPORT_FINANCE = "SUPPORT_FINANCE"
 }
 //# sourceMappingURL=constants.d.ts.map

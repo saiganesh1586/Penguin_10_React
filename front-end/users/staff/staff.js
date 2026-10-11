@@ -1539,19 +1539,19 @@ window.EventFlowModules['shared'] = true;
         { id: 12, name: 'TechEvents India', email: 'techevents@eventflow.com', password: 'org123', role: 'organizer', phone: '+91 9876543211', avatar: 'TE', avatarImage: '../../images/avatars/organizer-techevents.jpg', status: 'active', joined: '2024-01-20', service: 'Tech Conferences & Hackathons', city: 'Bangalore', rating: 4.6, color: '#ed8936', bio: 'Leading organizer for technology summits, conferences, and hackathons in India.' },
       ],
       events: [
-        { id: 101, title: 'Global AI & Cloud Summit 2026', category: 'Conference', date: '2026-06-15', time: '09:00', endTime: '18:00', venue: 'Grand Convention Center, Hall A', city: 'Bangalore', capacity: 600, registered: 480, price: 200, status: 'upcoming', organizer: 'usr-emp-001', clientId: 'usr-client-001', description: 'Flagship enterprise summit on Generative AI, Cloud Infrastructure, and Agentic Workflows.', color: '#3b82f6', emoji: '🤖', tags: ['AI', 'Cloud', 'Enterprise'], image: '../../images/events/event-ai-summit.jpg' },
-        { id: 102, title: 'FinTech Leaders Executive Conclave', category: 'Corporate', date: '2026-06-22', time: '17:30', endTime: '22:30', venue: 'The Leela Palace Ballroom', city: 'Mumbai', capacity: 250, registered: 210, price: 350, status: 'upcoming', organizer: 'usr-emp-001', clientId: 'usr-client-001', description: 'Exclusive executive dinner and keynote sessions for digital banking and FinTech innovators.', color: '#10b981', emoji: '💼', tags: ['FinTech', 'Banking', 'Executive'], image: '../../images/events/event-fintech.jpg' },
-        { id: 103, title: 'Cybersecurity & Zero Trust Workshop', category: 'Workshop', date: '2026-07-05', time: '10:00', endTime: '16:00', venue: 'Cyber Towers — Tech Room 3', city: 'Hyderabad', capacity: 80, registered: 80, price: 120, status: 'full', organizer: 'usr-emp-001', clientId: 'usr-client-001', description: 'Hands-on live simulation on threat modeling, Zero Trust architecture, and cloud security.', color: '#f59e0b', emoji: '🛡️', tags: ['Security', 'ZeroTrust', 'HandsOn'], image: '../../images/events/event-cybersecurity.jpg' },
+        { id: 101, title: 'Global AI & Cloud Summit 2026', category: 'Conference', date: '2026-11-15', time: '09:00', endTime: '18:00', venue: 'Grand Convention Center, Hall A', city: 'Bangalore', capacity: 600, registered: 480, price: 200, status: 'upcoming', organizer: 'usr-emp-001', clientId: 'usr-client-001', description: 'Flagship enterprise summit on Generative AI, Cloud Infrastructure, and Agentic Workflows.', color: '#3b82f6', emoji: '🤖', tags: ['AI', 'Cloud', 'Enterprise'], image: '../../images/events/event-ai-summit.jpg' },
+        { id: 102, title: 'FinTech Leaders Executive Conclave', category: 'Corporate', date: '2026-11-22', time: '17:30', endTime: '22:30', venue: 'The Leela Palace Ballroom', city: 'Mumbai', capacity: 250, registered: 210, price: 350, status: 'upcoming', organizer: 'usr-emp-001', clientId: 'usr-client-001', description: 'Exclusive executive dinner and keynote sessions for digital banking and FinTech innovators.', color: '#10b981', emoji: '💼', tags: ['FinTech', 'Banking', 'Executive'], image: '../../images/events/event-fintech.jpg' },
+        { id: 103, title: 'Cybersecurity & Zero Trust Workshop', category: 'Workshop', date: '2026-11-29', time: '10:00', endTime: '16:00', venue: 'Cyber Towers — Tech Room 3', city: 'Hyderabad', capacity: 80, registered: 80, price: 120, status: 'full', organizer: 'usr-emp-001', clientId: 'usr-client-001', description: 'Hands-on live simulation on threat modeling, Zero Trust architecture, and cloud security.', color: '#f59e0b', emoji: '🛡️', tags: ['Security', 'ZeroTrust', 'HandsOn'], image: '../../images/events/event-cybersecurity.jpg' },
         { id: 104, title: 'National Web3 & AI Hackathon 2026', category: 'Networking', date: '2026-07-18', time: '08:00', endTime: '20:00', venue: 'Innovation Arena, HITEC City', city: 'Chennai', capacity: 400, registered: 315, price: 0, status: 'upcoming', organizer: 'usr-emp-001', clientId: 'usr-client-001', description: '36-hour national developer hackathon with $50K in prize bounties for open source AI agents.', color: '#8b5cf6', emoji: '🚀', tags: ['Hackathon', 'AI', 'Developers'], image: '../../images/events/event-hackathon.jpg' },
         { id: 105, title: 'Healthcare & Biotech Forum 2026', category: 'Conference', date: '2026-03-25', time: '09:00', endTime: '17:00', venue: 'Medical Research Auditorium', city: 'Delhi NCR', capacity: 350, registered: 350, price: 250, status: 'completed', organizer: 'usr-emp-001', clientId: 'usr-client-001', description: 'International forum on AI diagnostics, clinical trials automation, and genomics data.', color: '#06b6d4', emoji: '🏥', tags: ['Healthcare', 'Biotech', 'Genomics'], image: '../../images/events/event-healthcare-forum.jpg' },
-        { id: 1, title: 'Tech Innovation Summit 2026', category: 'Conference', date: '2026-04-15', time: '09:00', endTime: '18:00', venue: 'Grand Convention Center, Hall A', city: 'Chennai', capacity: 500, registered: 342, price: 150, status: 'upcoming', organizer: 'usr-org-001', clientId: 'usr-client-001', description: 'Annual technology conference featuring keynotes from industry leaders, workshops on AI, blockchain, and cloud computing.', color: '#7c6ff7', emoji: '💻', tags: ['AI', 'Tech', 'Networking'], image: '../../images/events/event-tech-summit.jpg' },
-        { id: 2, title: 'Corporate Annual Gala 2026', category: 'Corporate', date: '2026-04-22', time: '18:00', endTime: '23:00', venue: 'Grand Ballroom — Marriott Hotel', city: 'Tirupathi', capacity: 200, registered: 187, price: 250, status: 'upcoming', organizer: 'usr-org-001', clientId: 'usr-client-001', description: 'Exclusive annual corporate dinner and awards ceremony celebrating achievements and milestones.', color: '#22d3a5', emoji: '🥂', tags: ['Corporate', 'Gala', 'Awards'], image: '../../images/events/event-annual-gala.jpg' },
+        { id: 1, title: 'Tech Innovation Summit 2026', category: 'Conference', date: '2026-12-06', time: '09:00', endTime: '18:00', venue: 'Grand Convention Center, Hall A', city: 'Chennai', capacity: 500, registered: 342, price: 150, status: 'upcoming', organizer: 'usr-org-001', clientId: 'usr-client-001', description: 'Annual technology conference featuring keynotes from industry leaders, workshops on AI, blockchain, and cloud computing.', color: '#7c6ff7', emoji: '💻', tags: ['AI', 'Tech', 'Networking'], image: '../../images/events/event-tech-summit.jpg' },
+        { id: 2, title: 'Corporate Annual Gala 2026', category: 'Corporate', date: '2026-12-13', time: '18:00', endTime: '23:00', venue: 'Grand Ballroom — Marriott Hotel', city: 'Tirupathi', capacity: 200, registered: 187, price: 250, status: 'upcoming', organizer: 'usr-org-001', clientId: 'usr-client-001', description: 'Exclusive annual corporate dinner and awards ceremony celebrating achievements and milestones.', color: '#22d3a5', emoji: '🥂', tags: ['Corporate', 'Gala', 'Awards'], image: '../../images/events/event-annual-gala.jpg' },
         { id: 3, title: 'Spring Music Festival', category: 'Concert', date: '2026-05-01', time: '14:00', endTime: '23:00', venue: 'City Park Outdoor Amphitheater', city: 'Noida', capacity: 1000, registered: 756, price: 75, status: 'upcoming', organizer: 6, clientId: 'usr-client-001', description: 'Two-day outdoor music festival featuring 15+ artists across multiple genres.', color: '#f56565', emoji: '🎵', tags: ['Music', 'Outdoor', 'Festival'], image: '../../images/events/event-music-fest.jpg' },
-        { id: 4, title: 'Digital Marketing Workshop', category: 'Workshop', date: '2026-05-10', time: '10:00', endTime: '16:00', venue: 'Business Hub — Room 201', city: 'Hyderabad', capacity: 50, registered: 50, price: 80, status: 'full', organizer: 'usr-org-001', clientId: 'usr-client-001', description: 'Hands-on full-day workshop on modern digital marketing, SEO, social media strategy, and analytics.', color: '#f6c90e', emoji: '📱', tags: ['Marketing', 'Workshop', 'SEO'], image: '../../images/events/event-marketing-workshop.jpg' },
+        { id: 4, title: 'Digital Marketing Workshop', category: 'Workshop', date: '2027-01-10', time: '10:00', endTime: '16:00', venue: 'Business Hub — Room 201', city: 'Hyderabad', capacity: 50, registered: 50, price: 80, status: 'full', organizer: 'usr-org-001', clientId: 'usr-client-001', description: 'Hands-on full-day workshop on modern digital marketing, SEO, social media strategy, and analytics.', color: '#f6c90e', emoji: '📱', tags: ['Marketing', 'Workshop', 'SEO'], image: '../../images/events/event-marketing-workshop.jpg' },
         { id: 5, title: 'Startup Pitch Night', category: 'Networking', date: '2026-05-15', time: '17:00', endTime: '21:00', venue: 'Innovation Lab — Main Hall', city: 'Chennai', capacity: 150, registered: 98, price: 0, status: 'upcoming', organizer: 6, clientId: 'usr-client-001', description: 'Monthly startup pitch competition with panels of VC judges and networking opportunities.', color: '#7c6ff7', emoji: '🚀', tags: ['Startup', 'Pitch', 'VC'], image: '../../images/events/event-pitch-night.jpg' },
-        { id: 6, title: 'Healthcare Innovation Forum', category: 'Conference', date: '2026-03-10', time: '08:30', endTime: '17:00', venue: 'City Medical Center Auditorium', city: 'Bangalore', capacity: 300, registered: 300, price: 200, status: 'completed', organizer: 'usr-org-001', clientId: 'usr-client-001', description: 'Forum on AI in healthcare, telemedicine, and patient data management.', color: '#22d3a5', emoji: '🏥', tags: ['Health', 'AI', 'Forum'], image: '../../images/events/event-medtech.jpg' },
+        { id: 6, title: 'Healthcare Innovation Forum', category: 'Conference', date: '2026-12-20', time: '08:30', endTime: '17:00', venue: 'City Medical Center Auditorium', city: 'Bangalore', capacity: 300, registered: 300, price: 200, status: 'upcoming', organizer: 'usr-org-001', clientId: 'usr-client-001', description: 'Forum on AI in healthcare, telemedicine, and patient data management.', color: '#22d3a5', emoji: '🏥', tags: ['Health', 'AI', 'Forum'], image: '../../images/events/event-medtech.jpg' },
         { id: 7, title: 'Photography Masterclass', category: 'Workshop', date: '2026-06-01', time: '10:00', endTime: '15:00', venue: 'Art Studio 5, Downtown', city: 'Pune', capacity: 30, registered: 12, price: 120, status: 'upcoming', organizer: 6, clientId: null, description: 'Hands-on photography workshop for intermediate photographers covering lighting, composition, and post-processing.', color: '#ed8936', emoji: '📷', tags: ['Photography', 'Art', 'Workshop'], image: '../../images/events/event-photography.jpg' },
-        { id: 8, title: 'Rajesh Grand Wedding Celebration', category: 'Wedding', date: '2026-05-15', time: '17:00', endTime: '23:59', venue: 'The Ashok Hotel, New Delhi', city: 'Delhi NCR', capacity: 800, registered: 750, price: 0, status: 'ongoing', organizer: 11, clientId: null, description: 'Grand wedding celebration bringing together families and friends. Featuring traditional ceremonies, vibrant decorations, and festive atmosphere.', color: '#22d3a5', emoji: '💒', tags: ['Wedding', 'Celebration', 'Grand'], image: '../../images/events/event-wedding.jpg' },
+        { id: 8, title: 'Rajesh Grand Wedding Celebration', category: 'Wedding', date: '2027-01-17', time: '17:00', endTime: '23:59', venue: 'The Ashok Hotel, New Delhi', city: 'Delhi NCR', capacity: 800, registered: 750, price: 0, status: 'upcoming', organizer: 11, clientId: null, description: 'Grand wedding celebration bringing together families and friends. Featuring traditional ceremonies, vibrant decorations, and festive atmosphere.', color: '#22d3a5', emoji: '💒', tags: ['Wedding', 'Celebration', 'Grand'], image: '../../images/events/event-wedding.jpg' },
       ],
       eventRequests: [
         { id: 101, clientId: 'usr-client-001', title: 'Torres Tech Q3 Product Launch', type: 'Corporate', date: '2026-06-01', guests: 350, budget: 35000, status: 'pending', desc: 'Global launch for next-gen enterprise suite. Require 4K live streaming, stage AV, VIP catering, and 5 photographers.', created: '2026-03-20', organizer: 'usr-emp-001', venue: 'Downtown Convention Center' },
@@ -1788,6 +1788,26 @@ window.EventFlowModules['shared'] = true;
             }
           });
 
+          if (!DB._staffAssignmentDatesUpdated) {
+            const futureAssignmentDates = {
+              1: '2026-12-06',
+              2: '2026-12-13',
+              4: '2027-01-10',
+              6: '2026-12-20',
+              8: '2027-01-17',
+              101: '2026-11-15',
+              102: '2026-11-22',
+              103: '2026-11-29',
+            };
+            DB.events.forEach(event => {
+              const updatedDate = futureAssignmentDates[String(event.id)];
+              if (!updatedDate) return;
+              event.date = updatedDate;
+              if (['completed', 'ongoing'].includes(event.status)) event.status = 'upcoming';
+            });
+            DB._staffAssignmentDatesUpdated = true;
+          }
+
           // Always restore missing mock event requests & migrate legacy client IDs
           initialRequests.forEach(req => {
             const existing = DB.eventRequests.find(r => String(r.id) === String(req.id));
@@ -1962,8 +1982,6 @@ window.EventFlowModules['shared'] = true;
     function showPage(p) {
       document.getElementById('landing').style.display = p === 'landing' ? 'block' : 'none';
       document.getElementById('login').style.display = p === 'login' ? 'flex' : 'none';
-      document.getElementById('employee-portal').style.display = p === 'employee-portal' ? 'block' : 'none';
-      document.getElementById('login-admin').style.display = p === 'login-admin' ? 'flex' : 'none';
       document.getElementById('find-events').style.display = p === 'find-events' ? 'block' : 'none';
       document.getElementById('gallery').style.display = p === 'gallery' ? 'block' : 'none';
       document.getElementById('about').style.display = p === 'about' ? 'block' : 'none';
@@ -1971,29 +1989,6 @@ window.EventFlowModules['shared'] = true;
       document.getElementById('app').style.display = p === 'app' ? 'block' : 'none';
     }
     function gotoLogin(role) {
-      if (role === 'employee') {
-        showPage('employee-portal');
-        return;
-      }
-      showPage('login');
-    }
-
-    let selectedEmployeeType = null;
-    const EMPLOYEE_TYPE_LABELS = {
-      REGISTRATION_VERIFICATION: 'User Executive',
-      EVENT_OPERATIONS: 'Event Executive',
-      SUPPORT_FINANCE: 'Customer Support & Finance Executive',
-    };
-    function selectEmployeeType(employeeType) {
-      selectedEmployeeType = employeeType;
-      g('login-subtitle').textContent = `${EMPLOYEE_TYPE_LABELS[employeeType]} Login`;
-      g('login-hint').textContent = 'Use your department credentials to continue.';
-      const demoAccounts = {
-        REGISTRATION_VERIFICATION: ['arjun.events@eventflow.com', 'Employee@123'],
-        EVENT_OPERATIONS: ['employee@example.com', 'Employee@123'],
-        SUPPORT_FINANCE: ['marcus.ops@eventflow.com', 'Employee@123'],
-      };
-      fillLogin(...demoAccounts[employeeType]);
       showPage('login');
     }
 
@@ -2026,9 +2021,7 @@ window.EventFlowModules['shared'] = true;
           EVENT_STAFF: 'staff', event_staff: 'staff',
           ATTENDEE: 'attendee', attendee: 'attendee',
         };
-        const frontendRole = selectedEmployeeType
-          ? 'staff'
-          : (roleMap[userData.role || userData.userRole] || (userData.role || '').toLowerCase());
+        const frontendRole = roleMap[userData.role || userData.userRole] || (userData.role || '').toLowerCase();
 
         CU = {
           id: userData.userId,
@@ -2037,8 +2030,8 @@ window.EventFlowModules['shared'] = true;
           email: userData.email,
           token: userData.token,
           role: frontendRole,
-          userRole: selectedEmployeeType ? 'event_staff' : (userData.role || userData.userRole),
-          employeeType: userData.employeeType || selectedEmployeeType,
+          userRole: userData.role || userData.userRole,
+          employeeType: userData.employeeType,
           status: userData.status,
           avatar: (userData.name || 'U').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2),
         };
@@ -2076,7 +2069,7 @@ window.EventFlowModules['shared'] = true;
             email: localUser.email,
             role: localUser.role,
             userRole: localUser.userRole || localUser.role,
-            employeeType: localUser.employeeType || selectedEmployeeType,
+            employeeType: localUser.employeeType,
             status: localUser.status || 'active',
             avatar: (localUser.name || 'U').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2),
           };
@@ -2094,53 +2087,6 @@ window.EventFlowModules['shared'] = true;
         }
       }).finally(function () {
         if (btn) { btn.textContent = 'Sign In →'; btn.disabled = false; }
-      });
-    }
-
-    function doAdminLogin() {
-      const email = g('admin-email').value.trim();
-      const pass = g('admin-pass').value;
-      let ok = true;
-      if (!email || !email.includes('@')) { showErr('admin-email-err'); ok = false; } else hideErr('admin-email-err');
-      if (!pass || pass.length < 3) { showErr('admin-pass-err'); ok = false; } else hideErr('admin-pass-err');
-      if (!ok) return;
-
-      const btn = document.querySelector('#login-admin .btn-danger');
-      if (btn) { btn.textContent = 'Signing in…'; btn.disabled = true; }
-
-      apiLogin(email, pass).then(function (userData) {
-        const role = userData.role || userData.userRole;
-        if (role !== 'SUPER_ADMIN' && role !== 'super_admin') {
-          toast('Not a super admin account.', 'error');
-          if (btn) { btn.textContent = 'Admin Sign In →'; btn.disabled = false; }
-          return;
-        }
-        CU = {
-          id: userData.userId,
-          userId: userData.userId,
-          name: userData.name,
-          email: userData.email,
-          token: userData.token,
-          role: 'superuser',
-          userRole: 'SUPER_ADMIN',
-          status: userData.status,
-          avatar: (userData.name || 'A').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2),
-        };
-        try { sessionStorage.setItem('ef_cu', JSON.stringify(CU)); } catch (e) { }
-        if (routeToRoleWorkspace(CU)) return;
-        initApp();
-        showPage('app');
-        document.documentElement.classList.remove('restoring-session');
-        toast(`Welcome Admin, ${CU.name}! 🛡️`, 'success');
-      }).catch(function (err) {
-        const msg = err.status === 0
-          ? 'Backend offline. Start the NestJS server first.'
-          : (err.message || 'Invalid admin credentials');
-        toast(msg, 'error');
-        showErr('admin-pass-err');
-        g('admin-pass-err').textContent = msg;
-      }).finally(function () {
-        if (btn) { btn.textContent = 'Admin Sign In →'; btn.disabled = false; }
       });
     }
 
@@ -6471,20 +6417,17 @@ window.EventFlowModules['shared'] = true;
       const input = g('qr-input');
       const ticketId = value.trim().toUpperCase();
 
-      if (ticketId.length > 5) input.style.borderColor = 'var(--green)';
-      else { input.style.borderColor = 'var(--border)'; return; }
+      if (ticketId.length <= 5) {
+        input.style.borderColor = 'var(--border)';
+        return;
+      }
 
       const selectedEventId = sessionStorage.getItem('verify_eventId');
       const reg = DB.registrations.find(r =>
         r.ticketId.toUpperCase() === ticketId &&
         String(r.eventId) === String(selectedEventId)
       );
-
-      if (reg) {
-        input.value = '';
-        input.style.borderColor = 'var(--border)';
-        quickVerify(reg.id);
-      }
+      input.style.borderColor = reg ? 'var(--green)' : 'var(--border)';
     }
 
     function submitQRScan() {
@@ -6629,9 +6572,22 @@ window.EventFlowModules['shared'] = true;
 
     function pageStaffAvailability() {
       const staff = DB.users.find(u => u.id === CU.id) || {};
-      const month = parseInt(sessionStorage.getItem('avail_month') || new Date().getMonth());
-      const year = parseInt(sessionStorage.getItem('avail_year') || new Date().getFullYear());
-      const date = new Date(year, month, 1);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      let month = parseInt(sessionStorage.getItem('avail_month') || today.getMonth(), 10);
+      let year = parseInt(sessionStorage.getItem('avail_year') || today.getFullYear(), 10);
+      let date = new Date(year, month, 1);
+      const resetToCurrentMonth = Number.isNaN(date.getTime()) || date < currentMonth;
+      if (resetToCurrentMonth) {
+        date = currentMonth;
+      }
+      month = date.getMonth();
+      year = date.getFullYear();
+      if (resetToCurrentMonth) {
+        sessionStorage.setItem('avail_month', month);
+        sessionStorage.setItem('avail_year', year);
+      }
       const monthStr = date.toLocaleString('en-US', { month: 'long', year: 'numeric' });
       const firstDay = new Date(year, month, 1).getDay();
       const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -6639,10 +6595,13 @@ window.EventFlowModules['shared'] = true;
       const prevYear = month === 0 ? year - 1 : year;
       const nextMonth = month === 11 ? 0 : month + 1;
       const nextYear = month === 11 ? year + 1 : year;
-      const today = new Date();
+      const canGoPrevious = date > currentMonth;
       const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
       const avail = getAvailability(CU.id);
+      const currentAvail = avail.filter(availableDate => /^\d{4}-\d{2}-\d{2}$/.test(availableDate) && availableDate >= todayStr);
+      if (currentAvail.length !== avail.length) saveAvailability(CU.id, currentAvail);
+      avail.splice(0, avail.length, ...currentAvail);
 
       // Booked dates = accepted assignment event dates
       if (!DB.staffBooked) DB.staffBooked = {};
@@ -6676,7 +6635,7 @@ window.EventFlowModules['shared'] = true;
     <div class="card" style="padding:28px;margin-bottom:20px;border-color:var(--border2)">
       <!-- Month nav -->
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
-        <button onclick="changeMonth(${prevMonth},${prevYear})" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:7px 18px;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;transition:background .18s" onmouseover="this.style.background='#6b5ee6'" onmouseout="this.style.background='var(--accent)'">← Previous</button>
+        ${canGoPrevious ? `<button onclick="changeMonth(${prevMonth},${prevYear})" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:7px 18px;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;transition:background .18s" onmouseover="this.style.background='#6b5ee6'" onmouseout="this.style.background='var(--accent)'">← Previous</button>` : '<span></span>'}
         <div style="font-weight:700;font-size:17px;color:var(--text)">${monthStr}</div>
         <button onclick="changeMonth(${nextMonth},${nextYear})" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:7px 18px;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;transition:background .18s" onmouseover="this.style.background='#6b5ee6'" onmouseout="this.style.background='var(--accent)'">Next →</button>
       </div>
@@ -6693,9 +6652,12 @@ window.EventFlowModules['shared'] = true;
         const isAvail = avail.includes(fullDate);
         const isBooked = bookedDates.includes(fullDate);
         const isToday = fullDate === todayStr;
+        const isPast = fullDate < todayStr;
         let bg, color, border, fontWeight = '600', cursor = 'pointer', title = '';
         if (isBooked) {
           bg = 'var(--red-dim)'; color = 'var(--red)'; border = '2px solid var(--red)'; cursor = 'default'; title = 'Booked — accepted assignment';
+        } else if (isPast) {
+          bg = 'var(--surface2)'; color = 'var(--text3)'; border = '1px solid var(--border)'; cursor = 'not-allowed'; title = 'Past dates cannot be marked available';
         } else if (isAvail) {
           bg = 'var(--green)'; color = '#072b1a'; border = '2px solid var(--green)'; title = 'Available — click to unmark';
         } else if (isToday) {
@@ -6706,7 +6668,7 @@ window.EventFlowModules['shared'] = true;
         if (isBooked) {
           return `<div title="${title}" style="padding:12px 4px;border-radius:10px;border:${border};background:${bg};color:${color};font-weight:${fontWeight};font-size:14px;width:100%;text-align:center;position:relative" >${day}<span style="position:absolute;bottom:3px;left:50%;transform:translateX(-50%);font-size:7px;letter-spacing:0;color:var(--red);font-weight:700;line-height:1">BOOKED</span></div>`;
         }
-        return `<button onclick="toggleAvailabilityDate('${fullDate}')" title="${title}" style="padding:12px 4px;border-radius:10px;border:${border};background:${bg};color:${color};font-weight:${fontWeight};cursor:${cursor};font-size:14px;transition:all .15s;width:100%" onmouseover="this.style.opacity='.75'" onmouseout="this.style.opacity='1'">${day}</button>`;
+        return `<button ${isPast ? 'disabled aria-disabled="true"' : `onclick="toggleAvailabilityDate('${fullDate}')"`} title="${title}" style="padding:12px 4px;border-radius:10px;border:${border};background:${bg};color:${color};font-weight:${fontWeight};cursor:${cursor};font-size:14px;transition:all .15s;width:100%" onmouseover="this.style.opacity='.75'" onmouseout="this.style.opacity='1'">${day}</button>`;
       }).join('')}
       </div>
     </div>
@@ -6714,28 +6676,11 @@ window.EventFlowModules['shared'] = true;
     <!-- Legend -->
     <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:20px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;font-size:12px;font-weight:600">
       <div style="display:flex;align-items:center;gap:6px"><span style="width:14px;height:14px;border-radius:4px;background:var(--green);display:inline-block"></span><span style="color:var(--text2)">Available</span></div>
-      <div style="display:flex;align-items:center;gap:6px"><span style="width:14px;height:14px;border-radius:4px;background:var(--red-dim);border:2px solid var(--red);display:inline-block"></span><span style="color:var(--text2)">Booked (accepted assignment)</span></div>
       <div style="display:flex;align-items:center;gap:6px"><span style="width:14px;height:14px;border-radius:4px;background:transparent;border:2px solid var(--accent);display:inline-block"></span><span style="color:var(--text2)">Today</span></div>
       <div style="display:flex;align-items:center;gap:6px"><span style="width:14px;height:14px;border-radius:4px;background:var(--surface2);border:1px solid var(--border);display:inline-block"></span><span style="color:var(--text2)">Unavailable / Unset</span></div>
     </div>
 
-    <!-- Selected Dates Chips -->
-    <div class="card" style="padding:20px;margin-bottom:20px;border-left:3px solid var(--accent)">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
-        <span style="font-size:16px">✅</span>
-        <div style="font-weight:700;font-size:15px;color:var(--text)">Available Dates (${avail.length})</div>
-      </div>
-      ${avail.length === 0
-          ? `<div style="color:var(--text3);font-size:13px;text-align:center;padding:12px">No dates selected yet. Click any date on the calendar to mark availability.</div>`
-          : `<div style="display:flex;flex-wrap:wrap;gap:10px">
-            ${avail.map(d => `
-            <div style="display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:6px 12px;font-size:13px;font-weight:500;color:var(--text)">
-              <span>${fmtChip(d)}</span>
-              <button onclick="removeAvailDate('${d}')" style="width:20px;height:20px;border-radius:4px;background:var(--red);color:#fff;border:none;cursor:pointer;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:1" onmouseover="this.style.background='#e04545'" onmouseout="this.style.background='var(--red)'">✕</button>
-            </div>`).join('')}
-          </div>`
-        }
-    </div>
+
 
     <!-- Accepted Assignments -->
     <div class="card" style="padding:20px;border-left:3px solid var(--green)">
@@ -6768,12 +6713,22 @@ window.EventFlowModules['shared'] = true;
 
 
     function changeMonth(month, year) {
+      const targetMonth = new Date(year, month, 1);
+      const today = new Date();
+      const currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      if (Number.isNaN(targetMonth.getTime()) || targetMonth < currentMonth) return;
       sessionStorage.setItem('avail_month', month);
       sessionStorage.setItem('avail_year', year);
       renderPage('staff-availability');
     }
 
     function toggleAvailabilityDate(date) {
+      const today = new Date();
+      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      if (date < todayStr) {
+        toast('Past dates cannot be marked as available', 'info');
+        return;
+      }
       toggleAvailable(CU.id, date);
       renderPage('staff-availability');
       toast('Availability updated', 'success');
@@ -9830,23 +9785,33 @@ window.EventFlowModules['shared'] = true;
 
     // ════════════════════════════════════════════════
     function getRoleWorkspace(user) {
-      if (user.role === 'staff' && user.employeeType) {
+      if (!user) return null;
+      const role = (user.role || '').toLowerCase();
+      const empType = String(user.employeeType || '').toUpperCase();
+
+      if ((role === 'staff' || role === 'employee') && empType) {
         const employeePages = {
           REGISTRATION_VERIFICATION: { key: 'employee1', folder: 'employee1', file: 'employee1.html' },
           EVENT_OPERATIONS: { key: 'employee2', folder: 'employee2', file: 'employee2.html' },
           SUPPORT_FINANCE: { key: 'employee3', folder: 'employee3', file: 'employee3.html' },
         };
-        return employeePages[user.employeeType] || null;
+        if (employeePages[empType]) return employeePages[empType];
       }
 
       const rolePages = {
         superuser: { key: 'super-admin', folder: 'super-admin', file: 'superuser.html' },
+        super_admin: { key: 'super-admin', folder: 'super-admin', file: 'superuser.html' },
         organizer: { key: 'organizer', folder: 'organizer', file: 'organizer.html' },
+        event_organizer: { key: 'organizer', folder: 'organizer', file: 'organizer.html' },
         client: { key: 'client', folder: 'client', file: 'client.html' },
         staff: { key: 'staff', folder: 'staff', file: 'staff.html' },
+        event_staff: { key: 'staff', folder: 'staff', file: 'staff.html' },
         attendee: { key: 'attendee', folder: 'attendee', file: 'attendee.html' },
+        employee1: { key: 'employee1', folder: 'employee1', file: 'employee1.html' },
+        employee2: { key: 'employee2', folder: 'employee2', file: 'employee2.html' },
+        employee3: { key: 'employee3', folder: 'employee3', file: 'employee3.html' },
       };
-      return rolePages[user.role] || null;
+      return rolePages[role] || null;
     }
 
     function routeToRoleWorkspace(user) {
@@ -9949,9 +9914,9 @@ window.EventFlowModules['shared'] = true;
               errorMsg = 'Enter a valid email format';
             }
           } else if (fieldType === 'phone') {
-            if (!/^\+?[0-9\s().-]+$/.test(val) || val.replace(/\D/g, '').length < 7 || val.replace(/\D/g, '').length > 15) {
+            if (!/^\d{10}$/.test(val)) {
               isValid = false;
-              errorMsg = 'Enter a valid phone number with 7 to 15 digits';
+              errorMsg = 'Enter a mobile number with exactly 10 digits';
             }
           } else if (fieldType === 'date') {
             const selected = new Date(val);

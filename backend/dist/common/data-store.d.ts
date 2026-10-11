@@ -3,13 +3,14 @@
  * Simulates a database without actual persistence
  * Includes all entities from the ER diagram
  */
-import { UserRole } from './constants';
+import { UserRole, EmployeeType } from './constants';
 export interface User {
     userId: string;
     name: string;
     email: string;
     password: string;
     userRole: UserRole;
+    employeeType?: EmployeeType | string;
     status: 'active' | 'inactive' | 'suspended';
     address?: string;
     phoneNo?: string;

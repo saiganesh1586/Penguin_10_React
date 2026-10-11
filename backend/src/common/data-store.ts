@@ -4,7 +4,7 @@
  * Includes all entities from the ER diagram
  */
 
-import { UserRole } from './constants';
+import { UserRole, EmployeeType } from './constants';
 
 // ==================== USER ENTITIES ====================
 
@@ -14,6 +14,7 @@ export interface User {
   email: string;
   password: string;
   userRole: UserRole;
+  employeeType?: EmployeeType | string;
   status: 'active' | 'inactive' | 'suspended';
   address?: string;
   phoneNo?: string;
@@ -329,7 +330,8 @@ export class DataStore {
         name: 'Marcus Vance',
         email: 'employee@example.com',
         password: 'Employee@123',
-        userRole: UserRole.EVENT_ORGANIZER,
+        userRole: UserRole.EVENT_STAFF,
+        employeeType: EmployeeType.EVENT_OPERATIONS,
         status: 'active',
         phoneNo: '9876543220',
         createdAt: new Date('2024-01-18'),
@@ -340,7 +342,8 @@ export class DataStore {
         name: 'Marcus Vance',
         email: 'employee@eventflow.com',
         password: 'Employee@123',
-        userRole: UserRole.EVENT_ORGANIZER,
+        userRole: UserRole.EVENT_STAFF,
+        employeeType: EmployeeType.EVENT_OPERATIONS,
         status: 'active',
         phoneNo: '9876543220',
         createdAt: new Date('2024-01-18'),
@@ -351,7 +354,8 @@ export class DataStore {
         name: 'Marcus Vance',
         email: 'marcus.ops@eventflow.com',
         password: 'Employee@123',
-        userRole: UserRole.EVENT_ORGANIZER,
+        userRole: UserRole.EVENT_STAFF,
+        employeeType: EmployeeType.SUPPORT_FINANCE,
         status: 'active',
         phoneNo: '9876543220',
         createdAt: new Date('2024-01-18'),
@@ -362,7 +366,8 @@ export class DataStore {
         name: 'Elena Rostova',
         email: 'elena.coordinator@eventflow.com',
         password: 'Employee@123',
-        userRole: UserRole.EVENT_ORGANIZER,
+        userRole: UserRole.EVENT_STAFF,
+        employeeType: EmployeeType.EVENT_OPERATIONS,
         status: 'active',
         phoneNo: '9876543221',
         createdAt: new Date('2024-02-12'),
@@ -373,7 +378,8 @@ export class DataStore {
         name: 'Arjun Kapoor',
         email: 'arjun.events@eventflow.com',
         password: 'Employee@123',
-        userRole: UserRole.EVENT_ORGANIZER,
+        userRole: UserRole.EVENT_STAFF,
+        employeeType: EmployeeType.REGISTRATION_VERIFICATION,
         status: 'active',
         phoneNo: '9876543222',
         createdAt: new Date('2024-03-08'),
@@ -384,7 +390,8 @@ export class DataStore {
         name: 'Maya Lin',
         email: 'maya.ops@eventflow.com',
         password: 'Employee@123',
-        userRole: UserRole.EVENT_ORGANIZER,
+        userRole: UserRole.EVENT_STAFF,
+        employeeType: EmployeeType.SUPPORT_FINANCE,
         status: 'active',
         phoneNo: '9876543223',
         createdAt: new Date('2024-03-22'),
@@ -572,6 +579,54 @@ export class DataStore {
     ];
 
         this.staffProfiles = [
+      {
+        staffId: 'staff-emp-001',
+        userId: 'usr-emp-001',
+        availableDates: ['2026-06-15', '2026-07-20', '2026-08-01'],
+        rating: 4.9,
+        status: 'available',
+        createdAt: new Date('2024-01-18'),
+      },
+      {
+        staffId: 'staff-emp-001b',
+        userId: 'usr-emp-001b',
+        availableDates: ['2026-06-15', '2026-07-20', '2026-08-01'],
+        rating: 4.9,
+        status: 'available',
+        createdAt: new Date('2024-01-18'),
+      },
+      {
+        staffId: 'staff-emp-001c',
+        userId: 'usr-emp-001c',
+        availableDates: ['2026-06-15', '2026-07-20', '2026-08-01'],
+        rating: 4.9,
+        status: 'available',
+        createdAt: new Date('2024-01-18'),
+      },
+      {
+        staffId: 'staff-emp-002',
+        userId: 'usr-emp-002',
+        availableDates: ['2026-06-15', '2026-07-20'],
+        rating: 4.8,
+        status: 'available',
+        createdAt: new Date('2024-02-12'),
+      },
+      {
+        staffId: 'staff-emp-003',
+        userId: 'usr-emp-003',
+        availableDates: ['2026-06-15', '2026-07-20'],
+        rating: 4.9,
+        status: 'available',
+        createdAt: new Date('2024-03-08'),
+      },
+      {
+        staffId: 'staff-emp-004',
+        userId: 'usr-emp-004',
+        availableDates: ['2026-06-15', '2026-07-20'],
+        rating: 4.7,
+        status: 'available',
+        createdAt: new Date('2024-03-22'),
+      },
       {
         staffId: 'staff-001',
         userId: 'usr-staff-001',

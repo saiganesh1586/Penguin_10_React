@@ -100,7 +100,7 @@ export const ROLE_PERMISSIONS = {
 };
 
 export enum EmployeeType {
-  REGISTRATION_VERIFICATION = 'registration_verification',
-  EVENT_OPERATIONS = 'event_operations',
-  SUPPORT_FINANCE = 'support_finance',
+  REGISTRATION_VERIFICATION = 'REGISTRATION_VERIFICATION',
+  EVENT_OPERATIONS = 'EVENT_OPERATIONS',
+  SUPPORT_FINANCE = 'SUPPORT_FINANCE',
 }

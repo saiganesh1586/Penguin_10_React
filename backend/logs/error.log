@@ -981,3 +981,38 @@
   "message": "Attendee usr-attendee-001 not found",
   "stack": "NotFoundException: Attendee usr-attendee-001 not found\n    at RegistrationsService.create (C:\\Users\\sai ganesh\\Downloads\\10_Penguin_EventFlow_ROLE_COMPLETE\\10_Penguin\\backend\\src\\modules\\registrations\\registrations.service.ts:18:29)\n    at RegistrationsController.create (C:\\Users\\sai ganesh\\Downloads\\10_Penguin_EventFlow_ROLE_COMPLETE\\10_Penguin\\backend\\src\\modules\\registrations\\registrations.controller.ts:25:25)\n    at C:\\Users\\sai ganesh\\Downloads\\10_Penguin_EventFlow_ROLE_COMPLETE\\10_Penguin\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:38:29\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async C:\\Users\\sai ganesh\\Downloads\\10_Penguin_EventFlow_ROLE_COMPLETE\\10_Penguin\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:46:28\n    at async C:\\Users\\sai ganesh\\Downloads\\10_Penguin_EventFlow_ROLE_COMPLETE\\10_Penguin\\backend\\node_modules\\@nestjs\\core\\router\\router-proxy.js:9:17"
 }
+{
+  "timestamp": "2026-10-11T05:49:32.347Z",
+  "method": "GET",
+  "url": "/favicon.ico",
+  "statusCode": 404,
+  "message": "Cannot GET /favicon.ico",
+  "stack": "NotFoundException: Cannot GET /favicon.ico\n    at callback (C:\\Users\\Mithin Reddy\\Downloads\\Penguin_10_React\\backend\\node_modules\\@nestjs\\core\\router\\routes-resolver.js:77:19)\n    at C:\\Users\\Mithin Reddy\\Downloads\\Penguin_10_React\\backend\\node_modules\\@nestjs\\core\\router\\router-proxy.js:9:23\n    at Layer.handle [as handle_request] (C:\\Users\\Mithin Reddy\\Downloads\\Penguin_10_React\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\layer.js:95:5)\n    at trim_prefix (C:\\Users\\Mithin Reddy\\Downloads\\Penguin_10_React\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\index.js:328:13)\n    at C:\\Users\\Mithin Reddy\\Downloads\\Penguin_10_React\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\index.js:286:9\n    at router.process_params (C:\\Users\\Mithin Reddy\\Downloads\\Penguin_10_React\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\index.js:346:12)\n    at next (C:\\Users\\Mithin Reddy\\Downloads\\Penguin_10_React\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\index.js:280:10)\n    at RequestLoggingMiddleware.use (C:\\Users\\Mithin Reddy\\Downloads\\Penguin_10_React\\backend\\src\\common\\middleware\\request-logging.middleware.ts:25:5)\n    at C:\\Users\\Mithin Reddy\\Downloads\\Penguin_10_React\\backend\\node_modules\\@nestjs\\core\\router\\router-proxy.js:9:23\n    at Layer.handle [as handle_request] (C:\\Users\\Mithin Reddy\\Downloads\\Penguin_10_React\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\layer.js:95:5)"
+}
+{
+  "timestamp": "2026-10-11T10:11:25.297Z",
+  "method": "POST",
+  "url": "/api/events",
+  "statusCode": 400,
+  "message": [
+    "property status should not exist",
+    "property description should not exist"
+  ],
+  "stack": "BadRequestException: Bad Request Exception\n    at ValidationPipe.exceptionFactory (C:\\Users\\Mithin Reddy\\Downloads\\Penguin_10_React\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:101:20)\n    at ValidationPipe.transform (C:\\Users\\Mithin Reddy\\Downloads\\Penguin_10_React\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:74:30)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async resolveParamValue (C:\\Users\\Mithin Reddy\\Downloads\\Penguin_10_React\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:148:23)\n    at async Promise.all (index 2)\n    at async pipesFn (C:\\Users\\Mithin Reddy\\Downloads\\Penguin_10_React\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:151:13)\n    at async C:\\Users\\Mithin Reddy\\Downloads\\Penguin_10_React\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:37:30\n    at async C:\\Users\\Mithin Reddy\\Downloads\\Penguin_10_React\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:46:28\n    at async C:\\Users\\Mithin Reddy\\Downloads\\Penguin_10_React\\backend\\node_modules\\@nestjs\\core\\router\\router-proxy.js:9:17"
+}
+{
+  "timestamp": "2026-10-11T10:13:56.323Z",
+  "method": "DELETE",
+  "url": "/api/events/2",
+  "statusCode": 404,
+  "message": "Event with ID 2 not found",
+  "stack": "NotFoundException: Event with ID 2 not found\n    at EventsService.delete (C:\\Users\\Mithin Reddy\\Downloads\\Penguin_10_React\\backend\\src\\modules\\events\\events.service.ts:174:23)\n    at EventsController.delete (C:\\Users\\Mithin Reddy\\Downloads\\Penguin_10_React\\backend\\src\\modules\\events\\events.controller.ts:116:37)\n    at C:\\Users\\Mithin Reddy\\Downloads\\Penguin_10_React\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:38:29\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async C:\\Users\\Mithin Reddy\\Downloads\\Penguin_10_React\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:46:28\n    at async C:\\Users\\Mithin Reddy\\Downloads\\Penguin_10_React\\backend\\node_modules\\@nestjs\\core\\router\\router-proxy.js:9:17"
+}
+{
+  "timestamp": "2026-10-11T10:14:01.425Z",
+  "method": "DELETE",
+  "url": "/api/events/4",
+  "statusCode": 404,
+  "message": "Event with ID 4 not found",
+  "stack": "NotFoundException: Event with ID 4 not found\n    at EventsService.delete (C:\\Users\\Mithin Reddy\\Downloads\\Penguin_10_React\\backend\\src\\modules\\events\\events.service.ts:174:23)\n    at EventsController.delete (C:\\Users\\Mithin Reddy\\Downloads\\Penguin_10_React\\backend\\src\\modules\\events\\events.controller.ts:116:37)\n    at C:\\Users\\Mithin Reddy\\Downloads\\Penguin_10_React\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:38:29\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async C:\\Users\\Mithin Reddy\\Downloads\\Penguin_10_React\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:46:28\n    at async C:\\Users\\Mithin Reddy\\Downloads\\Penguin_10_React\\backend\\node_modules\\@nestjs\\core\\router\\router-proxy.js:9:17"
+}

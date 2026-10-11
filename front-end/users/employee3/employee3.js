@@ -1938,8 +1938,19 @@ window.EventFlowModules['shared'] = true;
 
     const ROLE_LABELS = { superuser: 'Super Administrator', organizer: 'Event Organizer', client: 'Client', staff: 'Event Staff', attendee: 'Attendee' };
     const ROLE_COLORS = { superuser: 'red', organizer: 'purple', client: 'yellow', staff: 'green', attendee: 'blue' };
+    const EMPLOYEE_TYPE_LABELS = {
+      REGISTRATION_VERIFICATION: 'Registration & Verification',
+      EVENT_OPERATIONS: 'Event Operations',
+      SUPPORT_FINANCE: 'Support & Finance',
+      registration_verification: 'Registration & Verification',
+      event_operations: 'Event Operations',
+      support_finance: 'Support & Finance',
+    };
     const DEMO_CREDS = {
       employee: { email: 'employee@example.com', pw: 'Employee@123' },
+      employee1: { email: 'arjun.events@eventflow.com', pw: 'Employee@123' },
+      employee2: { email: 'employee@example.com', pw: 'Employee@123' },
+      employee3: { email: 'marcus.ops@eventflow.com', pw: 'Employee@123' },
       organizer: { email: 'organizer@example.com', pw: 'Organizer@123' },
       client: { email: 'client@example.com', pw: 'Client@123' },
       staff: { email: 'staff@example.com', pw: 'Staff@123' },
@@ -1962,8 +1973,6 @@ window.EventFlowModules['shared'] = true;
     function showPage(p) {
       document.getElementById('landing').style.display = p === 'landing' ? 'block' : 'none';
       document.getElementById('login').style.display = p === 'login' ? 'flex' : 'none';
-      document.getElementById('employee-portal').style.display = p === 'employee-portal' ? 'block' : 'none';
-      document.getElementById('login-admin').style.display = p === 'login-admin' ? 'flex' : 'none';
       document.getElementById('find-events').style.display = p === 'find-events' ? 'block' : 'none';
       document.getElementById('gallery').style.display = p === 'gallery' ? 'block' : 'none';
       document.getElementById('about').style.display = p === 'about' ? 'block' : 'none';
@@ -1971,30 +1980,10 @@ window.EventFlowModules['shared'] = true;
       document.getElementById('app').style.display = p === 'app' ? 'block' : 'none';
     }
     function gotoLogin(role) {
-      if (role === 'employee') {
-        showPage('employee-portal');
-        return;
+      showPage('login');
+      if (role && DEMO_CREDS[role]) {
+        fillLogin(DEMO_CREDS[role].email, DEMO_CREDS[role].pw);
       }
-      showPage('login');
-    }
-
-    let selectedEmployeeType = null;
-    const EMPLOYEE_TYPE_LABELS = {
-      REGISTRATION_VERIFICATION: 'User Executive',
-      EVENT_OPERATIONS: 'Event Executive',
-      SUPPORT_FINANCE: 'Customer Support & Finance Executive',
-    };
-    function selectEmployeeType(employeeType) {
-      selectedEmployeeType = employeeType;
-      g('login-subtitle').textContent = `${EMPLOYEE_TYPE_LABELS[employeeType]} Login`;
-      g('login-hint').textContent = 'Use your department credentials to continue.';
-      const demoAccounts = {
-        REGISTRATION_VERIFICATION: ['arjun.events@eventflow.com', 'Employee@123'],
-        EVENT_OPERATIONS: ['employee@example.com', 'Employee@123'],
-        SUPPORT_FINANCE: ['marcus.ops@eventflow.com', 'Employee@123'],
-      };
-      fillLogin(...demoAccounts[employeeType]);
-      showPage('login');
     }
 
     // ════════════════════════════════════════════════
@@ -2026,9 +2015,7 @@ window.EventFlowModules['shared'] = true;
           EVENT_STAFF: 'staff', event_staff: 'staff',
           ATTENDEE: 'attendee', attendee: 'attendee',
         };
-        const frontendRole = selectedEmployeeType
-          ? 'staff'
-          : (roleMap[userData.role || userData.userRole] || (userData.role || '').toLowerCase());
+        const frontendRole = roleMap[userData.role || userData.userRole] || (userData.role || '').toLowerCase();
 
         CU = {
           id: userData.userId,
@@ -2037,8 +2024,8 @@ window.EventFlowModules['shared'] = true;
           email: userData.email,
           token: userData.token,
           role: frontendRole,
-          userRole: selectedEmployeeType ? 'event_staff' : (userData.role || userData.userRole),
-          employeeType: userData.employeeType || selectedEmployeeType,
+          userRole: userData.role || userData.userRole,
+          employeeType: userData.employeeType,
           status: userData.status,
           avatar: (userData.name || 'U').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2),
         };
@@ -2076,7 +2063,7 @@ window.EventFlowModules['shared'] = true;
             email: localUser.email,
             role: localUser.role,
             userRole: localUser.userRole || localUser.role,
-            employeeType: localUser.employeeType || selectedEmployeeType,
+            employeeType: localUser.employeeType,
             status: localUser.status || 'active',
             avatar: (localUser.name || 'U').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2),
           };
@@ -2094,53 +2081,6 @@ window.EventFlowModules['shared'] = true;
         }
       }).finally(function () {
         if (btn) { btn.textContent = 'Sign In →'; btn.disabled = false; }
-      });
-    }
-
-    function doAdminLogin() {
-      const email = g('admin-email').value.trim();
-      const pass = g('admin-pass').value;
-      let ok = true;
-      if (!email || !email.includes('@')) { showErr('admin-email-err'); ok = false; } else hideErr('admin-email-err');
-      if (!pass || pass.length < 3) { showErr('admin-pass-err'); ok = false; } else hideErr('admin-pass-err');
-      if (!ok) return;
-
-      const btn = document.querySelector('#login-admin .btn-danger');
-      if (btn) { btn.textContent = 'Signing in…'; btn.disabled = true; }
-
-      apiLogin(email, pass).then(function (userData) {
-        const role = userData.role || userData.userRole;
-        if (role !== 'SUPER_ADMIN' && role !== 'super_admin') {
-          toast('Not a super admin account.', 'error');
-          if (btn) { btn.textContent = 'Admin Sign In →'; btn.disabled = false; }
-          return;
-        }
-        CU = {
-          id: userData.userId,
-          userId: userData.userId,
-          name: userData.name,
-          email: userData.email,
-          token: userData.token,
-          role: 'superuser',
-          userRole: 'SUPER_ADMIN',
-          status: userData.status,
-          avatar: (userData.name || 'A').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2),
-        };
-        try { sessionStorage.setItem('ef_cu', JSON.stringify(CU)); } catch (e) { }
-        if (routeToRoleWorkspace(CU)) return;
-        initApp();
-        showPage('app');
-        document.documentElement.classList.remove('restoring-session');
-        toast(`Welcome Admin, ${CU.name}! 🛡️`, 'success');
-      }).catch(function (err) {
-        const msg = err.status === 0
-          ? 'Backend offline. Start the NestJS server first.'
-          : (err.message || 'Invalid admin credentials');
-        toast(msg, 'error');
-        showErr('admin-pass-err');
-        g('admin-pass-err').textContent = msg;
-      }).finally(function () {
-        if (btn) { btn.textContent = 'Admin Sign In →'; btn.disabled = false; }
       });
     }
 
@@ -9830,23 +9770,33 @@ window.EventFlowModules['shared'] = true;
 
     // ════════════════════════════════════════════════
     function getRoleWorkspace(user) {
-      if (user.role === 'staff' && user.employeeType) {
+      if (!user) return null;
+      const role = (user.role || '').toLowerCase();
+      const empType = String(user.employeeType || '').toUpperCase();
+
+      if ((role === 'staff' || role === 'employee') && empType) {
         const employeePages = {
           REGISTRATION_VERIFICATION: { key: 'employee1', folder: 'employee1', file: 'employee1.html' },
           EVENT_OPERATIONS: { key: 'employee2', folder: 'employee2', file: 'employee2.html' },
           SUPPORT_FINANCE: { key: 'employee3', folder: 'employee3', file: 'employee3.html' },
         };
-        return employeePages[user.employeeType] || null;
+        if (employeePages[empType]) return employeePages[empType];
       }
 
       const rolePages = {
         superuser: { key: 'super-admin', folder: 'super-admin', file: 'superuser.html' },
+        super_admin: { key: 'super-admin', folder: 'super-admin', file: 'superuser.html' },
         organizer: { key: 'organizer', folder: 'organizer', file: 'organizer.html' },
+        event_organizer: { key: 'organizer', folder: 'organizer', file: 'organizer.html' },
         client: { key: 'client', folder: 'client', file: 'client.html' },
         staff: { key: 'staff', folder: 'staff', file: 'staff.html' },
+        event_staff: { key: 'staff', folder: 'staff', file: 'staff.html' },
         attendee: { key: 'attendee', folder: 'attendee', file: 'attendee.html' },
+        employee1: { key: 'employee1', folder: 'employee1', file: 'employee1.html' },
+        employee2: { key: 'employee2', folder: 'employee2', file: 'employee2.html' },
+        employee3: { key: 'employee3', folder: 'employee3', file: 'employee3.html' },
       };
-      return rolePages[user.role] || null;
+      return rolePages[role] || null;
     }
 
     function routeToRoleWorkspace(user) {
@@ -9949,9 +9899,9 @@ window.EventFlowModules['shared'] = true;
               errorMsg = 'Enter a valid email format';
             }
           } else if (fieldType === 'phone') {
-            if (!/^\+?[0-9\s().-]+$/.test(val) || val.replace(/\D/g, '').length < 7 || val.replace(/\D/g, '').length > 15) {
+            if (!/^\d{10}$/.test(val)) {
               isValid = false;
-              errorMsg = 'Enter a valid phone number with 7 to 15 digits';
+              errorMsg = 'Enter a mobile number with exactly 10 digits';
             }
           } else if (fieldType === 'date') {
             const selected = new Date(val);

@@ -99,8 +99,8 @@ exports.ROLE_PERMISSIONS = {
 };
 var EmployeeType;
 (function (EmployeeType) {
-    EmployeeType["REGISTRATION_VERIFICATION"] = "registration_verification";
-    EmployeeType["EVENT_OPERATIONS"] = "event_operations";
-    EmployeeType["SUPPORT_FINANCE"] = "support_finance";
+    EmployeeType["REGISTRATION_VERIFICATION"] = "REGISTRATION_VERIFICATION";
+    EmployeeType["EVENT_OPERATIONS"] = "EVENT_OPERATIONS";
+    EmployeeType["SUPPORT_FINANCE"] = "SUPPORT_FINANCE";
 })(EmployeeType || (exports.EmployeeType = EmployeeType = {}));
 //# sourceMappingURL=constants.js.map

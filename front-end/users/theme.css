@@ -56,6 +56,26 @@
   padding-left: 68px;
 }
 
+.l-nav-logo,
+.login-logo,
+.sidebar .sb-logo-mark {
+  max-width: 100%;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.l-nav-logo {
+  font-size: clamp(16px, 2vw, 22px);
+}
+
+.login-logo {
+  font-size: clamp(20px, 5vw, 28px);
+}
+
+.sidebar .sb-logo-mark {
+  font-size: clamp(16px, 1.25vw, 20px);
+}
+
 .sidebar .sb-logo {
   padding-left: 68px;
 }

@@ -139,9 +139,20 @@
 <div class="role-card" onclick="gotoLogin('attendee')">
 <div class="role-card-emoji">🎟️</div>
 <div class="role-card-title">Attendee</div>
-<p class="role-card-desc">Browse events, register, make payments, receive digital tickets, and verify
-            attendance on-site.</p>
+<p class="role-card-desc">Browse events, register, make payments, receive digital tickets, and verify attendance on-site.</p>
 <span class="badge badge-green">End User</span>
+</div>
+<div class="role-card" onclick="gotoLogin('employee1')">
+<div class="role-card-emoji">👔</div>
+<div class="role-card-title">Employee</div>
+<p class="role-card-desc">Manage internal operations, facilitate registration, and handle event support functions.</p>
+<span class="badge badge-blue">Internal Staff</span>
+</div>
+<div class="role-card" onclick="gotoLogin('staff')">
+<div class="role-card-emoji">👷</div>
+<div class="role-card-title">Staff</div>
+<p class="role-card-desc">Assist with event operations, manage on-site check-ins, and support attendees.</p>
+<span class="badge badge-blue">Support</span>
 </div>
 </div>
 </section>
@@ -198,41 +209,6 @@
 </footer>
 </div>
 
-<div id="employee-portal" style="display:none;min-height:100vh;padding:80px 20px;background:var(--bg)">
-<div style="max-width:980px;margin:0 auto">
-<div class="text-center" style="margin-bottom:42px">
-<div class="l-eyebrow">Internal Access</div>
-<h1 class="l-heading">Employee Portal</h1>
-<p class="l-desc" style="margin:0 auto">Select your department to continue</p>
-</div>
-<div class="grid-3">
-<div class="role-card" onclick="selectEmployeeType('REGISTRATION_VERIFICATION')">
-<div class="role-card-emoji">✅</div>
-<div class="role-card-title">User Executive</div>
-<p class="role-card-desc">Manage attendee registrations and verify tickets at the event entrance.<br/>Track
-            check-ins and prepare attendance reports.</p>
-<button class="btn btn-primary btn-sm">Continue →</button>
-</div>
-<div class="role-card" onclick="selectEmployeeType('EVENT_OPERATIONS')">
-<div class="role-card-emoji">🗓️</div>
-<div class="role-card-title">Event Executive</div>
-<p class="role-card-desc">Manage event information, schedules, statuses, and operational requests.<br/>Keep
-            each event ready for smooth execution.</p>
-<button class="btn btn-primary btn-sm">Continue →</button>
-</div>
-<div class="role-card" onclick="selectEmployeeType('SUPPORT_FINANCE')">
-<div class="role-card-emoji">💳</div>
-<div class="role-card-title">Customer Support &amp; Finance Executive</div>
-<p class="role-card-desc">Handle customer support requests and resolve event-related issues.<br/>Review
-            payments, transactions, and finance reports.</p>
-<button class="btn btn-primary btn-sm">Continue →</button>
-</div>
-</div>
-<p style="text-align:center;margin-top:28px"><a href="javascript:showPage('landing')" style="color:var(--text2)">←
-          Back to Home</a></p>
-</div>
-</div>
-
 <div id="login">
 <div class="login-card">
 <div class="login-logo">⚡ EventFlow</div>
@@ -256,16 +232,23 @@
 </div>
 <button class="btn btn-primary btn-lg w-full" onclick="doLogin()">Sign In →</button>
 <div class="divider">Demo Credentials (Click to Auto-Fill)</div>
-<div style="background:var(--surface2);border-radius:10px;padding:14px;margin-bottom:16px;font-size:12.5px;display:flex;flex-direction:column;gap:8px">
+<div style="background:var(--surface2);border-radius:10px;padding:14px;margin-bottom:16px;font-size:12.5px;display:flex;flex-direction:column;gap:8px;max-height:210px;overflow-y:auto">
 <div onclick="fillLogin('staff@example.com', 'Staff@123')" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:4px 6px;border-radius:6px;background:var(--surface)">
 <span><span class="badge badge-green" style="margin-right:4px">Staff</span> <strong>James Wilson:</strong>
             staff@example.com</span>
 <span style="color:var(--accent);font-family:monospace;font-size:11px">Staff@123</span>
 </div>
-<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 6px;border-radius:6px;background:var(--surface)">
-<span><span class="badge badge-purple" style="margin-right:4px">Employee</span> <strong>Employee
-              access:</strong> choose your work area</span>
-<button class="btn btn-primary btn-sm" onclick="gotoLogin('employee')" type="button">Employee Login →</button>
+<div onclick="fillLogin('arjun.events@eventflow.com', 'Employee@123')" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:4px 6px;border-radius:6px;background:var(--surface)">
+<span><span class="badge badge-purple" style="margin-right:4px">Employee</span> <strong>User Executive:</strong> arjun.events@eventflow.com</span>
+<span style="color:var(--accent);font-family:monospace;font-size:11px">Employee@123</span>
+</div>
+<div onclick="fillLogin('employee@example.com', 'Employee@123')" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:4px 6px;border-radius:6px;background:var(--surface)">
+<span><span class="badge badge-purple" style="margin-right:4px">Employee</span> <strong>Event Executive:</strong> employee@example.com</span>
+<span style="color:var(--accent);font-family:monospace;font-size:11px">Employee@123</span>
+</div>
+<div onclick="fillLogin('marcus.ops@eventflow.com', 'Employee@123')" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:4px 6px;border-radius:6px;background:var(--surface)">
+<span><span class="badge badge-purple" style="margin-right:4px">Employee</span> <strong>Support &amp; Finance:</strong> marcus.ops@eventflow.com</span>
+<span style="color:var(--accent);font-family:monospace;font-size:11px">Employee@123</span>
 </div>
 <div onclick="fillLogin('organizer@example.com', 'Organizer@123')" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:4px 6px;border-radius:6px;background:var(--surface)">
 <span><span class="badge badge-purple" style="margin-right:4px">Organizer</span> <strong>Sarah Chen:</strong>
@@ -282,44 +265,13 @@
             attendee@example.com</span>
 <span style="color:var(--accent);font-family:monospace;font-size:11px">Attendee@123</span>
 </div>
-<div style="margin-top:4px;text-align:center">
-<strong>Super Admin:</strong> <a href="javascript:showPage('login-admin')" style="color:var(--accent);font-weight:600">Admin Portal Login →</a>
+<div onclick="fillLogin('superadmin@example.com', 'Admin@123')" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:4px 6px;border-radius:6px;background:var(--surface)">
+<span><span class="badge badge-red" style="margin-right:4px">Super Admin</span> <strong>Alex Johnson:</strong> superadmin@example.com</span>
+<span style="color:var(--accent);font-family:monospace;font-size:11px">Admin@123</span>
 </div>
 </div>
 <p style="text-align:center;font-size:13px;color:var(--text2)">Don't have an account? <a href="#" onclick="openRegisterModal()" style="color:var(--accent)">Create one</a></p>
 <p style="text-align:center;font-size:13px;color:var(--text2); margin-top:12px"><a href="javascript:showPage('landing')" style="color:var(--text2)">← Back to Home</a></p>
-</div>
-</div>
-
-<div id="login-admin" style="display:flex;align-items:center;justify-content:center;min-height:100vh">
-<div class="login-card" style="max-width:400px;width:100%">
-<div class="login-logo">⚡ EventFlow</div>
-<p class="login-sub">Admin Portal</p>
-<p class="muted" style="text-align:center;margin-bottom:20px">Super Admin credentials required</p>
-<div class="form-group">
-<label class="form-label">Admin Email</label>
-<div class="input-group">
-<span class="input-icon">✉️</span>
-<input class="form-control" id="admin-email" placeholder="admin@eventflow.com" type="email"/>
-</div>
-<span class="form-error" id="admin-email-err">Enter a valid email address</span>
-</div>
-<div class="form-group" style="margin-bottom:20px">
-<label class="form-label">Admin Credentials</label>
-<div class="input-group">
-<span class="input-icon">🔐</span>
-<input class="form-control" id="admin-pass" onkeydown="if(event.key==='Enter')doAdminLogin()" placeholder="••••••••" type="password"/>
-</div>
-<span class="form-error" id="admin-pass-err">Invalid credentials</span>
-</div>
-<button class="btn btn-danger btn-lg w-full" onclick="doAdminLogin()">Admin Sign In →</button>
-<div class="divider">or</div>
-<div style="text-align:center;padding:12px;background:var(--surface2);border-radius:8px;margin-bottom:16px">
-<div style="font-size:12px;margin-bottom:8px">Super Admin Demo</div>
-<div style="font-size:11px;color:var(--text2)">Email: superadmin@example.com</div>
-<div style="font-size:11px;color:var(--text2)">Password: Admin@123</div>
-</div>
-<p style="text-align:center;font-size:13px;color:var(--text2)"><a href="javascript:showPage('login')" style="color:var(--accent)">← Back to Login</a></p>
 </div>
 </div>
 

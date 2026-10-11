@@ -95,7 +95,7 @@
     if (
       label.includes('*')
       || field.hasAttribute('required')
-      || ['l-email', 'admin-email', 'l-pass', 'admin-pass'].includes(field.id)
+      || ['l-email', 'l-pass'].includes(field.id)
     ) field.required = true;
 
     if (field instanceof HTMLSelectElement && field.options.length) {
@@ -107,6 +107,11 @@
       if (field.type === 'text' && /\b(email|e-mail)\b/.test(details)) field.type = 'email';
       if (field.type === 'text' && /\b(url|website|web site)\b/.test(details)) field.type = 'url';
       if (field.type === 'text' && /\b(phone|mobile|telephone|emergency contact)\b/.test(details)) field.type = 'tel';
+      if (field.type === 'tel') {
+        field.maxLength = 10;
+        field.pattern = '[0-9]{10}';
+        field.inputMode = 'numeric';
+      }
       if (field.type === 'text' && /\b(price|budget|amount|fee|cost|capacity|quantity|guests?|age|years? of experience)\b/.test(label.toLowerCase())) {
         field.type = 'number';
       }
@@ -129,9 +134,8 @@
       if (field.required && !value.trim()) {
         message = 'Please fill out this field.';
       } else if (field instanceof HTMLInputElement && field.type === 'tel' && value) {
-        const digits = value.replace(/\D/g, '').length;
-        if (!/^\+?[0-9\s().-]+$/.test(value) || digits < 7 || digits > 15) {
-          message = 'Enter a valid phone number with 7 to 15 digits.';
+        if (!/^\d{10}$/.test(value)) {
+          message = 'Enter a mobile number with exactly 10 digits.';
         }
       } else if (field instanceof HTMLInputElement && field.type === 'date' && value && Number.isNaN(Date.parse(value))) {
         message = 'Enter a valid date.';
@@ -184,7 +188,12 @@
     };
 
     if (!field.dataset.validationReady) {
-      field.addEventListener('input', validate);
+      field.addEventListener('input', () => {
+        if (field instanceof HTMLInputElement && field.type === 'tel') {
+          field.value = field.value.replace(/\D/g, '').slice(0, 10);
+        }
+        validate();
+      });
       field.addEventListener('change', validate);
       field.dataset.validationReady = 'true';
     }
@@ -212,11 +221,10 @@
       if (button.closest('#modal-foot')) {
         if (button.textContent.trim().toLowerCase() === 'cancel') return;
         fields = [...document.querySelectorAll('#modal-body input, #modal-body select, #modal-body textarea')];
-      } else if (button.matches('[onclick*="doLogin"], [onclick*="doAdminLogin"]')) {
-        const admin = button.matches('[onclick*="doAdminLogin"]');
+      } else if (button.matches('[onclick*="doLogin"]')) {
         fields = [
-          document.getElementById(admin ? 'admin-email' : 'l-email'),
-          document.getElementById(admin ? 'admin-pass' : 'l-pass'),
+          document.getElementById('l-email'),
+          document.getElementById('l-pass'),
         ].filter(Boolean);
       } else {
         return;
@@ -244,12 +252,11 @@
     document.addEventListener('keydown', (event) => {
       if (event.key !== 'Enter' || !(event.target instanceof HTMLInputElement)) return;
       const id = event.target.id;
-      if (!['l-email', 'admin-email', 'l-pass', 'admin-pass'].includes(id)) return;
+      if (!['l-email', 'l-pass'].includes(id)) return;
 
-      const admin = id.startsWith('admin-');
       const fields = [
-        document.getElementById(admin ? 'admin-email' : 'l-email'),
-        document.getElementById(admin ? 'admin-pass' : 'l-pass'),
+        document.getElementById('l-email'),
+        document.getElementById('l-pass'),
       ].filter(Boolean);
       fields.forEach(prepareFormField);
       const invalid = fields.find((field) => !field.checkValidity());

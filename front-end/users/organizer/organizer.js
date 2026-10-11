@@ -1537,6 +1537,8 @@ window.EventFlowModules['shared'] = true;
         { id: 10, name: 'Nina Lopez', email: 'nina@eventflow.com', password: 'staff123', role: 'staff', phone: '+91 9876543215', avatar: 'NL', avatarImage: '../../images/avatars/staff-nina-lopez.jpg', status: 'active', joined: '2024-03-20', service: 'Sound & AV', rate: 950 },
         { id: 11, name: 'Rajesh Sharma', email: 'rajesh@eventflow.com', password: 'org123', role: 'organizer', phone: '+91 9876543210', avatar: 'RS', avatarImage: '../../images/avatars/organizer-rajesh-sharma.jpg', status: 'active', joined: '2024-03-05', service: 'Weddings & Social Events', city: 'Delhi NCR', rating: 4.9, color: '#22d3a5', bio: 'Expert wedding planner with 15+ years of experience in creating stunning celebrations for families across India.' },
         { id: 12, name: 'TechEvents India', email: 'techevents@eventflow.com', password: 'org123', role: 'organizer', phone: '+91 9876543211', avatar: 'TE', avatarImage: '../../images/avatars/organizer-techevents.jpg', status: 'active', joined: '2024-01-20', service: 'Tech Conferences & Hackathons', city: 'Bangalore', rating: 4.6, color: '#ed8936', bio: 'Leading organizer for technology summits, conferences, and hackathons in India.' },
+        { id: 'org-demo-attendee-001', name: 'Aarav Mehta', email: 'aarav.mehta@example.com', role: 'attendee', phone: '+91 9876500013', avatar: 'AM', avatarImage: '../../images/avatars/user-alex-johnson.jpg', status: 'active', joined: '2026-09-18', city: 'Chennai', bio: 'Product designer interested in emerging technology and accessible design.', dateOfBirth: '1994-06-12', emergencyContact: '+91 9876501013', interests: ['AI', 'Product Design', 'Accessibility'] },
+        { id: 'org-demo-attendee-002', name: 'Diya Nair', email: 'diya.nair@example.com', role: 'attendee', phone: '+91 9876500014', avatar: 'DN', avatarImage: '../../images/avatars/user-lisa-zhang.jpg', status: 'active', joined: '2026-09-22', city: 'Bengaluru', bio: 'Software engineer and community organizer focused on cloud technologies.', dateOfBirth: '1991-11-03', emergencyContact: '+91 9876501014', interests: ['Cloud', 'Developer Communities', 'Mentorship'] },
       ],
       events: [
         { id: 101, title: 'Global AI & Cloud Summit 2026', category: 'Conference', date: '2026-06-15', time: '09:00', endTime: '18:00', venue: 'Grand Convention Center, Hall A', city: 'Bangalore', capacity: 600, registered: 480, price: 200, status: 'upcoming', organizer: 'usr-emp-001', clientId: 'usr-client-001', description: 'Flagship enterprise summit on Generative AI, Cloud Infrastructure, and Agentic Workflows.', color: '#3b82f6', emoji: '🤖', tags: ['AI', 'Cloud', 'Enterprise'], image: '../../images/events/event-ai-summit.jpg' },
@@ -1552,6 +1554,10 @@ window.EventFlowModules['shared'] = true;
         { id: 6, title: 'Healthcare Innovation Forum', category: 'Conference', date: '2026-03-10', time: '08:30', endTime: '17:00', venue: 'City Medical Center Auditorium', city: 'Bangalore', capacity: 300, registered: 300, price: 200, status: 'completed', organizer: 'usr-org-001', clientId: 'usr-client-001', description: 'Forum on AI in healthcare, telemedicine, and patient data management.', color: '#22d3a5', emoji: '🏥', tags: ['Health', 'AI', 'Forum'], image: '../../images/events/event-medtech.jpg' },
         { id: 7, title: 'Photography Masterclass', category: 'Workshop', date: '2026-06-01', time: '10:00', endTime: '15:00', venue: 'Art Studio 5, Downtown', city: 'Pune', capacity: 30, registered: 12, price: 120, status: 'upcoming', organizer: 6, clientId: null, description: 'Hands-on photography workshop for intermediate photographers covering lighting, composition, and post-processing.', color: '#ed8936', emoji: '📷', tags: ['Photography', 'Art', 'Workshop'], image: '../../images/events/event-photography.jpg' },
         { id: 8, title: 'Rajesh Grand Wedding Celebration', category: 'Wedding', date: '2026-05-15', time: '17:00', endTime: '23:59', venue: 'The Ashok Hotel, New Delhi', city: 'Delhi NCR', capacity: 800, registered: 750, price: 0, status: 'ongoing', organizer: 11, clientId: null, description: 'Grand wedding celebration bringing together families and friends. Featuring traditional ceremonies, vibrant decorations, and festive atmosphere.', color: '#22d3a5', emoji: '💒', tags: ['Wedding', 'Celebration', 'Grand'], image: '../../images/events/event-wedding.jpg' },
+        { id: 9, title: 'Sustainable Business Leadership Forum', category: 'Conference', date: '2026-08-12', time: '09:00', endTime: '17:30', venue: 'Bangalore International Centre', city: 'Bangalore', capacity: 240, registered: 218, price: 175, status: 'completed', organizer: 'usr-org-001', clientId: 'usr-client-001', description: 'Leadership forum on sustainable operations, climate reporting, and responsible business growth.', color: '#10b981', emoji: '🌱', tags: ['Sustainability', 'Leadership', 'Business'], image: '../../images/events/event-tech-summit.jpg' },
+        { id: 10, title: 'Product Design & Innovation Workshop', category: 'Workshop', date: '2026-08-26', time: '10:00', endTime: '16:00', venue: 'TechCorp Innovation Studio', city: 'Bangalore', capacity: 90, registered: 86, price: 95, status: 'completed', organizer: 'usr-org-001', clientId: 'usr-client-001', description: 'Practical workshop covering user research, rapid prototyping, and product design systems.', color: '#7c6ff7', emoji: '🎨', tags: ['Product Design', 'Innovation', 'Workshop'], image: '../../images/events/event-marketing-workshop.jpg' },
+        { id: 11, title: 'Cloud Engineering Community Day', category: 'Networking', date: '2026-09-09', time: '09:30', endTime: '18:00', venue: 'Manyata Tech Park — Auditorium 2', city: 'Bangalore', capacity: 320, registered: 297, price: 50, status: 'completed', organizer: 'usr-org-001', clientId: 'usr-client-001', description: 'Community event with technical talks, hands-on labs, and networking for cloud engineering teams.', color: '#3b82f6', emoji: '☁️', tags: ['Cloud', 'Engineering', 'Community'], image: '../../images/events/event-ai-summit.jpg' },
+        { id: 12, title: 'Customer Experience Strategy Roundtable', category: 'Corporate', date: '2026-09-24', time: '13:00', endTime: '18:00', venue: 'TechCorp Conference Suite', city: 'Bangalore', capacity: 60, registered: 54, price: 125, status: 'completed', organizer: 'usr-org-001', clientId: 'usr-client-001', description: 'Executive roundtable on customer experience measurement, service design, and retention strategy.', color: '#f59e0b', emoji: '💬', tags: ['Customer Experience', 'Strategy', 'Roundtable'], image: '../../images/events/event-fintech.jpg' },
       ],
       eventRequests: [
         { id: 101, clientId: 'usr-client-001', title: 'Torres Tech Q3 Product Launch', type: 'Corporate', date: '2026-06-01', guests: 350, budget: 35000, status: 'pending', desc: 'Global launch for next-gen enterprise suite. Require 4K live streaming, stage AV, VIP catering, and 5 photographers.', created: '2026-03-20', organizer: 'usr-emp-001', venue: 'Downtown Convention Center' },
@@ -1565,6 +1571,12 @@ window.EventFlowModules['shared'] = true;
       reports: [
         { id: 'rpt-emp-001', eventId: 105, fileName: 'healthcare-biotech-final-report.pdf', submittedBy: 'usr-staff-001', submittedAt: '2026-03-26 16:45' },
         { id: 'rpt-emp-002', eventId: 103, fileName: 'cybersecurity-workshop-summary.docx', submittedBy: 'usr-emp-001', submittedAt: '2026-07-06 11:20' },
+        { id: 'rpt-org-001', eventId: 6, fileName: 'healthcare-innovation-forum-final-report.pdf', submittedBy: 'usr-org-001', recipientId: 'usr-client-001', submittedAt: '2026-03-12 14:30' },
+        { id: 'rpt-org-002', eventId: 6, fileName: 'healthcare-forum-attendance-summary.xlsx', submittedBy: 'usr-org-001', recipientId: 'usr-client-001', submittedAt: '2026-03-12 15:10' },
+        { id: 'rpt-org-003', eventId: 9, fileName: 'sustainable-business-forum-summary.pdf', submittedBy: 'usr-org-001', recipientId: 'usr-client-001', submittedAt: '2026-08-13 11:15' },
+        { id: 'rpt-org-004', eventId: 9, fileName: 'sustainability-forum-attendance.xlsx', submittedBy: 'usr-org-001', recipientId: 'usr-client-001', submittedAt: '2026-08-13 11:42' },
+        { id: 'rpt-org-005', eventId: 10, fileName: 'product-design-workshop-outcomes.docx', submittedBy: 'usr-org-001', recipientId: 'usr-client-001', submittedAt: '2026-08-27 09:20' },
+        { id: 'rpt-org-006', eventId: 10, fileName: 'product-design-workshop-feedback.pdf', submittedBy: 'usr-org-001', recipientId: 'usr-client-001', submittedAt: '2026-08-27 09:35' },
       ],
       employeeChangeRequests: [
         { id: 'chg-emp-001', type: 'event', targetId: 103, targetName: 'Cybersecurity & Zero Trust Workshop', requester: 'Michael Torres', requestedChange: 'Move the event date to 2026-07-12 and increase capacity to 100 attendees.', status: 'pending', submittedAt: 'Today, 9:20 AM' },
@@ -1585,6 +1597,8 @@ window.EventFlowModules['shared'] = true;
         { id: 6, attendeeId: 8, eventId: 3, date: '2026-03-12', ticketId: 'TKT-2026-006', status: 'confirmed', payment: 'paid', amount: 75, checkedIn: false, seat: 'GA', verificationStatus: 'Verified', verified: true, docType: 'E-Ticket Pass', docRef: 'TKT-FEST-8820', notes: 'Pass verified.' },
         { id: 7, attendeeId: 2, eventId: 1, date: '2026-03-14', ticketId: 'TKT-2026-007', status: 'confirmed', payment: 'paid', amount: 150, checkedIn: false, seat: 'A-045', verificationStatus: 'Verified', verified: true, docType: 'Organizer VIP Access', docRef: 'ORG-VIP-002', notes: 'Organizer VIP pass verified.' },
         { id: 8, attendeeId: 3, eventId: 1, date: '2026-03-15', ticketId: 'TKT-2026-008', status: 'confirmed', payment: 'paid', amount: 150, checkedIn: false, seat: 'A-046', verificationStatus: 'Verified', verified: true, docType: 'Client Pass', docRef: 'CLT-PASS-104', notes: 'Client registration verified.' },
+        { id: 'org-demo-reg-001', attendeeId: 'org-demo-attendee-001', eventId: 1, date: '2026-10-03', ticketId: 'TKT-2026-009', status: 'pending', payment: 'paid', amount: 150, checkedIn: false, seat: 'A-047', verificationStatus: 'Pending Review', verified: false, docType: 'Government ID', docRef: 'ID-AM-2026-009', notes: 'Attendee profile and identity details awaiting organizer review.' },
+        { id: 'org-demo-reg-002', attendeeId: 'org-demo-attendee-002', eventId: 1, date: '2026-10-05', ticketId: 'TKT-2026-010', status: 'pending', payment: 'paid', amount: 150, checkedIn: false, seat: 'A-048', verificationStatus: 'Pending Review', verified: false, docType: 'Company ID', docRef: 'CORP-DN-2026-010', notes: 'Company identification submitted for organizer review.' },
       ],
       userQueries: [
         { id: 'UQR-501', userId: 'usr-attendee-001', userName: 'Priya Patel', userEmail: 'attendee@example.com', type: 'Account Deletion', subject: 'Request to delete duplicate attendee account', detail: 'User requested deletion of duplicate account created during Summit registration.', source: 'User Request', status: 'Pending', date: 'Today, 10:30 AM' },
@@ -1847,8 +1861,13 @@ window.EventFlowModules['shared'] = true;
 
           // Always restore missing mock event reports
           initialReports.forEach(report => {
-            if (!DB.reports.find(r => String(r.id) === String(report.id))) {
+            const existing = DB.reports.find(r => String(r.id) === String(report.id));
+            if (!existing) {
               DB.reports.push(report);
+            } else {
+              if (!existing.recipientId && report.recipientId) existing.recipientId = report.recipientId;
+              if (!existing.submittedBy && report.submittedBy) existing.submittedBy = report.submittedBy;
+              if (!existing.submittedAt && report.submittedAt) existing.submittedAt = report.submittedAt;
             }
           });
 
@@ -1939,17 +1958,12 @@ window.EventFlowModules['shared'] = true;
     const ROLE_LABELS = { superuser: 'Super Administrator', organizer: 'Event Organizer', client: 'Client', staff: 'Event Staff', attendee: 'Attendee' };
     const ROLE_COLORS = { superuser: 'red', organizer: 'purple', client: 'yellow', staff: 'green', attendee: 'blue' };
     const DEMO_CREDS = {
-      employee: { email: 'employee@example.com', pw: 'Employee@123' },
       organizer: { email: 'organizer@example.com', pw: 'Organizer@123' },
       client: { email: 'client@example.com', pw: 'Client@123' },
       staff: { email: 'staff@example.com', pw: 'Staff@123' },
       attendee: { email: 'attendee@example.com', pw: 'Attendee@123' },
       superuser: { email: 'superadmin@example.com', pw: 'Admin@123' },
     };
-
-    function isEmployeeAccount() {
-      return (CU?.email || '').toLowerCase() === DEMO_CREDS.employee.email;
-    }
 
     // New department-based Employee 1/2/3 accounts. Legacy staff accounts have no employeeType.
     function isDepartmentEmployee() {
@@ -1962,8 +1976,6 @@ window.EventFlowModules['shared'] = true;
     function showPage(p) {
       document.getElementById('landing').style.display = p === 'landing' ? 'block' : 'none';
       document.getElementById('login').style.display = p === 'login' ? 'flex' : 'none';
-      document.getElementById('employee-portal').style.display = p === 'employee-portal' ? 'block' : 'none';
-      document.getElementById('login-admin').style.display = p === 'login-admin' ? 'flex' : 'none';
       document.getElementById('find-events').style.display = p === 'find-events' ? 'block' : 'none';
       document.getElementById('gallery').style.display = p === 'gallery' ? 'block' : 'none';
       document.getElementById('about').style.display = p === 'about' ? 'block' : 'none';
@@ -1971,29 +1983,6 @@ window.EventFlowModules['shared'] = true;
       document.getElementById('app').style.display = p === 'app' ? 'block' : 'none';
     }
     function gotoLogin(role) {
-      if (role === 'employee') {
-        showPage('employee-portal');
-        return;
-      }
-      showPage('login');
-    }
-
-    let selectedEmployeeType = null;
-    const EMPLOYEE_TYPE_LABELS = {
-      REGISTRATION_VERIFICATION: 'User Executive',
-      EVENT_OPERATIONS: 'Event Executive',
-      SUPPORT_FINANCE: 'Customer Support & Finance Executive',
-    };
-    function selectEmployeeType(employeeType) {
-      selectedEmployeeType = employeeType;
-      g('login-subtitle').textContent = `${EMPLOYEE_TYPE_LABELS[employeeType]} Login`;
-      g('login-hint').textContent = 'Use your department credentials to continue.';
-      const demoAccounts = {
-        REGISTRATION_VERIFICATION: ['arjun.events@eventflow.com', 'Employee@123'],
-        EVENT_OPERATIONS: ['employee@example.com', 'Employee@123'],
-        SUPPORT_FINANCE: ['marcus.ops@eventflow.com', 'Employee@123'],
-      };
-      fillLogin(...demoAccounts[employeeType]);
       showPage('login');
     }
 
@@ -2026,9 +2015,7 @@ window.EventFlowModules['shared'] = true;
           EVENT_STAFF: 'staff', event_staff: 'staff',
           ATTENDEE: 'attendee', attendee: 'attendee',
         };
-        const frontendRole = selectedEmployeeType
-          ? 'staff'
-          : (roleMap[userData.role || userData.userRole] || (userData.role || '').toLowerCase());
+        const frontendRole = roleMap[userData.role || userData.userRole] || (userData.role || '').toLowerCase();
 
         CU = {
           id: userData.userId,
@@ -2037,8 +2024,8 @@ window.EventFlowModules['shared'] = true;
           email: userData.email,
           token: userData.token,
           role: frontendRole,
-          userRole: selectedEmployeeType ? 'event_staff' : (userData.role || userData.userRole),
-          employeeType: userData.employeeType || selectedEmployeeType,
+          userRole: userData.role || userData.userRole,
+          employeeType: userData.employeeType,
           status: userData.status,
           avatar: (userData.name || 'U').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2),
         };
@@ -2076,7 +2063,7 @@ window.EventFlowModules['shared'] = true;
             email: localUser.email,
             role: localUser.role,
             userRole: localUser.userRole || localUser.role,
-            employeeType: localUser.employeeType || selectedEmployeeType,
+            employeeType: localUser.employeeType,
             status: localUser.status || 'active',
             avatar: (localUser.name || 'U').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2),
           };
@@ -2094,53 +2081,6 @@ window.EventFlowModules['shared'] = true;
         }
       }).finally(function () {
         if (btn) { btn.textContent = 'Sign In →'; btn.disabled = false; }
-      });
-    }
-
-    function doAdminLogin() {
-      const email = g('admin-email').value.trim();
-      const pass = g('admin-pass').value;
-      let ok = true;
-      if (!email || !email.includes('@')) { showErr('admin-email-err'); ok = false; } else hideErr('admin-email-err');
-      if (!pass || pass.length < 3) { showErr('admin-pass-err'); ok = false; } else hideErr('admin-pass-err');
-      if (!ok) return;
-
-      const btn = document.querySelector('#login-admin .btn-danger');
-      if (btn) { btn.textContent = 'Signing in…'; btn.disabled = true; }
-
-      apiLogin(email, pass).then(function (userData) {
-        const role = userData.role || userData.userRole;
-        if (role !== 'SUPER_ADMIN' && role !== 'super_admin') {
-          toast('Not a super admin account.', 'error');
-          if (btn) { btn.textContent = 'Admin Sign In →'; btn.disabled = false; }
-          return;
-        }
-        CU = {
-          id: userData.userId,
-          userId: userData.userId,
-          name: userData.name,
-          email: userData.email,
-          token: userData.token,
-          role: 'superuser',
-          userRole: 'SUPER_ADMIN',
-          status: userData.status,
-          avatar: (userData.name || 'A').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2),
-        };
-        try { sessionStorage.setItem('ef_cu', JSON.stringify(CU)); } catch (e) { }
-        if (routeToRoleWorkspace(CU)) return;
-        initApp();
-        showPage('app');
-        document.documentElement.classList.remove('restoring-session');
-        toast(`Welcome Admin, ${CU.name}! 🛡️`, 'success');
-      }).catch(function (err) {
-        const msg = err.status === 0
-          ? 'Backend offline. Start the NestJS server first.'
-          : (err.message || 'Invalid admin credentials');
-        toast(msg, 'error');
-        showErr('admin-pass-err');
-        g('admin-pass-err').textContent = msg;
-      }).finally(function () {
-        if (btn) { btn.textContent = 'Admin Sign In →'; btn.disabled = false; }
       });
     }
 
@@ -2203,7 +2143,6 @@ window.EventFlowModules['shared'] = true;
       ],
       organizer: [
         { ic: '📊', lbl: 'Dashboard', pg: 'dashboard' },
-        { ic: '🗓️', lbl: 'Manage Events', pg: 'events' },
         { ic: '📋', lbl: 'Event Requests', pg: 'event-requests' },
         { ic: '👷', lbl: 'Staff Management', pg: 'staff' },
         { ic: '👥', lbl: 'Attendee Management', pg: 'attendees' },
@@ -2556,7 +2495,9 @@ window.EventFlowModules['shared'] = true;
           el.innerHTML = pageRegistrationsForEmployee();
           break;
         case 'events':
-          el.innerHTML = isDepartmentEmployee() && CU.employeeType === 'EVENT_OPERATIONS' ? pageEventOpsEvents() : pageEvents();
+          el.innerHTML = CU.role === 'organizer'
+            ? dashOrganizer()
+            : isDepartmentEmployee() && CU.employeeType === 'EVENT_OPERATIONS' ? pageEventOpsEvents() : pageEvents();
           break;
         case 'event-requests':
           el.innerHTML = isDepartmentEmployee() && CU.employeeType === 'EVENT_OPERATIONS' ? pageEventOperationsWorkspace() : pageEventRequests();
@@ -4848,11 +4789,13 @@ window.EventFlowModules['shared'] = true;
       const pendingStaff = DB.staffAssignments.filter(a => a.status === 'pending').length;
       const totalAttendees = DB.registrations.filter(r => myEv.some(e => String(e.id) === String(r.eventId))).length;
       const searchQuery = (sessionStorage.getItem('org_events_search') || '').toLowerCase();
-      const filteredEvents = myEv.filter(e => !searchQuery || e.title.toLowerCase().includes(searchQuery) || e.city.toLowerCase().includes(searchQuery));
+      const statusFilter = sessionStorage.getItem('org_events_status') || '';
+      const categoryFilter = sessionStorage.getItem('org_events_category') || '';
+      const filteredEvents = filterOrganizerDashboardEvents(myEv, searchQuery, statusFilter, categoryFilter);
       return `
   <div class="page-hd">
-    <div class="page-hd-left"><div class="page-title">${isEmployeeAccount() ? 'Employee Dashboard' : 'Organizer Dashboard'}</div><div class="page-sub">Hello ${CU.name}, manage your events and staff.</div></div>
-    <div class="page-hd-right">${isEmployeeAccount() ? '' : '<button class="btn btn-primary" onclick="openAddEventModal()">+ Create Event</button>'}</div>
+    <div class="page-hd-left"><div class="page-title">Organizer Dashboard</div><div class="page-sub">Hello ${CU.name}, manage your events and staff.</div></div>
+    <div class="page-hd-right"><button class="btn btn-primary" onclick="openAddEventModal()">+ Create Event</button></div>
   </div>
   <div class="grid-4 mb-20">
     <div class="stat-card"><div class="stat-icon" style="background:var(--accent-dim);color:var(--accent)">🗓️</div><div class="stat-value" style="color:var(--accent)">${myEv.length}</div><div class="stat-label">My Events</div><div class="stat-sub neutral">${upcoming.length} upcoming</div></div>
@@ -4863,15 +4806,55 @@ window.EventFlowModules['shared'] = true;
   <div class="mb-16">
     <div class="mb-12 flex justify-between items-center"><span class="h4">My Events</span></div>
     <div class="search-box input-group" style="margin-bottom:16px"><span class="input-icon">🔍</span><input class="form-control" id="org-events-search" placeholder="Search by event name or city..." value="${searchQuery}" oninput="searchOrganizerEvents(this.value)"></div>
-    <div class="events-grid">${filteredEvents.length > 0 ? filteredEvents.map(e => evCard(e, 'organizer')).join('') : myEv.length > 0 ? `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔍</div><div class="empty-title">No events match</div><p>Try adjusting your search</p></div>` : isEmployeeAccount() ? `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">📅</div><div class="empty-title">No events assigned</div><p>Assigned events will appear here.</p></div>` : `<div class="ev-card" style="display:flex;align-items:center;justify-content:center;min-height:240px;border-style:dashed;cursor:pointer" onclick="openAddEventModal()"><div class="text-center" style="color:var(--text3)"><div style="font-size:32px;margin-bottom:8px">➕</div><div style="font-size:13px">Create Your First Event</div></div></div>`}
-      ${myEv.length > 0 && !isEmployeeAccount() ? `<div class="ev-card" style="display:flex;align-items:center;justify-content:center;min-height:240px;border-style:dashed;cursor:pointer" onclick="openAddEventModal()"><div class="text-center" style="color:var(--text3)"><div style="font-size:32px;margin-bottom:8px">➕</div><div style="font-size:13px">Create New Event</div></div></div>` : ''}
+    <div class="filter-row" style="margin-bottom:16px">
+      <select class="form-control filter-select" id="org-events-status" onchange="filterOrganizerDashboardEventsFromControls()">
+        <option value="" ${statusFilter === '' ? 'selected' : ''}>All Status</option>
+        <option value="upcoming" ${statusFilter === 'upcoming' ? 'selected' : ''}>Upcoming</option>
+        <option value="ongoing" ${statusFilter === 'ongoing' ? 'selected' : ''}>Ongoing</option>
+        <option value="full" ${statusFilter === 'full' ? 'selected' : ''}>Full</option>
+        <option value="completed" ${statusFilter === 'completed' ? 'selected' : ''}>Completed</option>
+      </select>
+      <select class="form-control filter-select" id="org-events-category" onchange="filterOrganizerDashboardEventsFromControls()">
+        <option value="" ${categoryFilter === '' ? 'selected' : ''}>All Categories</option>
+        ${[...new Set(myEv.map(e => e.category).filter(Boolean))].sort().map(category => `<option value="${escapeHtml(category)}" ${categoryFilter === category ? 'selected' : ''}>${escapeHtml(category)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="events-grid" id="org-events-grid">${filteredEvents.length > 0 ? filteredEvents.map(e => evCard(e, 'organizer')).join('') : myEv.length > 0 ? `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔍</div><div class="empty-title">No events match</div><p>Try adjusting your filters</p></div>` : `<div class="ev-card" style="display:flex;align-items:center;justify-content:center;min-height:240px;border-style:dashed;cursor:pointer" onclick="openAddEventModal()"><div class="text-center" style="color:var(--text3)"><div style="font-size:32px;margin-bottom:8px">➕</div><div style="font-size:13px">Create Your First Event</div></div></div>`}
+      ${myEv.length > 0 ? `<div class="ev-card" style="display:flex;align-items:center;justify-content:center;min-height:240px;border-style:dashed;cursor:pointer" onclick="openAddEventModal()"><div class="text-center" style="color:var(--text3)"><div style="font-size:32px;margin-bottom:8px">➕</div><div style="font-size:13px">Create New Event</div></div></div>` : ''}
     </div>
   </div>`;
     }
 
     function searchOrganizerEvents(query) {
       sessionStorage.setItem('org_events_search', query);
-      renderPage('dashboard');
+      refreshOrganizerDashboardEvents();
+    }
+
+    function filterOrganizerDashboardEvents(events, query, status, category) {
+      return events.filter(event => {
+        const searchable = `${event.title || ''} ${event.city || ''}`.toLowerCase();
+        return (!query || searchable.includes(query))
+          && (!status || event.status === status)
+          && (!category || event.category === category);
+      });
+    }
+
+    function filterOrganizerDashboardEventsFromControls() {
+      sessionStorage.setItem('org_events_status', g('org-events-status')?.value || '');
+      sessionStorage.setItem('org_events_category', g('org-events-category')?.value || '');
+      refreshOrganizerDashboardEvents();
+    }
+
+    function refreshOrganizerDashboardEvents() {
+      const myEvents = DB.events.filter(event => String(event.organizer) === String(CU.id));
+      const query = (sessionStorage.getItem('org_events_search') || '').toLowerCase();
+      const status = sessionStorage.getItem('org_events_status') || '';
+      const category = sessionStorage.getItem('org_events_category') || '';
+      const filtered = filterOrganizerDashboardEvents(myEvents, query, status, category);
+      const grid = g('org-events-grid');
+      if (!grid) return;
+      grid.innerHTML = filtered.map(event => evCard(event, 'organizer')).join('')
+        || `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔍</div><div class="empty-title">No events match</div><p>Try adjusting your filters</p></div>`;
     }
 
     function dashClient() {
@@ -5598,7 +5581,7 @@ window.EventFlowModules['shared'] = true;
       return `
   <div class="page-hd">
     <div class="page-hd-left"><div class="page-title">${isOrg ? 'My Events' : 'All Events'}</div><div class="page-sub">${list.length} event(s)</div></div>
-    <div class="page-hd-right">${CU.role === 'organizer' && !isEmployeeAccount() ? `<button class="btn btn-primary" onclick="openAddEventModal()">+ Create Event</button>` : ''}</div>
+    <div class="page-hd-right">${CU.role === 'organizer' ? `<button class="btn btn-primary" onclick="openAddEventModal()">+ Create Event</button>` : ''}</div>
   </div>
   <div class="filter-row">
     <div class="search-box input-group"><span class="input-icon">🔍</span><input class="form-control" id="ev-q" placeholder="Search events…" oninput="refreshEvents()"></div>
@@ -6225,11 +6208,43 @@ window.EventFlowModules['shared'] = true;
         <td style="color:var(--green);font-weight:600">${r.amount === 0 ? 'Free' : '₹' + r.amount}</td>
         <td><span class="badge badge-${status === 'Approved' ? 'green' : status === 'Rejected' ? 'red' : 'yellow'}">${status}</span></td>
         <td><div class="actions">
-          ${status === 'Pending' ? `<button class="btn btn-success btn-xs" onclick="organiserApproveAttendee('${r.id}')">✓ Approve</button><button class="btn btn-danger btn-xs" onclick="organiserRejectAttendee('${r.id}')">✕ Reject</button>` : `<button class="btn btn-ghost btn-xs" onclick="viewAttendeeProfile('${u.id}','${u.name}','${u.email}','${u.phone}')">Profile</button>`}
+          <button class="btn btn-ghost btn-xs" onclick="viewOrganizerAttendeeProfile('${r.id}')">Profile</button>
+          ${status === 'Pending' ? `<button class="btn btn-success btn-xs" onclick="organiserApproveAttendee('${r.id}')">✓ Approve</button><button class="btn btn-danger btn-xs" onclick="organiserRejectAttendee('${r.id}')">✕ Reject</button>` : ''}
         </div></td>
       </tr>`;
       }).join('')}</tbody>
   </table></div>`;
+    }
+
+    function viewOrganizerAttendeeProfile(regId) {
+      const registration = DB.registrations.find(item => String(item.id) === String(regId));
+      if (!registration) return;
+      const attendee = DB.users.find(user => String(user.id) === String(registration.attendeeId)) || {};
+      const event = DB.events.find(item => String(item.id) === String(registration.eventId)) || {};
+      const interests = Array.isArray(attendee.interests) ? attendee.interests : [];
+      const status = registration.approved || registration.status === 'confirmed' ? 'Approved' : registration.status === 'rejected' ? 'Rejected' : 'Pending';
+      openDrawer(`${attendee.name || 'Attendee'} - Profile`, `
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px">
+          <div class="av av-lg">${attendee.avatar || attendee.name?.[0] || '?'}</div>
+          <div><div style="font-size:17px;font-weight:700">${escapeHtml(attendee.name || 'Unknown Attendee')}</div><div class="small">${escapeHtml(attendee.city || 'Location not provided')}</div></div>
+        </div>
+        <div class="info-row"><span class="info-label">Email</span><span class="info-value">${escapeHtml(attendee.email || '—')}</span></div>
+        <div class="info-row"><span class="info-label">Phone</span><span class="info-value">${escapeHtml(attendee.phone || '—')}</span></div>
+        <div class="info-row"><span class="info-label">Date of Birth</span><span class="info-value">${escapeHtml(attendee.dateOfBirth || '—')}</span></div>
+        <div class="info-row"><span class="info-label">Emergency Contact</span><span class="info-value">${escapeHtml(attendee.emergencyContact || '—')}</span></div>
+        <div class="info-row"><span class="info-label">Joined</span><span class="info-value">${escapeHtml(attendee.joined || '—')}</span></div>
+        ${attendee.bio ? `<div class="mt-12"><div class="label mb-6">About</div><p class="small" style="color:var(--text2)">${escapeHtml(attendee.bio)}</p></div>` : ''}
+        ${interests.length ? `<div class="mt-12"><div class="label mb-6">Interests</div><div class="tag-list">${interests.map(interest => `<span class="tag">${escapeHtml(interest)}</span>`).join('')}</div></div>` : ''}
+        <div class="h4 mt-20 mb-8">Registration</div>
+        <div class="info-row"><span class="info-label">Event</span><span class="info-value">${escapeHtml(event.title || '—')}</span></div>
+        <div class="info-row"><span class="info-label">Ticket</span><span class="info-value mono">${escapeHtml(registration.ticketId || String(registration.id))}</span></div>
+        <div class="info-row"><span class="info-label">Seat</span><span class="info-value">${escapeHtml(registration.seat || 'General Admission')}</span></div>
+        <div class="info-row"><span class="info-label">Payment</span><span class="info-value">${registration.amount === 0 ? 'Free' : `₹${Number(registration.amount) || 0}`} · ${escapeHtml(registration.payment || 'paid')}</span></div>
+        <div class="info-row"><span class="info-label">Review Status</span><span class="info-value">${escapeHtml(registration.verificationStatus || status)}</span></div>
+        ${registration.docType || registration.docRef ? `<div class="info-row"><span class="info-label">Submitted ID</span><span class="info-value">${escapeHtml([registration.docType, registration.docRef].filter(Boolean).join(' · '))}</span></div>` : ''}
+        ${registration.notes ? `<div class="mt-12"><div class="label mb-6">Review Notes</div><p class="small" style="color:var(--text2)">${escapeHtml(registration.notes)}</p></div>` : ''}
+        ${status === 'Pending' ? `<div class="flex gap-8 mt-20"><button class="btn btn-success w-full" onclick="closeDrawer();organiserApproveAttendee('${registration.id}')">✓ Approve Attendee</button><button class="btn btn-danger w-full" onclick="closeDrawer();organiserRejectAttendee('${registration.id}')">✕ Reject</button></div>` : ''}
+      `);
     }
 
     function organiserApproveAttendee(regId) {
@@ -6815,7 +6830,7 @@ window.EventFlowModules['shared'] = true;
       const searchQuery = sessionStorage.getItem('search_staff_q') || '';
       const selectedRating = sessionStorage.getItem('search_staff_rating') || 'all';
       const selectedService = sessionStorage.getItem('search_staff_service') || 'all';
-      const browseStaffList = filterStaffDirectory(allStaffList);
+      const browseStaffList = filterStaffDirectory(allStaffList.filter(staff => !staff.employeeType));
       let content = '';
 
       if (tab === 'manage') {
@@ -6823,7 +6838,9 @@ window.EventFlowModules['shared'] = true;
         const myEventIds = DB.events
           .filter(e => String(e.organizer) === String(CU.id))
           .map(e => String(e.id));
-        const myAssignments = DB.staffAssignments.filter(a => myEventIds.includes(String(a.eventId)));
+        const myAssignments = DB.staffAssignments.filter(a =>
+          myEventIds.includes(String(a.eventId)) && ['accepted', 'pending'].includes(a.status)
+        );
         const myStaffIds = [...new Set(myAssignments.map(a => String(a.staffId)))];
         const myStaffList = allStaffList.filter(s => myStaffIds.includes(String(s.id)));
 
@@ -6993,7 +7010,7 @@ window.EventFlowModules['shared'] = true;
       return pageStaffCombined();
     }
     function openAssignStaffModal(preStaffId = null, preEventId = null) {
-      const staffList = DB.users.filter(u => u.role === 'staff');
+      const staffList = DB.users.filter(u => u.role === 'staff' && !u.employeeType);
       const myEvs = CU.role === 'superuser' ? DB.events : DB.events.filter(e => String(e.organizer) === String(CU.id));
       openModal('Assign Staff to Event', `
     <div class="form-group"><label class="form-label">Staff Member *</label>
@@ -8368,8 +8385,10 @@ window.EventFlowModules['shared'] = true;
       const tab = sessionStorage.getItem('reports_tab') || 'client';
       const myEvents = CU.role === 'organizer' ? DB.events.filter(e => e.organizer === CU.id) : DB.events;
       const completedEvents = myEvents.filter(e => e.status === 'completed').length;
-      const pendingReports = myEvents.filter(e => e.status === 'completed' && !DB.reports.find(r => r.eventId === e.id)).length;
-      const submittedReports = DB.reports.filter(r => myEvents.map(e => e.id).includes(r.eventId)).length;
+      const eventIds = myEvents.map(e => String(e.id));
+      const pendingReports = myEvents.filter(e => e.status === 'completed' && !DB.reports.find(r => String(r.eventId) === String(e.id))).length;
+      const eventReports = DB.reports.filter(report => eventIds.includes(String(report.eventId)));
+      const submittedReports = eventReports.length;
 
       const clientReportContent = `
     <div class="grid-3 mb-24">
@@ -8407,7 +8426,7 @@ window.EventFlowModules['shared'] = true;
     
     <div class="h4 mb-16" style="display:flex;align-items:center;gap:8px"><span style="color:var(--orange);font-size:18px">⭕</span> Pending Submissions</div>
     <div style="display:flex;flex-direction:column;gap:16px">
-      ${myEvents.filter(e => e.status === 'completed' && !DB.reports.find(r => r.eventId === e.id)).map(e => `
+      ${myEvents.filter(e => e.status === 'completed' && !DB.reports.find(r => String(r.eventId) === String(e.id))).map(e => `
         <div class="card" style="background:var(--surface); border:1px solid var(--border); padding:20px; border-radius:12px;">
           <div style="font-weight:700;font-size:16px;margin-bottom:12px;color:var(--text)">${e.title}</div>
           <div style="display:flex;flex-wrap:wrap;gap:24px;margin-bottom:16px;color:var(--text2);font-size:13px">
@@ -8423,6 +8442,23 @@ window.EventFlowModules['shared'] = true;
         </div>
       `).join('')}
       ${pendingReports === 0 ? `<div class="empty"><div class="empty-icon">✓</div><div class="empty-title">All Reports Submitted</div><p class="empty-desc">Great job! All your completed events have reports.</p></div>` : ''}
+    </div>
+    <div class="h4 mb-16" style="margin-top:28px">Submitted Reports</div>
+    <div class="table-wrap">
+      ${eventReports.length === 0 ? `<div class="empty"><div class="empty-icon">📄</div><div class="empty-title">No submitted reports yet</div></div>` : `
+      <table>
+        <thead><tr><th>Event</th><th>Report File</th><th>Sent To</th><th>Submitted At</th></tr></thead>
+        <tbody>${eventReports.map(report => {
+          const event = myEvents.find(item => String(item.id) === String(report.eventId));
+          const recipient = DB.users.find(user => String(user.id) === String(report.recipientId));
+          return `<tr>
+            <td>${event ? escapeHtml(event.title) : 'Unknown event'}</td>
+            <td>${escapeHtml(report.fileName || 'Report file')}</td>
+            <td>${recipient ? `${escapeHtml(recipient.name)}${recipient.email ? `<div class="small">${escapeHtml(recipient.email)}</div>` : ''}` : 'Not specified'}</td>
+            <td>${escapeHtml(report.submittedAt || '—')}</td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>`}
     </div>
   `;
 
@@ -8453,23 +8489,6 @@ window.EventFlowModules['shared'] = true;
     </div>
   `;
 
-      const employeeReportContent = `
-    <div class="page-hd">
-      <div class="page-hd-left"><div class="page-title">Submitted Event Reports</div><div class="page-sub">View who submitted each report. Reports cannot be submitted or edited here.</div></div>
-    </div>
-    <div class="table-wrap">
-      ${DB.reports.filter(report => myEvents.some(event => String(event.id) === String(report.eventId))).length === 0
-          ? `<div class="empty"><div class="empty-icon">📄</div><div class="empty-title">No reports submitted</div><p class="empty-desc">Submitted event reports will appear here.</p></div>`
-          : `<table><thead><tr><th>Event</th><th>File</th><th>Submitted By</th><th>Submitted At</th><th>Actions</th></tr></thead><tbody>
-        ${DB.reports.filter(report => myEvents.some(event => String(event.id) === String(report.eventId))).map(report => {
-            const event = myEvents.find(item => String(item.id) === String(report.eventId));
-            const submitter = DB.users.find(user => String(user.id) === String(report.submittedBy));
-            return `<tr><td><strong>${event ? event.title : 'Unknown Event'}</strong></td><td>${report.fileName || 'Report file'}</td><td>${submitter ? `${submitter.name}<div class="small">${submitter.email || ''}</div>` : 'Unknown user'}</td><td>${report.submittedAt || '—'}</td><td><button class="btn btn-xs btn-danger" onclick="deleteEventReport('${report.id}')">Remove</button></td></tr>`;
-          }).join('')}
-      </tbody></table>`}
-    </div>
-  `;
-
       return `
   <div style="padding:24px;background:var(--bg);">
     <div class="page-hd" style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-start;">
@@ -8482,12 +8501,12 @@ window.EventFlowModules['shared'] = true;
       </div>
     </div>
     
-    ${isEmployeeAccount() ? employeeReportContent : `<div style="display:flex;gap:24px;border-bottom:1px solid var(--border);margin-bottom:24px">
+    <div style="display:flex;gap:24px;border-bottom:1px solid var(--border);margin-bottom:24px">
       <div style="padding-bottom:12px;border-bottom:2px solid ${tab === 'client' ? 'var(--accent)' : 'transparent'};color:${tab === 'client' ? 'var(--accent)' : 'var(--text2)'};font-weight:${tab === 'client' ? '600' : '500'};cursor:pointer;font-size:14px;transition:all 0.2s" onclick="switchReportTab('client')">Client Reports</div>
       ${(CU.role === 'organizer' || CU.role === 'staff' || CU.role === 'superuser') ? `<div style="padding-bottom:12px;border-bottom:2px solid ${tab === 'staff' ? 'var(--accent)' : 'transparent'};color:${tab === 'staff' ? 'var(--accent)' : 'var(--text2)'};font-weight:${tab === 'staff' ? '600' : '500'};cursor:pointer;font-size:14px;transition:all 0.2s" onclick="switchReportTab('staff')">Staff Reports</div>` : ''}
     </div>
 
-    ${tab === 'client' ? clientReportContent : staffReportContent}`}
+    ${tab === 'client' ? clientReportContent : staffReportContent}
   </div>
   `;
     }
@@ -8498,11 +8517,41 @@ window.EventFlowModules['shared'] = true;
       renderPage("reports");
     }
 
+    function getEventReportRecipients(event) {
+      const superuser = DB.users.find(user => user.role === 'superuser');
+      const recipientIds = CU.role === 'organizer'
+        ? [event.clientId, superuser?.id]
+        : CU.role === 'staff'
+          ? [event.organizer, superuser?.id]
+          : [event.clientId, event.organizer];
+      const seen = new Set();
+      return recipientIds
+        .filter(id => id != null && String(id) !== String(CU.id))
+        .map(id => DB.users.find(user => String(user.id) === String(id)))
+        .filter(user => {
+          if (!user || seen.has(String(user.id))) return false;
+          seen.add(String(user.id));
+          return true;
+        });
+    }
 
     function openSubmitReportModal(eventId) {
       const e = DB.events.find(ev => ev.id == eventId);
       if (!e) return;
+      const recipients = getEventReportRecipients(e);
+      if (recipients.length === 0) {
+        toast('No report recipients are available for this event', 'error');
+        return;
+      }
+      const defaultRecipient = recipients[0];
       openModal('Submit Event Report', `
+    <div class="form-group">
+      <label class="form-label" for="report-recipient">Send report to *</label>
+      <select class="form-control" id="report-recipient" required>
+        ${recipients.map(recipient => `<option value="${escapeHtml(String(recipient.id))}" ${String(recipient.id) === String(defaultRecipient.id) ? 'selected' : ''}>${escapeHtml(recipient.name)}${recipient.role ? ` — ${escapeHtml(ROLE_LABELS[recipient.role] || recipient.role)}` : ''}</option>`).join('')}
+      </select>
+      <div class="small muted mt-4">Choose who should receive this event report.</div>
+    </div>
     <div class="form-group" style="text-align:center; padding: 40px; border: 2px dashed var(--border); border-radius: 8px;">
       <div style="font-size: 32px; margin-bottom: 12px;">📁</div>
       <label class="form-label" style="font-size:16px">Upload Report File</label>
@@ -8515,23 +8564,26 @@ window.EventFlowModules['shared'] = true;
     }
 
     function submitEventReport(eventId) {
+      const e = DB.events.find(ev => String(ev.id) === String(eventId));
+      if (!e) { toast('Event not found', 'error'); return; }
       const fileInput = document.getElementById('report-file');
       if (!fileInput || !fileInput.files.length) { toast('Please select a file to submit', 'error'); return; }
+      const recipientId = document.getElementById('report-recipient')?.value;
+      const recipient = getEventReportRecipients(e).find(user => String(user.id) === String(recipientId));
+      if (!recipient) { toast('Select a valid report recipient', 'error'); return; }
       const fileName = fileInput.files[0].name;
-      const report = { id: Date.now(), eventId, fileName, submittedBy: CU.id, submittedAt: new Date().toLocaleString() };
+      const report = { id: Date.now(), eventId: e.id, fileName, submittedBy: CU.id, recipientId: recipient.id, submittedAt: new Date().toLocaleString() };
       DB.reports.push(report);
       saveDB();
       closeModal();
 
-      // Notify organizer if not submitted by them
-      const e = DB.events.find(ev => ev.id == eventId);
-      if (e && CU.id !== e.organizer) {
+      if (String(CU.id) !== String(recipient.id)) {
         DB.notifications.push({
           id: DB._nextId.notifs++,
-          userId: e.organizer,
+          userId: recipient.id,
           type: 'info',
-          title: 'Staff Report Received',
-          msg: `A report file for ${e.title} has been submitted by ${CU.name}.`,
+          title: 'Event Report Received',
+          msg: `${CU.name} sent ${fileName} for ${e.title}.`,
           read: false,
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         });
@@ -9256,39 +9308,50 @@ window.EventFlowModules['shared'] = true;
       renderPage('find-staff');
     }
 
-    function viewStaffProfile(staffId) {
+    function viewStaffProfile(staffId, calendarYear = new Date().getFullYear(), calendarMonth = new Date().getMonth()) {
       const s = DB.users.find(u => String(u.id) === String(staffId));
       if (!s) return;
 
+      const _now = new Date();
+      const _today = new Date(_now.getFullYear(), _now.getMonth(), _now.getDate());
+      const _requestedMonth = new Date(calendarYear, calendarMonth, 1);
+      const _calendarDate = _requestedMonth < new Date(_today.getFullYear(), _today.getMonth(), 1)
+        ? new Date(_today.getFullYear(), _today.getMonth(), 1)
+        : _requestedMonth;
       const rating = s.rating || 4.0;
       const reviews = s.reviews || (Math.floor(staffId * 37) % 130 + 25);
       const completedJobs = DB.staffAssignments.filter(a => a.staffId === staffId && a.status === 'accepted').length || (Math.floor(staffId * 53) % 170 + 30);
       const avail = getAvailability(staffId);
 
       // Build availability calendar
-      const _now = new Date();
-      const _month = _now.getMonth(), _year = _now.getFullYear();
-      const calMonthStr = _now.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+      const _month = _calendarDate.getMonth(), _year = _calendarDate.getFullYear();
+      const _prevMonth = new Date(_year, _month - 1, 1);
+      const _nextMonth = new Date(_year, _month + 1, 1);
+      const calMonthStr = _calendarDate.toLocaleString('en-US', { month: 'long', year: 'numeric' });
       const _firstDay = new Date(_year, _month, 1).getDay();
       const _daysInMonth = new Date(_year, _month + 1, 0).getDate();
-      const _todayStr = _year + '-' + String(_month + 1).padStart(2, '0') + '-' + String(_now.getDate()).padStart(2, '0');
+      const _todayStr = _now.getFullYear() + '-' + String(_now.getMonth() + 1).padStart(2, '0') + '-' + String(_now.getDate()).padStart(2, '0');
       const _asgn = DB.staffAssignments.filter(a => a.staffId === staffId && a.status === 'accepted').map(a => { const ev = DB.events.find(e => e.id === a.eventId); return ev ? ev.date : ''; }).filter(d => d);
       const _hd = ['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => '<div style="font-size:10px;font-weight:600;color:var(--text3);padding:3px 0;text-align:center">' + d + '</div>').join('');
       const _em = Array(_firstDay).fill('<div></div>').join('');
       const _db = Array.from({ length: _daysInMonth }, (_, i) => {
         const d = i + 1;
         const fd = _year + '-' + String(_month + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
-        const isA = avail.includes(fd), isAsgn = _asgn.includes(fd), isTdy = fd === _todayStr;
+        const isPast = fd < _todayStr;
+        const isA = !isPast && avail.includes(fd), isAsgn = !isPast && _asgn.includes(fd), isTdy = fd === _todayStr;
         let bg = 'transparent', col = 'var(--text2)', bdr = '1px solid transparent', fw = '400';
         if (isAsgn) { bg = 'var(--accent)'; col = '#fff'; bdr = 'none'; fw = '700'; }
         else if (isA) { bg = 'rgba(34,197,94,0.18)'; col = 'var(--green)'; bdr = '1px solid var(--green)'; fw = '600'; }
         else if (isTdy) { bdr = '1px solid var(--text2)'; }
-        return '<div style="padding:5px 2px;border-radius:6px;border:' + bdr + ';background:' + bg + ';color:' + col + ';font-weight:' + fw + ';font-size:12px;text-align:center">' + d + '</div>';
+        return '<div style="padding:5px 2px;border-radius:6px;border:' + bdr + ';background:' + bg + ';color:' + col + ';font-weight:' + fw + ';font-size:12px;text-align:center;opacity:' + (isPast ? '0.3' : '1') + '">' + d + '</div>';
       }).join('');
       const calGrid = '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:10px">' + _hd + _em + _db + '</div>';
       const calLegend = '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:4px"><div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text2)"><div style="width:10px;height:10px;border-radius:3px;background:rgba(34,197,94,0.18);border:1px solid var(--green)"></div>Available</div><div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text2)"><div style="width:10px;height:10px;border-radius:3px;background:var(--accent)"></div>Assigned</div><div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text2)"><div style="width:10px;height:10px;border-radius:3px;border:1px solid var(--text2)"></div>Today</div></div>';
-      const noAvail = '<div style="text-align:center;padding:12px;color:var(--text3);font-size:13px;background:var(--surface3);border-radius:8px">No availability dates set yet</div>';
-      const calHTML = avail.length > 0 || _asgn.length > 0 ? calGrid + calLegend : noAvail;
+      const monthPrefix = `${_year}-${String(_month + 1).padStart(2, '0')}-`;
+      const monthAvailabilityCount = avail.filter(date => date.startsWith(monthPrefix) && date >= _todayStr).length;
+      const monthAssignmentCount = _asgn.filter(date => date.startsWith(monthPrefix) && date >= _todayStr).length;
+      const noAvail = '<div style="text-align:center;padding:10px;color:var(--text3);font-size:12px;background:var(--surface3);border-radius:8px;margin-bottom:10px">No availability or assignments this month</div>';
+      const calHTML = calGrid + ((monthAvailabilityCount || monthAssignmentCount) ? calLegend : noAvail + calLegend);
 
       const assCards = DB.staffAssignments.filter(a => a.staffId === staffId).slice(0, 4).map(a => {
         const ev = DB.events.find(e => e.id === a.eventId) || { title: 'Event', date: '', venue: '' };
@@ -9336,7 +9399,11 @@ window.EventFlowModules['shared'] = true;
 
     <div style="margin-bottom:20px;padding:16px;background:var(--surface2);border-left:4px solid var(--accent);border-radius:10px">
       <div style="font-weight:700;font-size:14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">
-        <span>&#128197; Availability &mdash; ${calMonthStr}</span>
+        <div style="display:flex;align-items:center;gap:10px">
+          <button class="btn btn-ghost btn-xs" aria-label="Previous month" ${_calendarDate.getFullYear() === _today.getFullYear() && _calendarDate.getMonth() === _today.getMonth() ? 'disabled style="opacity:0.4;cursor:not-allowed"' : `onclick="viewStaffProfile('${staffId}', ${_prevMonth.getFullYear()}, ${_prevMonth.getMonth()})"`}>‹</button>
+          <span>&#128197; Availability &mdash; ${calMonthStr}</span>
+          <button class="btn btn-ghost btn-xs" aria-label="Next month" onclick="viewStaffProfile('${staffId}', ${_nextMonth.getFullYear()}, ${_nextMonth.getMonth()})">›</button>
+        </div>
         <span style="font-size:12px;font-weight:400;color:var(--text2)">${avail.length} dates</span>
       </div>
       ${calHTML}
@@ -9852,23 +9919,33 @@ window.EventFlowModules['shared'] = true;
 
     // ════════════════════════════════════════════════
     function getRoleWorkspace(user) {
-      if (user.role === 'staff' && user.employeeType) {
+      if (!user) return null;
+      const role = (user.role || '').toLowerCase();
+      const empType = String(user.employeeType || '').toUpperCase();
+
+      if ((role === 'staff' || role === 'employee') && empType) {
         const employeePages = {
           REGISTRATION_VERIFICATION: { key: 'employee1', folder: 'employee1', file: 'employee1.html' },
           EVENT_OPERATIONS: { key: 'employee2', folder: 'employee2', file: 'employee2.html' },
           SUPPORT_FINANCE: { key: 'employee3', folder: 'employee3', file: 'employee3.html' },
         };
-        return employeePages[user.employeeType] || null;
+        if (employeePages[empType]) return employeePages[empType];
       }
 
       const rolePages = {
         superuser: { key: 'super-admin', folder: 'super-admin', file: 'superuser.html' },
+        super_admin: { key: 'super-admin', folder: 'super-admin', file: 'superuser.html' },
         organizer: { key: 'organizer', folder: 'organizer', file: 'organizer.html' },
+        event_organizer: { key: 'organizer', folder: 'organizer', file: 'organizer.html' },
         client: { key: 'client', folder: 'client', file: 'client.html' },
         staff: { key: 'staff', folder: 'staff', file: 'staff.html' },
+        event_staff: { key: 'staff', folder: 'staff', file: 'staff.html' },
         attendee: { key: 'attendee', folder: 'attendee', file: 'attendee.html' },
+        employee1: { key: 'employee1', folder: 'employee1', file: 'employee1.html' },
+        employee2: { key: 'employee2', folder: 'employee2', file: 'employee2.html' },
+        employee3: { key: 'employee3', folder: 'employee3', file: 'employee3.html' },
       };
-      return rolePages[user.role] || null;
+      return rolePages[role] || null;
     }
 
     function routeToRoleWorkspace(user) {
@@ -9971,9 +10048,9 @@ window.EventFlowModules['shared'] = true;
               errorMsg = 'Enter a valid email format';
             }
           } else if (fieldType === 'phone') {
-            if (!/^\+?[0-9\s().-]+$/.test(val) || val.replace(/\D/g, '').length < 7 || val.replace(/\D/g, '').length > 15) {
+            if (!/^\d{10}$/.test(val)) {
               isValid = false;
-              errorMsg = 'Enter a valid phone number with 7 to 15 digits';
+              errorMsg = 'Enter a mobile number with exactly 10 digits';
             }
           } else if (fieldType === 'date') {
             const selected = new Date(val);
