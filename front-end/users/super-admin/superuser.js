@@ -1542,7 +1542,7 @@ window.EventFlowModules['shared'] = true;
         { id: 101, title: 'Global AI & Cloud Summit 2026', category: 'Conference', date: '2026-06-15', time: '09:00', endTime: '18:00', venue: 'Grand Convention Center, Hall A', city: 'Bangalore', capacity: 600, registered: 480, price: 200, status: 'upcoming', organizer: 'usr-emp-001', clientId: 'usr-client-001', description: 'Flagship enterprise summit on Generative AI, Cloud Infrastructure, and Agentic Workflows.', color: '#3b82f6', emoji: '🤖', tags: ['AI', 'Cloud', 'Enterprise'], image: '../../images/events/event-ai-summit.jpg' },
         { id: 102, title: 'FinTech Leaders Executive Conclave', category: 'Corporate', date: '2026-06-22', time: '17:30', endTime: '22:30', venue: 'The Leela Palace Ballroom', city: 'Mumbai', capacity: 250, registered: 210, price: 350, status: 'upcoming', organizer: 'usr-emp-001', clientId: 'usr-client-001', description: 'Exclusive executive dinner and keynote sessions for digital banking and FinTech innovators.', color: '#10b981', emoji: '💼', tags: ['FinTech', 'Banking', 'Executive'], image: '../../images/events/event-fintech.jpg' },
         { id: 103, title: 'Cybersecurity & Zero Trust Workshop', category: 'Workshop', date: '2026-07-05', time: '10:00', endTime: '16:00', venue: 'Cyber Towers — Tech Room 3', city: 'Hyderabad', capacity: 80, registered: 80, price: 120, status: 'full', organizer: 'usr-emp-001', clientId: 'usr-client-001', description: 'Hands-on live simulation on threat modeling, Zero Trust architecture, and cloud security.', color: '#f59e0b', emoji: '🛡️', tags: ['Security', 'ZeroTrust', 'HandsOn'], image: '../../images/events/event-cybersecurity.jpg' },
-        { id: 104, title: 'National Web3 & AI Hackathon 2026', category: 'Networking', date: '2026-07-18', time: '08:00', endTime: '20:00', venue: 'Innovation Arena, HITEC City', city: 'Chennai', capacity: 400, registered: 315, price: 0, status: 'upcoming', organizer: 'usr-emp-001', clientId: 'usr-client-001', description: '36-hour national developer hackathon with $50K in prize bounties for open source AI agents.', color: '#8b5cf6', emoji: '🚀', tags: ['Hackathon', 'AI', 'Developers'], image: '../../images/events/event-hackathon.jpg' },
+        { id: 104, title: 'National Web3 & AI Hackathon 2026', category: 'Networking', date: '2026-07-18', time: '08:00', endTime: '20:00', venue: 'Innovation Arena, HITEC City', city: 'Chennai', capacity: 400, registered: 315, price: 0, status: 'upcoming', organizer: 'usr-emp-001', clientId: 'usr-client-001', description: '36-hour national developer hackathon with ?50K in prize bounties for open source AI agents.', color: '#8b5cf6', emoji: '🚀', tags: ['Hackathon', 'AI', 'Developers'], image: '../../images/events/event-hackathon.jpg' },
         { id: 105, title: 'Healthcare & Biotech Forum 2026', category: 'Conference', date: '2026-03-25', time: '09:00', endTime: '17:00', venue: 'Medical Research Auditorium', city: 'Delhi NCR', capacity: 350, registered: 350, price: 250, status: 'completed', organizer: 'usr-emp-001', clientId: 'usr-client-001', description: 'International forum on AI diagnostics, clinical trials automation, and genomics data.', color: '#06b6d4', emoji: '🏥', tags: ['Healthcare', 'Biotech', 'Genomics'], image: '../../images/events/event-healthcare-forum.jpg' },
         { id: 1, title: 'Tech Innovation Summit 2026', category: 'Conference', date: '2026-04-15', time: '09:00', endTime: '18:00', venue: 'Grand Convention Center, Hall A', city: 'Chennai', capacity: 500, registered: 342, price: 150, status: 'upcoming', organizer: 'usr-org-001', clientId: 'usr-client-001', description: 'Annual technology conference featuring keynotes from industry leaders, workshops on AI, blockchain, and cloud computing.', color: '#7c6ff7', emoji: '💻', tags: ['AI', 'Tech', 'Networking'], image: '../../images/events/event-tech-summit.jpg' },
         { id: 2, title: 'Corporate Annual Gala 2026', category: 'Corporate', date: '2026-04-22', time: '18:00', endTime: '23:00', venue: 'Grand Ballroom — Marriott Hotel', city: 'Tirupathi', capacity: 200, registered: 187, price: 250, status: 'upcoming', organizer: 'usr-org-001', clientId: 'usr-client-001', description: 'Exclusive annual corporate dinner and awards ceremony celebrating achievements and milestones.', color: '#22d3a5', emoji: '🥂', tags: ['Corporate', 'Gala', 'Awards'], image: '../../images/events/event-annual-gala.jpg' },
@@ -1626,15 +1626,15 @@ window.EventFlowModules['shared'] = true;
         { id: 102, title: 'Staff Accepted Assignment', msg: 'James Wilson accepted Lead Photographer for Global AI & Cloud Summit 2026.', time: '1 hr ago', read: false, type: 'success', icon: '✅' },
         { id: 103, title: 'Capacity Milestone Reached', msg: 'Cybersecurity Workshop reached 100% capacity (80/80 registered).', time: '3 hrs ago', read: true, type: 'warning', icon: '🎟️' },
         { id: 104, title: 'Event Request Approved', msg: 'Annual Leadership Strategy Retreat proposal was approved by the client.', time: '1 day ago', read: true, type: 'success', icon: '🎉' },
-        { id: 1, title: 'New Event Request', msg: 'Michael Torres submitted: "Product Launch Event" — $25,000 budget', time: '2 hrs ago', read: false, type: 'info', icon: '📋' },
+        { id: 1, title: 'New Event Request', msg: 'Michael Torres submitted: "Product Launch Event" — ?25,000 budget', time: '2 hrs ago', read: false, type: 'info', icon: '📋' },
         { id: 2, title: 'Registration Confirmed', msg: 'Priya Patel registered for Tech Innovation Summit 2026', time: '4 hrs ago', read: false, type: 'success', icon: '✅' },
         { id: 3, title: 'Staff Assignment Pending', msg: 'Catering Head assignment for Tech Innovation Summit still pending response', time: '6 hrs ago', read: false, type: 'warning', icon: '⚠️' },
         { id: 4, title: 'Event Plan Submitted', msg: 'Team Building Retreat plan submitted to client for review', time: '1 day ago', read: true, type: 'info', icon: '📤' },
         { id: 5, title: 'Event Approved', msg: 'Corporate Annual Gala 2026 has been approved and is now live', time: '2 days ago', read: true, type: 'success', icon: '🎉' },
         { id: 6, title: 'Attendee Checked In', msg: '3 attendees checked in at Healthcare Innovation Forum', time: '3 days ago', read: true, type: 'success', icon: '✅' },
-        { id: 7, title: 'New Assignment', msg: 'Sarah Johnson assigned you as Photographer & Videographer for Corporate Annual Gala 2026 — $1,100 fee', time: '1 hr ago', read: false, type: 'warning', icon: '📸' },
-        { id: 8, title: 'New Assignment', msg: 'Sarah Johnson assigned you as Stage Photographer for Spring Music Festival — $750 fee', time: '3 hrs ago', read: false, type: 'warning', icon: '🎵' },
-        { id: 9, title: 'New Assignment', msg: 'Assigned as Event Documentarian for Startup Pitch Night — $500 fee', time: '5 hrs ago', read: false, type: 'warning', icon: '🚀' },
+        { id: 7, title: 'New Assignment', msg: 'Sarah Johnson assigned you as Photographer & Videographer for Corporate Annual Gala 2026 — ?1,100 fee', time: '1 hr ago', read: false, type: 'warning', icon: '📸' },
+        { id: 8, title: 'New Assignment', msg: 'Sarah Johnson assigned you as Stage Photographer for Spring Music Festival — ?750 fee', time: '3 hrs ago', read: false, type: 'warning', icon: '🎵' },
+        { id: 9, title: 'New Assignment', msg: 'Assigned as Event Documentarian for Startup Pitch Night — ?500 fee', time: '5 hrs ago', read: false, type: 'warning', icon: '🚀' },
         { id: 'sf-notif-001', employeeType: 'SUPPORT_FINANCE', title: 'New Support Request', msg: 'Michael Torres requested a payment receipt for Global AI & Cloud Summit 2026.', time: '12 mins ago', read: false, type: 'info', icon: '📩' },
         { id: 'sf-notif-002', employeeType: 'SUPPORT_FINANCE', title: 'Refund Awaiting Review', msg: 'Refund REF-2026-001 for ₹350 is ready for finance review.', time: '28 mins ago', read: false, type: 'warning', icon: '↩️' },
         { id: 'sf-notif-003', employeeType: 'SUPPORT_FINANCE', title: 'Transaction Completed', msg: 'Transaction TXN-2026-005 was completed successfully for Michael Torres.', time: '1 hr ago', read: true, type: 'success', icon: '💳' },
@@ -7938,340 +7938,145 @@ window.EventFlowModules['shared'] = true;
       if (CU.role === 'staff' && CU.employeeType === 'SUPPORT_FINANCE') return pageOperationalReports();
       if (CU.role === 'staff' && CU.employeeType === 'EVENT_OPERATIONS') return pageEventOpsReports();
 
-      // Super Admin gets dedicated analytics dashboard
-      if (CU.role === 'superuser') {
-        const tab = sessionStorage.getItem('admin_reports_tab') || 'users';
+    // Super Admin gets dedicated analytics dashboard
+    if (CU.role === 'superuser') {
+      const participationData = [
+        { label: 'Marketing', value: 350 },
+        { label: 'Annual Gala', value: 620 },
+        { label: 'Networking', value: 480 }
+      ];
+      const summaryRows = [
+        { label: 'Total Events Created', value: '24', delta: '+8.2%' },
+        { label: 'Total Registrations', value: '4,782', delta: '+15.3%' },
+        { label: 'Active Staff Members', value: '18', delta: '+5' },
+        { label: 'Average Rating', value: '4.8/5', delta: '+0.3' }
+      ];
+      const maxParticipation = Math.max(...participationData.map(item => item.value));
 
-        // ── USER STATISTICS DATA ──────────────────────────────
-        const allUsers = DB.users;
-        const activeUsers = allUsers.filter(u => u.status === 'active').length;
-        const inactiveUsers = allUsers.filter(u => u.status !== 'active').length;
-        const attendees = allUsers.filter(u => u.role === 'attendee').length;
-        const organizers = allUsers.filter(u => u.role === 'organizer').length;
-        const clients = allUsers.filter(u => u.role === 'client').length;
-        const staffCount = allUsers.filter(u => u.role === 'staff').length;
-        const admins = allUsers.filter(u => u.role === 'superuser').length;
+      return `
+        <div style="background:#f5f0fb;min-height:100vh;padding:22px 0 28px;">
+          <div style="max-width:1180px;margin:0 auto;padding:0 8px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin:6px 0 16px;">
+              <div>
+                <div style="font-size:13px;font-weight:700;color:#7c6ff7;letter-spacing:0.08em;text-transform:uppercase;opacity:0.8;">Performance</div>
+                <div style="font-size:28px;font-weight:800;color:#1c1830;line-height:1.2;margin-top:4px;font-family:'Syne', sans-serif;">Reports &amp; Analytics</div>
+                <div style="font-size:15px;color:#7f7893;margin-top:4px;">View insights and analytics for all events</div>
+              </div>
+              <button type="button" onclick="toast('Export feature coming soon','info')" style="display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#7c6ff7,#8a6cf3);border:none;color:#fff;box-shadow:0 10px 20px rgba(124,111,247,.25);cursor:pointer;font-size:20px;">⇩</button>
+            </div>
 
-        // Monthly registrations (last 6 months based on joinedAt / joined)
-        const now = new Date();
-        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        const monthData = {};
-        for (let i = 5; i >= 0; i--) {
-          const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-          const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-          monthData[key] = { label: monthNames[d.getMonth()], count: 0 };
-        }
-        allUsers.filter(u => u.role === 'attendee').forEach(u => {
-          const joined = u.joined || u.joinedAt || '';
-          const key = joined.slice(0, 7);
-          if (monthData[key]) monthData[key].count++;
-        });
-        const months = Object.values(monthData);
-        const maxMonthCount = Math.max(...months.map(m => m.count), 1);
+            <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-bottom:20px;">
+              <div style="background:rgba(255,255,255,0.7);border:1px solid #eee4f8;border-radius:18px;padding:18px 18px 16px;box-shadow:0 10px 22px rgba(123,102,166,0.06);">
+                <div style="font-size:13px;color:#625a78;font-weight:600;margin-bottom:14px;">Total Revenue</div>
+                <div style="font-size:42px;font-weight:800;color:#1d1830;line-height:1;font-family:'Syne', sans-serif;letter-spacing:-0.06em;">?1.2M</div>
+                <div style="margin-top:16px;height:5px;border-radius:99px;background:linear-gradient(90deg,#7c6ff7,#8ac8b9);width:82px;opacity:0.95;"></div>
+              </div>
+              <div style="background:rgba(255,255,255,0.7);border:1px solid #eee4f8;border-radius:18px;padding:18px 18px 16px;box-shadow:0 10px 22px rgba(123,102,166,0.06);">
+                <div style="font-size:13px;color:#625a78;font-weight:600;margin-bottom:14px;">Average Attendance</div>
+                <div style="font-size:42px;font-weight:800;color:#1d1830;line-height:1;font-family:'Syne', sans-serif;letter-spacing:-0.06em;">287</div>
+                <div style="margin-top:16px;height:5px;border-radius:99px;background:linear-gradient(90deg,#7c6ff7,#8ac8b9);width:82px;opacity:0.95;"></div>
+              </div>
+              <div style="background:rgba(255,255,255,0.7);border:1px solid #eee4f8;border-radius:18px;padding:18px 18px 16px;box-shadow:0 10px 22px rgba(123,102,166,0.06);">
+                <div style="font-size:13px;color:#625a78;font-weight:600;margin-bottom:14px;">Event Success Rate</div>
+                <div style="font-size:42px;font-weight:800;color:#1d1830;line-height:1;font-family:'Syne', sans-serif;letter-spacing:-0.06em;">94%</div>
+                <div style="margin-top:16px;height:5px;border-radius:99px;background:linear-gradient(90deg,#7c6ff7,#8ac8b9);width:82px;opacity:0.95;"></div>
+              </div>
+            </div>
 
-        // Role breakdown bar widths
-        const maxRole = Math.max(attendees, organizers, clients, staffCount, admins, 1);
-        const roleBar = (n) => Math.round((n / maxRole) * 100);
-
-        const userStatsContent = `
-  <div class="grid-4 mb-24" style="gap:14px">
-    <div class="stat-card" style="border-left:4px solid var(--accent)">
-      <div class="stat-icon" style="background:var(--accent-dim);color:var(--accent)">👥</div>
-      <div class="stat-value" style="color:var(--accent)">${allUsers.length}</div>
-      <div class="stat-label">Total Users</div>
-      <div class="stat-sub neutral">Platform-wide</div>
-    </div>
-    <div class="stat-card" style="border-left:4px solid var(--green)">
-      <div class="stat-icon" style="background:var(--green-dim);color:var(--green)">✅</div>
-      <div class="stat-value" style="color:var(--green)">${activeUsers}</div>
-      <div class="stat-label">Active Users</div>
-      <div class="stat-sub up">↑ ${Math.round((activeUsers / Math.max(allUsers.length, 1)) * 100)}% active rate</div>
-    </div>
-    <div class="stat-card" style="border-left:4px solid var(--red)">
-      <div class="stat-icon" style="background:var(--red-dim);color:var(--red)">⚠️</div>
-      <div class="stat-value" style="color:var(--red)">${inactiveUsers}</div>
-      <div class="stat-label">Inactive Users</div>
-      <div class="stat-sub neutral">Need attention</div>
-    </div>
-    <div class="stat-card" style="border-left:4px solid var(--blue)">
-      <div class="stat-icon" style="background:var(--blue-dim);color:var(--blue)">🎟️</div>
-      <div class="stat-value" style="color:var(--blue)">${attendees}</div>
-      <div class="stat-label">Attendees</div>
-      <div class="stat-sub neutral">Registered attendees</div>
-    </div>
-  </div>
-
-  <div class="grid-2 mb-24" style="gap:20px">
-    <!-- Role Breakdown Card -->
-    <div class="card card-lg">
-      <div style="font-family:var(--font-head);font-size:16px;font-weight:700;margin-bottom:20px;display:flex;align-items:center;gap:8px">
-        <span style="background:var(--accent-dim);color:var(--accent);padding:6px 8px;border-radius:8px;font-size:14px">🏷️</span>
-        User Role Breakdown
-      </div>
-      <div style="display:flex;flex-direction:column;gap:14px">
-        ${[
-            { role: 'Attendees', count: attendees, color: 'var(--blue)', icon: '🎟️' },
-            { role: 'Organizers', count: organizers, color: 'var(--accent)', icon: '🎯' },
-            { role: 'Clients', count: clients, color: 'var(--yellow)', icon: '💼' },
-            { role: 'Staff', count: staffCount, color: 'var(--green)', icon: '👷' },
-            { role: 'Super Admins', count: admins, color: 'var(--red)', icon: '🛡️' },
-          ].map(r => `
-        <div>
-          <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px">
-            <span style="display:flex;align-items:center;gap:6px"><span>${r.icon}</span><span style="font-weight:500">${r.role}</span></span>
-            <span style="font-weight:700;color:${r.color}">${r.count}</span>
-          </div>
-          <div style="height:8px;background:var(--surface3);border-radius:99px;overflow:hidden">
-            <div style="height:100%;width:${roleBar(r.count)}%;background:${r.color};border-radius:99px;transition:width 0.6s ease"></div>
-          </div>
-        </div>`).join('')}
-      </div>
-      <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center">
-          <div style="font-size:20px;font-weight:800;color:var(--green)">${activeUsers}</div>
-          <div style="font-size:11px;color:var(--text2);margin-top:2px">Active</div>
-        </div>
-        <div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center">
-          <div style="font-size:20px;font-weight:800;color:var(--red)">${inactiveUsers}</div>
-          <div style="font-size:11px;color:var(--text2);margin-top:2px">Inactive</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Monthly Registrations Chart -->
-    <div class="card card-lg">
-      <div style="font-family:var(--font-head);font-size:16px;font-weight:700;margin-bottom:20px;display:flex;align-items:center;gap:8px">
-        <span style="background:var(--green-dim);color:var(--green);padding:6px 8px;border-radius:8px;font-size:14px">📅</span>
-        Monthly Attendee Registrations
-      </div>
-      <div style="display:flex;align-items:flex-end;gap:8px;height:160px;padding-bottom:4px">
-        ${months.map(m => `
-        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end">
-          <div style="font-size:11px;font-weight:700;color:var(--green)">${m.count || ''}</div>
-          <div style="width:100%;background:linear-gradient(180deg,var(--green),var(--accent));border-radius:6px 6px 0 0;height:${m.count ? Math.max(Math.round((m.count / maxMonthCount) * 130), 8) : 4}px;opacity:${m.count ? 1 : 0.2};transition:height 0.5s ease"></div>
-          <div style="font-size:10px;color:var(--text3);font-weight:600">${m.label}</div>
-        </div>`).join('')}
-      </div>
-      <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);font-size:12px;color:var(--text2)">
-        Total attendees registered: <strong style="color:var(--green)">${attendees}</strong>
-      </div>
-    </div>
-  </div>
-
-  <!-- All Users Table -->
-  <div class="card">
-    <div style="font-family:var(--font-head);font-size:15px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between">
-      <div style="display:flex;align-items:center;gap:8px"><span style="background:var(--blue-dim);color:var(--blue);padding:5px 7px;border-radius:8px">📋</span> All Users Overview</div>
-      <span class="badge badge-blue">${allUsers.length} total</span>
-    </div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>User</th><th>Role</th><th>Status</th><th>Joined</th></tr></thead>
-        <tbody>
-          ${allUsers.map(u => `<tr>
-            <td><div class="flex items-center gap-10"><div class="av av-sm">${u.avatar || u.name[0]}</div><div><div style="font-weight:500">${u.name}</div><div class="small">${u.email}</div></div></div></td>
-            <td><span class="badge badge-${ROLE_COLORS[u.role]}">${u.role}</span></td>
-            <td><span class="badge badge-${u.status === 'active' ? 'green' : 'red'}">${u.status || 'active'}</span></td>
-            <td class="small">${u.joined || u.joinedAt || '—'}</td>
-          </tr>`).join('')}
-        </tbody>
-      </table>
-    </div>
-  </div>`;
-
-        // ── EVENT STATISTICS DATA ──────────────────────────────
-        const allEvents = DB.events;
-        const allRegs = DB.registrations;
-        const totalRevenue = allRegs.reduce((s, r) => s + (r.amount || 0), 0);
-        const checkedIn = allRegs.filter(r => r.checkedIn).length;
-        const upcomingEvs = allEvents.filter(e => e.status === 'upcoming').length;
-        const completedEvs = allEvents.filter(e => e.status === 'completed').length;
-
-        // Category breakdown
-        const catMap = {};
-        allEvents.forEach(e => {
-          if (!catMap[e.category]) catMap[e.category] = { count: 0, regs: 0, revenue: 0 };
-          catMap[e.category].count++;
-          const regs = allRegs.filter(r => r.eventId === e.id);
-          catMap[e.category].regs += regs.length;
-          catMap[e.category].revenue += regs.reduce((s, r) => s + (r.amount || 0), 0);
-        });
-        const cats = Object.entries(catMap).sort((a, b) => b[1].regs - a[1].regs);
-        const maxCatRegs = Math.max(...cats.map(c => c[1].regs), 1);
-        const catColors = ['var(--accent)', 'var(--green)', 'var(--blue)', 'var(--yellow)', 'var(--orange)', 'var(--red)'];
-
-        // Top events by registration
-        const topEvents = [...allEvents].sort((a, b) => b.registered - a.registered).slice(0, 5);
-
-        // Monthly revenue (last 6 months)
-        const revMonthData = {};
-        for (let i = 5; i >= 0; i--) {
-          const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-          const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-          revMonthData[key] = { label: monthNames[d.getMonth()], revenue: 0, regs: 0 };
-        }
-        allRegs.forEach(r => {
-          const key = (r.date || '').slice(0, 7);
-          if (revMonthData[key]) { revMonthData[key].revenue += (r.amount || 0); revMonthData[key].regs++; }
-        });
-        const revMonths = Object.values(revMonthData);
-        const maxRev = Math.max(...revMonths.map(m => m.revenue), 1);
-
-        const eventStatsContent = `
-  <div class="grid-4 mb-24" style="gap:14px">
-    <div class="stat-card" style="border-left:4px solid var(--green)">
-      <div class="stat-icon" style="background:var(--green-dim);color:var(--green)">💰</div>
-      <div class="stat-value" style="color:var(--green)">₹${totalRevenue.toLocaleString()}</div>
-      <div class="stat-label">Total Revenue</div>
-      <div class="stat-sub up">From all ticket sales</div>
-    </div>
-    <div class="stat-card" style="border-left:4px solid var(--accent)">
-      <div class="stat-icon" style="background:var(--accent-dim);color:var(--accent)">🗓️</div>
-      <div class="stat-value" style="color:var(--accent)">${allEvents.length}</div>
-      <div class="stat-label">Total Events</div>
-      <div class="stat-sub neutral">${upcomingEvs} upcoming · ${completedEvs} completed</div>
-    </div>
-    <div class="stat-card" style="border-left:4px solid var(--blue)">
-      <div class="stat-icon" style="background:var(--blue-dim);color:var(--blue)">🎟️</div>
-      <div class="stat-value" style="color:var(--blue)">${allRegs.length}</div>
-      <div class="stat-label">Total Registrations</div>
-      <div class="stat-sub neutral">Across all events</div>
-    </div>
-    <div class="stat-card" style="border-left:4px solid var(--yellow)">
-      <div class="stat-icon" style="background:var(--yellow-dim);color:var(--yellow)">✅</div>
-      <div class="stat-value" style="color:var(--yellow)">${checkedIn}</div>
-      <div class="stat-label">Checked In</div>
-      <div class="stat-sub up">${Math.round((checkedIn / Math.max(allRegs.length, 1)) * 100)}% attendance rate</div>
-    </div>
-  </div>
-
-  <div class="grid-2 mb-24" style="gap:20px">
-    <!-- Revenue Bar Chart -->
-    <div class="card card-lg">
-      <div style="font-family:var(--font-head);font-size:16px;font-weight:700;margin-bottom:20px;display:flex;align-items:center;gap:8px">
-        <span style="background:var(--green-dim);color:var(--green);padding:6px 8px;border-radius:8px;font-size:14px">📈</span>
-        Monthly Revenue (₹)
-      </div>
-      <div style="display:flex;align-items:flex-end;gap:8px;height:160px;padding-bottom:4px">
-        ${revMonths.map(m => `
-        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end">
-          <div style="font-size:10px;font-weight:700;color:var(--green)">${m.revenue > 0 ? '₹' + m.revenue : ''}</div>
-          <div style="width:100%;background:linear-gradient(180deg,#22d3a5,#4299e1);border-radius:6px 6px 0 0;height:${m.revenue ? Math.max(Math.round((m.revenue / maxRev) * 130), 8) : 4}px;opacity:${m.revenue ? 1 : 0.2}"></div>
-          <div style="font-size:10px;color:var(--text3);font-weight:600">${m.label}</div>
-        </div>`).join('')}
-      </div>
-      <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);font-size:12px;color:var(--text2)">
-        Total platform revenue: <strong style="color:var(--green)">₹${totalRevenue.toLocaleString()}</strong>
-      </div>
-    </div>
-
-    <!-- Category Popularity -->
-    <div class="card card-lg">
-      <div style="font-family:var(--font-head);font-size:16px;font-weight:700;margin-bottom:20px;display:flex;align-items:center;gap:8px">
-        <span style="background:var(--accent-dim);color:var(--accent);padding:6px 8px;border-radius:8px;font-size:14px">🏆</span>
-        Popular Event Categories
-      </div>
-      ${cats.length === 0 ? `<div class="empty"><div class="empty-icon">📊</div><div class="empty-title">No data yet</div></div>` :
-            `<div style="display:flex;flex-direction:column;gap:14px">
-        ${cats.map(([cat, data], i) => `
-        <div>
-          <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px">
-            <span style="font-weight:600;color:${catColors[i % catColors.length]}">${cat}</span>
-            <span style="display:flex;gap:12px">
-              <span style="color:var(--text2)">${data.regs} attendees</span>
-              <span style="color:var(--green);font-weight:600">₹${data.revenue.toLocaleString()}</span>
-            </span>
-          </div>
-          <div style="height:8px;background:var(--surface3);border-radius:99px;overflow:hidden">
-            <div style="height:100%;width:${Math.round((data.regs / maxCatRegs) * 100)}%;background:${catColors[i % catColors.length]};border-radius:99px"></div>
-          </div>
-        </div>`).join('')}
-      </div>`}
-    </div>
-  </div>
-
-  <!-- Top Events Table -->
-  <div class="card mb-24">
-    <div style="font-family:var(--font-head);font-size:15px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px">
-      <span style="background:var(--yellow-dim);color:var(--yellow);padding:5px 7px;border-radius:8px">🏅</span> Top Events by Attendance
-    </div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>#</th><th>Event</th><th>Category</th><th>Registered</th><th>Capacity</th><th>Revenue</th><th>Status</th></tr></thead>
-        <tbody>
-          ${topEvents.map((e, i) => {
-              const evRev = allRegs.filter(r => r.eventId === e.id).reduce((s, r) => s + (r.amount || 0), 0);
-              return `<tr>
-              <td><span style="font-weight:700;color:var(--text3)">${i + 1}</span></td>
-              <td><div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">${e.emoji || '🎪'}</span><div><div style="font-weight:600;font-size:13.5px">${e.title}</div><div class="small">${e.date}</div></div></div></td>
-              <td><span class="badge badge-purple">${e.category}</span></td>
-              <td><strong style="color:var(--blue)">${e.registered}</strong></td>
-              <td class="small">${e.capacity}</td>
-              <td><strong style="color:var(--green)">₹${evRev.toLocaleString()}</strong></td>
-              <td><span class="badge badge-${evStatBadge(e.status)}">${e.status}</span></td>
-            </tr>`;
-            }).join('')}
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- All Events Revenue breakdown -->
-  <div class="card">
-    <div style="font-family:var(--font-head);font-size:15px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px">
-      <span style="background:var(--green-dim);color:var(--green);padding:5px 7px;border-radius:8px">📊</span> All Events Revenue Breakdown
-    </div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Event</th><th>Price</th><th>Registrations</th><th>Revenue</th><th>Occupancy</th></tr></thead>
-        <tbody>
-          ${allEvents.map(e => {
-              const evRegs = allRegs.filter(r => r.eventId === e.id);
-              const evRev2 = evRegs.reduce((s, r) => s + (r.amount || 0), 0);
-              const occ = Math.round((e.registered / Math.max(e.capacity, 1)) * 100);
-              return `<tr>
-              <td><div style="font-weight:500">${e.title}</div></td>
-              <td>${e.price === 0 ? '<span class="badge badge-green">Free</span>' : '₹' + e.price}</td>
-              <td><strong>${evRegs.length}</strong></td>
-              <td style="color:var(--green);font-weight:700">₹${evRev2.toLocaleString()}</td>
-              <td>
-                <div style="display:flex;align-items:center;gap:8px">
-                  <div style="flex:1;height:6px;background:var(--surface3);border-radius:99px;overflow:hidden">
-                    <div style="height:100%;width:${occ}%;background:${occ >= 80 ? 'var(--green)' : occ >= 50 ? 'var(--yellow)' : 'var(--red)'};border-radius:99px"></div>
-                  </div>
-                  <span style="font-size:12px;font-weight:600;color:var(--text2);min-width:32px">${occ}%</span>
+            <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:18px;margin-bottom:20px;">
+              <div style="background:rgba(255,255,255,0.7);border:1px solid #eee4f8;border-radius:18px;padding:18px 18px 14px;box-shadow:0 10px 22px rgba(123,102,166,0.06);">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                  <div style="font-size:15px;font-weight:700;color:#1d1832;font-family:'Syne', sans-serif;">Attendance Trends</div>
+                  <div style="font-size:12px;color:#7d738e;">Monthly attendance overview</div>
                 </div>
-              </td>
-            </tr>`;
-            }).join('')}
-        </tbody>
-      </table>
-    </div>
-  </div>`;
+                <svg viewBox="0 0 520 180" width="100%" height="180" preserveAspectRatio="none" style="display:block;overflow:visible;">
+                  <g stroke="#dcd4ea" stroke-width="1">
+                    <line x1="18" y1="25" x2="500" y2="25" />
+                    <line x1="18" y1="66" x2="500" y2="66" />
+                    <line x1="18" y1="107" x2="500" y2="107" />
+                    <line x1="18" y1="148" x2="500" y2="148" />
+                  </g>
+                  <g fill="#8a7ea6" font-size="10" font-family="DM Sans, sans-serif">
+                    <text x="26" y="170">Jan</text>
+                    <text x="89" y="170">Feb</text>
+                    <text x="150" y="170">Mar</text>
+                    <text x="211" y="170">Apr</text>
+                    <text x="272" y="170">May</text>
+                    <text x="333" y="170">Jun</text>
+                  </g>
+                  <path d="M 22 120 L 89 98 L 150 75 L 211 68 L 272 52 L 333 86 L 394 64 L 457 58 L 500 98" fill="none" stroke="#7c6ff7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                  <g fill="#7c6ff7">
+                    <circle cx="22" cy="120" r="4"/>
+                    <circle cx="89" cy="98" r="4"/>
+                    <circle cx="150" cy="75" r="4"/>
+                    <circle cx="211" cy="68" r="4"/>
+                    <circle cx="272" cy="52" r="4"/>
+                    <circle cx="333" cy="86" r="4"/>
+                    <circle cx="394" cy="64" r="4"/>
+                    <circle cx="457" cy="58" r="4"/>
+                    <circle cx="500" cy="98" r="4"/>
+                  </g>
+                </svg>
+                <div style="margin-top:6px;padding-top:12px;border-top:1px solid #eee7f6;display:flex;align-items:center;gap:8px;color:#5f5b72;font-size:12px;">
+                  <span style="width:10px;height:10px;border-radius:50%;background:#7c6ff7;display:inline-block;"></span>
+                  <span style="font-weight:600;color:#1d1832;">Attendees</span>
+                </div>
+              </div>
 
-        return `
-  <div class="page-hd">
-    <div class="page-hd-left"><div class="page-title">Reports & Analytics</div><div class="page-sub">Platform-wide statistics for super administration</div></div>
-    <div class="page-hd-right">
-      <button class="btn btn-ghost" onclick="toast('Export feature coming soon','info')">📥 Export</button>
-    </div>
-  </div>
+              <div style="background:rgba(255,255,255,0.7);border:1px solid #eee4f8;border-radius:18px;padding:18px 18px 14px;box-shadow:0 10px 22px rgba(123,102,166,0.06);">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                  <div style="font-size:15px;font-weight:700;color:#1d1832;font-family:'Syne', sans-serif;">Event Participation</div>
+                  <div style="font-size:12px;color:#7d738e;">Participants by event</div>
+                </div>
+                <div style="display:flex;align-items:end;height:170px;gap:16px;padding-top:8px;padding-left:6px;padding-right:6px;">
+                  ${participationData.map((item) => `
+                    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:12px;height:100%;">
+                      <div style="width:100%;display:flex;justify-content:center;align-items:flex-end;height:100%;">
+                        <div style="width:54px;border-radius:10px 10px 0 0;background:linear-gradient(180deg,#8f6ef3,#6a4bd9);height:${(item.value / maxParticipation) * 100}%;min-height:36px;box-shadow:0 12px 18px rgba(124,111,247,.18);"></div>
+                      </div>
+                      <div style="font-size:11px;color:#7c748f;text-align:center;white-space:nowrap;">${item.label}</div>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            </div>
 
-  <div style="display:flex;gap:4px;background:var(--surface2);border-radius:12px;padding:4px;margin-bottom:28px;border:1px solid var(--border)">
-    <button onclick="switchReportTab('users')" style="flex:1;padding:10px 20px;border-radius:9px;font-weight:600;font-size:13.5px;transition:all 0.2s;border:none;cursor:pointer;background:${tab === 'users' ? 'var(--accent)' : 'transparent'};color:${tab === 'users' ? '#fff' : 'var(--text2)'}">
-      👥 User Statistics
-    </button>
-    <button onclick="switchReportTab('events')" style="flex:1;padding:10px 20px;border-radius:9px;font-weight:600;font-size:13.5px;transition:all 0.2s;border:none;cursor:pointer;background:${tab === 'events' ? 'var(--accent)' : 'transparent'};color:${tab === 'events' ? '#fff' : 'var(--text2)'}">
-      📊 Event Analytics
-    </button>
-  </div>
+            <div style="display:grid;grid-template-columns:1.25fr 1fr;gap:18px;">
+              <div style="background:rgba(255,255,255,0.7);border:1px solid #eee4f8;border-radius:18px;padding:18px;box-shadow:0 10px 22px rgba(123,102,166,0.06);">
+                <div style="font-size:15px;font-weight:700;color:#1d1832;font-family:'Syne', sans-serif;">Event Status Distribution</div>
+                <div style="font-size:12px;color:#766f8f;margin-top:4px;">Current event breakdown</div>
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:18px;margin-top:18px;min-height:180px;">
+                  <div style="position:relative;width:210px;height:210px;border-radius:50%;background:conic-gradient(#7c6ff7 0 47%, #4ec5a5 47% 74%, #d6d2df 74% 100%);margin:8px auto;box-shadow:inset 0 2px 10px rgba(0,0,0,0.03);">
+                    <div style="position:absolute;inset:30px;border-radius:50%;background:#f5f0fb;"></div>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:12px;min-width:120px;padding-right:10px;">
+                    <div style="display:flex;align-items:center;gap:10px;font-size:12px;color:#524d63;"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#7c6ff7;"></span>Ongoing 57%</div>
+                    <div style="display:flex;align-items:center;gap:10px;font-size:12px;color:#524d63;"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#4ec5a5;"></span>Completed 28%</div>
+                    <div style="display:flex;align-items:center;gap:10px;font-size:12px;color:#524d63;"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#d6d2df;"></span>Upcoming 15%</div>
+                  </div>
+                </div>
+              </div>
 
+              <div style="background:rgba(255,255,255,0.7);border:1px solid #eee4f8;border-radius:18px;padding:18px 20px;box-shadow:0 10px 22px rgba(123,102,166,0.06);">
+                <div style="font-size:15px;font-weight:700;color:#1d1832;font-family:'Syne', sans-serif;">Summary Statistics</div>
+                <div style="font-size:12px;color:#766f8f;margin-top:4px;">Key performance indicators</div>
+                <div style="margin-top:18px;display:flex;flex-direction:column;gap:0;">
+                  ${summaryRows.map((row, index) => `
+                    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-top:${index === 0 ? 'none' : '1px solid #eee7f6'};font-size:15px;color:#2a2439;">
+                      <span>${row.label}</span>
+                      <span style="font-weight:700;color:#1d1832;margin-left:10px;">${row.value}</span>
+                      <span style="color:${row.delta.startsWith('+') ? '#2bb77b' : '#e56767'};font-weight:700;font-size:12px;margin-left:8px;">${row.delta}</span>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
 
-  ${tab === 'users' ? userStatsContent : eventStatsContent}
-`;
-      }
-
-      // ── NON-SUPERUSER: original client/staff report view ──────
+    // ── NON-SUPERUSER: original client/staff report view ──────
       const tab = sessionStorage.getItem('reports_tab') || 'client';
       const myEvents = CU.role === 'organizer' ? DB.events.filter(e => e.organizer === CU.id) : DB.events;
       const completedEvents = myEvents.filter(e => e.status === 'completed').length;

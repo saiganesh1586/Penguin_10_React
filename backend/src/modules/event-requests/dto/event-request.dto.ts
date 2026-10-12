@@ -24,7 +24,7 @@ export class CreateEventRequestDto {
   @IsNotEmpty()
   eventDate!: string;
 
-  @ApiProperty({ description: 'Budget in USD', example: 50000 })
+  @ApiProperty({ description: 'Budget in INR', example: 50000 })
   @IsNumber()
   @IsPositive()
   budget!: number;

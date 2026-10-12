@@ -3246,7 +3246,7 @@
           },
           "budget": {
             "type": "number",
-            "description": "Budget in USD",
+            "description": "Budget in INR",
             "example": 50000
           },
           "capacity": {
@@ -3318,7 +3318,7 @@
           },
           "budget": {
             "type": "number",
-            "description": "Budget in USD",
+            "description": "Budget in INR",
             "example": 75000
           },
           "capacity": {

@@ -46,7 +46,7 @@ __decorate([
     __metadata("design:type", String)
 ], CreateEventPlanDto.prototype, "description", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ description: 'Budget in USD', example: 75000 }),
+    (0, swagger_1.ApiProperty)({ description: 'Budget in INR', example: 75000 }),
     (0, class_validator_1.IsNumber)(),
     (0, class_validator_1.IsPositive)(),
     __metadata("design:type", Number)

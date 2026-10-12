@@ -29,7 +29,7 @@ export class CreateEventPlanDto {
   @IsNotEmpty()
   description!: string;
 
-  @ApiProperty({ description: 'Budget in USD', example: 75000 })
+  @ApiProperty({ description: 'Budget in INR', example: 75000 })
   @IsNumber()
   @IsPositive()
   budget!: number;

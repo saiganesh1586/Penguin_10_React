@@ -787,7 +787,7 @@ export class DataStore {
         status: 'published',
         createdAt: new Date('2024-03-01'),
         updatedAt: new Date('2024-03-01'),
-        description: '36-hour national developer hackathon with $50K in prize bounties for open source AI agents.',
+        description: '36-hour national developer hackathon with ?50K in prize bounties for open source AI agents.',
         city: 'Chennai',
       },
       {
