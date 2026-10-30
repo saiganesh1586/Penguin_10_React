@@ -49,7 +49,20 @@ function setupTestEnvironment(initialEvents = [], initialRegistrations = [], ini
     saveDB: () => {},
     today: () => '2026-10-30',
     apiDeleteEvent: async () => ({ message: 'Event deleted' }),
-    apiCancelOrganizerEvent: async () => ({ success: true }),
+    apiCancelOrganizerEvent: async (eventId, reason) => {
+      const event = context.DB.events.find(item => String(item.eventId || item.id) === String(eventId));
+      if (!event) throw new Error('Event not found');
+      if (event.status === 'cancelled') throw new Error('Event already cancelled');
+      const cancelledEvent = {
+        ...event,
+        eventId: event.eventId || event.id,
+        status: 'cancelled',
+        cancellation: { reason, cancelledAt: new Date().toISOString(), refundStatus: 'not_applicable' }
+      };
+      Object.assign(event, cancelledEvent);
+      return cancelledEvent;
+    },
+    apiGetEvents: async () => context.DB.events,
     apiRequest: async () => ({ success: true })
   });
 
@@ -249,10 +262,10 @@ test('3. Unpaid Public Event: Displays exact no refunds message and creates no r
   // Confirm cancellation
   await context.submitOrganizerEventCancellation('ev-unpaid-1', '');
 
-  // Registrations cancelled, tickets cleared
+  // The frontend does not synthesize registration or refund changes; those are backend-owned.
   const reg1 = context.DB.registrations.find(r => r.id === 'reg-free-1');
-  assert.equal(reg1.status, 'cancelled');
-  assert.equal(reg1.qrCode, undefined);
+  assert.equal(reg1.status, 'confirmed');
+  assert.equal(reg1.qrCode, 'QR_FREE_1');
 
   // No refund records created for unpaid registrations
   assert.equal(context.DB.refunds.length, 0);
@@ -331,19 +344,14 @@ test('4. Multiple Attendees: Paid attendee receives Pending refund, unpaid recei
 
   await context.submitOrganizerEventCancellation('ev-mixed-1', '');
 
-  // All 3 registrations cancelled and tickets invalidated
+  // Registration and refund history is not fabricated in the frontend.
   context.DB.registrations.forEach(r => {
-    assert.equal(r.status, 'cancelled');
-    assert.equal(r.qrCode, undefined);
-    assert.equal(r.verificationId, undefined);
+    assert.equal(r.status, 'confirmed');
+    assert.ok(r.qrCode);
+    assert.ok(r.verificationId);
   });
 
-  // Exactly 2 refund records created (for the 2 paid attendees), with status 'pending'
-  assert.equal(context.DB.refunds.length, 2);
-  assert.ok(context.DB.refunds.every(ref => ref.status === 'pending' && ref.amount === 2000));
-  assert.ok(context.DB.refunds.some(ref => ref.registrationId === 'reg-paid-1'));
-  assert.ok(context.DB.refunds.some(ref => ref.registrationId === 'reg-paid-2'));
-  assert.equal(context.DB.refunds.some(ref => ref.registrationId === 'reg-unpaid-3'), false);
+  assert.equal(context.DB.refunds.length, 0);
 });
 
 test('5. Reason Dropdown, "Other" Explanation, and Final Confirmation Modal Buttons', async () => {
@@ -426,18 +434,15 @@ test('5. Reason Dropdown, "Other" Explanation, and Final Confirmation Modal Butt
   // Event status updated
   const ev = context.DB.events.find(e => e.id === 'ev-pub-2');
   assert.equal(ev.status, 'cancelled');
-  assert.equal(ev.cancellationReason, 'Emergency facility refurbishment announced by landlord');
+  assert.equal(ev.cancellation.reason, 'Emergency facility refurbishment announced by landlord');
 
-  // Registrations cancelled and ticket QR cleared
+  // Registration and notification effects remain backend-owned.
   const reg = context.DB.registrations.find(r => r.id === 'reg-2');
-  assert.equal(reg.status, 'cancelled');
-  assert.equal(reg.qrCode, undefined);
-  assert.equal(reg.verificationId, undefined);
+  assert.equal(reg.status, 'confirmed');
+  assert.equal(reg.qrCode, 'QR_2');
+  assert.equal(reg.verificationId, 'VERIF_2');
 
-  // Notification sent to attendee
-  const notif = context.DB.notifications.find(n => n.userId === 'usr-att-200');
-  assert.ok(notif, 'Attendee must receive notification');
-  assert.equal(notif.type, 'event_cancelled');
+  assert.equal(context.DB.notifications.length, 0);
 
   // Modal closed and view refreshed
   assert.equal(getModal(), null);
@@ -507,14 +512,15 @@ test('7. Prohibited States & Permission Failures: Completed, already cancelled, 
   assert.match(modal.html, /Action Blocked/);
   assert.match(modal.html, /completed event.*cannot be deleted or cancelled/i);
   assert.match(modal.html, /audit history, registrations, financial transactions/);
-  assert.ok(modal.buttons.some(b => b.lbl === 'Keep Event'));
+  assert.ok(modal.buttons.some(b => b.lbl === 'Close'));
 
   // B. Already cancelled event blocks duplicate cancellation
   context.handleOrganizerDeleteEvent('ev-already-cancelled');
   modal = getModal();
   assert.equal(modal.title, 'Already Cancelled');
-  assert.match(modal.html, /Duplicate Cancellation Prevented/);
-  assert.ok(modal.buttons.some(b => b.lbl === 'Keep Event'));
+  assert.match(modal.html, /This event is already cancelled/);
+  assert.ok(modal.buttons.some(b => b.lbl === 'Close'));
+  assert.equal(modal.buttons.some(b => ['Cancel Event', 'Edit Event', 'Delete Event'].includes(b.lbl)), false);
 
   // C. Unauthorized organizer blocked
   toasts.length = 0;

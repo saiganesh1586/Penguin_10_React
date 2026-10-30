@@ -13,12 +13,17 @@ const policy = {
   sections: []
 };
 
+function dateInDays(days) {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
 function setupOrganizerHarness(initialRequests = [], initialEvents = [], initialPayments = []) {
   const session = new Map();
   const elements = new Map();
   const toasts = [];
   let modalState = null;
-
   const context = vm.createContext({
     CU: { id: 'usr-org-001', role: 'organizer', name: 'James Wilson' },
     DB: {
@@ -53,9 +58,27 @@ function setupOrganizerHarness(initialRequests = [], initialEvents = [], initial
     goNav: () => {},
     saveDB: () => {},
     today: () => '2026-10-25',
-    apiCancelOrganizerEvent: async () => ({ success: true }),
-    apiRequest: async () => ({ success: true })
+    apiCancelOrganizerEvent: async () => ({ status: 'cancelled' }),
+    apiRequest: async (url, options) => {
+      const requestId = decodeURIComponent(url.split('/')[2]);
+      const request = context.DB.eventRequests.find(item => String(item.id || item.requestId) === requestId);
+      if (!request) throw new Error('Booking record not found');
+      const payload = JSON.parse(options.body);
+      request.status = 'cancelled';
+      request.cancellation = {
+        reason: payload.reason,
+        explanation: payload.explanation,
+        paidAmount: payload.expectedPaidAmount,
+        cancellationFee: 0,
+        refundAmount: payload.expectedPaidAmount,
+        refundStatus: payload.expectedPaidAmount > 0 ? 'pending' : 'not_applicable'
+      };
+      request.auditHistory = [...(request.auditHistory || []), { action: 'Event Booking Cancelled by Organizer' }];
+      return { data: { request: structuredClone(request) } };
+    }
   });
+  context.window = context;
+  context.EventFlowData = { invalidate: () => {}, sync: async () => {} };
 
   // Extract functions from runtime
   const codeToRun = `
@@ -213,22 +236,22 @@ test('3. Cancellation Validation: blocks missing IDs, unauthorized access, and u
   assert.match(unconfirmedModal.html, /withdrawal or rejection workflow/);
 });
 
-test('4. Cancellation Policy Window: permits cancellation before cutoff and blocks after cutoff', () => {
+test('4. Cancellation Policy Window: displays the cutoff and permits organizer-initiated cancellation', () => {
   const requests = [
-    { id: 'req-valid-date', organizer: 'usr-org-001', status: 'confirmed', eventName: 'Future Summit', eventDate: '2026-11-25', budget: 50000 },
-    { id: 'req-past-cutoff', organizer: 'usr-org-001', status: 'confirmed', eventName: 'Imminent Summit', eventDate: '2026-10-30', budget: 50000 }
+    { id: 'req-valid-date', organizer: 'usr-org-001', status: 'confirmed', eventName: 'Future Summit', eventDate: dateInDays(31), budget: 50000 },
+    { id: 'req-past-cutoff', organizer: 'usr-org-001', status: 'confirmed', eventName: 'Imminent Summit', eventDate: dateInDays(5), budget: 50000 }
   ];
 
   const { context, getModal } = setupOrganizerHarness(requests);
 
-  // Cutoff is 14 days. Today is 2026-10-25. Event is 2026-10-30 (only 5 days away).
+  // The client-policy cutoff is shown, but organizer-initiated cancellation is still allowed.
   context.openOrganizerEventCancellationModal('', 'req-past-cutoff');
-  const blockedModal = getModal();
-  assert.equal(blockedModal.title, 'Cancellation Not Permitted');
-  assert.match(blockedModal.html, /Cancellation Window Expired/);
-  assert.match(blockedModal.html, /at least 14 days notice/);
+  const pastCutoffModal = getModal();
+  assert.equal(pastCutoffModal.title, 'Cancel Event');
+  assert.match(pastCutoffModal.html, /\(passed\)/);
+  assert.match(pastCutoffModal.html, /14 days notice/);
 
-  // Event is 2026-11-25 (31 days away -> within window)
+  // Event is 31 days away -> within the cancellation window.
   context.openOrganizerEventCancellationModal('', 'req-valid-date');
   const allowedModal = getModal();
   assert.equal(allowedModal.title, 'Cancel Event');
@@ -236,10 +259,10 @@ test('4. Cancellation Policy Window: permits cancellation before cutoff and bloc
   assert.match(allowedModal.html, /Mandatory Cancellation Reason/);
 });
 
-test('5. Payment and Refund Calculation: zero paid gives ₹0 fee and refund; paid calculates exact 10% fee and net refund', () => {
+test('5. Payment and Refund Calculation: unpaid cancellations owe no refund; organizer cancellations refund paid amounts in full', () => {
   const requests = [
-    { id: 'req-unpaid', organizer: 'usr-org-001', status: 'confirmed', eventName: 'Unpaid Gala', eventDate: '2026-11-30', budget: 100000, paymentStatus: 'unpaid' },
-    { id: 'req-paid', organizer: 'usr-org-001', status: 'confirmed', eventName: 'Paid Gala', eventDate: '2026-11-30', budget: 100000, paymentStatus: 'fully_paid' }
+    { id: 'req-unpaid', organizer: 'usr-org-001', status: 'confirmed', eventName: 'Unpaid Gala', eventDate: dateInDays(31), budget: 100000, paymentStatus: 'unpaid' },
+    { id: 'req-paid', organizer: 'usr-org-001', status: 'confirmed', eventName: 'Paid Gala', eventDate: dateInDays(31), budget: 100000, paymentStatus: 'fully_paid' }
   ];
   const payments = [
     { paymentId: 'p-1', requestId: 'req-paid', amount: 100000, status: 'completed' }
@@ -251,20 +274,20 @@ test('5. Payment and Refund Calculation: zero paid gives ₹0 fee and refund; pa
   context.openOrganizerEventCancellationModal('', 'req-unpaid');
   let modal = getModal();
   assert.match(modal.html, /Amount Actually Paid:<\/span>\s*<strong>₹0<\/strong>/);
-  assert.match(modal.html, /Applicable Cancellation Fee \(10%\):<\/span>\s*<strong>₹0<\/strong>/);
+  assert.match(modal.html, /Applicable Cancellation Fee \(0%\):<\/span>\s*<strong>₹0<\/strong>/);
   assert.match(modal.html, /Estimated Refund:<\/span>\s*<strong>₹0 \(No refund due\)<\/strong>/);
 
-  // Paid ₹100,000: 10% fee = ₹10,000, refund = ₹90,000
+  // Organizer-initiated cancellation has no fee: the full paid amount is refundable.
   context.openOrganizerEventCancellationModal('', 'req-paid');
   modal = getModal();
   assert.match(modal.html, /Amount Actually Paid:<\/span>\s*<strong>(?:₹100,000|₹1,00,000)<\/strong>/);
-  assert.match(modal.html, /Applicable Cancellation Fee \(10%\):<\/span>\s*<strong>₹10,000<\/strong>/);
-  assert.match(modal.html, /Estimated Refund:<\/span>\s*<strong>₹90,000 \(Pending review\)<\/strong>/);
+  assert.match(modal.html, /Applicable Cancellation Fee \(0%\):<\/span>\s*<strong>₹0<\/strong>/);
+  assert.match(modal.html, /Estimated Refund:<\/span>\s*<strong>(?:₹100,000|₹1,00,000) \(Pending review\)<\/strong>/);
 });
 
 test('6. Two-Step Confirmation and Duplicate Prevention: requires mandatory reason, summarizes consequences, and prevents duplicates', async () => {
   const requests = [
-    { id: 'req-booking', organizer: 'usr-org-001', status: 'confirmed', eventName: 'Leadership Retreat', eventDate: '2026-11-30', budget: 40000 }
+    { id: 'req-booking', organizer: 'usr-org-001', status: 'confirmed', eventName: 'Leadership Retreat', eventDate: dateInDays(31), budget: 40000 }
   ];
   const payments = [
     { paymentId: 'p-ret', requestId: 'req-booking', amount: 40000, status: 'completed' }
@@ -295,8 +318,8 @@ test('6. Two-Step Confirmation and Duplicate Prevention: requires mandatory reas
   assert.match(modal.html, /Venue double-booked by property management/);
   assert.match(modal.html, /Attempted reschedule but client declined alternate dates/);
   assert.match(modal.html, /Amount Paid:<\/span> <strong>₹40,000<\/strong>/);
-  assert.match(modal.html, /Cancellation Fee:<\/span> <strong>₹4,000<\/strong>/);
-  assert.match(modal.html, /Estimated Refund:<\/span> <strong>₹36,000<\/strong>/);
+  assert.match(modal.html, /Cancellation Fee:<\/span> <strong>₹0<\/strong>/);
+  assert.match(modal.html, /Estimated Refund:<\/span> <strong>₹40,000<\/strong>/);
   assert.doesNotMatch(modal.html, /staff.*assigned/i);
   assert.match(modal.html, /All attendee registrations and QR tickets will be invalidated/);
 
@@ -308,20 +331,18 @@ test('6. Two-Step Confirmation and Duplicate Prevention: requires mandatory reas
   assert.equal(r.status, 'cancelled');
   assert.equal(r.cancellation.reason, 'Venue double-booked by property management');
   assert.equal(r.cancellation.paidAmount, 40000);
-  assert.equal(r.cancellation.cancellationFee, 4000);
-  assert.equal(r.cancellation.refundAmount, 36000);
+  assert.equal(r.cancellation.cancellationFee, 0);
+  assert.equal(r.cancellation.refundAmount, 40000);
   assert.equal(r.cancellation.refundStatus, 'pending');
   assert.ok(r.auditHistory.some(a => a.action === 'Event Booking Cancelled by Organizer'));
 
-  // Verify refund record created
-  assert.equal(context.DB.refunds.length, 1);
-  assert.equal(context.DB.refunds[0].amount, 36000);
-  assert.equal(context.DB.refunds[0].status, 'pending');
+  // Refund records are backend-owned and are not duplicated by the frontend.
+  assert.equal(context.DB.refunds.length, 0);
 
   // Duplicate cancellation is blocked
   context.openOrganizerEventCancellationModal('', 'req-booking');
   const duplicateModal = getModal();
   assert.equal(duplicateModal.title, 'Already Cancelled');
-  assert.match(duplicateModal.html, /Duplicate Cancellation Prevented/);
+  assert.match(duplicateModal.html, /already cancelled/i);
+  assert.ok(duplicateModal.buttons.some(button => button.lbl === 'Close'));
 });
-

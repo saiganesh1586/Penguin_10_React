@@ -19,7 +19,7 @@ test('Manage Events exposes all required backend-driven views and filter control
 });
 
 test('Manage Events renders the requested status totals from its event records', () => {
-  const start = runtime.indexOf('    function pageWorkflowEvents()');
+  const start = runtime.indexOf('    function isCancelledWorkflowEvent(');
   const end = runtime.indexOf('    function setOrganizerEventFilter', start);
   const source = runtime.slice(start, end);
   const statuses = [
@@ -28,19 +28,28 @@ test('Manage Events renders the requested status totals from its event records',
     ...Array(5).fill('completed'),
     'cancelled',
   ];
+  const indiaToday = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
   const events = statuses.map((status, index) => ({
     id: `event-${index}`,
     title: `Event ${index}`,
     organizer: 'organizer-1',
+    status,
     backendStatus: status,
-    date: status === 'published' ? '2099-11-01' : '2026-10-17',
-    time: '09:00',
+    date: status === 'published' ? '2099-11-01' : status === 'ongoing' ? indiaToday : '2026-10-17',
+    time: '00:00',
     needsAttention: index < 3,
   }));
   const context = vm.createContext({
     _workflowEventTab: 'all',
-    CU: { id: 'organizer-1' },
-    DB: { events },
+    CU: { id: 'organizer-1', role: 'organizer' },
+    DB: {
+      events,
+      eventRequests: events.filter(event => event.status === 'ongoing').map(event => ({
+        eventId: event.id,
+        organizerId: 'organizer-1',
+        status: 'confirmed',
+      })),
+    },
     localDateKey: () => '2026-10-17',
     sessionStorage: { getItem: () => '' },
     escapeHtml: value => String(value ?? ''),

@@ -5,6 +5,8 @@ import * as path from 'path';
 import { DataStore } from '../../common/data-store';
 import { UserRole } from '../../common/constants';
 import { CreateEventPlanDto, UpdateEventPlanApprovalDto } from './dto/event-plan.dto';
+import { assertEventPolicyAccepted, getEventPolicy } from '../../common/event-policy';
+import { acceptedProposalFor } from '../../common/utils/accepted-proposal';
 
 const EVENT_PLAN_UPLOAD_DIR = path.join(process.cwd(), 'uploads', 'event-plans');
 
@@ -334,7 +336,7 @@ export class EventPlansService {
     plan.updatedAt = new Date();
     request.updatedAt = new Date();
     request.auditHistory = request.auditHistory || [];
-    if (dto.approvalStatus === 'revision_requested' || dto.approvalStatus === 'rejected') {
+    if (dto.approvalStatus === 'revision_requested') {
       if (!dto.reason?.trim()) throw new BadRequestException('A reason is required when requesting a new plan');
       plan.approvalStatus = 'revision_requested';
       plan.status = 'revised';
@@ -353,6 +355,34 @@ export class EventPlansService {
       return { success: true, message: 'Plan revision requested', data: plan };
     }
 
+    if (dto.approvalStatus === 'rejected') {
+      if (!dto.reason?.trim()) throw new BadRequestException('A rejection reason is required');
+      plan.approvalStatus = 'rejected';
+      plan.status = 'rejected';
+      request.status = 'rejected';
+      request.rejectionReason = dto.reason.trim();
+      request.rejectionComments = dto.comments?.trim() || undefined;
+      request.auditHistory.push({
+        id: this.db.generateId('aud'),
+        action: `Event Plan Rejected (Revision ${plan.revision || 1})`,
+        performedBy: userId || request.clientId,
+        role,
+        timestamp: new Date(),
+        details: { eventPlanId: plan.eventPlanId, reason: request.rejectionReason, comments: request.rejectionComments },
+      });
+      const organizer = this.db.organizers.find(o => o.organizerId === plan.organizerId);
+      if (organizer) this.notify(organizer.userId, request.eventId, `The client rejected event plan revision ${plan.revision || 1} for "${request.eventName}": ${request.rejectionReason}`, 'plan_rejected');
+      const client = this.db.clients.find(c => c.clientId === plan.clientId);
+      if (client) this.notify(client.userId, request.eventId, `Your rejection of event plan revision ${plan.revision || 1} for "${request.eventName}" was recorded.`, 'plan_rejected');
+      return { success: true, message: 'Event plan rejected and request closed', data: { plan, request } };
+    }
+
+    const acceptedProposal = acceptedProposalFor(request);
+    const agreedPolicy = acceptedProposal?.cancellationPolicy || request.policySnapshot || getEventPolicy();
+    assertEventPolicyAccepted(dto, agreedPolicy);
+    request.policySnapshot = structuredClone(agreedPolicy);
+    request.clientPolicyAcceptedAt = new Date();
+    request.clientPolicyAcceptedBy = userId;
     plan.approvalStatus = 'approved';
     plan.status = 'approved';
     request.status = 'awaiting_client';
@@ -363,7 +393,7 @@ export class EventPlansService {
       performedBy: userId || request.clientId,
       role,
       timestamp: new Date(),
-      details: { eventPlanId: plan.eventPlanId },
+      details: { eventPlanId: plan.eventPlanId, policyVersion: agreedPolicy.version },
     });
 
     const organizer = this.db.organizers.find(o => o.organizerId === plan.organizerId);

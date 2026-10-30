@@ -2515,6 +2515,7 @@ window.EventFlowModules['shared'] = true;
       pg = workflowEventsPage(pg);
       _currentPage = pg;
       const el = g('page-content');
+      if (!el) return;
       const r = CU.role;
 
       if (pg === 'customer-support') {
@@ -4882,7 +4883,8 @@ window.EventFlowModules['shared'] = true;
 
       const myEventsList = (DB && DB.events) || [];
       const myEv = myEventsList.filter(e => String(e.organizer) === String(CU.id));
-      const upcoming = myEv.filter(e => e.status === 'upcoming');
+      const activeEvents = myEv.filter(e => !isCancelledWorkflowEvent(e));
+      const upcoming = activeEvents.filter(e => workflowEventPhase(e) === 'upcoming');
       const allRegs = (DB && DB.registrations) || [];
       const totalAttendees = allRegs.filter(r => myEv.some(e => String(e.id) === String(r.eventId))).length;
       const allReqs = (DB && DB.eventRequests) || [];
@@ -4891,7 +4893,7 @@ window.EventFlowModules['shared'] = true;
       const searchQuery = (sessionStorage.getItem('org_events_search') || '').toLowerCase();
       const statusFilter = sessionStorage.getItem('org_events_status') || '';
       const categoryFilter = sessionStorage.getItem('org_events_category') || '';
-      const filteredEvents = filterOrganizerDashboardEvents(myEv, searchQuery, statusFilter, categoryFilter);
+      const filteredEvents = filterOrganizerDashboardEvents(activeEvents, searchQuery, statusFilter, categoryFilter);
       return `
   <div class="page-hd">
     <div class="page-hd-left"><div class="page-title">Organizer Dashboard</div><div class="page-sub">Hello ${(CU && CU.name) || 'Organizer'}, manage your events.</div></div>
@@ -4903,7 +4905,7 @@ window.EventFlowModules['shared'] = true;
     <div class="stat-card"><div class="stat-icon" style="background:var(--blue-dim);color:var(--blue)">📋</div><div class="stat-value" style="color:var(--blue)">${inReviewCount}</div><div class="stat-label">Plans in Review</div><div class="stat-sub neutral">With clients</div></div>
   </div>
   <div class="mb-16">
-    <div class="mb-12 flex justify-between items-center"><span class="h4">My Events</span></div>
+    <div class="mb-12 flex justify-between items-center"><span class="h4">My Events</span><button class="btn btn-ghost btn-sm" onclick="openOrganizerEvents('cancelled')">Cancelled Events</button></div>
     <div class="search-box input-group" style="margin-bottom:16px"><span class="input-icon">🔍</span><input class="form-control" id="org-events-search" placeholder="Search by event name or city..." value="${searchQuery}" oninput="searchOrganizerEvents(this.value)"></div>
     <div class="filter-row" style="margin-bottom:16px">
       <select class="form-control filter-select" id="org-events-status" onchange="filterOrganizerDashboardEventsFromControls()">
@@ -4918,7 +4920,7 @@ window.EventFlowModules['shared'] = true;
         ${[...new Set(myEv.map(e => e.category).filter(Boolean))].sort().map(category => `<option value="${esc(category)}" ${categoryFilter === category ? 'selected' : ''}>${esc(category)}</option>`).join('')}
       </select>
     </div>
-    <div class="events-grid" id="org-events-grid">${filteredEvents.length > 0 ? filteredEvents.map(e => evCard(e, 'organizer')).join('') : myEv.length > 0 ? `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔍</div><div class="empty-title">No events match</div><p>Try adjusting your filters</p></div>` : `<div class="ev-card" style="display:flex;align-items:center;justify-content:center;min-height:240px;border-style:dashed;cursor:pointer" onclick="openAddEventModal()"><div class="text-center" style="color:var(--text3)"><div style="font-size:32px;margin-bottom:8px">➕</div><div style="font-size:13px">Create Your First Event</div></div></div>`}
+    <div class="events-grid" id="org-events-grid">${filteredEvents.length > 0 ? filteredEvents.map(e => evCard(e, 'organizer')).join('') : activeEvents.length > 0 ? `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔍</div><div class="empty-title">No events match</div><p>Try adjusting your filters</p></div>` : myEv.length > 0 ? `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">📁</div><div class="empty-title">No active events</div><button class="btn btn-ghost mt-16" onclick="openOrganizerEvents('cancelled')">View Cancelled Events</button></div>` : `<div class="ev-card" style="display:flex;align-items:center;justify-content:center;min-height:240px;border-style:dashed;cursor:pointer" onclick="openAddEventModal()"><div class="text-center" style="color:var(--text3)"><div style="font-size:32px;margin-bottom:8px">➕</div><div style="font-size:13px">Create Your First Event</div></div></div>`}
       ${myEv.length > 0 ? `<div class="ev-card" style="display:flex;align-items:center;justify-content:center;min-height:240px;border-style:dashed;cursor:pointer" onclick="openAddEventModal()"><div class="text-center" style="color:var(--text3)"><div style="font-size:32px;margin-bottom:8px">➕</div><div style="font-size:13px">Create New Event</div></div></div>` : ''}
     </div>
   </div>`;
@@ -4973,7 +4975,7 @@ window.EventFlowModules['shared'] = true;
     }
 
     function refreshOrganizerDashboardEvents() {
-      const myEvents = DB.events.filter(event => String(event.organizer) === String(CU.id));
+      const myEvents = DB.events.filter(event => String(event.organizer) === String(CU.id) && !isCancelledWorkflowEvent(event));
       const query = (sessionStorage.getItem('org_events_search') || '').toLowerCase();
       const status = sessionStorage.getItem('org_events_status') || '';
       const category = sessionStorage.getItem('org_events_category') || '';
@@ -5667,7 +5669,7 @@ window.EventFlowModules['shared'] = true;
         return `<div class="empty"><div class="empty-icon">🚫</div><div class="empty-title">Access Denied</div><p class="empty-desc">This page is not available for clients. Please use Find Organizers to request events.</p><button class="btn btn-primary mt-16" onclick="goNav('find-organizers')">Find Organizers</button></div>`;
       }
       const isOrg = CU.role === 'organizer';
-      const list = isOrg ? DB.events.filter(e => e.organizer === CU.id) : DB.events;
+      const list = isOrg ? DB.events.filter(e => e.organizer === CU.id && !isCancelledWorkflowEvent(e)) : DB.events;
       return `
   <div class="page-hd">
     <div class="page-hd-left"><div class="page-title">${isOrg ? 'My Events' : 'All Events'}</div><div class="page-sub">${list.length} event(s)</div></div>
@@ -5689,7 +5691,7 @@ window.EventFlowModules['shared'] = true;
       const st = (g('ev-st') || {}).value || '';
       const cat = (g('ev-cat') || {}).value || '';
       const isOrg = CU.role === 'organizer';
-      const list = (isOrg ? DB.events.filter(e => e.organizer === CU.id) : DB.events).filter(e => {
+      const list = (isOrg ? DB.events.filter(e => e.organizer === CU.id && !isCancelledWorkflowEvent(e)) : DB.events).filter(e => {
         return (!q || e.title.toLowerCase().includes(q)) && (!st || e.status === st) && (!cat || e.category === cat);
       });
       g('ev-grid').innerHTML = list.map(e => evCard(e, CU.role)).join('') || `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔍</div><div class="empty-title">No events found</div></div>`;
@@ -5697,6 +5699,7 @@ window.EventFlowModules['shared'] = true;
     function evCard(e, role, reg = null) {
       const pct = Math.min(100, Math.round((e.registered / e.capacity) * 100));
       const regForThis = reg || DB.registrations.find(r => String(r.attendeeId) === String(CU.id) && String(r.eventId) === String(e.id));
+      const isCancelled = isCancelledWorkflowEvent(e);
       const bannerContent = e.image ? `
         <img src="${e.image}" alt="${e.title || 'Event'}" class="ev-banner-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
         <div class="ev-banner-fallback" style="display:none;align-items:center;justify-content:center;font-size:52px;width:100%;height:100%">${e.emoji || '📅'}</div>
@@ -5721,8 +5724,8 @@ window.EventFlowModules['shared'] = true;
         <div class="prog"><div class="prog-fill" style="width:${pct}%"></div></div>
       </div>
       <div class="ev-footer">
-        ${role === 'attendee' ? `<div class="flex gap-6" style="width:100%;justify-content:space-between"><button class="btn btn-sm ${regForThis ? 'btn-ghost' : 'btn-primary'}" onclick="regForEvent('${e.id}')" ${(e.status === 'full' && !regForThis) || e.status === 'completed' ? 'disabled' : ''} style="${(e.status === 'full' && !regForThis) || e.status === 'completed' ? 'opacity:.5' : ''}">${regForThis ? '✓ Registered' : e.status === 'full' ? 'Event Full' : 'Register'}</button><button class="btn btn-ghost btn-xs" onclick="openViewEventDrawer('${e.id}')" title="View event details">View Details</button></div>` :
-          role === 'organizer' ? `<div class="actions"><button class="btn btn-ghost btn-xs" onclick="openViewEventDrawer('${e.id}')" title="View event details">👁️ View</button><button class="btn btn-ghost btn-xs" onclick="openEditEventModal('${e.id}')">✏️ Edit</button><button class="btn btn-xs btn-danger" onclick="deleteEvent('${e.id}')">🗑️</button></div>` :
+        ${role === 'attendee' ? `<div class="flex gap-6" style="width:100%;justify-content:space-between"><button class="btn btn-sm ${regForThis ? 'btn-ghost' : 'btn-primary'}" onclick="regForEvent('${e.id}')" ${(e.status === 'full' && !regForThis) || e.status === 'completed' || isCancelled ? 'disabled' : ''} style="${(e.status === 'full' && !regForThis) || e.status === 'completed' || isCancelled ? 'opacity:.5' : ''}">${isCancelled ? 'Event Cancelled' : regForThis ? '✓ Registered' : e.status === 'full' ? 'Event Full' : 'Register'}</button><button class="btn btn-ghost btn-xs" onclick="openViewEventDrawer('${e.id}')" title="View event details">View Details</button></div>` :
+          role === 'organizer' ? `<div class="actions"><button class="btn btn-ghost btn-xs" onclick="openViewEventDrawer('${e.id}')" title="View event details">👁️ View</button>${isCancelled ? `<button class="btn btn-ghost btn-xs" onclick="viewWorkflowEventDetails('${e.eventId || e.id}')">View Cancellation History</button>` : `<button class="btn btn-ghost btn-xs" onclick="openEditEventModal('${e.id}')">✏️ Edit</button><button class="btn btn-xs btn-danger" onclick="deleteEvent('${e.id}')">🗑️</button>`}</div>` :
             role === 'superuser' ? `<div class="actions"><button class="btn btn-ghost btn-xs w-full" onclick="openViewEventDrawer('${e.id}')" title="View event details">👁️ View</button></div>` :
               role === 'employee' || role === 'client' ? `<div class="flex gap-6"><button class="btn btn-ghost btn-xs w-full" onclick="openViewEventDrawer('${e.id}')" title="View event details">👁️ View Details</button></div>` :
                 `<button class="btn btn-ghost btn-xs" onclick="openViewEventDrawer('${e.id}')" title="View event details">👁️ Details</button>`}
@@ -5877,13 +5880,13 @@ window.EventFlowModules['shared'] = true;
       if (isAlreadyCancelled) {
         openModal('Already Cancelled', `
           <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);padding:14px;border-radius:8px;font-size:13px;color:var(--red);line-height:1.6">
-            <strong>Duplicate Cancellation Prevented:</strong> The event <strong>${escapeHtml(e.title || e.name || 'Event')}</strong> has already been cancelled.
+          <strong>This event is already cancelled.</strong> <strong>${escapeHtml(e.title || e.name || 'Event')}</strong> cannot be cancelled or refunded again.
             <div style="margin-top:8px;color:var(--text2)">
-              Current status: <strong>Cancelled</strong>. Cancelled events cannot be deleted, and duplicate cancellations or duplicate refund submissions are blocked.
+            Its cancellation and refund history has been preserved.
             </div>
           </div>
         `, [
-          { lbl: 'Keep Event', cls: 'btn-ghost', fn: 'closeModal()' }
+        { lbl: 'Close', cls: 'btn-ghost', fn: 'closeModal()' }
         ]);
         return;
       }
@@ -5899,7 +5902,7 @@ window.EventFlowModules['shared'] = true;
             </div>
           </div>
         `, [
-          { lbl: 'Keep Event', cls: 'btn-ghost', fn: 'closeModal()' }
+          { lbl: 'Close', cls: 'btn-ghost', fn: 'closeModal()' }
         ]);
         return;
       }
@@ -8527,13 +8530,16 @@ window.EventFlowModules['shared'] = true;
               <option value="25% deposit, 50% milestone 14 days before, 25% post-event">25% Deposit, 50% Milestone 14 days before, 25% Post-Event</option>
             </select>
           </div>
-          <div class="form-group mb-12">
-            <label class="form-label">Cancellation Deadline &amp; Policy Terms *</label>
-            <select class="form-control" id="prop-cancellation">
-              <option value="Standard Policy: 14+ days notice (10% fee, 90% refund, 5-7 business days processing)">Standard Policy: 14+ days notice (10% fee, 90% refund, 5-7 business days processing)</option>
-              <option value="Moderate Policy: 7-14 days notice (25% fee, 75% refund, 7-10 business days processing)">Moderate Policy: 7-14 days notice (25% fee, 75% refund, 7-10 business days processing)</option>
-              <option value="Strict Policy: Less than 7 days non-refundable; 14+ days (15% fee, 85% refund)">Strict Policy: Less than 7 days non-refundable; 14+ days (15% fee, 85% refund)</option>
-            </select>
+          <div style="padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--surface2)" class="mb-12">
+            <div style="font-weight:700;margin-bottom:10px">Cancellation Policy</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div class="form-group"><label class="form-label">Notice period (days) *</label><input type="number" class="form-control" id="prop-cancel-days" min="0" max="3650" step="1" value="14"></div>
+              <div class="form-group"><label class="form-label">Fee on amount paid (%) *</label><input type="number" class="form-control" id="prop-cancel-fee" min="0" max="100" step="0.01" value="10"></div>
+              <div class="form-group"><label class="form-label">Refund eligibility *</label><select class="form-control" id="prop-cancel-refund"><option value="true">Eligible within notice window</option><option value="false">Non-refundable</option></select></div>
+              <div class="form-group"><label class="form-label">Processing *</label><select class="form-control" id="prop-cancel-approval"><option value="manual">Organizer approval required</option><option value="automatic">Automatic under policy</option></select></div>
+            </div>
+            <div class="form-group"><label class="form-label">Additional cancellation terms</label><textarea class="form-control" id="prop-cancellation" rows="2">Cancellation requests must be submitted before the stated deadline. Demo refunds are recorded as pending.</textarea></div>
+            <div class="small" style="color:var(--text3)">These terms are versioned with this proposal. Confirmed bookings keep the accepted version.</div>
           </div>
 
           <div style="font-weight:700;font-size:12.5px;color:var(--accent);margin:16px 0 10px;text-transform:uppercase;letter-spacing:0.05em">5. Dates &amp; Validity</div>
@@ -8579,6 +8585,10 @@ window.EventFlowModules['shared'] = true;
       const constraints = [venueConstraints ? 'Venue: ' + venueConstraints : '', resourceConstraints].filter(Boolean).join('; ');
       const paymentSchedule = v('prop-schedule') || '';
       const cancellationTerms = v('prop-cancellation') || '';
+      const cancellationNoticeDays = Number(v('prop-cancel-days'));
+      const cancellationFeePercent = Number(v('prop-cancel-fee'));
+      const cancellationRefundEligible = v('prop-cancel-refund') === 'true';
+      const cancellationApprovalMode = v('prop-cancel-approval');
       const proposedDate = v('prop-date');
       const validUntil = v('prop-expiry');
       const conditions = v('prop-conditions') || '';
@@ -8593,6 +8603,8 @@ window.EventFlowModules['shared'] = true;
       if (isNaN(deposit) || deposit < 0 || deposit > amount || deposit > 10000000) { showError('Deposit must be between 0 and total amount.'); return; }
       if (organizerFee < 0 || organizerFee > 10000000) { showError('Organizer fee cannot exceed ₹1,00,00,000.'); return; }
       if (taxes < 0 || taxes > 10000000) { showError('Taxes cannot exceed ₹1,00,00,000.'); return; }
+      if (!Number.isInteger(cancellationNoticeDays) || cancellationNoticeDays < 0 || cancellationNoticeDays > 3650) { showError('Cancellation notice must be a whole number between 0 and 3650 days.'); return; }
+      if (!Number.isFinite(cancellationFeePercent) || cancellationFeePercent < 0 || cancellationFeePercent > 100) { showError('Cancellation fee must be between 0% and 100%.'); return; }
       if (!attendeeCapacity || !Number.isInteger(attendeeCapacity) || attendeeCapacity < 1 || attendeeCapacity > 50000) { showError(attendeeCapacity > 50000 ? 'Maximum event capacity is 50,000.' : 'Attendee capacity must be between 1 and 50,000.'); return; }
       if (!proposedDate) { showError('Proposed event date is required.'); return; }
       if (!validUntil) { showError('Proposal expiration date is required.'); return; }
@@ -8659,6 +8671,11 @@ window.EventFlowModules['shared'] = true;
           constraints,
           paymentSchedule,
           cancellationTerms,
+          cancellationNoticeDays,
+          cancellationFeePercent,
+          cancellationRefundEligible,
+          cancellationApprovalMode,
+          cancellationAdditionalTerms: cancellationTerms,
           conditions,
         };
 
@@ -8714,6 +8731,10 @@ window.EventFlowModules['shared'] = true;
           constraints,
           paymentSchedule,
           cancellationTerms,
+          cancellationPolicy: {
+            version: `proposal-${r.requestId || r.id}-v${version}`,
+            cancellation: { minimumNoticeDays: cancellationNoticeDays, feePercent: cancellationFeePercent, refundEligible: cancellationRefundEligible, approvalMode: cancellationApprovalMode, additionalTerms: cancellationTerms, isDefault: false }
+          },
           conditions,
           documentName: planFile ? planFile.name : undefined,
           documentFileName: uploadedDocMeta?.fileName || (planFile ? planFile.name : undefined),
@@ -9060,13 +9081,13 @@ window.EventFlowModules['shared'] = true;
       if (isAlreadyCancelled) {
         openModal('Already Cancelled', `
           <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);padding:14px;border-radius:8px;font-size:13px;color:var(--red);line-height:1.6">
-            <strong>Duplicate Cancellation Prevented:</strong> This booking has already been cancelled.
+            <strong>This event is already cancelled.</strong> No additional cancellation or refund will be created.
             <div style="margin-top:8px;color:var(--text2)">
-              Current status: <strong>${escapeHtml(rawStatus.replace(/_/g, ' '))}</strong>. Duplicate cancellations and duplicate refund submissions are blocked.
+              Current status: <strong>${escapeHtml(rawStatus.replace(/_/g, ' '))}</strong>. Its cancellation and refund history has been preserved.
             </div>
           </div>
         `, [
-          { lbl: 'Keep Event', cls: 'btn-ghost', fn: 'closeModal()' }
+          { lbl: 'Close', cls: 'btn-ghost', fn: 'closeModal()' }
         ]);
         return;
       }
@@ -9103,7 +9124,7 @@ window.EventFlowModules['shared'] = true;
         return;
       }
 
-      const actEventId = eventId || r?.eventId || ev?.id || ev?.eventId || '';
+      const actEventId = ev?.eventId || r?.eventId || eventId || ev?.id || '';
       const actReqId = requestId || r?.id || r?.requestId || '';
       const evName = r?.title || r?.eventName || ev?.name || ev?.title || 'Confirmed Event Booking';
       const evDate = r?.date || r?.eventDate || ev?.date;
@@ -9116,7 +9137,8 @@ window.EventFlowModules['shared'] = true;
         // === CLIENT BOOKING CANCELLATION WORKFLOW ===
         const policy = r?.policySnapshot || ev?.policySnapshot || ((typeof window !== 'undefined' && window.workflowEventPolicy) ? window.workflowEventPolicy : (typeof workflowEventPolicy !== 'undefined' ? workflowEventPolicy : { cancellation: { minimumNoticeDays: 14, feePercent: 10 } }));
         const minimumNoticeDays = Number(policy?.cancellation?.minimumNoticeDays ?? 14);
-        const feePercent = Number(policy?.cancellation?.feePercent ?? 10);
+        const clientPolicyFeePercent = Number(policy?.cancellation?.feePercent ?? 10);
+        const feePercent = 0; // Organizer-initiated cancellation refunds payers in full.
 
         let deadlineDate = null;
         let deadlineStr = `${minimumNoticeDays} days prior to event`;
@@ -9135,23 +9157,6 @@ window.EventFlowModules['shared'] = true;
               windowBlockedReason = `The cancellation deadline (${deadlineStr}) has passed. Cancellation policy requires at least ${minimumNoticeDays} days notice prior to the event date (${evDate}).`;
             }
           }
-        }
-
-        if (!isWithinWindow) {
-          openModal('Cancellation Not Permitted', `
-            <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);padding:14px;border-radius:8px;font-size:13px;color:var(--red);line-height:1.6;margin-bottom:12px">
-              <strong>Cancellation Window Expired:</strong> ${escapeHtml(windowBlockedReason)}
-            </div>
-            <div style="background:var(--surface2);border-radius:8px;padding:12px;font-size:12.5px;line-height:1.6">
-              <div><strong>Event:</strong> ${escapeHtml(evName)}</div>
-              <div><strong>Event Date:</strong> ${escapeHtml(evDate || 'TBD')}</div>
-              <div><strong>Cancellation Deadline:</strong> ${escapeHtml(deadlineStr)}</div>
-              <div><strong>Required Notice:</strong> ${minimumNoticeDays} days</div>
-            </div>
-          `, [
-            { lbl: 'Keep Event', cls: 'btn-ghost', fn: 'closeModal()' }
-          ]);
-          return;
         }
 
         const payments = (DB.payments || []).concat(DB.eventWorkflowPayments || []).filter(p =>
@@ -9199,7 +9204,7 @@ window.EventFlowModules['shared'] = true;
           </div>
           <div style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:14px;font-size:12px;line-height:1.5">
             <div style="font-weight:700;color:var(--text);margin-bottom:4px">Cancellation Policy Terms</div>
-            <div style="color:var(--text2)">Cancellation requires at least ${minimumNoticeDays} days notice. Cancellation deadline: <strong>${escapeHtml(deadlineStr)}</strong>. A ${feePercent}% fee applies to paid amounts; the remaining balance is queued for refund review.</div>
+            <div style="color:var(--text2)">Accepted client policy: ${minimumNoticeDays} days notice, ${clientPolicyFeePercent}% client cancellation fee. Deadline: <strong>${escapeHtml(deadlineStr)}</strong>${isWithinWindow ? '' : ' (passed)'}. Because this cancellation is organizer-initiated, successful client payments are eligible for a full refund and the organizer receives no refund.</div>
             <div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
               <span>Amount Actually Paid:</span>
               <strong>₹${paidAmount.toLocaleString()}</strong>
@@ -9587,6 +9592,7 @@ window.EventFlowModules['shared'] = true;
         return;
       }
 
+      let cancellationSaved = false;
       try {
         const r = DB.eventRequests ? DB.eventRequests.find(x =>
           (requestId && (String(x.id) === String(requestId) || String(x.requestId) === String(requestId))) ||
@@ -9610,8 +9616,8 @@ window.EventFlowModules['shared'] = true;
         }
 
         // Validate status
-        const currentStatus = (r?.status || ev?.backendStatus || ev?.status || '').toLowerCase();
-        if (['cancelled', 'withdrawn', 'rejected', 'expired'].includes(currentStatus)) {
+        const currentStatus = String(ev?.backendStatus || ev?.status || r?.status || '').toLowerCase();
+        if (['cancelled', 'withdrawn', 'rejected', 'expired'].includes(currentStatus) || ev?.cancellation || r?.cancellation) {
           toast('This event has already been cancelled.', 'error');
           return;
         }
@@ -9620,232 +9626,78 @@ window.EventFlowModules['shared'] = true;
           return;
         }
 
-        // Backend execution
+        let cancellationResponse;
         if (actEventId) {
-          try {
-            await apiCancelOrganizerEvent(actEventId, reason);
-          } catch (e) {
-            console.warn('apiCancelOrganizerEvent fallback:', e);
-          }
-        }
-        if (r && typeof apiRequest === 'function') {
-          try {
-            await apiRequest(`/event-requests/${encodeURIComponent(r.requestId || r.id)}/cancel`, {
-              method: 'POST',
-              body: JSON.stringify({
-                reason,
-                explanation: explanation || 'Organizer cancellation',
-                expectedPaidAmount: p.paidAmount
-              })
-            });
-          } catch (e) {
-            console.warn('apiCancelEventRequest fallback:', e);
-          }
+          cancellationResponse = await apiCancelOrganizerEvent(actEventId, reason);
+        } else if (r && typeof apiRequest === 'function') {
+          cancellationResponse = await apiRequest(`/event-requests/${encodeURIComponent(r.requestId || r.id)}/cancel`, {
+            method: 'POST',
+            body: JSON.stringify({
+              reason,
+              explanation: explanation || 'Organizer cancellation',
+              expectedPaidAmount: p.paidAmount
+            })
+          });
+        } else {
+          throw new Error('The persisted event record could not be identified.');
         }
 
-        // Update local state ONLY after backend calls
-        if (p.isClientBooking) {
-          const paidAmount = Number(p.paidAmount || 0);
-          const cancellationFee = Number(p.cancellationFee || 0);
-          const refundAmount = Number(p.refundAmount || 0);
+        const responseEvent = cancellationResponse?.data?.event || cancellationResponse?.event || cancellationResponse?.data || cancellationResponse;
+        const responseRequest = cancellationResponse?.data?.request || cancellationResponse?.request;
+        if ((responseEvent?.status || responseRequest?.status) !== 'cancelled') {
+          throw new Error('The backend did not confirm the event cancellation.');
+        }
+        cancellationSaved = true;
+        if (ev && responseEvent?.eventId) Object.assign(ev, responseEvent, {
+          id: responseEvent.eventId || ev.id,
+          title: responseEvent.name || responseEvent.title || ev.title,
+          backendStatus: responseEvent.status,
+        });
 
-          const cancellationRecord = {
-            reason,
-            explanation,
-            cancelledBy: CU?.id || 'organizer',
-            cancelledAt: new Date().toISOString(),
-            isConfirmed: true,
-            cancellationFeePercent: p.feePercent || 10,
-            paidAmount,
-            cancellationFee,
-            refundAmount,
-            refundStatus: refundAmount > 0 ? 'pending' : 'not_applicable'
-          };
+        closeModal();
+        if (window.EventFlowData?.invalidate) window.EventFlowData.invalidate();
+        if (window.EventFlowData?.sync) await window.EventFlowData.sync();
+        else if (typeof syncWorkflowData === 'function') await syncWorkflowData();
+        else {
+          const eventsResponse = await apiGetEvents();
+          const events = Array.isArray(eventsResponse) ? eventsResponse : eventsResponse?.data;
+          if (!Array.isArray(events)) throw new Error('The backend returned an invalid event list.');
+          DB.events = events.map(event => ({
+            ...event,
+            id: event.eventId,
+            title: event.name || event.title,
+            price: event.ticketPrice,
+            venue: event.location || event.venue,
+            backendStatus: event.status,
+          }));
+        }
 
-          if (r) {
-            r.status = 'cancelled';
-            r.cancellation = cancellationRecord;
-            if (!Array.isArray(r.auditHistory)) r.auditHistory = [];
-            r.auditHistory.push({
-              id: 'aud-' + Date.now(),
-              action: 'Event Booking Cancelled by Organizer',
-              performedBy: CU?.name || CU?.id || 'Organizer',
-              role: 'event_organizer',
-              timestamp: typeof today === 'function' ? today() : new Date().toISOString().slice(0, 10),
-              details: { reason, cancellationFee, refundAmount }
-            });
-          }
-
-          if (ev) {
-            ev.status = 'cancelled';
-            ev.backendStatus = 'cancelled';
-            ev.cancellation = cancellationRecord;
-            ev.cancellationReason = reason;
-          }
-
-          // Invalidate tickets and registrations
-          if (Array.isArray(DB.registrations)) {
-            DB.registrations.forEach(reg => {
-              if (String(reg.eventId) === String(actEventId) || (ev && (String(reg.eventId) === String(ev.id) || String(reg.eventId) === String(ev.eventId)))) {
-                reg.status = 'cancelled';
-                reg.backendStatus = 'cancelled';
-                reg.qrCode = undefined;
-                reg.verificationId = undefined;
-                reg.cancelledAt = new Date().toISOString();
-                reg.cancellationReason = reason;
-              }
-            });
-          }
-
-          // Create or update refund records only when applicable (refundAmount > 0)
-          if (refundAmount > 0) {
-            if (!Array.isArray(DB.refunds)) DB.refunds = [];
-            const existingRefund = DB.refunds.find(ref => (r && ref.requestId === r.id) || (actEventId && ref.eventId === actEventId));
-            if (!existingRefund) {
-              DB.refunds.push({
-                refundId: 'ref-' + Date.now(),
-                id: 'ref-' + Date.now(),
-                requestId: r?.id || r?.requestId,
-                eventId: actEventId || r?.eventId,
-                amount: refundAmount,
-                status: 'pending',
-                reason,
-                requestedAt: new Date().toISOString()
-              });
-            }
+        if (actEventId) {
+          const refreshedEvent = (DB.events || []).find(event => String(event.eventId || event.id) === String(actEventId));
+          if (!isCancelledWorkflowEvent(refreshedEvent)) {
+            throw new Error('The event was cancelled, but the refreshed event data does not show the persisted cancellation.');
           }
         } else {
-          // Public Event local state update
-          const cancellationRecord = {
-            reason,
-            explanation,
-            cancelledBy: CU?.id || 'organizer',
-            cancelledAt: new Date().toISOString(),
-            isConfirmed: true,
-            paidAmount: 0, // Organizer NEVER receives refund
-            cancellationFee: 0,
-            refundAmount: 0,
-            refundStatus: 'not_applicable',
-            totalAttendeeRefunds: p.totalEligibleAttendeeRefunds || 0
-          };
-
-          if (ev) {
-            ev.status = 'cancelled';
-            ev.backendStatus = 'cancelled';
-            ev.cancellation = cancellationRecord;
-            ev.cancellationReason = reason;
-          }
-
-          if (r) {
-            r.status = 'cancelled';
-            r.cancellation = cancellationRecord;
-          }
-
-          // Invalidate tickets and QR codes for affected attendees
-          if (Array.isArray(DB.registrations)) {
-            DB.registrations.forEach(reg => {
-              if (String(reg.eventId) === String(actEventId) || (ev && (String(reg.eventId) === String(ev.id) || String(reg.eventId) === String(ev.eventId)))) {
-                reg.status = 'cancelled';
-                reg.backendStatus = 'cancelled';
-                reg.qrCode = undefined;
-                reg.verificationId = undefined;
-                reg.cancelledAt = new Date().toISOString();
-                reg.cancellationReason = reason;
-              }
-            });
-          }
-
-          // Create pending refund records for eligible paid attendees ONLY
-          if (!Array.isArray(DB.refunds)) DB.refunds = [];
-          if (p.paidAttendeeItems && p.paidAttendeeItems.length > 0) {
-            p.paidAttendeeItems.forEach(item => {
-              const existingRefund = DB.refunds.find(ref =>
-                (ref.registrationId && (String(ref.registrationId) === String(item.registration.id) || String(ref.registrationId) === String(item.registration.registrationId))) ||
-                (ref.paymentId && (String(ref.paymentId) === String(item.payment.paymentId) || String(ref.paymentId) === String(item.payment.id)))
-              );
-              if (!existingRefund) {
-                DB.refunds.push({
-                  refundId: 'ref-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
-                  id: 'ref-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
-                  paymentId: item.payment.paymentId || item.payment.id,
-                  registrationId: item.registration.id || item.registration.registrationId,
-                  eventId: actEventId,
-                  attendeeId: item.registration.attendeeId || item.registration.attendee?.id || item.registration.attendee?.userId,
-                  amount: item.refund,
-                  status: 'pending', // Pending confirmation by payment gateway
-                  reason,
-                  requestedAt: new Date().toISOString()
-                });
-              }
-            });
+          const refreshedRequest = (DB.eventRequests || []).find(request =>
+            String(request.id || request.requestId) === String(requestId) ||
+            String(request.requestId || request.id) === String(requestId));
+          if (String(refreshedRequest?.status || '').toLowerCase() !== 'cancelled' && !refreshedRequest?.cancellation) {
+            throw new Error('The request was cancelled, but the refreshed request data does not show the persisted cancellation.');
           }
         }
-
-        // Notify affected attendees through notifications
-        if (Array.isArray(DB.notifications) && Array.isArray(DB.registrations)) {
-          const affectedRegs = DB.registrations.filter(reg =>
-            String(reg.eventId) === String(actEventId) || (ev && (String(reg.eventId) === String(ev.id) || String(reg.eventId) === String(ev.eventId)))
-          );
-          affectedRegs.forEach(reg => {
-            const attendeeUserId = reg.attendee?.userId || reg.attendee?.id || reg.attendeeId;
-            if (attendeeUserId) {
-              // Cancellation notification
-              DB.notifications.push({
-                id: 'notif-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
-                notificationId: 'notif-' + Date.now(),
-                userId: attendeeUserId,
-                eventId: actEventId,
-                registrationId: reg.id || reg.registrationId,
-                message: `${p.evName || ev?.title || 'Event'}: Event cancelled by organizer - ${reason}`,
-                type: 'event_cancelled',
-                read: false,
-                dateTime: new Date().toISOString(),
-                createdAt: new Date().toISOString()
-              });
-
-              // Refund pending notification for paid attendees
-              const paidItem = (p.paidAttendeeItems || []).find(pi =>
-                String(pi.registration.id) === String(reg.id) || String(pi.registration.registrationId) === String(reg.registrationId)
-              );
-              if (paidItem && paidItem.refund > 0) {
-                DB.notifications.push({
-                  id: 'notif-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
-                  notificationId: 'notif-' + Date.now(),
-                  userId: attendeeUserId,
-                  eventId: actEventId,
-                  registrationId: reg.id || reg.registrationId,
-                  paymentId: paidItem.payment.paymentId || paidItem.payment.id,
-                  message: `Event cancelled. Refund of ₹${paidItem.refund.toLocaleString()} is pending review.`,
-                  type: 'refund_pending',
-                  read: false,
-                  dateTime: new Date().toISOString(),
-                  createdAt: new Date().toISOString()
-                });
-              }
-            }
-          });
-        }
-
-        if (typeof saveDB === 'function') saveDB();
-        closeModal();
-
-        // Refresh data from persisted backend
-        if (window.EventFlowData && typeof window.EventFlowData.refresh === 'function') {
-          await window.EventFlowData.refresh().catch(() => {});
-        } else if (typeof syncWorkflowData === 'function') {
-          await syncWorkflowData().catch(() => {});
-        } else if (typeof syncOrganizerEventRequests === 'function') {
-          await syncOrganizerEventRequests().catch(() => {});
-        }
-
-        toast('Event has been cancelled successfully. Attendee tickets invalidated and refunds queued.', 'success');
-        if (typeof renderPage === 'function') {
-          renderPage(_currentPage || (requestId ? 'event-requests' : 'events'));
-        }
-        if (typeof refreshEvents === 'function') {
-          refreshEvents();
-        }
+        if (typeof renderPage === 'function') await renderPage(_currentPage || (requestId ? 'event-requests' : 'events'));
+        toast('Event cancellation was saved and refreshed from the backend.', 'success');
       } catch (err) {
+        if (cancellationSaved && typeof renderPage === 'function') {
+          try {
+            await renderPage(_currentPage || (requestId ? 'event-requests' : 'events'));
+          } catch (renderError) {
+            toast(`Cancellation was saved, but the page could not be refreshed: ${renderError.message || err.message}`, 'error');
+            return;
+          }
+          toast(`Cancellation was saved, but event data could not be refreshed: ${err.message}`, 'error');
+          return;
+        }
         toast(err.message || 'Cancellation failed.', 'error');
       }
     }
@@ -11820,7 +11672,7 @@ window.EventFlowModules['shared'] = true;
       today.setHours(0, 0, 0, 0);
       const upcoming = DB.events.filter(e => {
         const eDate = new Date(e.date);
-        return eDate >= today && e.status === 'upcoming';
+        return eDate >= today && e.status === 'upcoming' && !isCancelledWorkflowEvent(e);
       }).sort((a, b) => new Date(a.date) - new Date(b.date));
 
       return `
@@ -11834,9 +11686,28 @@ window.EventFlowModules['shared'] = true;
     }
 
     function setWorkflowEventTab(tab) {
-      if (!['ongoing', 'completed'].includes(tab)) return;
+      if (!['ongoing', 'completed', 'cancelled'].includes(tab)) return;
       _workflowEventTab = tab;
       goNav('my-events');
+    }
+    function isCancelledWorkflowEvent(event) {
+      return String(event?.backendStatus || '').toLowerCase() === 'cancelled' ||
+        String(event?.status || '').toLowerCase() === 'cancelled' ||
+        Boolean(event?.cancellation);
+    }
+    function workflowEventPhase(event) {
+      const status = String(event?.backendStatus || event?.status || '').toLowerCase();
+      if (String(event?.backendStatus || '').toLowerCase() === 'cancelled' ||
+        String(event?.status || '').toLowerCase() === 'cancelled' || event?.cancellation) return 'cancelled';
+      if (['completed', 'cancelled'].includes(status)) return status;
+      const date = String(event?.date || '');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return status === 'ongoing' ? 'ongoing' : 'upcoming';
+      const now = new Date();
+      const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
+      if (date < today) return 'completed';
+      if (date > today) return 'upcoming';
+      const start = new Date(`${date}T${event.time || '10:00'}+05:30`);
+      return !Number.isNaN(start.getTime()) && start > now ? 'upcoming' : 'ongoing';
     }
     function getOngoingWorkflowItems() {
       if (!CU || !['organizer', 'client'].includes(CU.role)) return [];
@@ -11850,14 +11721,14 @@ window.EventFlowModules['shared'] = true;
         if (profile[profileKey] != null) ownerIds.add(String(profile[profileKey]));
       });
       const requests = (DB.eventRequests || []).filter(request => {
-        if (['rejected', 'withdrawn', 'expired', 'cancelled', 'completed'].includes(request.status) || request.cancellation) return false;
+        if (['rejected', 'withdrawn', 'expired', 'cancelled', 'completed'].includes(String(request.status || '').toLowerCase()) || request.cancellation) return false;
         if (request[userKey] != null) return ownerIds.has(String(request[userKey]));
         return [request[profileKey], request[legacyKey]].some(id => id != null && ownerIds.has(String(id)));
       });
       const requestByEvent = new Map(requests.filter(request => request.eventId != null).map(request => [String(request.eventId), request]));
       const items = [], seenEvents = new Set(), seenRequests = new Set();
       (DB.events || []).forEach(event => {
-        if (event.status !== 'ongoing' || event.cancellation) return;
+        if (event.status !== 'ongoing' || workflowEventPhase(event) === 'completed' || isCancelledWorkflowEvent(event)) return;
         const eventId = event.eventId || event.id;
         if (eventId == null || seenEvents.has(String(eventId))) return;
         const request = requestByEvent.get(String(eventId));
@@ -11874,7 +11745,7 @@ window.EventFlowModules['shared'] = true;
             (request.auditHistory || []).some(entry => entry.action === 'Client Accepted Requested Changes'));
         if (!isPlanning) return;
         if (request.eventId != null && (DB.events || []).some(event => String(event.eventId || event.id) === String(request.eventId) &&
-          (['cancelled', 'completed'].includes(event.status) || event.cancellation))) return;
+          (isCancelledWorkflowEvent(event) || String(event.status || '').toLowerCase() === 'completed'))) return;
         items.push({ request, isPlanning: true });
         seenRequests.add(String(requestId));
       });
@@ -11882,10 +11753,11 @@ window.EventFlowModules['shared'] = true;
     }
     function pageWorkflowEvents() {
       const myEvents = (DB && DB.events) || [];
-      const upcomingCount = myEvents.filter(event => (event.backendStatus || event.status) === 'published' || (event.backendStatus || event.status) === 'upcoming').length;
-      const inProgressCount = myEvents.filter(event => (event.backendStatus || event.status) === 'ongoing' || (event.backendStatus || event.status) === 'in_progress').length;
-      const completedCount = myEvents.filter(event => (event.backendStatus || event.status) === 'completed').length;
-      const cancelledCount = myEvents.filter(event => (event.backendStatus || event.status) === 'cancelled').length;
+      const upcomingCount = myEvents.filter(event => workflowEventPhase(event) === 'upcoming').length;
+      const inProgressCount = myEvents.filter(event => workflowEventPhase(event) === 'ongoing').length;
+      const completedCount = myEvents.filter(event => workflowEventPhase(event) === 'completed').length;
+      const cancelledCount = myEvents.filter(event =>
+        (event.backendStatus || event.status) === 'cancelled' || Boolean(event.cancellation)).length;
       const attentionCount = myEvents.filter(event => event.needsAttention === true).length;
       const allCount = myEvents.length;
 
@@ -11895,6 +11767,7 @@ window.EventFlowModules['shared'] = true;
         <nav aria-label="Event subpages" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">
           <button type="button" class="btn ${_workflowEventTab === 'ongoing' ? 'btn-primary' : 'btn-ghost'}" aria-pressed="${_workflowEventTab === 'ongoing'}" onclick="setWorkflowEventTab('ongoing')">Ongoing Events (${ongoingCount})</button>
           <button type="button" class="btn ${_workflowEventTab === 'completed' ? 'btn-primary' : 'btn-ghost'}" aria-pressed="${_workflowEventTab === 'completed'}" onclick="setWorkflowEventTab('completed')">Completed Events (${completedCount})</button>
+          <button type="button" class="btn ${_workflowEventTab === 'cancelled' ? 'btn-primary' : 'btn-ghost'}" aria-pressed="${_workflowEventTab === 'cancelled'}" onclick="setWorkflowEventTab('cancelled')">Cancelled Events (${cancelledCount})</button>
         </nav>
         <div class="filter-bar" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;font-size:12px;align-items:center">
           <span>All Events (${allCount})</span>
@@ -11906,7 +11779,32 @@ window.EventFlowModules['shared'] = true;
           <span>Soonest first</span>
           <button class="btn btn-ghost btn-xs" onclick="setOrganizerEventFilter('clear')">Clear filters</button>
         </div>
-        <section aria-label="${_workflowEventTab === 'completed' ? 'Completed Events' : 'Ongoing Events'}">${_workflowEventTab === 'completed' ? (typeof pageCompletedEvents === 'function' ? pageCompletedEvents(true) : '') : (typeof pageOngoingEvents === 'function' ? pageOngoingEvents(true) : '')}</section>`;
+        <section aria-label="${_workflowEventTab === 'cancelled' ? 'Cancelled Events' : _workflowEventTab === 'completed' ? 'Completed Events' : 'Ongoing Events'}">${_workflowEventTab === 'cancelled' ? pageCancelledEvents(true) : _workflowEventTab === 'completed' ? (typeof pageCompletedEvents === 'function' ? pageCompletedEvents(true) : '') : (typeof pageOngoingEvents === 'function' ? pageOngoingEvents(true) : '')}</section>`;
+    }
+
+    function pageCancelledEvents(embedded = false) {
+      const cancelled = (DB.events || []).filter(isCancelledWorkflowEvent)
+        .sort((a, b) => new Date(b.cancellation?.cancelledAt || b.updatedAt || 0) - new Date(a.cancellation?.cancelledAt || a.updatedAt || 0));
+      const refundStatus = event => {
+        const refunds = event.registrationSummary?.refunds || {};
+        const statuses = ['pending', 'completed', 'failed']
+          .filter(status => Number(refunds[status]) > 0)
+          .map(status => `${Number(refunds[status])} ${status}`);
+        if (statuses.length) return statuses.join(', ');
+        const cancellationStatus = String(event.cancellation?.refundStatus || '').toLowerCase();
+        return cancellationStatus === 'pending' ? 'Pending'
+          : cancellationStatus === 'not_applicable' ? 'Not applicable'
+          : cancellationStatus || 'Not recorded';
+      };
+      return `${embedded ? '' : '<div class="page-hd"><div class="page-hd-left"><div class="page-title">Cancelled Events</div><div class="page-sub">Preserved cancellation and refund history</div></div></div>'}
+        <div class="events-grid">${cancelled.length ? cancelled.map(event => `<div class="ev-card">
+          <div class="ev-body"><div class="flex justify-between gap-8"><div class="ev-title">${escapeHtml(event.title || event.name || 'Cancelled Event')}</div><span class="badge badge-red">Cancelled</span></div>
+          <div class="ev-meta"><div class="ev-meta-row"><span>📅</span>Event date: ${escapeHtml(event.date || 'Date unavailable')} · ${escapeHtml(event.time || '')}</div><div class="ev-meta-row"><span>📍</span>${escapeHtml(event.venue || event.location || 'Venue unavailable')}</div></div>
+          <div style="font-size:12px;color:var(--text2);margin-top:10px"><strong>Cancellation reason:</strong> ${escapeHtml(event.cancellation?.reason || event.cancellationReason || 'No reason recorded')}</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:6px"><strong>Cancellation date:</strong> ${event.cancellation?.cancelledAt ? escapeHtml(new Date(event.cancellation.cancelledAt).toLocaleString()) : 'Date unavailable'}</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:6px"><strong>Refund status:</strong> ${escapeHtml(refundStatus(event))}</div>
+          <div class="ev-footer"><button class="btn btn-ghost btn-xs" onclick="openViewEventDrawer('${workflowHtml(event.eventId || event.id)}')">View Details</button><button class="btn btn-ghost btn-xs" onclick="viewWorkflowEventDetails('${workflowHtml(event.eventId || event.id)}')">View Cancellation History</button></div></div>
+        </div>`).join('') : '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">📁</div><div class="empty-title">No cancelled events</div></div>'}</div>`;
     }
 
     function setOrganizerEventFilter(filter) {
@@ -11917,7 +11815,7 @@ window.EventFlowModules['shared'] = true;
       if (typeof renderPage === 'function') renderPage(_currentPage);
     }
     function pageCompletedEvents(embedded = false) {
-      const completed = DB.events.filter(e => e.status === 'completed').sort((a, b) => new Date(b.date) - new Date(a.date));
+      const completed = DB.events.filter(e => workflowEventPhase(e) === 'completed').sort((a, b) => new Date(b.date) - new Date(a.date));
 
       return `${embedded ? '' : `
   <div class="page-hd">
@@ -11983,6 +11881,7 @@ window.EventFlowModules['shared'] = true;
         const paymentLabel = paid ? 'Paid' : depositPaid ? 'Deposit Paid' : 'Unpaid';
         const paymentColor = paid ? 'var(--green)' : depositPaid ? 'var(--blue)' : 'var(--yellow)';
 
+        const isUpcoming = !isPlanning && workflowEventPhase(event) === 'upcoming';
         const stage = isPlanning ? ({
           planning: 'Planning',
           plan_submitted: 'Awaiting Client Review',
@@ -11991,8 +11890,8 @@ window.EventFlowModules['shared'] = true;
           awaiting_client: 'Awaiting Payment',
           changes_requested: 'Changes Requested',
           counteroffer_received: 'Counteroffer Received'
-        }[request?.status] || 'Planning') : 'Ongoing';
-        const stageBadgeCls = isPlanning ? 'blue' : 'green';
+        }[request?.status] || 'Planning') : isUpcoming ? 'Upcoming' : 'Ongoing';
+        const stageBadgeCls = isPlanning || isUpcoming ? 'blue' : 'green';
 
         const title = isPlanning ? (request?.eventName || request?.title || 'Event Planning') : (event?.name || event?.title || 'Ongoing Event');
         const date = isPlanning ? (request?.eventDate || request?.date || 'TBD') : (event?.date || 'TBD');
@@ -12109,12 +12008,7 @@ window.EventFlowModules['shared'] = true;
 
     // TOAST
     function toast(msg, type = 'info') {
-      const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
-      const el = document.createElement('div');
-      el.className = `toast ${type}`;
-      el.innerHTML = `<span class="toast-icon">${icons[type]}</span><span class="toast-msg">${msg}</span>`;
-      g('toasts').appendChild(el);
-      setTimeout(() => { el.style.animation = 'toastOut .3s ease forwards'; setTimeout(() => el.remove(), 300); }, 3500);
+      window.dispatchEvent(new CustomEvent('eventflow:toast', { detail: { message: String(msg || ''), type } }));
     }
 
     // ════════════════════════════════════════════════

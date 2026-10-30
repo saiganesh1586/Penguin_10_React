@@ -207,6 +207,35 @@ export class SendProposalDto {
   @IsOptional()
   cancellationTerms?: string;
 
+  @ApiPropertyOptional({ description: 'Required client notice in whole days before the event', minimum: 0, maximum: 3650 })
+  @IsInt()
+  @Min(0)
+  @Max(3650)
+  @IsOptional()
+  cancellationNoticeDays?: number;
+
+  @ApiPropertyOptional({ description: 'Cancellation fee as a percentage of successful payments', minimum: 0, maximum: 100 })
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @Max(100)
+  @IsOptional()
+  cancellationFeePercent?: number;
+
+  @ApiPropertyOptional({ description: 'Whether a refund can be issued when cancellation is within the notice window' })
+  @IsBoolean()
+  @IsOptional()
+  cancellationRefundEligible?: boolean;
+
+  @ApiPropertyOptional({ enum: ['automatic', 'manual'], description: 'Whether eligible demo refunds are created automatically or require organizer review' })
+  @IsEnum(['automatic', 'manual'])
+  @IsOptional()
+  cancellationApprovalMode?: 'automatic' | 'manual';
+
+  @ApiPropertyOptional({ description: 'Additional cancellation conditions shown to and accepted by the client' })
+  @IsString()
+  @IsOptional()
+  cancellationAdditionalTerms?: string;
+
   @ApiPropertyOptional({ description: 'Additional conditions' })
   @IsString()
   @IsOptional()
@@ -279,6 +308,13 @@ export class RejectRequestDto {
 }
 
 export class ClientResponseDto {
+  @IsBoolean()
+  @IsOptional()
+  policyAccepted?: boolean;
+
+  @IsString()
+  @IsOptional()
+  acceptedPolicyVersion?: string;
   @ApiProperty({
     description: 'Client decision on the proposal or request',
     enum: ['accept', 'request_revision', 'reject', 'withdraw', 'accept_changes', 'reject_changes', 'counteroffer'],

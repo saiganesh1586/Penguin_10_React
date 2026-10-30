@@ -344,10 +344,10 @@ async function apiRespondToEventModification(requestId, modId, payload) {
   });
 }
 
-async function apiRespondToEventProposal(requestId, decision, notes = '') {
+async function apiRespondToEventProposal(requestId, decision, notes = '', acknowledgement = {}) {
   return apiRequest(`/event-requests/${requestId}/client-response`, {
     method: 'POST',
-    body: JSON.stringify({ decision, notes }),
+    body: JSON.stringify({ decision, notes, ...acknowledgement }),
   });
 }
 
@@ -375,10 +375,10 @@ async function apiGetWorkflowEvents() {
   return apiRequest('/events');
 }
 
-async function apiApproveEventPlan(planId, approvalStatus, reason) {
+async function apiApproveEventPlan(planId, approvalStatus, reason, comments, acknowledgement = {}) {
   return apiRequest(`/event-plans/${planId}/approval`, {
     method: 'PATCH',
-    body: JSON.stringify({ approvalStatus, reason }),
+    body: JSON.stringify({ approvalStatus, reason, comments, ...acknowledgement }),
   });
 }
 
@@ -6947,17 +6947,31 @@ eventRequests: [
         request.eventId && String(request.eventId) === String(event.eventId || event.id));
     }
 
+    function getClientAcceptedProposal(request) {
+      const accepted = (request.proposals || []).filter(proposal => proposal.status === 'accepted');
+      return accepted.find(proposal => Number(proposal.version) === Number(request.currentProposalVersion))
+        || accepted.sort((left, right) => Number(right.version) - Number(left.version))[0]
+        || null;
+    }
+
     function getClientBookingAmounts(request, plan) {
-      const proposal = request.proposals?.[request.proposals.length - 1];
-      const acceptedProposal = proposal?.status === 'accepted' ? proposal : null;
-      const totalAmount = Number(plan?.budget || acceptedProposal?.amount || request.budget || 0);
+      const acceptedProposal = getClientAcceptedProposal(request);
+      const totalAmount = Number(acceptedProposal?.amount ?? plan?.budget ?? request.budget ?? 0);
       const payments = (DB.eventWorkflowPayments || []).filter(payment => payment.status === 'completed' &&
+        (!payment.clientId || payment.clientId === request.clientId) &&
         (payment.requestId === (request.requestId || request.id) || (request.eventId && payment.eventId === request.eventId)));
       const depositRequired = acceptedProposal?.depositRequired !== undefined ? Number(acceptedProposal.depositRequired) : Math.round(totalAmount * 0.3);
       const paidAmount = request.paymentStatus === 'fully_paid' ? totalAmount : payments.length
         ? payments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0)
         : request.paymentStatus === 'deposit_paid' ? depositRequired : 0;
-      return { totalAmount, paidAmount, remainingAmount: Math.max(0, totalAmount - paidAmount) };
+      return {
+        acceptedProposal,
+        totalAmount,
+        depositRequired,
+        paidAmount: Math.min(totalAmount, paidAmount),
+        amountPayableNow: Math.max(0, depositRequired - paidAmount),
+        remainingAmount: Math.max(0, totalAmount - paidAmount),
+      };
     }
 
     async function openEventPlanPdf(planId, fileName, preview, version) {
@@ -7138,8 +7152,7 @@ eventRequests: [
         || (DB.users || []).find(u => String(u.id || u.userId) === String(r.organizerId || r.organizer))
         || { name: r.organizerName || 'Assigned Organizer' };
 
-      const latestProposal = (r.proposals && r.proposals.length > 0) ? r.proposals[r.proposals.length - 1] : null;
-      const proposal = latestProposal?.status === 'accepted' ? latestProposal : null;
+      const proposal = getClientAcceptedProposal(r);
       const approvedPlan = (DB.eventPlans || []).find(plan => plan.requestId === (r.requestId || r.id) &&
         (!r.activeEventPlanId || plan.eventPlanId === r.activeEventPlanId) && plan.approvalStatus === 'approved');
       if (s === 'awaiting_client' && !proposal && !approvedPlan) {
@@ -7147,14 +7160,15 @@ eventRequests: [
         return;
       }
       const proposalVersion = proposal?.version || approvedPlan?.revision || 1;
-      const totalAmount = Number(approvedPlan?.budget || proposal?.amount || r.budget || 25000);
-      const depositRequired = proposal?.depositRequired !== undefined ? Number(proposal.depositRequired) : Math.round(totalAmount * 0.3);
+      const amounts = getClientBookingAmounts(r, approvedPlan);
+      const totalAmount = amounts.totalAmount;
+      const depositRequired = amounts.depositRequired;
+      const amountPayableNow = amounts.amountPayableNow;
       const isAlreadyPaid = r.paymentStatus === 'fully_paid';
       const isDepositPaid = r.paymentStatus === 'deposit_paid' || isAlreadyPaid;
       const isConfirmed = ['confirmed', 'approved', 'ongoing', 'completed'].includes(r.status);
       const bookingId = r.eventId ? `BKG-${r.eventId.toUpperCase()}` : `BKG-${(r.requestId || r.id).toUpperCase()}`;
-      const amounts = getClientBookingAmounts(r, approvedPlan);
-      const outstandingBalance = isConfirmed || isDepositPaid ? amounts.remainingAmount : Math.max(0, totalAmount - depositRequired);
+      const outstandingBalance = amounts.remainingAmount;
 
       if (isDepositPaid || isConfirmed) {
         openModal(isConfirmed ? 'Booking Payment' : 'Payment & Booking Confirmation', `
@@ -7223,10 +7237,10 @@ eventRequests: [
             </div>
             <div style="display:flex;justify-content:space-between;margin-bottom:8px">
               <span style="color:var(--text3)">AMOUNT PAYABLE NOW</span>
-              <strong style="color:var(--accent);font-size:15px;font-weight:800">₹${depositRequired.toLocaleString()}</strong>
+              <strong style="color:var(--accent);font-size:15px;font-weight:800">₹${amountPayableNow.toLocaleString()}</strong>
             </div>
             <div style="display:flex;justify-content:space-between">
-              <span style="color:var(--text3)">OUTSTANDING BALANCE (REMAINING AFTER DEPOSIT)</span>
+              <span style="color:var(--text3)">OUTSTANDING BALANCE</span>
               <strong style="color:var(--yellow);font-size:14px">₹${outstandingBalance.toLocaleString()}</strong>
             </div>
           </div>
@@ -7234,9 +7248,8 @@ eventRequests: [
           <!-- PAYMENT TERMS & CANCELLATION POLICY -->
           <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:14px;font-size:12.5px;line-height:1.5">
             <div style="font-weight:700;color:var(--text);margin-bottom:4px">Payment Terms &amp; Cancellation Policy</div>
-            <div>• <strong>Advance Deposit:</strong> ₹${depositRequired.toLocaleString()} payable now to secure organizer booking.</div>
-            <div>• <strong>Cancellation Notice:</strong> Minimum 14 days before scheduled event start.</div>
-            <div>• <strong>Refund Policy:</strong> 10% fee applies to amount paid. 90% net refund. No fee if no payment was made.</div>
+            <div>• <strong>Payment Terms:</strong> ${escapeHtml(proposal?.paymentSchedule || proposal?.paymentTerms || 'Advance deposit payable now; remaining balance is due under the accepted agreement.')}</div>
+            <div>• <strong>Cancellation Policy:</strong> ${escapeHtml(proposal?.cancellationTerms || proposal?.cancellationPolicy?.cancellation?.additionalTerms || 'The accepted agreement cancellation policy applies.')}</div>
             <label style="display:flex;align-items:flex-start;gap:8px;margin-top:10px;cursor:pointer;font-weight:600;color:var(--accent)">
               <input type="checkbox" id="client-agree-terms" ${r.agreementStatus === 'agreed' ? 'checked disabled' : 'checked'}>
               <span>I acknowledge and agree to the event plan, pricing, and cancellation terms. *</span>
@@ -7249,7 +7262,7 @@ eventRequests: [
         </div>
       `, [
         { lbl: 'Cancel', cls: 'btn-ghost', fn: 'closeModal()' },
-        { lbl: `Pay Now (₹${depositRequired.toLocaleString()})`, cls: 'btn-success', fn: `submitClientMockPayment('${escapeHtml(r.id)}', '${escapeHtml(r.eventId || '')}')` }
+        { lbl: `Pay Now (₹${amountPayableNow.toLocaleString()})`, cls: 'btn-success', fn: `submitClientMockPayment('${escapeHtml(r.id)}', '${escapeHtml(r.eventId || '')}')` }
       ]);
     }
 
@@ -7267,10 +7280,9 @@ eventRequests: [
       if (!window.EventFlowCheckout) { toast('Payment checkout could not be loaded. Please refresh and try again.', 'error'); return; }
       const plan = (DB.eventPlans || []).find(item => item.requestId === (request.requestId || request.id) && item.approvalStatus === 'approved'
         && (!request.activeEventPlanId || item.eventPlanId === request.activeEventPlanId));
-      const proposal = request.proposals?.[request.proposals.length - 1];
-      const total = getClientBookingAmounts(request, plan).totalAmount;
+      const amounts = getClientBookingAmounts(request, plan);
       const paid = ['deposit_paid', 'fully_paid'].includes(request.paymentStatus);
-      const amount = paid ? 0 : proposal?.status === 'accepted' && proposal.depositRequired !== undefined ? Number(proposal.depositRequired) : Math.round(total * 0.3);
+      const amount = paid ? 0 : amounts.amountPayableNow;
       if (paid) return processClientDepositPayment(requestId, eventId, 'Already paid');
       window.EventFlowCheckout.open({
         event: { title: request.eventName || request.title || 'Event booking', date: request.eventDate || request.date, venue: request.venue },
@@ -7325,14 +7337,19 @@ eventRequests: [
         const res = await apiPayDeposit(effectiveReqId, payPayload);
         const resData = workflowPayload(res);
 
+        if (res?.success === false || resData?.paymentStatus === 'failed') {
+          throw new Error(res?.message || 'Payment verification failed. Please retry.');
+        }
+
         await syncWorkflowData();
         await syncClientEventRequests();
 
         const refreshedRequest = DB.eventRequests.find(item => String(item.requestId || item.id) === String(effectiveReqId));
         const bookingStatus = resData?.bookingStatus || resData?.status || refreshedRequest?.status;
         if (bookingStatus !== 'confirmed') throw new Error('Payment is not confirmed yet. Review the current payment status before retrying.');
-        const proposal = r?.proposals?.[r.proposals.length - 1];
-        const depositPaid = Number(resData?.amountPaid ?? proposal?.depositRequired ?? Math.round(Number(r?.budget || 0) * 0.3));
+        const paymentPlan = r && (DB.eventPlans || []).find(plan => plan.requestId === effectiveReqId && plan.approvalStatus === 'approved');
+        const bookingAmounts = r ? getClientBookingAmounts(r, paymentPlan) : null;
+        const depositPaid = Number(resData?.amountCharged ?? resData?.amountPaid ?? bookingAmounts?.depositRequired ?? 0);
         const balanceRem = Number(resData?.outstandingBalance ?? (refreshedRequest?.paymentStatus === 'fully_paid' ? 0 : Math.max(0, Number(r?.budget || 0) - depositPaid)));
         const txnId = resData?.paymentId || resData?.receipt?.receiptNumber || 'TXN-' + Date.now();
         const bkgId = resData?.bookingId || ('BKG-' + String(effectiveReqId).toUpperCase());
@@ -7556,6 +7573,11 @@ eventRequests: [
       const currentChange = [...(r.negotiations || [])].reverse().find(item => item.action === 'changes_requested');
       const plans = (DB.eventPlans || []).filter(item => item.requestId === r.requestId).sort((a, b) => (b.revision || 0) - (a.revision || 0));
       const latestProposal = (r.proposals && r.proposals.length > 0) ? r.proposals[r.proposals.length - 1] : null;
+      const agreedProposal = getClientAcceptedProposal(r) || latestProposal;
+      const planDeposit = Number(agreedProposal?.depositRequired ?? Math.round(Number(plan?.budget || r.budget || 0) * 0.3));
+      const planBalance = Math.max(0, Number(plan?.budget || agreedProposal?.amount || r.budget || 0) - planDeposit);
+      const organizer = (DB.organizers || []).find(item => String(item.organizerId || item.id) === String(r.organizerId || r.organizer))
+        || (DB.users || []).find(item => String(item.id || item.userId) === String(r.organizerId || r.organizer));
       const organizerActions = ['submitted', 'pending', 'under_review', 'info_requested'].includes(r.status)
         ? `<div style="display:flex;gap:10px;margin-top:16px"><button class="btn btn-success w-full" onclick="acceptWorkflowRequest('${r.id}')">Accept</button><button class="btn btn-danger w-full" onclick="openWorkflowRejectModal('${r.id}')">Reject</button></div>`
         : r.status === 'counteroffer_received'
@@ -7569,7 +7591,7 @@ eventRequests: [
       const clientActions = r.status === 'changes_requested'
         ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px"><button class="btn btn-success" onclick="respondToWorkflowChanges('${r.id}','accept_changes')">Accept Changes</button><button class="btn btn-danger" onclick="respondToWorkflowChanges('${r.id}','reject_changes')">Reject Changes</button><button class="btn btn-primary" onclick="openWorkflowCounterofferModal('${r.id}')">Send Counteroffer</button>${clientCancelBtn}</div>`
         : r.status === 'plan_submitted' && plan?.approvalStatus === 'pending'
-        ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px"><button class="btn btn-success" onclick="reviewWorkflowPlan('${plan.eventPlanId}','approved','${r.id}')">Accept Plan</button><button class="btn btn-primary" onclick="openWorkflowPlanRevisionModal('${plan.eventPlanId}','${r.id}')">Request New Plan</button>${clientCancelBtn}</div>`
+        ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px"><button class="btn btn-success" onclick="openWorkflowPlanAcceptanceModal('${plan.eventPlanId}','${r.id}')">Accept Plan</button><button class="btn btn-primary" onclick="openWorkflowPlanRevisionModal('${plan.eventPlanId}','${r.id}')">Request Changes</button><button class="btn btn-danger" onclick="openWorkflowPlanRejectionModal('${plan.eventPlanId}','${r.id}')">Reject Plan</button></div>`
         : (r.status === 'awaiting_client' || (r.paymentStatus === 'deposit_pending' && (r.proposals || []).some(proposal => proposal.status === 'accepted'))) && (plan?.approvalStatus === 'approved' || (r.proposals || []).some(proposal => proposal.status === 'accepted'))
         ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px"><button class="btn btn-success" onclick="openClientPaymentModal('${workflowHtml(r.id)}')">Proceed to Payment &amp; Confirmation</button>${clientCancelBtn}</div>`
         : clientCancelBtn ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px">${clientCancelBtn}</div>` : '';
@@ -7643,7 +7665,16 @@ eventRequests: [
       const planHtml = plan ? `<div style="margin-top:12px;padding:14px;background:var(--surface2);border-radius:10px">
         <div style="display:flex;justify-content:space-between;gap:8px"><strong>${workflowHtml(plan.title)} · Revision ${plan.revision || 1}</strong><span class="badge badge-${plan.approvalStatus === 'approved' ? 'green' : plan.approvalStatus === 'revision_requested' ? 'yellow' : 'blue'}">${workflowHtml(String(plan.approvalStatus || 'pending').replaceAll('_', ' '))}</span></div>
         <p style="font-size:13px;color:var(--text2);line-height:1.6">${workflowHtml(plan.description)}</p>
-        <div class="info-row"><span class="info-label">Budget</span><span class="info-value">₹${Number(plan.budget || 0).toLocaleString()}</span></div>
+        <div class="info-row"><span class="info-label">Total proposal amount</span><span class="info-value">₹${Number(plan.budget || 0).toLocaleString()}</span></div>
+        <div class="info-row"><span class="info-label">Advance deposit</span><span class="info-value">₹${planDeposit.toLocaleString()}</span></div>
+        <div class="info-row"><span class="info-label">Remaining balance</span><span class="info-value">₹${planBalance.toLocaleString()}</span></div>
+        ${plan.budgetBreakdown ? `<div style="margin-top:10px"><strong>Itemized cost breakdown</strong><p style="white-space:pre-wrap;color:var(--text2)">${workflowHtml(plan.budgetBreakdown)}</p></div>` : ''}
+        ${plan.services ? `<div style="margin-top:10px"><strong>Proposed services & deliverables</strong><p style="white-space:pre-wrap;color:var(--text2)">${workflowHtml(plan.services)}</p></div>` : ''}
+        ${plan.arrangements ? `<div style="margin-top:10px"><strong>Venue & execution arrangements</strong><p style="white-space:pre-wrap;color:var(--text2)">${workflowHtml(plan.arrangements)}</p></div>` : ''}
+        ${plan.schedule ? `<div style="margin-top:10px"><strong>Event schedule & execution timeline</strong><p style="white-space:pre-wrap;color:var(--text2)">${workflowHtml(plan.schedule)}</p></div>` : ''}
+        <div style="margin-top:10px"><strong>Payment terms</strong><p style="color:var(--text2)">${workflowHtml(agreedProposal?.paymentSchedule || agreedProposal?.paymentTerms || 'Advance deposit payable now; remaining balance follows the accepted agreement.')}</p></div>
+        <div style="margin-top:10px"><strong>Cancellation policy</strong><p style="color:var(--text2)">${workflowHtml(agreedProposal?.cancellationTerms || agreedProposal?.cancellationPolicy || 'The event agreement cancellation policy applies.')}</p></div>
+        <div class="small" style="color:var(--text3);margin-top:8px">Submitted ${workflowPolicyDate(plan.createdAt || plan.uploadedAt)} · Revision ${plan.revision || 1}</div>
         ${planDocCard}
         ${plan.revisionReason ? `<div style="font-size:12px;color:var(--yellow);margin-top:8px">Requested revision: ${workflowHtml(plan.revisionReason)}</div>` : ''}
         ${planRevisionHistoryHtml}
@@ -7710,7 +7741,7 @@ eventRequests: [
       </section>` : '';
 
       el.innerHTML = `<div class="page-hd">
-        <div class="page-hd-left"><button class="btn btn-ghost btn-sm" onclick="goNav('${_workflowReturnPage}')">← Back to ${_workflowReturnPage === 'my-events' ? 'Events' : _workflowReturnPage === 'ongoing-events' ? 'Ongoing Events' : _workflowReturnPage === 'completed-events' ? 'Completed Events' : _workflowReturnPage === 'event-requests' ? 'Event Requests' : _workflowReturnPage === 'dashboard' ? 'Dashboard' : 'Request Status'}</button><div class="page-title" style="margin-top:12px">${workflowHtml(r.title)}</div><div class="page-sub">Request details, workflow progress, negotiation, and event plan</div></div>
+        <div class="page-hd-left"><button class="btn btn-ghost btn-sm" onclick="goNav('${_workflowReturnPage}')">← Back to ${_workflowReturnPage === 'my-events' ? 'Events' : _workflowReturnPage === 'ongoing-events' ? 'Ongoing Events' : _workflowReturnPage === 'completed-events' ? 'Completed Events' : _workflowReturnPage === 'event-requests' ? 'Event Requests' : _workflowReturnPage === 'dashboard' ? 'Dashboard' : 'Request Status'}</button><div class="page-title" style="margin-top:12px">${r.status === 'plan_submitted' ? 'Event Plan Review — ' : ''}${workflowHtml(r.title)}</div><div class="page-sub">Original request details, organizer submission, pricing, terms, attachment, and history</div></div>
       </div>
       <div class="card" style="max-width:1000px">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
@@ -7727,6 +7758,7 @@ eventRequests: [
           <div class="info-row"><span class="info-label">Event access</span><span class="info-value">${r.visibility === 'private' ? 'Private — approval before payment' : 'Public — direct registration'}</span></div>
           <div class="info-row"><span class="info-label">Guests</span><span class="info-value">${r.capacity || r.guests}</span></div>
           <div class="info-row"><span class="info-label">Event type</span><span class="info-value">${workflowHtml(r.eventType || r.type)}</span></div>
+          <div class="info-row"><span class="info-label">Organizer</span><span class="info-value">${workflowHtml(organizer?.name || organizer?.businessName || r.organizerName || 'Assigned Organizer')}</span></div>
         </div>
         <div style="margin:12px 0"><strong>Event details</strong><p style="white-space:pre-wrap;color:var(--text2);line-height:1.6">${workflowHtml(r.requirements || r.desc || '—')}</p></div>
         ${r.status === 'rejected' && r.rejectionReason ? `<div style="padding:12px;background:var(--red-dim);margin:12px 0;border-radius:8px"><strong style="color:var(--red)">&#10005; Reason for declining</strong><p style="margin:6px 0 0;white-space:pre-wrap;overflow-wrap:anywhere">${workflowHtml(r.rejectionReason)}</p>${r.rejectionComments ? `<p style="margin:6px 0 0;font-size:12px;color:var(--text2)"><strong>Additional comments:</strong> ${workflowHtml(r.rejectionComments)}</p>` : ''}</div>` : ''}
@@ -7822,7 +7854,9 @@ eventRequests: [
           <div class="info-row"><span class="info-label">Amount paid</span><strong>${workflowMoney(preview.paidAmount)}</strong></div>
           <div class="info-row"><span class="info-label">Cancellation fee (${preview.cancellationFeePercent}%)</span><strong>${workflowMoney(preview.cancellationFee)}</strong></div>
           <div class="info-row"><span class="info-label">Refund due</span><strong>${workflowMoney(preview.refundAmount)}</strong></div>
-          <p class="small">Cancellation deadline: ${workflowHtml(workflowPolicyDate(preview.cancellationDeadline))}. At least ${preview.minimumNoticeDays} days must remain before the event starts.</p>`;
+          <p class="small">Cancellation deadline: ${workflowHtml(workflowPolicyDate(preview.cancellationDeadline))}. At least ${preview.minimumNoticeDays} days must remain before the event starts.</p>
+          <p class="small"><strong>Refund conditions:</strong> ${preview.refundEligible === false ? 'This accepted policy is non-refundable.' : `${preview.approvalMode === 'automatic' ? 'Automatically evaluated under the policy' : 'Manual organizer approval required'}; demo refunds are recorded as Pending.`}</p>
+          ${preview.additionalTerms ? `<p class="small"><strong>Additional terms:</strong> ${workflowHtml(preview.additionalTerms)}</p>` : ''}`;
         if (!preview.canCancel) {
           openModal('Cancellation unavailable', quote + `<p role="alert">${workflowHtml(preview.unavailableReason)}</p>`, [{ lbl: 'Close', cls: 'btn-ghost', fn: 'closeModal()' }], false);
           return;
@@ -7962,9 +7996,9 @@ eventRequests: [
     }
 
     function openWorkflowPlanRevisionModal(planId, requestId) {
-      openModal('Request New Plan', `<div class="form-group"><label class="form-label">Reason for requesting a new plan</label><textarea class="form-control" id="workflow-plan-reason" rows="4" required></textarea></div><div id="workflow-plan-error" style="color:var(--red);font-size:12px"></div>`, [
+      openModal('Request Changes', `<div class="form-group"><label class="form-label">Required changes</label><textarea class="form-control" id="workflow-plan-reason" rows="4" placeholder="Explain exactly what the organizer should revise" required></textarea></div><div id="workflow-plan-error" style="color:var(--red);font-size:12px"></div>`, [
         { lbl: 'Cancel', cls: 'btn-ghost', fn: 'closeModal()' },
-        { lbl: 'Request New Plan', cls: 'btn-primary', fn: `submitWorkflowPlanRevision('${planId}','${requestId}')` },
+        { lbl: 'Submit Change Request', cls: 'btn-primary', fn: `submitWorkflowPlanRevision('${planId}','${requestId}')` },
       ]);
     }
 
@@ -7974,8 +8008,69 @@ eventRequests: [
       runWorkflowAction(() => apiApproveEventPlan(planId, 'revision_requested', reason), 'New plan requested', requestId);
     }
 
-    function reviewWorkflowPlan(planId, approvalStatus, requestId) {
-      runWorkflowAction(() => apiApproveEventPlan(planId, approvalStatus), 'Final event plan approved', requestId);
+    function openWorkflowPlanAcceptanceModal(planId, requestId) {
+      const request = DB.eventRequests.find(item => String(item.id || item.requestId) === String(requestId));
+      const plan = (DB.eventPlans || []).find(item => String(item.eventPlanId) === String(planId));
+      if (!request || !plan || request.activeEventPlanId !== plan.eventPlanId || request.status !== 'plan_submitted') {
+        toast('The active submitted plan could not be loaded.', 'error');
+        return;
+      }
+      const acceptedProposal = getClientAcceptedProposal(request);
+      const deposit = Number(acceptedProposal?.depositRequired ?? Math.round(Number(plan.budget || 0) * 0.3));
+      const policy = acceptedProposal?.cancellationPolicy || request.policySnapshot || (typeof workflowEventPolicy !== 'undefined' ? workflowEventPolicy : null);
+      const cancellation = policy?.cancellation || {};
+      openModal('Accept Event Plan', `
+        <p>Review and explicitly accept the submitted plan before continuing to payment.</p>
+        <div style="padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;font-size:13px;margin-bottom:12px">
+          <div><strong>${workflowHtml(plan.title)}</strong> · Revision ${plan.revision || 1}</div>
+          <div style="margin-top:6px">Total: ${workflowMoney(plan.budget)} · Advance deposit: ${workflowMoney(deposit)}</div>
+          <div style="margin-top:6px"><strong>Payment terms:</strong> ${workflowHtml(acceptedProposal?.paymentSchedule || 'Advance deposit is payable now; the remaining balance follows the accepted agreement.')}</div>
+          <div style="margin-top:6px"><strong>Cancellation terms:</strong> ${workflowHtml(acceptedProposal?.cancellationTerms || 'The event agreement cancellation policy applies.')}</div>
+          <div style="margin-top:6px"><strong>Policy:</strong> ${Number(cancellation.minimumNoticeDays || 0)} days notice; ${Number(cancellation.feePercent || 0)}% of actual payments; ${cancellation.refundEligible === false ? 'non-refundable' : 'net refund eligible'}; ${workflowHtml(cancellation.approvalMode || 'manual')} processing.</div>
+          <div style="margin-top:6px"><strong>Additional terms:</strong> ${workflowHtml(cancellation.additionalTerms || 'No additional terms')}</div>
+        </div>
+        <label style="display:flex;gap:8px;align-items:flex-start"><input id="workflow-plan-accept-ack" type="checkbox"><span>I have reviewed the plan, pricing, event rules, payment terms and cancellation policy, and I agree to proceed.</span></label>
+        <div id="workflow-plan-accept-error" style="color:var(--red);font-size:12px;margin-top:8px"></div>`, [
+        { lbl: 'Back', cls: 'btn-ghost', fn: 'closeModal()' },
+        { lbl: 'Accept & Proceed to Payment', cls: 'btn-success', fn: `acceptWorkflowPlanAndPay('${planId}','${requestId}')` },
+      ]);
+    }
+
+    async function acceptWorkflowPlanAndPay(planId, requestId) {
+      if (!g('workflow-plan-accept-ack')?.checked) {
+        g('workflow-plan-accept-error').textContent = 'You must explicitly agree to the plan and applicable terms.';
+        return;
+      }
+      try {
+        const request = DB.eventRequests.find(item => String(item.id || item.requestId) === String(requestId));
+        const policy = getClientAcceptedProposal(request)?.cancellationPolicy || request?.policySnapshot || (typeof workflowEventPolicy !== 'undefined' ? workflowEventPolicy : null);
+        await apiApproveEventPlan(planId, 'approved', undefined, undefined, { policyAccepted: true, acceptedPolicyVersion: policy?.version });
+        await syncWorkflowData();
+        closeModal();
+        toast('Event plan accepted. Continue with agreement and payment.', 'success');
+        openClientPaymentModal(requestId);
+      } catch (error) {
+        const target = g('workflow-plan-accept-error');
+        if (target) target.textContent = error.message || 'Unable to accept this plan.';
+        else toast(error.message || 'Unable to accept this plan.', 'error');
+      }
+    }
+
+    function openWorkflowPlanRejectionModal(planId, requestId) {
+      openModal('Reject Event Plan', `
+        <div class="form-group"><label class="form-label">Rejection reason *</label><textarea class="form-control" id="workflow-plan-reject-reason" rows="3" required></textarea></div>
+        <div class="form-group"><label class="form-label">Additional explanation (optional)</label><textarea class="form-control" id="workflow-plan-reject-comments" rows="3"></textarea></div>
+        <div id="workflow-plan-reject-error" style="color:var(--red);font-size:12px"></div>`, [
+        { lbl: 'Cancel', cls: 'btn-ghost', fn: 'closeModal()' },
+        { lbl: 'Confirm Rejection', cls: 'btn-danger', fn: `submitWorkflowPlanRejection('${planId}','${requestId}')` },
+      ]);
+    }
+
+    function submitWorkflowPlanRejection(planId, requestId) {
+      const reason = v('workflow-plan-reject-reason').trim();
+      const comments = v('workflow-plan-reject-comments').trim();
+      if (!reason) { g('workflow-plan-reject-error').textContent = 'A rejection reason is required.'; return; }
+      runWorkflowAction(() => apiApproveEventPlan(planId, 'rejected', reason, comments), 'Event plan rejected and request closed', requestId);
     }
 
     function viewRequestDrawer(id) {
@@ -8002,7 +8097,7 @@ eventRequests: [
         return;
       }
 
-      if (r.workflowManaged && typeof viewWorkflowRequestDrawer === 'function') {
+      if ((r.workflowManaged || r.status === 'plan_submitted' || r.activeEventPlanId) && typeof viewWorkflowRequestDrawer === 'function') {
         return viewWorkflowRequestDrawer(r.id);
       }
 
@@ -8370,6 +8465,8 @@ eventRequests: [
             parts.push(`<button class="btn btn-danger btn-sm" onclick="openClientCancelRequestModal('${id}')">Withdraw Request</button>`);
           if (s === 'proposal_sent')
             parts.push(`<button class="btn btn-primary btn-sm" onclick="openClientPlanReview('${id}')">Review Plan</button>`);
+          if (s === 'plan_submitted')
+            parts.push(`<button class="btn btn-primary btn-sm" onclick="viewWorkflowRequestDrawer('${id}')">View Plan</button>`);
           if (s === 'awaiting_client' || (r.paymentStatus === 'deposit_pending' && (r.proposals || []).some(p => p.status === 'accepted')))
             parts.push(`<button class="btn btn-success btn-sm" onclick="openClientPaymentModal('${id}')">Proceed to Payment &amp; Confirmation</button>`);
           if (['changes_requested','counteroffer_received'].includes(s))
@@ -8515,6 +8612,15 @@ eventRequests: [
       const balance = Math.max(0, totalAmount - depositRequired);
       const fee = Number(proposal.organizerFee || Math.round(totalAmount * 0.2));
       const taxes = Number(proposal.taxes || Math.round(totalAmount * 0.18));
+      const proposalPolicy = proposal.cancellationPolicy || request.policySnapshot || {
+        version: '2026-10-17.1',
+        cancellation: { minimumNoticeDays: 14, feePercent: 10, refundEligible: true, approvalMode: 'manual', additionalTerms: 'Default EventFlow cancellation terms apply.', isDefault: true }
+      };
+      const cancellation = proposalPolicy.cancellation || {};
+      const eventDate = proposal.proposedDate || request.eventDate || request.date;
+      const deadlineDate = eventDate ? new Date(`${eventDate}T00:00:00`) : null;
+      if (deadlineDate && !Number.isNaN(deadlineDate.getTime())) deadlineDate.setDate(deadlineDate.getDate() - Number(cancellation.minimumNoticeDays || 0));
+      const estimatedRefund = cancellation.refundEligible === false ? 0 : Math.max(0, depositRequired * (1 - Number(cancellation.feePercent || 0) / 100));
 
       // Proposal state evaluation
       const isExpired = proposal.status === 'expired' || s === 'expired' || (proposal.validUntil && new Date(proposal.validUntil + 'T23:59:59') < new Date() && proposal.status === 'pending_client');
@@ -8593,9 +8699,15 @@ eventRequests: [
           <div style="background:var(--surface2);border-radius:10px;padding:14px;margin-bottom:14px;border:1px solid var(--border);font-size:12.5px">
             <div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Payment Schedule & Cancellation Terms</div>
             <div style="margin-bottom:6px"><strong>Payment Schedule:</strong> ${escapeHtml(proposal.paymentSchedule || proposal.paymentTerms || '30% Advance Deposit on Approval, 70% Final Balance upon Completion')}</div>
-            <div style="margin-bottom:6px"><strong>Cancellation Terms:</strong> ${escapeHtml(proposal.cancellationTerms || proposal.cancellationPolicy || '14+ days notice: 10% fee, 90% net refund. Less than 14 days: Non-refundable.')}</div>
+            <div style="margin-bottom:6px"><strong>Cancellation Terms:</strong> ${escapeHtml(proposal.cancellationTerms || proposal.cancellationPolicy?.cancellation?.additionalTerms || '14+ days notice: 10% fee, 90% net refund. Less than 14 days: Non-refundable.')}</div>
+            <div style="margin-bottom:6px"><strong>Cancellation deadline:</strong> ${deadlineDate && !Number.isNaN(deadlineDate.getTime()) ? escapeHtml(deadlineDate.toLocaleDateString()) : 'Calculated from the confirmed event date'} (${Number(cancellation.minimumNoticeDays || 0)} days' notice)</div>
+            <div style="margin-bottom:6px"><strong>Fee:</strong> ${Number(cancellation.feePercent || 0)}% of successful payments · <strong>Estimated refund if only the deposit has been paid:</strong> ₹${estimatedRefund.toLocaleString()}</div>
+            <div style="margin-bottom:6px"><strong>Refund:</strong> ${cancellation.refundEligible === false ? 'Not eligible under this proposal' : `${cancellation.approvalMode === 'automatic' ? 'Automatically evaluated' : 'Organizer approval required'}; demo refunds remain Pending`}</div>
+            <div style="margin-bottom:6px"><strong>Additional terms:</strong> ${escapeHtml(cancellation.additionalTerms || proposal.cancellationTerms || 'No additional terms')}</div>
+            ${cancellation.isDefault ? '<div class="small" style="color:var(--yellow)">Organizer did not configure a custom policy; documented EventFlow defaults apply.</div>' : ''}
             <div><strong>Proposal Valid Until:</strong> ${escapeHtml(proposal.validUntil || '14 days from issue')}</div>
           </div>
+          ${isActive ? `<label style="display:flex;gap:8px;align-items:flex-start;margin-bottom:14px"><input id="client-proposal-policy-ack" type="checkbox"><span>I explicitly accept cancellation policy version ${escapeHtml(proposalPolicy.version)}, including its deadline, fee, refund eligibility and additional terms.</span></label><div id="client-proposal-policy-error" style="color:var(--red);font-size:12px;margin:-8px 0 12px"></div>` : ''}
 
           <!-- ATTACHED EVENT PLAN DOCUMENT -->
           <div style="background:var(--surface2);border-radius:10px;padding:14px;margin-bottom:14px;border:1px solid var(--border);font-size:13px">
@@ -8690,7 +8802,15 @@ eventRequests: [
 
     async function acceptAndProceedToPayment(id) {
       try {
-        await apiRespondToEventProposal(id, 'accept', 'Accepted proposal and proceeding to payment.');
+        const request = DB.eventRequests.find(item => String(item.id || item.requestId) === String(id));
+        const proposal = request?.proposals?.[request.proposals.length - 1];
+        const policy = proposal?.cancellationPolicy || request?.policySnapshot;
+        if (!g('client-proposal-policy-ack')?.checked) {
+          const error = g('client-proposal-policy-error');
+          if (error) error.textContent = 'Accept the displayed cancellation policy before proceeding.';
+          return;
+        }
+        await apiRespondToEventProposal(id, 'accept', 'Accepted proposal and proceeding to payment.', { policyAccepted: true, acceptedPolicyVersion: policy?.version });
         await syncClientEventRequests();
         closeModal();
         toast('Proposal accepted! Opening payment confirmation...', 'success');
@@ -10924,6 +11044,7 @@ eventRequests: [
       const ongoing = [];
       const completed = [];
       const now = new Date();
+      const todayInIndia = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
 
       unifiedEvents.forEach(item => {
         const orgUser = (DB.users || []).find(u => String(u.id) === String(item.organizerId) || String(u.userId) === String(item.organizerId));
@@ -10938,6 +11059,12 @@ eventRequests: [
 
         // 1. Completed check
         if (item.bookingStatus === 'completed' || item.rawEvent?.status === 'completed' || item.rawRequest?.status === 'completed') {
+          item.tab = 'completed';
+          completed.push(item);
+          return;
+        }
+
+        if (/^\d{4}-\d{2}-\d{2}$/.test(item.date) && item.date < todayInIndia) {
           item.tab = 'completed';
           completed.push(item);
           return;

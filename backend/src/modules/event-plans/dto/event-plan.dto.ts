@@ -1,5 +1,5 @@
 import {
-  IsString, IsNotEmpty, IsOptional, IsNumber, IsPositive, IsEnum, IsInt, Min, Max,
+  IsString, IsNotEmpty, IsOptional, IsNumber, IsPositive, IsEnum, IsInt, Min, Max, IsBoolean,
 } from 'class-validator';
 import { EVENTFLOW_NUMERIC_LIMITS } from '../../../common/validation-rules';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -69,6 +69,15 @@ export class CreateEventPlanDto {
 }
 
 export class UpdateEventPlanApprovalDto {
+  @ApiPropertyOptional({ description: 'Explicit acceptance of the proposal cancellation policy' })
+  @IsBoolean()
+  @IsOptional()
+  policyAccepted?: boolean;
+
+  @ApiPropertyOptional({ description: 'Exact proposal policy version displayed to the client' })
+  @IsString()
+  @IsOptional()
+  acceptedPolicyVersion?: string;
   @ApiProperty({
     description: 'Approval status',
     enum: ['approved', 'rejected', 'revision_requested'],
@@ -82,4 +91,9 @@ export class UpdateEventPlanApprovalDto {
   @IsString()
   @IsOptional()
   reason?: string;
+
+  @ApiPropertyOptional({ description: 'Optional additional explanation when rejecting a plan' })
+  @IsString()
+  @IsOptional()
+  comments?: string;
 }

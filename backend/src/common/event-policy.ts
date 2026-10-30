@@ -4,13 +4,29 @@ import { Equals, IsBoolean, IsNotEmpty, IsString } from 'class-validator';
 
 export interface EventPolicy {
   version: string;
-  cancellation: { minimumNoticeDays: number; feePercent: number };
+  cancellation: {
+    minimumNoticeDays: number;
+    feePercent: number;
+    refundEligible?: boolean;
+    approvalMode?: 'automatic' | 'manual';
+    additionalTerms?: string;
+    processingTimeline?: string;
+    isDefault?: boolean;
+  };
   sections: Array<{ title: string; items: string[] }>;
 }
 
 const EVENT_POLICY: EventPolicy = {
   version: '2026-10-17.1',
-  cancellation: { minimumNoticeDays: 14, feePercent: 10 },
+  cancellation: {
+    minimumNoticeDays: 14,
+    feePercent: 10,
+    refundEligible: true,
+    approvalMode: 'manual',
+    additionalTerms: 'Cancellation must be requested before the stated deadline.',
+    processingTimeline: '5-7 business days',
+    isDefault: true,
+  },
   sections: [
     { title: 'Event rules', items: [
       'Provide accurate event dates, venue, guest capacity, budget, and requirements.',

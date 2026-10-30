@@ -11,6 +11,7 @@ import React from 'react';
 import LegacyRuntime from '../../../app/LegacyRuntime.jsx';
 import { legacyEvent } from '../../../app/legacyEvents.js';
 import source from './runtime.js?raw';
+import ToastHost from '../../../app/ToastHost.jsx';
 import '../styles/organizer.css';
 
 export default function OrganizerWorkspace() {
@@ -88,7 +89,7 @@ export default function OrganizerWorkspace() {
 <div className="drawer-body" id="drawer-body"></div>
 </div>
 
-<div id="toasts"></div>
+<ToastHost />
 
   
   

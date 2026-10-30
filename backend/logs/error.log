@@ -1485,3 +1485,27 @@
   "message": "Counteroffer details are missing",
   "stack": "BadRequestException: Counteroffer details are missing\n    at EventRequestsService.acceptCounteroffer (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\event-requests\\event-requests.service.ts:1132:30)\n    at EventRequestsController.acceptCounteroffer (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\event-requests\\event-requests.controller.ts:142:25)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:38:29\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
 }
+{
+  "timestamp": "2026-10-30T14:13:54.729Z",
+  "method": "PATCH",
+  "url": "/api/workspace/events/evt-1793273536713-zwtujttai",
+  "statusCode": 400,
+  "message": "A cancellation reason of at least 10 characters is required",
+  "stack": "BadRequestException: A cancellation reason of at least 10 characters is required\n    at EventsService.update (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\events\\events.service.ts:340:98)\n    at WorkspaceService.updateEvent (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\analytics\\workspace.service.ts:159:24)\n    at WorkspaceController.updateEvent (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\analytics\\workspace.controller.ts:36:27)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:38:29\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+}
+{
+  "timestamp": "2026-10-30T14:28:17.557Z",
+  "method": "POST",
+  "url": "/api/event-requests/req-1793366423804-cstwat1gr/cancel",
+  "statusCode": 409,
+  "message": "A cancellation has already been recorded for this request.",
+  "stack": "ConflictException: A cancellation has already been recorded for this request.\n    at EventRequestsService.cancelRequest (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\event-requests\\event-requests.service.ts:2004:13)\n    at EventRequestsController.cancelRequest (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\event-requests\\event-requests.controller.ts:329:25)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:38:29\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+}
+{
+  "timestamp": "2026-10-30T14:28:55.152Z",
+  "method": "POST",
+  "url": "/api/event-requests/req-1793012232630-bbh47i20c/cancel",
+  "statusCode": 409,
+  "message": "A cancellation has already been recorded for this request.",
+  "stack": "ConflictException: A cancellation has already been recorded for this request.\n    at EventRequestsService.cancelRequest (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\event-requests\\event-requests.service.ts:2004:13)\n    at EventRequestsController.cancelRequest (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\event-requests\\event-requests.controller.ts:329:25)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:38:29\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+}

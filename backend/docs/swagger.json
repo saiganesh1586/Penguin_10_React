@@ -6325,6 +6325,38 @@
           "counterofferRequirements": {
             "type": "string",
             "description": "Counteroffer event requirements"
+          },
+          "counterofferDeposit": {
+            "type": "number",
+            "description": "Counteroffer advance deposit required"
+          },
+          "counterofferServices": {
+            "type": "string",
+            "description": "Counteroffer services"
+          },
+          "counterofferDeliverables": {
+            "type": "string",
+            "description": "Counteroffer deliverables"
+          },
+          "counterofferEventPlan": {
+            "type": "string",
+            "description": "Counteroffer event plan"
+          },
+          "counterofferTimeline": {
+            "type": "string",
+            "description": "Counteroffer timeline"
+          },
+          "counterofferPaymentTerms": {
+            "type": "string",
+            "description": "Counteroffer payment terms"
+          },
+          "counterofferCancellationTerms": {
+            "type": "string",
+            "description": "Counteroffer cancellation terms"
+          },
+          "counterofferValidUntil": {
+            "type": "string",
+            "description": "Counteroffer valid until date"
           }
         },
         "required": [

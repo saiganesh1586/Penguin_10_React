@@ -5,6 +5,7 @@ const path = require('node:path');
 const { JSDOM, VirtualConsole } = require('jsdom');
 const read = file => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
 const client = read('src/apps/client/app/runtime.js');
+const organizer = read('src/apps/organizer/app/runtime.js');
 function section(source, from, to) {
   const start = source.indexOf(from), end = source.indexOf(to, start);
   assert.ok(start >= 0 && end > start, from);
@@ -63,9 +64,20 @@ test('card checkout validates details and requires the correct OTP before submit
   assert.match(w.g('pco-result-title').textContent, /Payment Successful/);
 });
 
+test('card verification initializes without crypto.randomUUID and exposes preparation, event, amount and cancel controls', async t => {
+  const { w, open, card } = fixture(t);
+  Object.defineProperty(w.crypto, 'randomUUID', { configurable: true, value: undefined });
+  open(); card();
+  const transition = w.pcoSubmitPayment();
+  assert.match(w.g('pco-proc-title').textContent, /Preparing card verification/);
+  await transition;
+  assert.match(w.g('pco-otp-summary').textContent, /Conference.*₹18,000/);
+  assert.ok([...w.document.querySelectorAll('#pco-step-otp button')].some(button => /Cancel Checkout/.test(button.textContent)));
+});
+
 test('expired OTPs, closed checkouts and replaced checkouts cannot submit a payment', async t => {
   const { w, calls, open, card } = fixture(t);
-  open(); card(); w.pcoSubmitPayment();
+  open(); card(); await w.pcoSubmitPayment();
   const now = w.Date.now;
   w.Date.now = () => now() + 6 * 60 * 1000;
   w.g('pco-otp').value = w.g('pco-demo-otp').textContent;
@@ -91,6 +103,11 @@ test('UPI displays a scannable demo QR, submits only after confirmation, and sup
   assert.ok(w.g('pco-upi-qr').querySelector('svg path'));
   assert.equal(w.g('pco-panel-upi').style.display, '');
   assert.equal(calls.length, 0);
+  w.g('pco-upi').value = 'invalid-upi';
+  await w.pcoSubmitPayment();
+  assert.equal(calls.length, 0);
+  assert.ok(w.g('pco-upi-err').classList.contains('visible'));
+  w.g('pco-upi').value = 'demo.user@upi';
   await Promise.all([w.pcoSubmitPayment(), w.pcoSubmitPayment()]);
   assert.equal(calls.length, 1);
   assert.match(w.g('pco-result-sub').textContent, /Provider unavailable/);
@@ -118,7 +135,7 @@ test('client deposits and remaining balances open checkout and call their APIs o
     Object.assign(request, { status: 'confirmed', paymentStatus: 'deposit_paid', eventId: 'evt-1' });
     return { data: { bookingStatus: 'confirmed', amountPaid: 18000, outstandingBalance: 42000, paymentId: 'pay-deposit' } };
   };
-  w.eval(section(client, 'function getClientBookingAmounts(', 'async function openEventPlanPdf('));
+  w.eval(section(client, 'function getClientAcceptedProposal(', 'async function openEventPlanPdf('));
   w.eval(section(client, 'function isClientOwner(', 'function viewClientPaidBooking('));
   w.eval(section(client, 'function payWorkflowEvent(', 'function submitClientOrganizerReview('));
   w.openClientPaymentModal('req-1');
@@ -129,7 +146,7 @@ test('client deposits and remaining balances open checkout and call their APIs o
   await w.submitClientMockPayment('req-1');
   assert.equal(Number(w.g('pco-wrap').dataset.pcoPrice), 18000);
   assert.deepEqual(apiCalls, []);
-  card(); w.pcoSubmitPayment();
+  card(); await w.pcoSubmitPayment();
   assert.deepEqual(apiCalls, []);
   w.g('pco-otp').value = w.g('pco-demo-otp').textContent;
   await w.pcoVerifyOtp();
@@ -148,6 +165,148 @@ test('client deposits and remaining balances open checkout and call their APIs o
   assert.equal(request.paymentStatus, 'fully_paid');
 });
 
+test('plan-submitted View Details opens the persisted plan review and decisions target the selected request and plan', async t => {
+  const { w } = fixture(t), calls = [];
+  const first = { id: 'req-plan-1', requestId: 'req-plan-1', status: 'plan_submitted', activeEventPlanId: 'plan-1', clientId: 'client-1', proposals: [], policySnapshot: { version: 'policy-plan-1', cancellation: { minimumNoticeDays: 21, feePercent: 5, refundEligible: true, approvalMode: 'manual' } } };
+  const second = { id: 'req-plan-2', requestId: 'req-plan-2', status: 'plan_submitted', activeEventPlanId: 'plan-2', clientId: 'client-1', proposals: [] };
+  w.DB = { eventRequests: [first, second], eventPlans: [
+    { eventPlanId: 'plan-1', requestId: first.requestId, title: 'Conference plan', revision: 2, budget: 72000, approvalStatus: 'pending' },
+    { eventPlanId: 'plan-2', requestId: second.requestId, title: 'Gala plan', revision: 1, budget: 36000, approvalStatus: 'pending' },
+  ] };
+  w.CU = { id: 'client-1', role: 'client' };
+  w._currentPage = 'request-status';
+  w.goNav = page => calls.push(['nav', page]);
+  w.toast = () => {};
+  w.escapeHtml = w.workflowHtml = String;
+  w.workflowMoney = value => `₹${value}`;
+  w.syncWorkflowData = async () => {};
+  w.openClientPaymentModal = id => calls.push(['payment', id]);
+  w.apiApproveEventPlan = async (...args) => calls.push(['decision', ...args]);
+  w.runWorkflowAction = async action => action();
+  w.eval(section(client, 'function getClientAcceptedProposal(', 'async function openEventPlanPdf('));
+  w.eval(section(client, 'function viewWorkflowRequestDrawer(', 'function viewWorkflowEventDetails('));
+  w.eval(section(client, 'function openWorkflowPlanRevisionModal(', 'function viewRequestDrawer('));
+  w.eval(section(client, 'function viewRequestDrawer(', 'async function openClientCancelRequestModal('));
+
+  w.viewRequestDrawer(first.requestId);
+  assert.deepEqual(calls[0], ['nav', 'request-details']);
+
+  w.openWorkflowPlanAcceptanceModal('plan-1', first.requestId);
+  await w.acceptWorkflowPlanAndPay('plan-1', first.requestId);
+  assert.match(w.g('workflow-plan-accept-error').textContent, /explicitly agree/);
+  assert.equal(calls.filter(call => call[0] === 'decision').length, 0);
+  w.g('workflow-plan-accept-ack').checked = true;
+  await w.acceptWorkflowPlanAndPay('plan-1', first.requestId);
+  const approval = calls.find(call => call[0] === 'decision');
+  assert.deepEqual(approval.slice(0, 3), ['decision', 'plan-1', 'approved']);
+  assert.equal(approval[5].policyAccepted, true);
+  assert.equal(approval[5].acceptedPolicyVersion, 'policy-plan-1');
+  assert.deepEqual(calls.find(call => call[0] === 'payment'), ['payment', first.requestId]);
+
+  w.openWorkflowPlanRejectionModal('plan-2', second.requestId);
+  w.g('workflow-plan-reject-reason').value = 'The delivery schedule cannot meet our deadline.';
+  w.g('workflow-plan-reject-comments').value = 'Please close this request.';
+  w.submitWorkflowPlanRejection('plan-2', second.requestId);
+  await new Promise(resolve => setImmediate(resolve));
+  assert.ok(calls.some(call => call[0] === 'decision' && call[1] === 'plan-2' && call[2] === 'rejected'
+    && call[3] === 'The delivery schedule cannot meet our deadline.' && call[4] === 'Please close this request.'));
+});
+
+test('confirmed bookings are partitioned by actual event date for client and organizer lifecycle views', t => {
+  const { w } = fixture(t);
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  w.CU = { id: 'user-client', role: 'client' };
+  w.DB = {
+    clients: [{ userId: 'user-client', clientId: 'client-1' }], users: [], organizers: [],
+    eventRequests: [
+      { requestId: 'req-future', eventId: 'evt-future', clientId: 'client-1', status: 'confirmed' },
+      { requestId: 'req-today', eventId: 'evt-today', clientId: 'client-1', status: 'confirmed' },
+      { requestId: 'req-past', eventId: 'evt-past', clientId: 'client-1', status: 'confirmed' },
+    ],
+    events: [
+      { eventId: 'evt-future', clientId: 'client-1', name: 'Future Event', date: '2099-12-01', time: '10:00', status: 'ongoing' },
+      { eventId: 'evt-today', clientId: 'client-1', name: 'Today Event', date: today, time: '00:00', status: 'ongoing' },
+      { eventId: 'evt-past', clientId: 'client-1', name: 'Past Event', date: '2000-01-01', time: '10:00', status: 'ongoing' },
+    ],
+  };
+  w.eval(section(client, 'function getClientWorkflowEvents(', 'function setWorkflowEventTab('));
+  const lifecycle = w.getClientWorkflowEvents();
+  assert.deepEqual(Array.from(lifecycle.upcoming, item => item.title), ['Future Event']);
+  assert.deepEqual(Array.from(lifecycle.ongoing, item => item.title), ['Today Event']);
+  assert.deepEqual(Array.from(lifecycle.completed, item => item.title), ['Past Event']);
+
+  w.eval(section(organizer, 'function workflowEventPhase(', 'function getOngoingWorkflowItems('));
+  assert.equal(w.workflowEventPhase(w.DB.events[0]), 'upcoming');
+  assert.equal(w.workflowEventPhase(w.DB.events[1]), 'ongoing');
+  assert.equal(w.workflowEventPhase(w.DB.events[2]), 'completed');
+});
+
+test('organizer notifications do not require a legacy toast DOM node', t => {
+  const { w } = fixture(t);
+  let detail;
+  w.addEventListener('eventflow:toast', event => { detail = event.detail; });
+  w.eval(section(organizer, '    function toast(', '    function g(id)'));
+  w.g('modal-overlay').remove();
+  w.toast('Cancellation saved', 'success');
+  assert.equal(detail.message, 'Cancellation saved');
+  assert.equal(detail.type, 'success');
+});
+
+test('organizer cancellation performs one backend mutation then synchronizes and renders cancelled history', async t => {
+  const { w } = fixture(t), calls = [];
+  w.CU = { id: 'organizer-user', userId: 'organizer-user', organizerId: 'org-1', role: 'organizer', name: 'Organizer' };
+  const event = { id: 'evt-1', eventId: 'evt-1', organizerId: 'org-1', organizerUserId: 'organizer-user', title: 'Cancelled Gala', name: 'Cancelled Gala', status: 'ongoing', backendStatus: 'ongoing', date: '2099-10-10', time: '10:00' };
+  const request = { id: 'req-1', requestId: 'req-1', eventId: 'evt-1', organizerId: 'org-1', organizerUserId: 'organizer-user', status: 'confirmed' };
+  w.DB = { events: [event], eventRequests: [request], registrations: [], refunds: [], notifications: [], payments: [], eventWorkflowPayments: [] };
+  w.pending = { isClientBooking: true, eventId: 'evt-1', requestId: 'req-1', reason: 'Venue became unavailable unexpectedly.', explanation: '', paidAmount: 0, cancellationFee: 0, refundAmount: 0, feePercent: 0, evName: event.title };
+  w._currentPage = 'my-events';
+  w.apiCancelOrganizerEvent = async (id, reason) => {
+    calls.push(['cancel', id, reason]);
+    return {
+      eventId: id,
+      status: 'cancelled',
+      cancellation: { reason, cancelledAt: '2026-10-30T12:00:00.000Z', refundStatus: 'not_applicable' }
+    };
+  };
+  w.EventFlowData = {
+    invalidate: () => calls.push(['invalidate']),
+    sync: async () => {
+      calls.push(['sync']);
+      request.status = 'cancelled';
+      request.cancellation = { reason: w.pending.reason, refundStatus: 'not_applicable' };
+    }
+  };
+  w.saveDB = () => {};
+  w.closeModal = () => calls.push(['close']);
+  w.renderPage = async page => calls.push(['render', page]);
+  w.toast = (message, type) => calls.push(['toast', type, message]);
+  w.eval('let _pendingOrganizerCancel = window.pending;' + section(organizer, '    async function submitOrganizerEventCancellation(', '    function openRejectModal('));
+  await w.submitOrganizerEventCancellation('evt-1', 'req-1');
+  assert.equal(calls.filter(call => call[0] === 'cancel').length, 1);
+  assert.deepEqual(calls.filter(call => ['invalidate', 'sync', 'render'].includes(call[0])).map(call => call[0]), ['invalidate', 'sync', 'render']);
+  assert.equal(event.status, 'cancelled');
+  assert.equal(request.status, 'cancelled');
+  assert.equal(calls.at(-1)[0], 'toast');
+
+  w.goNav = () => {};
+  w.escapeHtml = String;
+  w.workflowHtml = String;
+  w.eval(section(organizer, '    function isCancelledWorkflowEvent(', '    function setOrganizerEventFilter('));
+  w._workflowEventTab = 'cancelled';
+  const html = w.pageWorkflowEvents();
+  assert.match(html, /Cancelled Events \(1\)/);
+  assert.match(html, /Cancelled Gala/);
+  assert.match(html, /Cancellation reason:<\/strong> Venue became unavailable unexpectedly\./);
+  assert.match(html, /Cancellation date:<\/strong>/);
+  assert.match(html, /Refund status:<\/strong> Not applicable/);
+  assert.match(html, /Upcoming Events \(0\)|Upcoming \(0\)/);
+  assert.match(html, /Ongoing Events \(0\)/);
+  assert.match(html, /View Details/);
+  assert.match(html, /View Cancellation History/);
+  assert.doesNotMatch(html, /Cancel Event|Edit Event|Delete Event/);
+  assert.equal(w.getOngoingWorkflowItems().length, 0);
+});
+
 test('attendee ticket payments use card OTP and UPI while free registrations still skip payment', async t => {
   const { w, card } = fixture(t);
   const paid = { id: 'evt-paid', eventId: 'evt-paid', title: 'Paid conference', date: '2099-12-10', price: 250, status: 'published', capacity: 100, registered: 0 };
@@ -163,7 +322,7 @@ test('attendee ticket payments use card OTP and UPI while free registrations sti
   w.regForEvent('evt-paid');
   w.g('pco-terms-check').checked = true;
   await w.pcoProceedFromReview('evt-paid');
-  card(); w.pcoSubmitPayment();
+  card(); await w.pcoSubmitPayment();
   assert.deepEqual(calls, []);
   w.g('pco-otp').value = w.g('pco-demo-otp').textContent;
   await w.pcoVerifyOtp();
@@ -224,7 +383,7 @@ test('private requests do not open checkout or collect payment until approval', 
   w.completeDemoPayment('reg-private'); assert.equal(w.g('pco-wrap'), null);
   Object.assign(w.attendeeRegistrationCatalog[0], { status: 'pending_payment', reviewStatus: 'approved' });
   w.completeDemoPayment('reg-private'); assert.ok(w.g('pco-wrap'));
-  card(); w.pcoSubmitPayment(); assert.deepEqual(calls, ['request']);
+  card(); await w.pcoSubmitPayment(); assert.deepEqual(calls, ['request']);
   w.g('pco-otp').value = w.g('pco-demo-otp').textContent; await w.pcoVerifyOtp();
   assert.deepEqual(calls, ['request', 'pay']);
   assert.equal(w.DB.registrations[0].status, 'confirmed');

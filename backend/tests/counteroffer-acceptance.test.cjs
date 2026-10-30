@@ -169,11 +169,12 @@ test('Organizer counteroffer review and acceptance workflow with edge cases', as
       paymentMethod: 'card',
     }, 201);
     assert.equal(depositRes.data.paymentStatus, 'deposit_paid');
-    assert.equal(depositRes.data.bookingStatus, 'planning');
+    assert.equal(depositRes.data.bookingStatus, 'confirmed');
 
     const updatedAfterPayment = await call(client, 'GET', `/event-requests/${created.requestId}`);
     assert.equal(updatedAfterPayment.paymentStatus, 'deposit_paid');
-    assert.equal(updatedAfterPayment.status, 'planning');
+    assert.equal(updatedAfterPayment.status, 'confirmed');
+    assert.ok(updatedAfterPayment.eventId);
   });
 
   await t.test('Expired counteroffer rejection', async () => {

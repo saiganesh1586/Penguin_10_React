@@ -109,7 +109,7 @@ export class EventsController {
 
   @Post(':id/cancel')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Client cancels their ongoing event at least 14 days before its start, with a 10% fee on the amount paid' })
+  @ApiOperation({ summary: 'Client cancels an event under its accepted, versioned cancellation policy' })
   cancelClientEvent(@Param('id') id: string, @Body() dto: CancelClientEventDto, @UserRoleDecorator() role: UserRole, @UserId() userId: string) {
     return this.eventsService.cancelClientEvent(id, dto, role, userId);
   }

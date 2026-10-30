@@ -11,6 +11,18 @@
   const pcoEsc  = (v) => String(v ?? '').replace(/[&<>"']/g, c =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
+  function pcoRandomDigits(length) {
+    const values = new Uint32Array(length);
+    if (globalThis.crypto?.getRandomValues) globalThis.crypto.getRandomValues(values);
+    else for (let index = 0; index < length; index++) values[index] = Math.floor(Math.random() * 0xFFFFFFFF);
+    return Array.from(values, value => String(value % 10)).join('');
+  }
+
+  function pcoReference() {
+    if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+    return `demo-${Date.now().toString(36)}-${pcoRandomDigits(12)}`;
+  }
+
   /* Luhn algorithm */
   function luhn(num) {
     const d = num.replace(/\D/g, '');
@@ -164,6 +176,7 @@
     <span class="pco-err" id="pco-otp-err" role="alert"></span>
     <button class="pco-pay-btn" id="pco-verify-btn" type="button" onclick="pcoVerifyOtp()">Verify OTP &amp; Pay ${priceStr}</button>
     <button class="pco-btn-ghost" type="button" onclick="pcoResendOtp()">Resend OTP</button>
+    <button class="pco-btn-ghost" type="button" onclick="closeModal()">Cancel Checkout</button>
   </div>
 
   <!-- Processing -->
@@ -201,7 +214,7 @@
     const wrap = pcoById('pco-wrap');
     if (wrap) wrap.dataset.pcoMethod = tab;
     const pay = pcoById('pco-pay-btn');
-    if (pay) pay.textContent = isCard ? 'Continue to card verification' : 'Confirm Demo UPI Payment';
+    if (pay) pay.textContent = isCard ? 'Continue to card verification' : 'Verify & Pay with Demo UPI';
     if (!isCard) renderUpiQr();
   };
 
@@ -303,9 +316,7 @@
   }
 
   function issueCardOtp(session) {
-    const random = new Uint32Array(1);
-    crypto.getRandomValues(random);
-    session.otp = String(random[0] % 1000000).padStart(6, '0');
+    session.otp = pcoRandomDigits(6);
     session.otpExpiresAt = Date.now() + 5 * 60 * 1000;
     pcoById('pco-demo-otp').textContent = session.otp;
     pcoById('pco-otp').value = '';
@@ -318,18 +329,28 @@
     if (session && isCurrentCheckout(session) && session.stage === 'otp' && !session.pending) issueCardOtp(session);
   };
 
-  window.pcoSubmitPayment = function () {
+  window.pcoSubmitPayment = async function () {
     const session = checkoutSession;
-    if (!session || !isCurrentCheckout(session) || session.pending || session.stage !== 'form') return;
+    if (!session || !isCurrentCheckout(session)) {
+      if (typeof toast === 'function') toast('Checkout session is unavailable. Close checkout and try again.', 'error');
+      return;
+    }
+    if (session.pending || session.stage !== 'form') return;
     const wrap = session.wrap, method = wrap.dataset.pcoMethod || 'card', isFree = wrap.dataset.pcoFree === '1';
     if (!isFree && !['card', 'upi'].includes(method)) return;
     if (!isFree && !pcoValidate(method)) return;
     session.method = isFree ? 'free' : method;
     session.methodLabel = isFree ? 'Free' : method === 'card' ? 'Card ending ' + pcoById('pco-number').value.replace(/\D/g, '').slice(-4) : 'UPI';
     if (!isFree && method === 'card') {
+      session.pending = true;
+      session.stage = 'preparing';
+      showProcessing('Preparing card verification…', 'Creating a secure simulated verification session.');
+      await new Promise(resolve => setTimeout(resolve, 180));
+      if (!isCurrentCheckout(session)) return;
+      session.pending = false;
       session.stage = 'otp';
       showPanel('pco-step-otp');
-      pcoById('pco-otp-summary').textContent = session.methodLabel + ' \u00b7 \u20b9' + Number(wrap.dataset.pcoPrice).toLocaleString('en-IN');
+      pcoById('pco-otp-summary').textContent = (wrap.dataset.pcoTitle || 'Event') + ' · ' + session.methodLabel + ' · \u20b9' + Number(wrap.dataset.pcoPrice).toLocaleString('en-IN');
       clearCardDetails();
       issueCardOtp(session);
       return;
@@ -421,7 +442,7 @@
     wrap.dataset.pcoMethod = 'card';
     wrap.dataset.pcoVisibility = event.visibility || '';
     if (options.registrationId) wrap.dataset.pcoRegId = String(options.registrationId);
-    checkoutSession = { ...options, wrap, stage: 'form', pending: false, reference: crypto.randomUUID() };
+    checkoutSession = { ...options, wrap, stage: 'form', pending: false, reference: pcoReference() };
     const pay = pcoById('pco-pay-btn');
     if (pay && amount > 0) pay.textContent = 'Continue to card verification';
   }

@@ -420,19 +420,34 @@ export class EventsService {
 
       const request = this.dataStore.eventRequests.find(item => item.eventId === eventId);
       if (request && request.status !== 'cancelled') {
+        const captured = completedEventPayments(this.dataStore.eventWorkflowPayments, request);
+        const paidAmount = captured.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+        let firstRefundId: string | undefined;
+        captured.forEach(payment => {
+          const refundId = this.dataStore.generateId('ref-event');
+          firstRefundId ||= refundId;
+          this.dataStore.eventWorkflowRefunds.push({
+            refundId, paymentId: payment.paymentId, eventId, requestId: request.requestId,
+            clientId: request.clientId, organizerId: request.organizerId,
+            paidAmount: payment.amount, cancellationFee: 0, amount: payment.amount,
+            reason: dto.changeReason, status: 'pending', simulated: true, requestedAt: new Date(),
+          });
+        });
         request.status = 'cancelled';
         request.cancellation = {
           reason: dto.changeReason,
           cancelledBy: userId!,
           cancelledAt: new Date(),
           policyVersion: '1.0',
-          paidAmount: request.budget || 0,
-          cancellationFeePercent: 10,
+          paidAmount,
+          cancellationFeePercent: 0,
           cancellationFee: 0,
-          refundAmount: 0,
-          refundStatus: 'not_applicable',
+          refundAmount: paidAmount,
+          refundStatus: paidAmount > 0 ? 'pending' : 'not_applicable',
+          refundId: firstRefundId,
           cancellationDeadline: new Date().toISOString(),
         };
+        event.cancellation = request.cancellation;
         request.updatedAt = new Date();
         request.auditHistory = request.auditHistory || [];
         request.auditHistory.push({
@@ -441,8 +456,10 @@ export class EventsService {
           performedBy: userId!,
           role,
           timestamp: new Date(),
-          details: { reason: dto.changeReason },
+          details: { reason: dto.changeReason, paidAmount, clientRefundAmount: paidAmount, organizerRefundAmount: 0 },
         });
+        const client = this.dataStore.clients.find(item => item.clientId === request.clientId);
+        if (client) this.dataStore.notifications.push({ notificationId: this.dataStore.generateId('notif'), userId: client.userId, eventId, registrationId: undefined, paymentId: undefined, message: `The organizer cancelled "${event.name}". Your simulated refund of ₹${paidAmount.toFixed(2)} is ${paidAmount > 0 ? 'pending' : 'not applicable because no payment was collected'}.`, type: 'event_cancelled', read: false, dateTime: new Date(), createdAt: new Date() });
       }
     }
     this.dataStore.persist();
@@ -462,9 +479,9 @@ export class EventsService {
     const event = this.ownClientEvent(eventId, role, userId);
     const request = this.dataStore.eventRequests.find(item => item.eventId === eventId);
     const policy = event.policySnapshot || request?.policySnapshot || getEventPolicy();
-    const payment = request && completedEventPayments(this.dataStore.eventWorkflowPayments, request)[0];
     const paidPaise = Math.round((request ? eventAmountPaid(this.dataStore.eventWorkflowPayments, request) : 0) * 100);
-    const feePaise = Math.round(paidPaise * policy.cancellation.feePercent / 100);
+    const feePercent = policy.cancellation.refundEligible === false ? 100 : policy.cancellation.feePercent;
+    const feePaise = Math.round(paidPaise * feePercent / 100);
     const match = String(event.time || '10:00').trim().match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)?$/i);
     let hours = match ? Number(match[1]) : NaN;
     if (match?.[3]) hours = hours % 12 + (match[3].toUpperCase() === 'PM' ? 12 : 0);
@@ -482,9 +499,12 @@ export class EventsService {
       eventId, canCancel, unavailableReason: canCancel ? '' : unavailableReason,
       cancellationDeadline: validDate ? deadline.toISOString() : null,
       minimumNoticeDays: policy.cancellation.minimumNoticeDays,
-      paidAmount: paidPaise / 100, cancellationFeePercent: policy.cancellation.feePercent,
+      paidAmount: paidPaise / 100, cancellationFeePercent: feePercent,
       cancellationFee: feePaise / 100, refundAmount: (paidPaise - feePaise) / 100,
-      policy, paymentId: payment?.paymentId,
+      refundEligible: policy.cancellation.refundEligible !== false,
+      approvalMode: policy.cancellation.approvalMode || 'manual',
+      additionalTerms: policy.cancellation.additionalTerms || '',
+      policy,
     };
   }
 
@@ -510,12 +530,17 @@ export class EventsService {
       refundStatus: refundId ? 'pending' : 'not_applicable', refundId,
       cancellationDeadline: preview.cancellationDeadline!,
     };
-    if (refundId && preview.paymentId) {
-      this.dataStore.eventWorkflowRefunds.push({
-        refundId, paymentId: preview.paymentId, eventId, requestId: request?.requestId,
-        clientId: event.clientId!, organizerId: event.organizerId,
-        paidAmount: preview.paidAmount, cancellationFee: preview.cancellationFee,
-        amount: preview.refundAmount, reason, status: 'pending', requestedAt: now,
+    if (refundId && request) {
+      const captured = completedEventPayments(this.dataStore.eventWorkflowPayments, request);
+      captured.forEach((payment, index) => {
+        const fee = Math.round(payment.amount * preview.cancellationFeePercent) / 100;
+        this.dataStore.eventWorkflowRefunds.push({
+          refundId: index === 0 ? refundId : this.dataStore.generateId('ref-event'),
+          paymentId: payment.paymentId, eventId, requestId: request.requestId,
+          clientId: event.clientId!, organizerId: event.organizerId,
+          paidAmount: payment.amount, cancellationFee: fee,
+          amount: Math.max(0, payment.amount - fee), reason, status: 'pending', simulated: true, requestedAt: now,
+        });
       });
     }
     event.status = 'cancelled';

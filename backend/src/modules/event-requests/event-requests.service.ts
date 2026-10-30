@@ -12,6 +12,7 @@ import { access } from 'fs/promises';
 import * as path from 'path';
 import { assertEventPolicyAccepted, EventPolicyAcknowledgementDto, getEventPolicy } from '../../common/event-policy';
 import { completedEventPayments } from '../../common/utils/event-payments';
+import { acceptedProposalFor } from '../../common/utils/accepted-proposal';
 import {
   CreateEventRequestDto,
   UpdateEventRequestStatusDto,
@@ -662,6 +663,24 @@ export class EventRequestsService {
     });
 
     const newVersion = (request.proposals.length || 0) + 1;
+    const defaultPolicy = getEventPolicy();
+    const hasConfiguredCancellation = [
+      dto.cancellationNoticeDays, dto.cancellationFeePercent, dto.cancellationRefundEligible,
+      dto.cancellationApprovalMode, dto.cancellationAdditionalTerms,
+    ].some(value => value !== undefined && value !== '');
+    const cancellationPolicy = {
+      ...defaultPolicy,
+      version: `proposal-${request.requestId}-v${newVersion}`,
+      cancellation: {
+        ...defaultPolicy.cancellation,
+        minimumNoticeDays: dto.cancellationNoticeDays ?? defaultPolicy.cancellation.minimumNoticeDays,
+        feePercent: dto.cancellationFeePercent ?? defaultPolicy.cancellation.feePercent,
+        refundEligible: dto.cancellationRefundEligible ?? defaultPolicy.cancellation.refundEligible,
+        approvalMode: dto.cancellationApprovalMode ?? defaultPolicy.cancellation.approvalMode,
+        additionalTerms: dto.cancellationAdditionalTerms?.trim() || defaultPolicy.cancellation.additionalTerms,
+        isDefault: !hasConfiguredCancellation,
+      },
+    };
 
     let docName = dto.documentName;
     let docFileName = dto.documentFileName;
@@ -698,7 +717,8 @@ export class EventRequestsService {
       attendeeCapacity: dto.attendeeCapacity !== undefined ? Number(dto.attendeeCapacity) : undefined,
       constraints: dto.constraints || '',
       paymentSchedule: dto.paymentSchedule || '',
-      cancellationTerms: dto.cancellationTerms || '',
+      cancellationTerms: dto.cancellationTerms || `${cancellationPolicy.cancellation.minimumNoticeDays} days notice; ${cancellationPolicy.cancellation.feePercent}% fee on successful payments; ${cancellationPolicy.cancellation.refundEligible ? 'eligible net refund' : 'non-refundable'}; ${cancellationPolicy.cancellation.approvalMode} processing.`,
+      cancellationPolicy,
       conditions: dto.conditions || '',
       status: 'pending_client' as const,
       sentAt: new Date(),
@@ -768,6 +788,7 @@ export class EventRequestsService {
         validUntil: dto.validUntil,
         proposedDate,
         documentName: docName,
+        cancellationPolicyVersion: cancellationPolicy.version,
       },
     });
 
@@ -1071,11 +1092,16 @@ export class EventRequestsService {
     activeProposal.clientNotes = dto.notes?.trim() || '';
 
     if (dto.decision === 'accept') {
+      const proposalPolicy = activeProposal.cancellationPolicy || request.policySnapshot || getEventPolicy();
+      assertEventPolicyAccepted(dto, proposalPolicy);
       activeProposal.status = 'accepted';
       if (activeProposal.proposedDate) request.eventDate = activeProposal.proposedDate;
       request.status = 'awaiting_client';
       request.agreementStatus = 'pending_signature';
       request.paymentStatus = 'deposit_pending';
+      request.policySnapshot = structuredClone(proposalPolicy);
+      request.clientPolicyAcceptedAt = new Date();
+      request.clientPolicyAcceptedBy = userId;
       request.updatedAt = new Date();
 
       request.auditHistory = request.auditHistory || [];
@@ -1085,7 +1111,7 @@ export class EventRequestsService {
         performedBy: userId || 'client',
         role: role,
         timestamp: new Date(),
-        details: { notes: dto.notes },
+        details: { notes: dto.notes, policyVersion: proposalPolicy.version },
       });
     } else if (dto.decision === 'request_revision') {
       activeProposal.status = 'revision_requested';
@@ -1310,7 +1336,7 @@ export class EventRequestsService {
     if (request.status !== 'awaiting_client' && !(request.status === 'planning' && (request as any).negotiationStatus === 'mutually_accepted')) {
       throw new BadRequestException('The request must be awaiting client agreement');
     }
-    const latestProposal = request.proposals?.[request.proposals.length - 1];
+    const latestProposal = acceptedProposalFor(request);
     const approvedPlan = this.db.eventPlans.some(plan =>
       plan.requestId === request.requestId && plan.approvalStatus === 'approved',
     );
@@ -1360,14 +1386,14 @@ export class EventRequestsService {
     if (request.status === 'rejected' || request.status === 'withdrawn') {
       throw new BadRequestException(`Cannot confirm a request that has been ${request.status}`);
     }
-    if (request.status !== 'awaiting_client') {
+    if (request.status !== 'awaiting_client' && !(request.status === 'planning' && (request as any).negotiationStatus === 'mutually_accepted')) {
       throw new BadRequestException('The client must accept the final plan before booking confirmation');
     }
 
     const approvedPlan = this.db.eventPlans.find(
       plan => plan.requestId === request.requestId && plan.approvalStatus === 'approved',
     );
-    const activeProposal = request.proposals?.[request.proposals.length - 1];
+    const activeProposal = acceptedProposalFor(request);
     if (!approvedPlan && activeProposal?.status !== 'accepted') {
       throw new BadRequestException('The client must accept a proposal or approve the final event plan before booking confirmation');
     }
@@ -1396,9 +1422,8 @@ export class EventRequestsService {
     }
 
     // Recheck that the agreed event date is still in the future.
-    const latestProposal = request.proposals?.[request.proposals.length - 1];
-    const eventDate = latestProposal?.status === 'accepted'
-      ? latestProposal.proposedDate || request.eventDate
+    const eventDate = activeProposal
+      ? activeProposal.proposedDate || request.eventDate
       : request.eventDate;
 
     const avail = this.checkDateAvailability(request.organizerId, eventDate, request.requestId);
@@ -1422,6 +1447,7 @@ export class EventRequestsService {
       visibility: request.visibility ?? 'public',
       status: 'ongoing' as const,
       description: request.requirements,
+      policySnapshot: structuredClone(request.policySnapshot || activeProposal?.cancellationPolicy || getEventPolicy()),
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -1488,14 +1514,13 @@ export class EventRequestsService {
     if (role !== UserRole.CLIENT && role !== UserRole.SUPER_ADMIN) {
       throw new ForbiddenException('Only the client can pay the required deposit');
     }
-    const latestProposal = request.proposals?.[request.proposals.length - 1];
-    const activeProposal = latestProposal?.status === 'accepted' ? latestProposal : undefined;
+    const activeProposal = acceptedProposalFor(request);
     const approvedPlan = this.db.eventPlans.find(plan => plan.requestId === request.requestId &&
       (!request.activeEventPlanId || plan.eventPlanId === request.activeEventPlanId) && plan.approvalStatus === 'approved');
     if ((!['awaiting_client', 'confirmed'].includes(request.status) && !(request.status === 'planning' && (request as any).negotiationStatus === 'mutually_accepted')) || (!approvedPlan && !activeProposal)) {
       throw new BadRequestException('Accept the final event plan or proposal before paying the deposit');
     }
-    if (approvedPlan && Number(approvedPlan.budget) !== Number(request.budget)) {
+    if (!activeProposal && approvedPlan && Number(approvedPlan.budget) !== Number(request.budget)) {
       throw new BadRequestException('The approved plan must match the final agreed event budget');
     }
     if (request.agreementStatus !== 'agreed') {
@@ -1513,10 +1538,36 @@ export class EventRequestsService {
     }
     const depositRequired = activeProposal?.depositRequired !== undefined
       ? Number(activeProposal.depositRequired)
-      : Math.round((Number(request.budget) || 25000) * 0.3);
+      : Math.round(Number(request.budget) * 0.3);
 
-    const totalAmount = Number(activeProposal?.amount || request.budget || depositRequired);
+    const totalAmount = Number(activeProposal?.amount ?? request.budget);
+    if (!Number.isFinite(totalAmount) || totalAmount <= 0 || !Number.isFinite(depositRequired) || depositRequired < 0 || depositRequired > totalAmount) {
+      throw new BadRequestException('The accepted proposal payment amounts are invalid');
+    }
+    const verifiedAmount = completedEventPayments(this.db.eventWorkflowPayments, request)
+      .reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+    const amountPayableNow = Math.max(0, depositRequired - verifiedAmount);
     const now = new Date();
+    const methodDetails = dto.methodDetails === 'UPI' ? 'UPI' : dto.methodDetails === 'Card' ? 'Card' : 'Demo checkout';
+
+    if (amountPayableNow === 0) {
+      request.paymentStatus = verifiedAmount >= totalAmount ? 'fully_paid' : 'deposit_paid';
+      if (request.status !== 'confirmed') this.confirmBooking(requestId, {}, UserRole.EVENT_ORGANIZER, request.organizerId);
+      return {
+        success: true,
+        simulated: true,
+        message: 'Required deposit was already verified',
+        data: {
+          bookingId: `BKG-${String(request.eventId || request.requestId).toUpperCase()}`,
+          amountPaid: verifiedAmount,
+          outstandingBalance: Math.max(0, totalAmount - verifiedAmount),
+          totalAmount,
+          paymentStatus: request.paymentStatus,
+          bookingStatus: request.status,
+          eventId: request.eventId,
+        },
+      };
+    }
 
     // Handle simulated payment failure
     if (dto.simulateFailure || dto.status === 'failed') {
@@ -1527,19 +1578,58 @@ export class EventRequestsService {
         requestId: request.requestId,
         clientId: request.clientId,
         organizerId: request.organizerId,
-        amount: depositRequired,
+        proposalVersion: activeProposal?.version,
+        amount: amountPayableNow,
         status: 'failed' as const,
         paymentDate: now.toISOString().slice(0, 10),
         paymentMethod: 'DEMO_PROVIDER' as const,
+        methodDetails,
+        simulated: true,
         createdAt: now,
         updatedAt: now,
       });
       this.addAudit(request, 'Deposit Payment Failed via Demo Provider', userId, role, {
         paymentId,
-        amount: depositRequired,
-        method: 'DEMO_PROVIDER',
+        amount: amountPayableNow,
+        method: methodDetails,
       });
-      throw new BadRequestException('Payment transaction failed. Please check your payment details or try a different method.');
+      request.paymentStatus = 'failed';
+      request.updatedAt = now;
+      return {
+        success: false,
+        simulated: true,
+        message: 'Payment transaction failed. Please check your payment details or try a different method.',
+        data: {
+          bookingId: `BKG-${request.requestId.toUpperCase()}`,
+          paymentId,
+          amountPaid: verifiedAmount,
+          amountPayableNow,
+          outstandingBalance: totalAmount - verifiedAmount,
+          totalAmount,
+          paymentStatus: request.paymentStatus,
+          bookingStatus: request.status,
+        },
+      };
+    }
+
+    if (dto.status === 'cancelled') {
+      const paymentId = this.db.generateId('pay-deposit');
+      this.db.eventWorkflowPayments.push({
+        paymentId, eventId: request.eventId, requestId: request.requestId,
+        proposalVersion: activeProposal?.version, clientId: request.clientId, organizerId: request.organizerId,
+        amount: amountPayableNow, status: 'cancelled' as const,
+        paymentDate: now.toISOString().slice(0, 10), paymentMethod: 'DEMO_PROVIDER' as const,
+        methodDetails, simulated: true,
+        createdAt: now, updatedAt: now,
+      });
+      request.paymentStatus = 'deposit_pending';
+      request.updatedAt = now;
+      this.addAudit(request, 'Deposit Payment Cancelled via Demo Provider', userId, role, { paymentId, amount: amountPayableNow });
+      return { success: true, simulated: true, message: 'Deposit payment was cancelled', data: {
+        bookingId: `BKG-${request.requestId.toUpperCase()}`, paymentId, amountPaid: verifiedAmount,
+        outstandingBalance: totalAmount - verifiedAmount, totalAmount, paymentStatus: request.paymentStatus,
+        bookingStatus: request.status, receipt: null,
+      } };
     }
 
     // Handle pending payment
@@ -1551,10 +1641,13 @@ export class EventRequestsService {
         requestId: request.requestId,
         clientId: request.clientId,
         organizerId: request.organizerId,
-        amount: depositRequired,
+        proposalVersion: activeProposal?.version,
+        amount: amountPayableNow,
         status: 'pending' as const,
         paymentDate: now.toISOString().slice(0, 10),
         paymentMethod: 'DEMO_PROVIDER' as const,
+        methodDetails,
+        simulated: true,
         createdAt: now,
         updatedAt: now,
       });
@@ -1562,8 +1655,8 @@ export class EventRequestsService {
       request.updatedAt = now;
       this.addAudit(request, 'Deposit Payment Pending via Demo Provider', userId, role, {
         paymentId,
-        amount: depositRequired,
-        method: 'DEMO_PROVIDER',
+        amount: amountPayableNow,
+        method: methodDetails,
       });
       return {
         success: true,
@@ -1572,8 +1665,9 @@ export class EventRequestsService {
         data: {
           bookingId: `BKG-${request.requestId.toUpperCase()}`,
           paymentId,
-          amountPaid: 0,
-          outstandingBalance: totalAmount,
+          amountPaid: verifiedAmount,
+          amountPayableNow,
+          outstandingBalance: totalAmount - verifiedAmount,
           totalAmount,
           paymentStatus: request.paymentStatus,
           bookingStatus: request.status,
@@ -1587,35 +1681,42 @@ export class EventRequestsService {
       paymentId,
       eventId: request.eventId,
       requestId: request.requestId,
+      proposalVersion: activeProposal?.version,
       clientId: request.clientId,
       organizerId: request.organizerId,
-      amount: depositRequired,
+      amount: amountPayableNow,
       status: 'completed' as const,
       paymentDate: now.toISOString().slice(0, 10),
       paymentMethod: 'DEMO_PROVIDER' as const,
+      methodDetails,
+      simulated: true,
       createdAt: now,
       updatedAt: now,
     };
     const previousPaymentStatus = request.paymentStatus;
     request.paymentStatus = 'deposit_paid';
     try {
-      if (request.status !== 'confirmed' && approvedPlan) this.confirmBooking(requestId, {}, UserRole.EVENT_ORGANIZER, request.organizerId);
+      if (request.status !== 'confirmed') this.confirmBooking(requestId, {}, UserRole.EVENT_ORGANIZER, request.organizerId);
     } catch (error) {
       request.paymentStatus = previousPaymentStatus;
       throw error;
     }
     payment.eventId = request.eventId;
     this.db.eventWorkflowPayments.push(payment);
-    if (depositRequired >= totalAmount) request.paymentStatus = 'fully_paid';
+    const amountPaid = verifiedAmount + amountPayableNow;
+    if (amountPaid >= totalAmount) request.paymentStatus = 'fully_paid';
     request.updatedAt = now;
 
     this.addAudit(request, 'Deposit Payment Verified via Demo Provider', userId, role, {
       paymentId,
-      amount: depositRequired,
-      method: 'DEMO_PROVIDER',
+      amount: amountPayableNow,
+      method: methodDetails,
     });
 
-    const outstandingBalance = Math.max(0, totalAmount - depositRequired);
+    this.notifyRequestOrganizer(request, `Simulated ${methodDetails} deposit of ₹${amountPayableNow.toLocaleString()} was verified for "${request.eventName}". Booking ${request.eventId || request.requestId} is confirmed.`, 'deposit_payment_confirmed');
+    this.notifyRequestClient(request, `Your simulated ${methodDetails} deposit of ₹${amountPayableNow.toLocaleString()} for "${request.eventName}" was verified.`, 'deposit_payment_confirmed');
+
+    const outstandingBalance = Math.max(0, totalAmount - amountPaid);
     const bookingId = request.eventId ? `BKG-${request.eventId.toUpperCase()}` : `BKG-${request.requestId.toUpperCase()}`;
 
     return {
@@ -1625,7 +1726,8 @@ export class EventRequestsService {
       data: {
         bookingId,
         paymentId,
-        amountPaid: depositRequired,
+        amountPaid,
+        amountCharged: amountPayableNow,
         outstandingBalance,
         totalAmount,
         paymentStatus: request.paymentStatus,
@@ -1636,7 +1738,8 @@ export class EventRequestsService {
           bookingId,
           date: now.toISOString(),
           paymentMethod: 'DEMO PAYMENT PROVIDER · SIMULATED TRANSACTION',
-          amountPaid: depositRequired,
+          methodDetails,
+          amountPaid: amountPayableNow,
           outstandingBalance,
         },
       },
@@ -1797,9 +1900,8 @@ export class EventRequestsService {
    *  - Pre-booking requests (not confirmed): no payment taken, so the
    *    appropriate action is a withdrawal (no fee). canCancel=true as long as
    *    the request is not already in a terminal state.
-   *  - Confirmed / deposit-paid requests: the 10% policy fee applies to any
-   *    payments actually recorded in the payments table. Minimum-notice window
-   *    is checked against the scheduled event date on the linked event (if any).
+   *  - Confirmed / deposit-paid requests: the accepted proposal policy applies
+   *    to successful payments. The notice window uses the scheduled event date.
    */
   requestCancellationPreview(requestId: string, role: UserRole, userId?: string): any {
     if (role !== UserRole.CLIENT && role !== UserRole.SUPER_ADMIN && role !== UserRole.EVENT_ORGANIZER) {
@@ -1807,8 +1909,10 @@ export class EventRequestsService {
     }
 
     const request = this.findOne(requestId, role, userId);
-    const policy = getEventPolicy();
-    const { minimumNoticeDays, feePercent } = policy.cancellation;
+    const policy = request.policySnapshot || acceptedProposalFor(request)?.cancellationPolicy || getEventPolicy();
+    const { minimumNoticeDays } = policy.cancellation;
+    const configuredFee = policy.cancellation.refundEligible === false ? 100 : policy.cancellation.feePercent;
+    const feePercent = role === UserRole.EVENT_ORGANIZER ? 0 : configuredFee;
 
     // Already in terminal state
     const terminal = ['cancelled', 'withdrawn', 'rejected', 'expired', 'completed'];
@@ -1897,7 +2001,7 @@ export class EventRequestsService {
     let canCancel = true;
     let unavailableReason = '';
 
-    if (isConfirmed && request.eventDate) {
+    if (isConfirmed && request.eventDate && role !== UserRole.EVENT_ORGANIZER) {
       const eventStart = new Date(`${request.eventDate}T00:00:00`);
       const deadline = new Date(eventStart.getTime() - minimumNoticeDays * 86400000);
       cancellationDeadline = deadline.toISOString();
@@ -1920,6 +2024,10 @@ export class EventRequestsService {
       cancellationFeePercent: feePercent,
       cancellationFee: cancellationFeePaise / 100,
       refundAmount: refundPaise / 100,
+      refundEligible: policy.cancellation.refundEligible !== false,
+      approvalMode: policy.cancellation.approvalMode || 'manual',
+      additionalTerms: policy.cancellation.additionalTerms || '',
+      organizerCancellation: role === UserRole.EVENT_ORGANIZER,
       refundProcessingTimeline: paidPaise > 0
         ? '5–7 business days (pending review)'
         : 'Not applicable — no payment has been charged yet',
@@ -1933,7 +2041,7 @@ export class EventRequestsService {
    * Cancel an event request on behalf of the client or organizer.
    *
    * For pre-booking requests:  records a withdrawal (no fee).
-   * For confirmed requests:    enforces notice window + 10% fee.
+   * For confirmed requests:    enforces the accepted policy snapshot.
    * In both cases the reason, timestamp, and policy version are persisted.
    */
   cancelRequest(
@@ -1990,7 +2098,8 @@ export class EventRequestsService {
     }
 
     const now = new Date();
-    const policy = getEventPolicy();
+    const policy = previewData.policy || request.policySnapshot || acceptedProposalFor(request)?.cancellationPolicy || getEventPolicy();
+    if (role === UserRole.CLIENT) assertEventPolicyAccepted(dto, policy);
 
     // Related payments
     const workflowPayments = completedEventPayments(this.db.eventWorkflowPayments, request);
@@ -2042,26 +2151,20 @@ export class EventRequestsService {
 
       // If refund is applicable, create refund records
       if (previewData.refundAmount > 0) {
-        const refundId = this.db.generateId('ref');
-        cancellationRecord.refundId = refundId;
-        const payment: any = relatedPayments.find((p: any) => ['completed', 'success', 'paid'].includes(String(p.status).toLowerCase()));
-        const paymentId = payment ? (payment.paymentId || payment.id) : 'mock-pay';
-        if (this.db.eventWorkflowRefunds) {
+        const captured = relatedPayments.filter((p: any) => ['completed', 'success', 'paid'].includes(String(p.status).toLowerCase()));
+        captured.forEach((payment: any, index: number) => {
+          const paidAmount = Number(payment.amount || 0);
+          const cancellationFee = Math.round(paidAmount * previewData.cancellationFeePercent) / 100;
+          const refundId = this.db.generateId('ref');
+          if (index === 0) cancellationRecord.refundId = refundId;
           this.db.eventWorkflowRefunds.push({
-            refundId,
-            paymentId,
-            requestId: request.requestId,
-            eventId: request.eventId || '',
-            clientId: request.clientId,
-            organizerId: request.organizerId,
-            paidAmount: previewData.paidAmount,
-            cancellationFee: previewData.cancellationFee,
-            amount: previewData.refundAmount,
-            reason,
-            status: 'pending',
-            requestedAt: now,
+            refundId, paymentId: payment.paymentId || payment.id,
+            requestId: request.requestId, eventId: request.eventId || '',
+            clientId: request.clientId, organizerId: request.organizerId,
+            paidAmount, cancellationFee, amount: Math.max(0, paidAmount - cancellationFee),
+            reason, status: 'pending', simulated: true, requestedAt: now,
           });
-        }
+        });
       }
 
       // Notify party

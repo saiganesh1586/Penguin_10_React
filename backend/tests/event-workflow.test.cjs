@@ -182,7 +182,7 @@ test('client and organizer complete the restored event workflow through the API'
   });
 
   await t.test('plan approval awaits agreement and verified payment before creating a shared event', async () => {
-    const approved = (await call(client, 'PATCH', `/event-plans/${plan.eventPlanId}/approval`, { approvalStatus: 'approved' })).data;
+    const approved = (await call(client, 'PATCH', `/event-plans/${plan.eventPlanId}/approval`, { approvalStatus: 'approved', ...acknowledgement })).data;
     assert.equal(approved.plan.approvalStatus, 'approved');
     assert.equal(approved.request.status, 'awaiting_client');
     assert.equal(approved.request.agreementStatus, 'pending_signature');
@@ -261,9 +261,14 @@ test('client and organizer complete the restored event workflow through the API'
     const revised = await createRequest();
     await call(organizer, 'POST', `/event-requests/${revised.requestId}/accept`, acknowledgement, 201);
     const revisionPlan = await submitPlan(revised);
-    await call(client, 'PATCH', `/event-plans/${revisionPlan.eventPlanId}/approval`, { approvalStatus: 'rejected', reason: 'Please provide an alternative schedule.' });
-    assert.equal(db.eventRequests.find(item => item.requestId === revised.requestId).status, 'plan_revision_requested');
+    await call(client, 'PATCH', `/event-plans/${revisionPlan.eventPlanId}/approval`, { approvalStatus: 'rejected', reason: 'The proposed schedule is not workable.', comments: 'Close this request without creating a booking.' });
+    const rejectedRequest = db.eventRequests.find(item => item.requestId === revised.requestId);
+    assert.equal(rejectedRequest.status, 'rejected');
+    assert.equal(rejectedRequest.rejectionReason, 'The proposed schedule is not workable.');
+    assert.equal(rejectedRequest.rejectionComments, 'Close this request without creating a booking.');
+    assert.equal(db.eventPlans.find(item => item.eventPlanId === revisionPlan.eventPlanId).approvalStatus, 'rejected');
     assert.equal(db.events.filter(item => item.name === revised.eventName).length, 0);
+    assert.ok(db.notifications.some(item => item.userId === 'usr-org-001' && item.type === 'plan_rejected'));
   });
 
   await t.test('organizers can accept, approve and book multiple requests on an already booked date', async () => {
@@ -275,7 +280,7 @@ test('client and organizer complete the restored event workflow through the API'
     for (const pending of requests) {
       await call(organizer, 'POST', `/event-requests/${pending.requestId}/accept`, acknowledgement, 201);
       const submitted = await submitPlan(pending);
-      await call(client, 'PATCH', `/event-plans/${submitted.eventPlanId}/approval`, { approvalStatus: 'approved' });
+      await call(client, 'PATCH', `/event-plans/${submitted.eventPlanId}/approval`, { approvalStatus: 'approved', ...acknowledgement });
       await call(client, 'POST', `/event-requests/${pending.requestId}/agreement`, { agreementStatus: 'agreed' }, 201);
       const deposit = (await call(client, 'POST', `/event-requests/${pending.requestId}/pay-deposit`, { paymentMethod: 'DEMO_PROVIDER' }, 201)).data;
       assert.equal(deposit.bookingStatus, 'confirmed');
@@ -303,7 +308,7 @@ test('client and organizer complete the restored event workflow through the API'
     const pending = await createRequest(overrides);
     await call(organizer, 'POST', `/event-requests/${pending.requestId}/accept`, acknowledgement, 201);
     const submitted = await submitPlan(pending);
-    await call(client, 'PATCH', `/event-plans/${submitted.eventPlanId}/approval`, { approvalStatus: 'approved' });
+    await call(client, 'PATCH', `/event-plans/${submitted.eventPlanId}/approval`, { approvalStatus: 'approved', ...acknowledgement });
     await call(client, 'POST', `/event-requests/${pending.requestId}/agreement`, { agreementStatus: 'agreed' }, 201);
     db.eventRequests.find(item => item.requestId === pending.requestId).paymentStatus = 'deposit_paid';
     await call(organizer, 'POST', `/event-requests/${pending.requestId}/confirm`, {}, 201);
@@ -524,7 +529,7 @@ test('client and organizer complete the restored event workflow through the API'
     assert.equal(orgFound.visibility, 'private');
     await call(organizer, 'POST', `/event-requests/${created.requestId}/accept`, acknowledgement, 201);
     const pricedPlan = await submitPlan(created);
-    await call(client, 'PATCH', `/event-plans/${pricedPlan.eventPlanId}/approval`, { approvalStatus: 'approved' });
+    await call(client, 'PATCH', `/event-plans/${pricedPlan.eventPlanId}/approval`, { approvalStatus: 'approved', ...acknowledgement });
     await call(client, 'POST', `/event-requests/${created.requestId}/agreement`, { agreementStatus: 'agreed' }, 201);
     const booking = (await call(client, 'POST', `/event-requests/${created.requestId}/pay-deposit`, { paymentMethod: 'DEMO_PROVIDER' }, 201)).data;
     const attendee = await login('attendee@example.com', 'Attendee@123');

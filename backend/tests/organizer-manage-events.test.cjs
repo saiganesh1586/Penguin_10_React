@@ -11,7 +11,8 @@ const { EventsService } = require('../src/modules/events/events.service');
 function fixture(t) {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'eventflow-manage-events-'));
   const previous = process.env.EVENTFLOW_DATA_FILE;
-  process.env.EVENTFLOW_DATA_FILE = path.join(directory, 'store.json');
+  const filePath = path.join(directory, 'store.json');
+  process.env.EVENTFLOW_DATA_FILE = filePath;
   DataStore.instance = undefined;
   const db = DataStore.getInstance();
   const now = new Date('2026-10-17T08:00:00Z');
@@ -36,7 +37,7 @@ function fixture(t) {
     if (previous === undefined) delete process.env.EVENTFLOW_DATA_FILE; else process.env.EVENTFLOW_DATA_FILE = previous;
     fs.rmSync(directory, { recursive: true, force: true });
   });
-  return { db, service: new EventsService() };
+  return { db, service: new EventsService(), filePath };
 }
 
 test('organizer event listing is ownership-scoped and returns real management summaries', t => {
@@ -92,7 +93,7 @@ test('authorized draft create, edit and delete stay synchronized with the organi
 });
 
 test('preparation and cancellation persist history, ticket invalidation and refund workflow', t => {
-  const { db, service } = fixture(t);
+  const { db, service, filePath } = fixture(t);
   const prepared = service.update('evt-own', { preparationTasks: [{ title: 'Confirm catering', deadline: '2099-11-01', status: 'in_progress' }] }, UserRole.EVENT_ORGANIZER, 'usr-own');
   assert.equal(prepared.preparationSummary.total, 1);
   assert.ok(prepared.changes.some(change => change.type === 'preparation_updated'));
@@ -103,4 +104,19 @@ test('preparation and cancellation persist history, ticket invalidation and refu
   assert.equal(db.registrations.find(item => item.registrationId === 'reg-confirmed').qrCode, undefined);
   assert.equal(db.refunds[0].status, 'pending');
   assert.ok(cancelled.changes.some(change => change.type === 'cancelled'));
+  assert.throws(() => service.update('evt-own', { status: 'cancelled', changeReason: 'Venue access was withdrawn' }, UserRole.EVENT_ORGANIZER, 'usr-own'), /already been cancelled/);
+  assert.equal(db.refunds.length, 1);
+
+  const persisted = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  assert.equal(persisted.events.find(item => item.eventId === 'evt-own').status, 'cancelled');
+  assert.equal(persisted.events.find(item => item.eventId === 'evt-own').cancellation.reason, 'Venue access was withdrawn');
+  assert.equal(persisted.refunds.length, 1);
+  assert.equal(persisted.eventChanges.filter(change => change.eventId === 'evt-own' && change.type === 'cancelled').length, 1);
+
+  DataStore.instance = undefined;
+  const reloaded = DataStore.getInstance();
+  assert.equal(reloaded.events.find(item => item.eventId === 'evt-own').status, 'cancelled');
+  assert.equal(reloaded.registrations.find(item => item.registrationId === 'reg-confirmed').status, 'cancelled');
+  assert.equal(reloaded.refunds.length, 1);
+  assert.equal(reloaded.eventChanges.filter(change => change.eventId === 'evt-own' && change.type === 'cancelled').length, 1);
 });

@@ -5,6 +5,7 @@ import { isEventOpenForRegistration, requiresRegistrationApproval } from '../../
 import { CreatePaymentDto } from './dto/payment.dto';
 import { QrCodeService } from '../../common/utils/qr-code.service';
 import { eventAmountPaid } from '../../common/utils/event-payments';
+import { acceptedProposalFor } from '../../common/utils/accepted-proposal';
 
 @Injectable()
 export class PaymentsService {
@@ -115,10 +116,9 @@ export class PaymentsService {
     const approvedPlan = this.db.eventPlans.find(plan =>
       plan.eventPlanId === request.activeEventPlanId && plan.approvalStatus === 'approved',
     );
-    const latestProposal = request.proposals?.[request.proposals.length - 1];
-    const acceptedProposal = latestProposal?.status === 'accepted' ? latestProposal : undefined;
-    const totalAmount = approvedPlan ? Number(approvedPlan.budget) : Number(acceptedProposal?.amount);
-    if (!Number.isFinite(totalAmount) || totalAmount <= 0 || (approvedPlan && totalAmount !== Number(request.budget))) {
+    const acceptedProposal = acceptedProposalFor(request);
+    const totalAmount = acceptedProposal ? Number(acceptedProposal.amount) : Number(approvedPlan?.budget);
+    if (!Number.isFinite(totalAmount) || totalAmount <= 0 || (!acceptedProposal && approvedPlan && totalAmount !== Number(request.budget))) {
       throw new ConflictException('The final agreed event budget is unavailable');
     }
     const amountPaid = eventAmountPaid(this.db.eventWorkflowPayments, request);
@@ -130,6 +130,7 @@ export class PaymentsService {
       paymentId: this.db.generateId('pay-event'),
       eventId,
       requestId: request.requestId,
+      proposalVersion: acceptedProposal?.version,
       clientId: client.clientId,
       organizerId: request.organizerId,
       amount: remainingBalance,

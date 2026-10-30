@@ -238,6 +238,7 @@ export interface EventPreparationTask {
 
 export interface ProposalVersion {
   version: number;
+  eventId?: string;
   amount: number;
   depositRequired: number;
   proposedDate: string;
@@ -255,6 +256,7 @@ export interface ProposalVersion {
   constraints?: string;
   paymentSchedule?: string;
   cancellationTerms?: string;
+  cancellationPolicy?: EventPolicy;
   conditions?: string;
   documentName?: string;
   documentFileName?: string;
@@ -425,12 +427,15 @@ export interface EventWorkflowPayment {
   paymentId: string;
   eventId: string;
   requestId: string;
+  proposalVersion?: number;
   clientId: string;
   organizerId: string;
   amount: number;
   status: 'completed' | 'pending' | 'failed' | 'cancelled';
   paymentDate: string;
   paymentMethod: 'DEMO_PROVIDER';
+  methodDetails?: string;
+  simulated?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -461,6 +466,7 @@ export interface EventWorkflowRefund {
   amount: number;
   reason: string;
   status: 'pending';
+  simulated?: boolean;
   requestedAt: Date;
 }
 
