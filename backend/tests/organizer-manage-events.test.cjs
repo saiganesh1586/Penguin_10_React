@@ -52,14 +52,32 @@ test('organizer event listing is ownership-scoped and returns real management su
   assert.equal(event.needsAttention, true);
 });
 
-test('organizer updates enforce ownership, conflicts, transitions and completion timing', t => {
+test('organizer updates enforce ownership, transitions and completion timing', t => {
   const { service } = fixture(t);
   assert.throws(() => service.update('evt-other', { location: 'No access' }, UserRole.EVENT_ORGANIZER, 'usr-own'), /own events/);
-  assert.throws(() => service.create({ name: 'Conflict', category: 'Technology', date: '2099-11-20', time: '10:00', location: 'Hall D', capacity: 5, ticketPrice: 0, status: 'published' }, UserRole.EVENT_ORGANIZER, 'usr-own'), /already scheduled/);
   assert.throws(() => service.update('evt-own', { status: 'completed' }, UserRole.EVENT_ORGANIZER, 'usr-own'), /future event/);
   const completed = service.update('evt-past', { status: 'completed' }, UserRole.EVENT_ORGANIZER, 'usr-own');
   assert.equal(completed.status, 'completed');
   assert.throws(() => service.update('evt-past', { status: 'published' }, UserRole.EVENT_ORGANIZER, 'usr-own'), /Cannot change/);
+});
+
+test('organizers can create and reschedule multiple events to the same date and time', t => {
+  const { service } = fixture(t);
+  const ids = [];
+  for (let index = 0; index < 3; index++) {
+    const created = service.create({ name: `Concurrent event ${index + 1}`, category: 'Conference', date: '2099-11-20', time: '10:00', location: `Hall ${index + 1}`, capacity: 5, ticketPrice: 0, status: 'published' }, UserRole.EVENT_ORGANIZER, 'usr-own');
+    ids.push(created.eventId);
+  }
+  const draft = service.create({ name: 'Rescheduled event', date: '2099-11-21', time: '09:00', location: 'Hall E', status: 'draft' }, UserRole.EVENT_ORGANIZER, 'usr-own');
+  const moved = service.update(draft.eventId, { date: '2099-11-20', time: '10:00' }, UserRole.EVENT_ORGANIZER, 'usr-own');
+  assert.equal(moved.date, '2099-11-20');
+  assert.equal(moved.time, '10:00');
+  const events = service.findAll(UserRole.EVENT_ORGANIZER, undefined, undefined, 'usr-own')
+    .filter(event => event.date === '2099-11-20' && event.time === '10:00');
+  assert.equal(events.length, 5);
+  assert.equal(new Set(events.map(event => event.eventId)).size, 5);
+  assert.ok(ids.every(id => events.some(event => event.eventId === id)));
+  assert.throws(() => service.create({ name: 'Past event', date: '2020-01-01', time: '10:00' }, UserRole.EVENT_ORGANIZER, 'usr-own'), /past/);
 });
 
 test('authorized draft create, edit and delete stay synchronized with the organizer listing', t => {

@@ -53,7 +53,7 @@ test('Customer Support requests reach support executives and saved replies reach
 
   await t.test('requests from different user roles arrive in the real support queue with requester details', async () => {
     for (const token of [agent, finance]) await call(token, 'POST', '/support/tickets', issue, 403);
-    assert.throws(() => app.get(SupportService).createTicket('usr-staff-001', UserRole.EVENT_STAFF, issue), /Your role cannot submit/);
+    assert.throws(() => app.get(SupportService).createTicket('usr-emp-001c', UserRole.EMPLOYEE, issue), /Your role cannot submit/);
     ticket = await call(attendee, 'POST', '/support/tickets', issue, 201);
     await call(client, 'POST', '/support/tickets', { ...issue, description: 'Our company profile changes are not saving.' }, 201);
     await call(organizer, 'POST', '/support/tickets', { ...issue, description: 'Our organizer profile needs assistance.' }, 201);
@@ -70,7 +70,7 @@ test('Customer Support requests reach support executives and saved replies reach
       db.users.find(user => user.userId === 'usr-emp-001').employeeType = type;
       assert.equal((await call(agent, 'GET', '/support/tickets')).length, 3);
     }
-    assert.equal(app.get(SupportService).listTickets('usr-staff-001', UserRole.EVENT_STAFF).length, 0);
+    assert.equal(app.get(SupportService).listTickets('usr-emp-001c', UserRole.EMPLOYEE).length, 0);
   });
 
   await t.test('only support agents can reply or update status; resolution needs a current reply', async () => {

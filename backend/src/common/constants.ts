@@ -3,7 +3,7 @@ export enum UserRole {
   SUPER_ADMIN = 'super_admin',
   CLIENT = 'client',
   EVENT_ORGANIZER = 'event_organizer',
-  EVENT_STAFF = 'event_staff',
+  EMPLOYEE = 'employee',
   ATTENDEE = 'attendee',
 }
 
@@ -22,10 +22,7 @@ export const ROLE_ALIASES: Record<string, UserRole> = {
   'organizer': UserRole.EVENT_ORGANIZER,
   'event-organizer': UserRole.EVENT_ORGANIZER,
   
-  // Event Staff variants
-  'event_staff': UserRole.EVENT_STAFF,
-  'staff': UserRole.EVENT_STAFF,
-  'event-staff': UserRole.EVENT_STAFF,
+  'employee': UserRole.EMPLOYEE,
   
   // Attendee variants
   'attendee': UserRole.ATTENDEE,
@@ -45,14 +42,12 @@ export const ROLE_PERMISSIONS = {
     events: ['create', 'read', 'update', 'delete'],
     clients: ['create', 'read', 'update', 'delete'],
     organizers: ['create', 'read', 'update', 'delete'],
-    staff: ['create', 'read', 'update', 'delete'],
     attendees: ['create', 'read', 'update', 'delete'],
     'event-requests': ['create', 'read', 'update', 'delete', 'approve'],
     'event-plans': ['create', 'read', 'update', 'delete', 'approve'],
     registrations: ['create', 'read', 'update', 'delete'],
     payments: ['create', 'read', 'update', 'delete'],
     attendance: ['create', 'read', 'update', 'verify'],
-    'staff-assignments': ['create', 'read', 'update', 'delete'],
     reports: ['create', 'read', 'update', 'delete'],
     reviews: ['create', 'read'],
     notifications: ['create', 'read'],
@@ -72,19 +67,15 @@ export const ROLE_PERMISSIONS = {
     'event-requests': ['read', 'approve'],
     'event-plans': ['create', 'read', 'update'],
     events: ['create', 'read', 'update', 'delete'],
-    staff: ['read'],
     attendees: ['read'],
-    'staff-assignments': ['create', 'read', 'update', 'delete'],
     attendance: ['read', 'verify'],
     reports: ['create', 'read'],
     reviews: ['read'],
     notifications: ['read'],
   },
-  [UserRole.EVENT_STAFF]: {
-    'staff-assignments': ['read', 'update'],
+  [UserRole.EMPLOYEE]: {
     events: ['create', 'read', 'update'],
     registrations: ['create', 'read', 'update'],
-    attendance: ['create', 'update', 'verify'],
     reports: ['create', 'read', 'update'],
     reviews: ['create', 'read'],
     notifications: ['read'],

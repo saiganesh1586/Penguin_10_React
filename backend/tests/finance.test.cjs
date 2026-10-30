@@ -29,7 +29,7 @@ function fixture(t) {
     if (previous === undefined) delete process.env.EVENTFLOW_DATA_FILE; else process.env.EVENTFLOW_DATA_FILE = previous;
     fs.rmSync(directory, { recursive: true, force: true });
   });
-  return { db, service, userId: 'usr-emp-001c', role: UserRole.EVENT_STAFF };
+  return { db, service, userId: 'usr-emp-001c', role: UserRole.EMPLOYEE };
 }
 
 test('dashboard counts captured payments once and subtracts completed refunds', t => {

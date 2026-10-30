@@ -9,7 +9,7 @@ export class FinanceService {
   private assertFinanceEmployee(userId: string, role: UserRole): void {
     const user = this.db.findUserById(userId);
     const type = String(user && user.employeeType || '').toUpperCase();
-    if (role !== UserRole.EVENT_STAFF || !user || user.status !== 'active' || ['FINANCE_EXECUTIVE', 'SUPPORT_FINANCE'].indexOf(type) < 0) throw new ForbiddenException('Finance Executive access is required');
+    if (role !== UserRole.EMPLOYEE || !user || user.status !== 'active' || ['FINANCE_EXECUTIVE', 'SUPPORT_FINANCE'].indexOf(type) < 0) throw new ForbiddenException('Finance Executive access is required');
   }
   private enrichPayments() {
     return this.db.payments.map(payment => {

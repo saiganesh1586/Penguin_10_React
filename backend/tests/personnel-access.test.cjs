@@ -41,54 +41,46 @@ test('Support Executives cannot change employee or admin accounts through the AP
   await t.test('current and legacy support executive types cannot edit, suspend, or delete personnel', async () => {
     for (const type of ['SUPPORT_EXECUTIVE', 'REGISTRATION_VERIFICATION', 'EVENT_OPERATIONS']) {
       agent.employeeType = type;
-      const before = JSON.stringify([db.users, db.staffProfiles, db.superAdmins]);
-      for (const target of ['usr-admin-001', other.userId, 'usr-staff-001']) {
+      const before = JSON.stringify([db.users, db.superAdmins]);
+      for (const target of ['usr-admin-001', other.userId, 'usr-emp-002']) {
         await call(token, 'PATCH', `/users/${target}`, { name: 'Unauthorized name' }, 403);
         await call(token, 'PATCH', `/users/${target}/status`, { status: 'suspended' }, 403);
         await call(token, 'DELETE', `/users/${target}`, null, 403);
       }
-      const profile = db.staffProfiles.find(item => item.userId === 'usr-staff-001');
-      await call(token, 'PUT', `/staff/${profile.staffId}`, { name: 'Unauthorized', status: 'unavailable' }, 403);
-      await call(token, 'DELETE', `/staff/${profile.staffId}`, null, 403);
-      assert.equal(JSON.stringify([db.users, db.staffProfiles, db.superAdmins]), before);
+      assert.equal(JSON.stringify([db.users, db.superAdmins]), before);
     }
   });
 
   await t.test('forged role headers and privilege fields cannot bypass the restrictions', async () => {
-    const before = JSON.stringify([db.users, db.staffProfiles]);
+    const before = JSON.stringify([db.users]);
     await call(token, 'PATCH', `/users/${other.userId}`, { name: 'Forged admin edit' }, 403,
       { 'x-role': 'super_admin', 'x-user-id': 'usr-admin-001' });
     for (const body of [{ userRole: 'super_admin' }, { employeeType: 'FINANCE_EXECUTIVE' }]) {
       await call(token, 'PATCH', `/users/${agent.userId}`, body, 400);
     }
-    assert.equal(JSON.stringify([db.users, db.staffProfiles]), before);
+    assert.equal(JSON.stringify([db.users]), before);
   });
 
   await t.test('support analytics contain operational data without staff assignments, ratings or availability', async () => {
-    const before = JSON.stringify(db.staffProfiles);
-    const count = db.users.filter(user => user.userRole !== 'event_staff' && !user.employeeType).length;
+    const count = db.users.filter(user => user.userRole !== 'employee' && !user.employeeType).length;
     for (const type of ['SUPPORT_EXECUTIVE', 'REGISTRATION_VERIFICATION', 'EVENT_OPERATIONS']) {
       agent.employeeType = type;
-      const dashboard = await call(token, 'GET', '/analytics/staff-dashboard');
+      const dashboard = await call(token, 'GET', '/analytics/employee-dashboard');
       assert.equal(dashboard.totalUsers, count);
       assert.equal(dashboard.totalEvents, db.events.length);
       for (const field of ['totalAssignments', 'pendingAssignments', 'acceptedAssignments', 'myRating', 'availableDates', 'totalReportsSubmitted']) {
         assert.equal(dashboard[field], undefined, field);
       }
     }
-    assert.equal(JSON.stringify(db.staffProfiles), before);
-    const staffToken = await login('staff@example.com', 'Staff@123');
-    const staffDashboard = await call(staffToken, 'GET', '/analytics/staff-dashboard');
-    assert.equal(typeof staffDashboard.totalAssignments, 'number');
-    assert.ok(Array.isArray(staffDashboard.availableDates));
+    await call(null, 'POST', '/auth/login', { email: 'staff@example.com', password: 'Staff@123' }, 401);
     const adminDashboard = await call(admin, 'GET', '/analytics/dashboard');
-    assert.equal(adminDashboard.users.byRole.event_staff, db.users.filter(user => user.userRole === 'event_staff').length);
+    assert.equal(adminDashboard.users.byRole.employee, db.users.filter(user => user.userRole === 'employee' && user.employeeType).length);
   });
 
   await t.test('support can update its own profile and admin retains employee management', async () => {
     const own = await call(token, 'PATCH', `/users/${agent.userId}`, { name: 'Updated own profile' });
     assert.equal(own.name, 'Updated own profile');
-    assert.equal(own.userRole, 'event_staff');
+    assert.equal(own.userRole, 'employee');
     const updated = await call(admin, 'PATCH', `/users/${other.userId}`, { name: 'Admin updated employee' });
     assert.equal(updated.name, 'Admin updated employee');
     assert.equal(db.findUserById('usr-admin-001').name, 'Alex Johnson');

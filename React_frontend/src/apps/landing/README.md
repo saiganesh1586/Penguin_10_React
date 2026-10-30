@@ -1,16 +1,5 @@
-# landing
+# Landing portal
 
-Public home page, role sign in, and event catalog.
+`LandingPage.jsx` is the portal entry. Its home, discovery, gallery, about and contact components and styles live beside it. Login markup comes from `../auth/UnifiedAuthPage.jsx`; the public event catalog is `PublicEventCatalog.jsx`.
 
-Routes: / and /landing.
-
-- `api/`: Backend request helpers.
-- `app/`: Role entry component and runtime.
-- `assets/`: Files used only by this role.
-- `components/`: Reusable role UI components.
-- `context/`: React context providers.
-- `data/`: Static lookups or seed data.
-- `hooks/`: Role-specific React hooks.
-- `pages/`: Role screens.
-- `styles/`: Role stylesheets.
-- `utils/`: Role helper functions.
+`runtime.js` retains the existing portal behavior. Root routing and common application helpers live in `src/app/`.

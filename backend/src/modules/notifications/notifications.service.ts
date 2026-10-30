@@ -9,7 +9,14 @@ export class NotificationsService {
 
   findAll(role: UserRole, userId: string): any[] {
     if (!userId) throw new ForbiddenException('x-user-id header is required to view notifications');
-    return this.db.notifications.filter(n => n.userId === userId);
+    return this.db.notifications
+      .filter(n => n.userId === userId)
+      .sort((a, b) => {
+        const timeA = new Date(a.dateTime || a.createdAt || 0).getTime();
+        const timeB = new Date(b.dateTime || b.createdAt || 0).getTime();
+        if (timeB !== timeA) return timeB - timeA;
+        return (b.notificationId || '').localeCompare(a.notificationId || '');
+      });
   }
 
   markRead(notificationId: string, userId: string): any {

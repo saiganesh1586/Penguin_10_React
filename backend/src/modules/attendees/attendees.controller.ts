@@ -24,7 +24,7 @@ import { UserRole } from '../../common/constants';
 @UseGuards(RoleGuard)
 @ApiHeader({
   name: 'x-role',
-  description: 'User role (super_admin, client, event_organizer, event_staff, attendee)',
+  description: 'User role (super_admin, client, event_organizer, employee, attendee)',
   required: true,
 })
 export class AttendeesController {

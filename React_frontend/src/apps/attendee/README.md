@@ -1,17 +1,10 @@
-# attendee
+# Attendee portal
 
-Attendee event discovery, registration, tickets, and support.
+- `app/App.jsx` is the portal entry and imports the common authentication component.
+- `pages/` contains this portal's public page components.
+- `styles/` contains its unchanged styles.
+- `app/runtime.js` retains the existing dashboard behavior and inline API calls; its React migration is incomplete.
 
-Routes: /attendee.
+Root routes, common layout, and common helpers live in `src/app/`. Login markup lives in `src/apps/auth/UnifiedAuthPage.jsx`. Portal-specific API, component, context, data, hook, asset and utility modules belong inside the portal when implemented.
 
-- `api/`: Backend request helpers.
-- `app/`: Role entry component and runtime.
-- `assets/`: Files used only by this role.
-- `components/`: Reusable role UI components.
-- `context/`: React context providers.
-- `data/`: Static lookups or seed data.
-- `hooks/`: Role-specific React hooks.
-- `pages/`: Role screens.
-- `styles/`: Role stylesheets.
-- `utils/`: Role helper functions.                                                           
-       
+Ticket scanning is in `utils/ticket-scanner.js`.

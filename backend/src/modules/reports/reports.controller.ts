@@ -7,7 +7,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Response } from 'express';
 import { ReportsService } from './reports.service';
-import { CreateEventCompletionReportDto, CreateEventReportDto, CreateStaffReportDto } from './dto/report.dto';
+import { CreateEventCompletionReportDto, CreateEventReportDto } from './dto/report.dto';
 import { RoleGuard } from '../../common/guards/role.guard';
 import { UserRoleDecorator } from '../../common/decorators/user-role.decorator';
 import { UserId } from '../../common/decorators/user-id.decorator';
@@ -133,20 +133,5 @@ export class ReportsController {
       'Content-Disposition': `inline; filename="${photo.fileName.replace(/[^a-zA-Z0-9._-]/g, '_')}"`,
     });
     return new StreamableFile(photo.stream);
-  }
-
-  @Post('staff')
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Create staff report (EVENT_STAFF only, must be assigned to event)' })
-  @ApiResponse({ status: 201, description: 'Staff report created. Organizer notified.' })
-  @ApiResponse({ status: 403, description: 'Staff can only report for assigned events' })
-  createStaffReport(@Body() dto: CreateStaffReportDto, @UserRoleDecorator() role: UserRole, @UserId() userId: string) {
-    return this.service.createStaffReport(dto, role, userId);
-  }
-
-  @Get('staff')
-  @ApiOperation({ summary: 'List staff reports (role-filtered)' })
-  findAllStaffReports(@UserRoleDecorator() role: UserRole, @UserId() userId: string) {
-    return this.service.findAllStaffReports(role, userId);
   }
 }

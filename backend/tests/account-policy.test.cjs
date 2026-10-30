@@ -14,9 +14,8 @@ test('account creation and profile changes enforce one account per email', async
   DataStore.instance = undefined;
   const db = DataStore.getInstance();
   const { UsersService } = require('../src/modules/users/users.service');
-  const { StaffService } = require('../src/modules/staff/staff.service');
   const { AttendeesService } = require('../src/modules/attendees/attendees.service');
-  const users = new UsersService(), staff = new StaffService(), attendees = new AttendeesService();
+  const users = new UsersService(), attendees = new AttendeesService();
   t.after(() => {
     DataStore.instance = undefined;
     if (previousFile === undefined) delete process.env.EVENTFLOW_DATA_FILE; else process.env.EVENTFLOW_DATA_FILE = previousFile;
@@ -26,12 +25,11 @@ test('account creation and profile changes enforce one account per email', async
   });
 
   await t.test('all registration paths reject existing emails regardless of case or surrounding spaces', () => {
-    const before = JSON.stringify([db.users, db.staffProfiles, db.attendees]);
+    const before = JSON.stringify([db.users, db.attendees]);
     const details = { name: 'Another account', email: '  ATTENDEE@EXAMPLE.COM  ', password: 'Test@123' };
     assert.throws(() => users.create({ ...details, userRole: UserRole.CLIENT }, UserRole.SUPER_ADMIN), /Email already registered/);
-    assert.throws(() => staff.create(details, UserRole.SUPER_ADMIN), /Email already registered/);
     assert.throws(() => attendees.create(details, UserRole.SUPER_ADMIN), /Email already registered/);
-    assert.equal(JSON.stringify([db.users, db.staffProfiles, db.attendees]), before);
+    assert.equal(JSON.stringify([db.users, db.attendees]), before);
     const original = db.findUserByEmail('attendee@example.com');
     original.status = 'inactive';
     assert.throws(() => users.create({ ...details, userRole: UserRole.CLIENT }, UserRole.SUPER_ADMIN), /Email already registered/);
@@ -40,14 +38,11 @@ test('account creation and profile changes enforce one account per email', async
 
   await t.test('profile edits cannot take another account email or partially change a rejected profile', () => {
     const attendee = db.attendees.find(item => item.userId === 'usr-attendee-001');
-    const employee = db.staffProfiles.find(item => item.userId === 'usr-staff-001');
-    const before = JSON.stringify([db.users, db.staffProfiles, db.attendees]);
+    const before = JSON.stringify([db.users, db.attendees]);
     assert.throws(() => users.update(attendee.userId, { email: ' CLIENT@EXAMPLE.COM ', name: 'Changed' }, UserRole.ATTENDEE, attendee.userId), /Email already registered/);
-    assert.throws(() => staff.update(employee.staffId, { email: ' CLIENT@EXAMPLE.COM ', availableDates: ['2099-01-01'], status: 'busy' }, UserRole.EVENT_STAFF, employee.userId), /Email already registered/);
     assert.throws(() => attendees.update(attendee.attendeeId, { email: ' CLIENT@EXAMPLE.COM ', name: 'Changed' }, UserRole.ATTENDEE, attendee.userId), /Email already registered/);
-    assert.equal(JSON.stringify([db.users, db.staffProfiles, db.attendees]), before);
+    assert.equal(JSON.stringify([db.users, db.attendees]), before);
     users.update(attendee.userId, { email: ' ATTENDEE@EXAMPLE.COM ' }, UserRole.ATTENDEE, attendee.userId);
-    staff.update(employee.staffId, { email: ' STAFF@EXAMPLE.COM ' }, UserRole.EVENT_STAFF, employee.userId);
     attendees.update(attendee.attendeeId, { email: ' ATTENDEE@EXAMPLE.COM ' }, UserRole.ATTENDEE, attendee.userId);
     assert.equal(db.findUserById(attendee.userId).email, 'attendee@example.com');
   });

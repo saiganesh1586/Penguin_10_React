@@ -32,12 +32,12 @@ export class SupportService {
   private isSupportAgent(userId: string, role: UserRole): boolean {
     const user = this.db.findUserById(userId);
     return role === UserRole.SUPER_ADMIN
-      || (role === UserRole.EVENT_STAFF && ['SUPPORT_EXECUTIVE', 'REGISTRATION_VERIFICATION', 'EVENT_OPERATIONS']
+      || (role === UserRole.EMPLOYEE && ['SUPPORT_EXECUTIVE', 'REGISTRATION_VERIFICATION', 'EVENT_OPERATIONS']
         .includes(String(user?.employeeType || '').trim().toUpperCase().replace(/[\s-]+/g, '_')));
   }
 
   private notifySupportAgents(ticket: SupportTicket, message: string): void {
-    this.db.users.filter(user => user.userRole === UserRole.EVENT_STAFF && user.status === 'active' &&
+    this.db.users.filter(user => user.userRole === UserRole.EMPLOYEE && user.status === 'active' &&
       this.isSupportAgent(user.userId, user.userRole) && user.userId !== ticket.userId).forEach(user => {
       this.db.notifications.push({ notificationId: this.db.generateId('notif'), userId: user.userId,
         supportTicketId: ticket.ticketId, message, type: 'support_ticket_received', read: false,

@@ -3,3 +3,11 @@ build/
 dist/
 logs/*.log
 .env
+
+# Local IDE scratch files and migration backups
+.gemini/
+.dist/
+.frontend-structure-backup-*/
+.feature-structure-backup-*/
+.dinetime-structure-backup-*/
+.dinetime-layout-backup-*/

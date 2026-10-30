@@ -15,7 +15,7 @@ export class SupportReportsService {
     const user = this.db.findUserById(userId);
     const type = String(user?.employeeType || '').trim().toUpperCase().replace(/[\s-]+/g, '_');
     const allowed = operational ? ['SUPPORT_FINANCE', 'FINANCE_EXECUTIVE'] : ['SUPPORT_EXECUTIVE', 'REGISTRATION_VERIFICATION', 'EVENT_OPERATIONS'];
-    if (role !== UserRole.EVENT_STAFF || !allowed.includes(type)) {
+    if (role !== UserRole.EMPLOYEE || !allowed.includes(type)) {
       throw new ForbiddenException('Only support executives can submit support reports');
     }
   }

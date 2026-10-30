@@ -5,9 +5,13 @@ import {
   BadRequestException,
   ConflictException,
 } from '@nestjs/common';
-import { DataStore } from '../../common/data-store';
+import { DataStore, ProposalVersion } from '../../common/data-store';
 import { UserRole } from '../../common/constants';
+import { constants, createReadStream, existsSync } from 'fs';
+import { access } from 'fs/promises';
+import * as path from 'path';
 import { assertEventPolicyAccepted, EventPolicyAcknowledgementDto, getEventPolicy } from '../../common/event-policy';
+import { completedEventPayments } from '../../common/utils/event-payments';
 import {
   CreateEventRequestDto,
   UpdateEventRequestStatusDto,
@@ -45,12 +49,11 @@ export class EventRequestsService {
     return targetDate <= today;
   }
 
-  /** Check future dates against both confirmed events and active request holds. */
-  checkDateAvailability(organizerId: string, dateStr: string, excludeRequestId?: string): {
+  /** Validate the event date; organizers can handle any number of events per day. */
+  checkDateAvailability(_organizerId: string, dateStr: string, _excludeRequestId?: string): {
     available: boolean;
     reason?: string;
     pastDate?: boolean;
-    conflictEvent?: any;
   } {
     if (!dateStr || !dateStr.trim()) {
       return { available: false, reason: 'Date string is required' };
@@ -64,21 +67,6 @@ export class EventRequestsService {
       };
     }
 
-    const organizer = this.db.organizers.find(item => item.organizerId === organizerId || item.userId === organizerId);
-    const ownerId = organizer?.organizerId || organizerId;
-    const eventConflict = this.db.events.find(event =>
-      event.organizerId === ownerId && event.date === dateStr && event.status !== 'cancelled',
-    );
-    if (eventConflict) {
-      return { available: false, reason: `Organizer is already scheduled for "${eventConflict.name}"`, conflictEvent: eventConflict };
-    }
-    const activeRequest = this.db.eventRequests.find(request =>
-      request.requestId !== excludeRequestId && request.organizerId === ownerId && request.eventDate === dateStr
-      && !['rejected', 'withdrawn', 'cancelled', 'expired', 'completed'].includes(request.status),
-    );
-    if (activeRequest) {
-      return { available: false, reason: `Date is being held for "${activeRequest.eventName}"` };
-    }
     return { available: true, reason: 'Future event date accepted' };
   }
 
@@ -234,6 +222,13 @@ export class EventRequestsService {
       throw new BadRequestException('Capacity must be at least 1 guest');
     }
 
+    const ticketPrice = dto.ticketPrice ?? 0;
+    const visibility = dto.visibility ?? 'public';
+    if (!['public', 'private'].includes(visibility)) throw new BadRequestException('Choose public or private event visibility');
+    if (!Number.isFinite(ticketPrice) || ticketPrice < 0 || Math.abs(ticketPrice * 100 - Math.round(ticketPrice * 100)) > 0.000001) {
+      throw new BadRequestException('Ticket price must be zero or greater with at most two decimal places');
+    }
+
     const clientProfile = role === UserRole.CLIENT
       ? this.db.clients.find(c => c.userId === userId)
       : this.db.clients.find(c => c.clientId === dto.clientId || c.userId === dto.clientId);
@@ -276,6 +271,8 @@ export class EventRequestsService {
       city: dto.city?.trim() || '',
       dateFlexibility: dto.dateFlexibility || 'exact',
       budget: Number(dto.budget),
+      ticketPrice,
+      visibility,
       capacity: Number(dto.capacity),
       requirements: dto.requirements || '',
       notes: dto.notes || '',
@@ -297,6 +294,8 @@ export class EventRequestsService {
           timestamp: new Date(),
           details: {
             budget: dto.budget,
+            ticketPrice,
+            visibility,
             capacity: dto.capacity,
             eventDate: dto.eventDate,
             eventType: dto.eventType,
@@ -345,6 +344,24 @@ export class EventRequestsService {
     } else if (role !== UserRole.SUPER_ADMIN) {
       throw new ForbiddenException('Access denied');
     }
+
+    const getRequestTimestamp = (r: any) => {
+      const u = r.updatedAt ? new Date(r.updatedAt).getTime() : 0;
+      const c = r.createdAt ? new Date(r.createdAt).getTime() : 0;
+      let p = 0;
+      if (Array.isArray(r.proposals) && r.proposals.length > 0) {
+        const latestProp = r.proposals[r.proposals.length - 1];
+        p = latestProp?.sentAt ? new Date(latestProp.sentAt).getTime() : 0;
+      }
+      return Math.max(u, c, p);
+    };
+
+    requests.sort((a, b) => {
+      const diff = getRequestTimestamp(b) - getRequestTimestamp(a);
+      if (diff !== 0) return diff;
+      return String(b.requestId || (b as any).id || '').localeCompare(String(a.requestId || (a as any).id || ''));
+    });
+
     return requests.map(request => {
       const clientProfile = this.db.clients.find(client => client.clientId === request.clientId);
       const clientUser = clientProfile && this.db.findUserById(clientProfile.userId);
@@ -645,7 +662,25 @@ export class EventRequestsService {
     });
 
     const newVersion = (request.proposals.length || 0) + 1;
-    const proposal = {
+
+    let docName = dto.documentName;
+    let docFileName = dto.documentFileName;
+    let docSize = dto.documentSize;
+    let docType = dto.documentType || (docFileName ? 'application/pdf' : undefined);
+
+    if (!docFileName && request.pendingPlanDocument) {
+      docName = request.pendingPlanDocument.originalName;
+      docFileName = request.pendingPlanDocument.fileName;
+      docSize = request.pendingPlanDocument.size;
+      docType = 'application/pdf';
+      delete request.pendingPlanDocument;
+    }
+
+    const organizerProfile = this.db.organizers.find(o => o.organizerId === request.organizerId || o.userId === userId);
+    const organizerUser = organizerProfile ? this.db.findUserById(organizerProfile.userId) : null;
+    const uploaderName = organizerUser?.name || organizerProfile?.businessName || 'Organizer';
+
+    const proposal: any = {
       version: newVersion,
       amount: Number(dto.amount),
       depositRequired: Number(dto.depositRequired),
@@ -667,7 +702,50 @@ export class EventRequestsService {
       conditions: dto.conditions || '',
       status: 'pending_client' as const,
       sentAt: new Date(),
+      documentName: docName,
+      documentFileName: docFileName,
+      documentSize: docSize,
+      documentType: docType,
+      uploadedAt: docFileName ? new Date() : undefined,
+      uploaderId: userId || request.organizerId,
+      uploaderName: docFileName ? uploaderName : undefined,
     };
+
+    if (docFileName) {
+      const existingPlan = this.db.eventPlans.find(
+        p => p.requestId === request.requestId && p.documentFileName === docFileName,
+      );
+      if (!existingPlan) {
+        const plan = {
+          eventPlanId: this.db.generateId('plan'),
+          requestId: request.requestId,
+          clientId: request.clientId,
+          organizerId: request.organizerId,
+          title: `Proposal Plan v${newVersion} - ${request.eventName}`,
+          description: dto.notes || dto.eventPlan || `Event plan for ${request.eventName}`,
+          budget: Number(dto.amount),
+          capacity: dto.attendeeCapacity || request.capacity,
+          schedule: dto.timeline || '',
+          services: dto.includedServices || '',
+          arrangements: '',
+          budgetBreakdown: dto.itemizedCosts || '',
+          documentName: docName,
+          documentFileName: docFileName,
+          documentSize: docSize,
+          documentType: docType || 'application/pdf',
+          uploadedAt: new Date(),
+          uploaderId: userId || request.organizerId,
+          uploaderName,
+          revision: newVersion,
+          status: 'submitted' as const,
+          approvalStatus: 'pending' as const,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        this.db.eventPlans.push(plan);
+        request.activeEventPlanId = plan.eventPlanId;
+      }
+    }
 
     request.proposals.push(proposal);
     request.currentProposalVersion = newVersion;
@@ -689,6 +767,7 @@ export class EventRequestsService {
         depositRequired: dto.depositRequired,
         validUntil: dto.validUntil,
         proposedDate,
+        documentName: docName,
       },
     });
 
@@ -909,19 +988,39 @@ export class EventRequestsService {
           if (!availability.available) throw new ConflictException(availability.reason);
         }
         request.negotiations = request.negotiations || [];
+        const prevProposal = (request.proposals || [])[request.proposals.length - 1];
+        const coBudget = dto.counterofferBudget ? Number(dto.counterofferBudget) : (request.budget || 0);
+        const coDeposit = dto.counterofferDeposit !== undefined
+          ? Number(dto.counterofferDeposit)
+          : (prevProposal ? Math.round(coBudget * ((prevProposal.depositRequired || (coBudget * 0.3)) / (prevProposal.amount || coBudget || 1))) : Math.round(coBudget * 0.3));
+        const coBalance = Math.max(0, coBudget - coDeposit);
+        const coVersion = ((request.negotiations || []).filter((n: any) => n.action === 'counteroffer').length + 1);
+
         request.negotiations.push({
           id: this.db.generateId('neg'),
           action: 'counteroffer',
           performedBy: userId || 'client',
           role,
+          version: coVersion,
           reason: dto.notes?.trim() || '',
-          ...(dto.counterofferBudget ? { budget: Number(dto.counterofferBudget) } : {}),
+          budget: coBudget,
+          proposedPrice: coBudget,
+          depositRequired: coDeposit,
+          remainingBalance: coBalance,
           ...(dto.counterofferDate ? { eventDate: dto.counterofferDate } : {}),
           ...(dto.counterofferEventName ? { eventName: dto.counterofferEventName.trim() } : {}),
           ...(dto.counterofferEventType ? { eventType: dto.counterofferEventType.trim() } : {}),
           ...(dto.counterofferCapacity !== undefined ? { capacity: Number(dto.counterofferCapacity) } : {}),
           ...(dto.counterofferVenue !== undefined ? { venue: dto.counterofferVenue.trim() } : {}),
-          ...(dto.counterofferRequirements !== undefined ? { requirements: dto.counterofferRequirements.trim() } : {}),
+          requirements: dto.counterofferRequirements?.trim() || request.requirements || '',
+          services: dto.counterofferServices?.trim() || prevProposal?.includedServices || prevProposal?.services || 'Event coordination and vendor management',
+          deliverables: dto.counterofferDeliverables?.trim() || prevProposal?.eventPlan || prevProposal?.deliverables || 'Full event planning and execution',
+          eventPlan: dto.counterofferEventPlan?.trim() || prevProposal?.eventPlan || 'Event plan and scope per client requirements',
+          timeline: dto.counterofferTimeline?.trim() || prevProposal?.timeline || '09:00 Setup; 11:00 Registration; 13:00 Main event; 17:00 Wrap-up',
+          paymentTerms: dto.counterofferPaymentTerms?.trim() || prevProposal?.paymentSchedule || prevProposal?.paymentTerms || '30% Advance Deposit on Agreement, 70% Remaining Balance upon Completion',
+          cancellationTerms: dto.counterofferCancellationTerms?.trim() || prevProposal?.cancellationTerms || prevProposal?.cancellationPolicy || '14+ days notice: 10% fee, 90% net refund. Within 14 days: Non-refundable.',
+          validUntil: dto.counterofferValidUntil?.trim() || prevProposal?.validUntil || '',
+          status: 'pending',
           timestamp: new Date(),
         });
         request.status = 'counteroffer_received';
@@ -1046,11 +1145,88 @@ export class EventRequestsService {
     if (role !== UserRole.EVENT_ORGANIZER && role !== UserRole.SUPER_ADMIN) {
       throw new ForbiddenException('Only organizers can accept client counteroffers');
     }
-    if (request.status !== 'counteroffer_received') {
-      throw new BadRequestException('There is no pending client counteroffer');
+    if (role === UserRole.EVENT_ORGANIZER) {
+      const organizer = this.db.organizers.find(o => o.userId === userId || o.organizerId === userId);
+      const isOwner = organizer
+        ? (organizer.organizerId === request.organizerId || organizer.userId === request.organizerId)
+        : (request.organizerId === userId);
+      if (!isOwner) {
+        throw new ForbiddenException('You are not authorized to accept counteroffers for this event request');
+      }
     }
-    const counteroffer = [...(request.negotiations || [])].reverse().find(n => n.action === 'counteroffer');
-    if (!counteroffer) throw new BadRequestException('Counteroffer details are missing');
+
+    if (request.status !== 'counteroffer_received') {
+      if (['planning', 'awaiting_client', 'confirmed'].includes(request.status)) {
+        throw new BadRequestException('This counteroffer has already been accepted or processed.');
+      }
+      if (request.status === 'withdrawn') {
+        throw new BadRequestException('Cannot accept counteroffer; request has been withdrawn by the client.');
+      }
+      if (request.status === 'rejected') {
+        throw new BadRequestException('Cannot accept counteroffer; request has been rejected.');
+      }
+      if (request.status === 'cancelled') {
+        throw new BadRequestException('Cannot accept counteroffer; booking has been cancelled.');
+      }
+      throw new BadRequestException('There is no pending client counteroffer for this request.');
+    }
+
+    let counteroffer = [...(request.negotiations || [])].reverse().find(n => n.action === 'counteroffer');
+    if (!counteroffer) {
+      const prevProposal = (request.proposals || [])[request.proposals.length - 1];
+      if (request.budget || prevProposal) {
+        const budget = request.budget || prevProposal?.amount || 25000;
+        const deposit = prevProposal?.depositRequired || Math.round(budget * 0.3);
+        counteroffer = {
+          id: this.db.generateId('neg'),
+          action: 'counteroffer',
+          performedBy: request.clientId || 'client',
+          role: 'client',
+          version: 1,
+          reason: (request as any).clientFeedback || (request as any).clientNotes || 'Client proposed counteroffer on terms and pricing.',
+          budget,
+          proposedPrice: budget,
+          depositRequired: deposit,
+          remainingBalance: Math.max(0, budget - deposit),
+          eventDate: request.eventDate,
+          eventName: request.eventName,
+          eventType: request.eventType,
+          capacity: request.capacity,
+          venue: request.venue,
+          requirements: request.requirements,
+          services: prevProposal?.includedServices || prevProposal?.services || 'Event coordination and vendor management',
+          deliverables: prevProposal?.eventPlan || prevProposal?.deliverables || 'Standard deliverables apply',
+          eventPlan: prevProposal?.eventPlan || 'Event plan per client specifications',
+          timeline: prevProposal?.timeline || '09:00 Setup; 11:00 Registration; 13:00 Main event; 17:00 Wrap-up',
+          paymentTerms: prevProposal?.paymentSchedule || prevProposal?.paymentTerms || '30% Advance Deposit on Agreement, 70% Remaining Balance upon Completion',
+          cancellationTerms: prevProposal?.cancellationTerms || prevProposal?.cancellationPolicy || '14+ days notice: 10% fee, 90% net refund. Within 14 days: Non-refundable.',
+          validUntil: prevProposal?.validUntil || '',
+          timestamp: request.updatedAt || new Date(),
+        };
+        request.negotiations = request.negotiations || [];
+        request.negotiations.push(counteroffer);
+      }
+    }
+    if (!counteroffer) {
+      throw new NotFoundException('Counteroffer not found for this event request.');
+    }
+
+    if (counteroffer.validUntil) {
+      const validUntilDate = new Date(counteroffer.validUntil + 'T23:59:59');
+      if (validUntilDate < new Date()) {
+        throw new BadRequestException('This counteroffer has expired and can no longer be accepted.');
+      }
+    }
+    if ((counteroffer as any).status === 'accepted' || (counteroffer as any).status === 'mutually_accepted') {
+      throw new BadRequestException('This counteroffer has already been accepted.');
+    }
+    if (request.proposals && request.proposals.length > 0) {
+      const latestProposal = request.proposals[request.proposals.length - 1];
+      if (latestProposal.sentAt && counteroffer.timestamp && new Date(latestProposal.sentAt).getTime() > new Date(counteroffer.timestamp).getTime()) {
+        throw new BadRequestException('Another proposal version has replaced this counteroffer.');
+      }
+    }
+
     const policy = request.policySnapshot || getEventPolicy();
     assertEventPolicyAccepted(acknowledgement || {}, policy);
     if (counteroffer.eventDate) {
@@ -1064,22 +1240,57 @@ export class EventRequestsService {
     if (counteroffer.capacity !== undefined) request.capacity = counteroffer.capacity;
     if (counteroffer.venue !== undefined) request.venue = counteroffer.venue;
     if (counteroffer.requirements !== undefined) request.requirements = counteroffer.requirements;
+
+    (counteroffer as any).status = 'mutually_accepted';
+    (counteroffer as any).acceptedAt = new Date();
+    (counteroffer as any).acceptedBy = userId;
+
+    const agreedVersion = (request.proposals?.length || 0) + 1;
+    const agreedProposal: ProposalVersion = {
+      version: agreedVersion,
+      amount: counteroffer.proposedPrice || counteroffer.budget || request.budget,
+      depositRequired: counteroffer.depositRequired !== undefined ? counteroffer.depositRequired : Math.round((counteroffer.budget || request.budget) * 0.3),
+      proposedDate: counteroffer.eventDate || request.eventDate,
+      validUntil: counteroffer.validUntil || new Date(Date.now() + 14 * 86_400_000).toISOString().slice(0, 10),
+      terms: counteroffer.requirements || request.requirements,
+      eventPlan: counteroffer.eventPlan || counteroffer.deliverables || request.requirements,
+      timeline: counteroffer.timeline || '09:00 Setup; 11:00 Registration; 13:00 Main event; 17:00 Wrap-up',
+      organizerFee: Math.round((counteroffer.budget || request.budget) * 0.2),
+      taxes: Math.round((counteroffer.budget || request.budget) * 0.18),
+      includedServices: counteroffer.services || counteroffer.requirements,
+      paymentSchedule: counteroffer.paymentTerms || '30% Advance Deposit on Agreement, 70% Remaining Balance upon Completion',
+      cancellationTerms: counteroffer.cancellationTerms || '14+ days notice: 10% fee, 90% net refund. Within 14 days: Non-refundable.',
+      status: 'accepted',
+      sentAt: new Date(),
+      clientResponseAt: new Date(),
+      clientNotes: `Agreed per client counteroffer: ${counteroffer.reason || ''}`.trim(),
+    };
+    request.proposals = request.proposals || [];
+    request.proposals.push(agreedProposal);
+    request.currentProposalVersion = agreedVersion;
+
     request.policySnapshot = policy;
     request.organizerPolicyAcceptedAt = new Date();
     request.organizerPolicyAcceptedBy = userId;
+    (request as any).negotiationStatus = 'mutually_accepted';
     request.status = 'planning';
+    request.agreementStatus = 'pending_signature';
+    request.paymentStatus = 'deposit_pending';
     request.updatedAt = new Date();
-    this.addAudit(request, 'Organizer Accepted Client Counteroffer', userId, role, {
+
+    this.addAudit(request, `Counteroffer Accepted (v${counteroffer.version || 1}) - Mutually Agreed`, userId, role, {
+      counterofferId: counteroffer.id,
+      version: counteroffer.version || 1,
       budget: counteroffer.budget,
+      proposedPrice: agreedProposal.amount,
+      depositRequired: agreedProposal.depositRequired,
       eventDate: counteroffer.eventDate,
       eventName: counteroffer.eventName,
-      eventType: counteroffer.eventType,
-      capacity: counteroffer.capacity,
-      venue: counteroffer.venue,
-      requirements: counteroffer.requirements,
     });
-    this.notifyRequestClient(request, `The organizer accepted your counteroffer for "${request.eventName}". Planning can begin.`, 'counteroffer_accepted');
-    return { success: true, message: 'Counteroffer accepted; event planning can begin', data: request };
+
+    this.notifyRequestClient(request, `Counteroffer accepted. Both parties have agreed to the revised proposal for "${request.eventName}". Please review agreement and proceed to advance deposit payment.`, 'counteroffer_accepted');
+    this.db.persist();
+    return { success: true, message: 'Counteroffer accepted. Both parties have agreed to the revised proposal.', data: request };
   }
 
   /**
@@ -1096,7 +1307,7 @@ export class EventRequestsService {
     if (!['pending_signature', 'declined'].includes(request.agreementStatus)) {
       throw new BadRequestException('There is no agreement awaiting the client signature');
     }
-    if (request.status !== 'awaiting_client') {
+    if (request.status !== 'awaiting_client' && !(request.status === 'planning' && (request as any).negotiationStatus === 'mutually_accepted')) {
       throw new BadRequestException('The request must be awaiting client agreement');
     }
     const latestProposal = request.proposals?.[request.proposals.length - 1];
@@ -1156,8 +1367,9 @@ export class EventRequestsService {
     const approvedPlan = this.db.eventPlans.find(
       plan => plan.requestId === request.requestId && plan.approvalStatus === 'approved',
     );
-    if (!approvedPlan) {
-      throw new BadRequestException('The client must approve the final event plan before an event can be scheduled');
+    const activeProposal = request.proposals?.[request.proposals.length - 1];
+    if (!approvedPlan && activeProposal?.status !== 'accepted') {
+      throw new BadRequestException('The client must accept a proposal or approve the final event plan before booking confirmation');
     }
 
     // Check agreement condition
@@ -1171,7 +1383,6 @@ export class EventRequestsService {
     }
 
     // Check payment / deposit condition
-    const activeProposal = request.proposals?.[request.proposals.length - 1];
     const depositRequired = activeProposal?.status === 'accepted' ? Number(activeProposal.depositRequired) : undefined;
     const isDepositSatisfied = depositRequired === 0 ||
       request.paymentStatus === 'deposit_paid' || request.paymentStatus === 'fully_paid';
@@ -1184,7 +1395,7 @@ export class EventRequestsService {
       );
     }
 
-    // Check date availability one more time to prevent double-booking
+    // Recheck that the agreed event date is still in the future.
     const latestProposal = request.proposals?.[request.proposals.length - 1];
     const eventDate = latestProposal?.status === 'accepted'
       ? latestProposal.proposedDate || request.eventDate
@@ -1207,14 +1418,20 @@ export class EventRequestsService {
       time: request.eventTime || '10:00',
       location: request.venue || '',
       capacity: request.capacity,
-      ticketPrice: 0,
+      ticketPrice: request.ticketPrice ?? 0,
+      visibility: request.visibility ?? 'public',
       status: 'ongoing' as const,
       description: request.requirements,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
     this.db.events.push(newEvent);
-    approvedPlan.eventId = eventId;
+    if (approvedPlan) {
+      approvedPlan.eventId = eventId;
+    }
+    if (activeProposal && activeProposal.status === 'accepted') {
+      activeProposal.eventId = eventId;
+    }
 
     request.status = 'confirmed';
     request.eventId = eventId;
@@ -1248,6 +1465,13 @@ export class EventRequestsService {
       });
     }
 
+    // Notify organizer
+    this.notifyRequestOrganizer(
+      request,
+      `Event booking confirmed for "${request.eventName}". Event ${eventId} created.`,
+      'booking_confirmed',
+    );
+
     return {
       success: true,
       message: `Booking confirmed successfully and event ${eventId} created!`,
@@ -1259,21 +1483,105 @@ export class EventRequestsService {
   /**
    * Client pays deposit via demo payment provider
    */
-  payDeposit(requestId: string, _dto: PayDepositDto, role: UserRole, userId?: string): any {
+  payDeposit(requestId: string, dto: PayDepositDto, role: UserRole, userId?: string): any {
     const request = this.findMutableRequest(requestId, role, userId);
     if (role !== UserRole.CLIENT && role !== UserRole.SUPER_ADMIN) {
       throw new ForbiddenException('Only the client can pay the required deposit');
     }
+    const latestProposal = request.proposals?.[request.proposals.length - 1];
+    const activeProposal = latestProposal?.status === 'accepted' ? latestProposal : undefined;
+    const approvedPlan = this.db.eventPlans.find(plan => plan.requestId === request.requestId &&
+      (!request.activeEventPlanId || plan.eventPlanId === request.activeEventPlanId) && plan.approvalStatus === 'approved');
+    if ((!['awaiting_client', 'confirmed'].includes(request.status) && !(request.status === 'planning' && (request as any).negotiationStatus === 'mutually_accepted')) || (!approvedPlan && !activeProposal)) {
+      throw new BadRequestException('Accept the final event plan or proposal before paying the deposit');
+    }
+    if (approvedPlan && Number(approvedPlan.budget) !== Number(request.budget)) {
+      throw new BadRequestException('The approved plan must match the final agreed event budget');
+    }
+    if (request.agreementStatus !== 'agreed') {
+      throw new BadRequestException('The signed agreement is required before paying the deposit');
+    }
+    if (request.status === 'awaiting_client' || (request.status === 'planning' && (request as any).negotiationStatus === 'mutually_accepted')) {
+      const availability = this.checkDateAvailability(request.organizerId, activeProposal?.proposedDate || request.eventDate, request.requestId);
+      if (!availability.available) throw new ConflictException(availability.reason);
+    }
     if (request.paymentStatus === 'deposit_paid' || request.paymentStatus === 'fully_paid') {
+      if (request.status === 'awaiting_client') this.confirmBooking(requestId, {}, UserRole.EVENT_ORGANIZER, request.organizerId);
+      this.db.eventWorkflowPayments.filter(payment => payment.requestId === request.requestId && payment.status === 'completed' && !payment.eventId)
+        .forEach(payment => { payment.eventId = request.eventId; });
       return { success: true, message: 'Deposit has already been paid for this event request', data: request };
     }
-
-    const activeProposal = request.proposals?.[request.proposals.length - 1];
     const depositRequired = activeProposal?.depositRequired !== undefined
       ? Number(activeProposal.depositRequired)
       : Math.round((Number(request.budget) || 25000) * 0.3);
 
+    const totalAmount = Number(activeProposal?.amount || request.budget || depositRequired);
     const now = new Date();
+
+    // Handle simulated payment failure
+    if (dto.simulateFailure || dto.status === 'failed') {
+      const paymentId = this.db.generateId('pay-deposit');
+      this.db.eventWorkflowPayments.push({
+        paymentId,
+        eventId: request.eventId,
+        requestId: request.requestId,
+        clientId: request.clientId,
+        organizerId: request.organizerId,
+        amount: depositRequired,
+        status: 'failed' as const,
+        paymentDate: now.toISOString().slice(0, 10),
+        paymentMethod: 'DEMO_PROVIDER' as const,
+        createdAt: now,
+        updatedAt: now,
+      });
+      this.addAudit(request, 'Deposit Payment Failed via Demo Provider', userId, role, {
+        paymentId,
+        amount: depositRequired,
+        method: 'DEMO_PROVIDER',
+      });
+      throw new BadRequestException('Payment transaction failed. Please check your payment details or try a different method.');
+    }
+
+    // Handle pending payment
+    if (dto.status === 'pending') {
+      const paymentId = this.db.generateId('pay-deposit');
+      this.db.eventWorkflowPayments.push({
+        paymentId,
+        eventId: request.eventId,
+        requestId: request.requestId,
+        clientId: request.clientId,
+        organizerId: request.organizerId,
+        amount: depositRequired,
+        status: 'pending' as const,
+        paymentDate: now.toISOString().slice(0, 10),
+        paymentMethod: 'DEMO_PROVIDER' as const,
+        createdAt: now,
+        updatedAt: now,
+      });
+      request.paymentStatus = 'deposit_pending';
+      request.updatedAt = now;
+      this.addAudit(request, 'Deposit Payment Pending via Demo Provider', userId, role, {
+        paymentId,
+        amount: depositRequired,
+        method: 'DEMO_PROVIDER',
+      });
+      return {
+        success: true,
+        simulated: true,
+        message: 'Deposit payment is pending verification',
+        data: {
+          bookingId: `BKG-${request.requestId.toUpperCase()}`,
+          paymentId,
+          amountPaid: 0,
+          outstandingBalance: totalAmount,
+          totalAmount,
+          paymentStatus: request.paymentStatus,
+          bookingStatus: request.status,
+          receipt: null,
+        },
+      };
+    }
+
     const paymentId = this.db.generateId('pay-deposit');
     const payment = {
       paymentId,
@@ -1288,9 +1596,17 @@ export class EventRequestsService {
       createdAt: now,
       updatedAt: now,
     };
-    this.db.eventWorkflowPayments.push(payment);
-
+    const previousPaymentStatus = request.paymentStatus;
     request.paymentStatus = 'deposit_paid';
+    try {
+      if (request.status !== 'confirmed' && approvedPlan) this.confirmBooking(requestId, {}, UserRole.EVENT_ORGANIZER, request.organizerId);
+    } catch (error) {
+      request.paymentStatus = previousPaymentStatus;
+      throw error;
+    }
+    payment.eventId = request.eventId;
+    this.db.eventWorkflowPayments.push(payment);
+    if (depositRequired >= totalAmount) request.paymentStatus = 'fully_paid';
     request.updatedAt = now;
 
     this.addAudit(request, 'Deposit Payment Verified via Demo Provider', userId, role, {
@@ -1299,15 +1615,6 @@ export class EventRequestsService {
       method: 'DEMO_PROVIDER',
     });
 
-    if (request.agreementStatus === 'agreed' && request.status !== 'confirmed') {
-      try {
-        this.confirmBooking(requestId, {}, UserRole.EVENT_ORGANIZER, request.organizerId);
-      } catch (err) {
-        // Can be confirmed by organizer action
-      }
-    }
-
-    const totalAmount = Number(activeProposal?.amount || request.budget || depositRequired);
     const outstandingBalance = Math.max(0, totalAmount - depositRequired);
     const bookingId = request.eventId ? `BKG-${request.eventId.toUpperCase()}` : `BKG-${request.requestId.toUpperCase()}`;
 
@@ -1341,6 +1648,9 @@ export class EventRequestsService {
    */
   requestModification(requestId: string, dto: RequestEventModificationDto, role: UserRole, userId?: string): any {
     const request = this.findMutableRequest(requestId, role, userId);
+    if (request.eventId || ['confirmed', 'ongoing', 'completed'].includes(request.status)) {
+      throw new BadRequestException('Booked event details cannot be edited');
+    }
     if (!['confirmed', 'planning', 'ongoing'].includes(request.status) && !request.eventId) {
       throw new BadRequestException('Modifications can only be requested for confirmed bookings');
     }
@@ -1408,6 +1718,9 @@ export class EventRequestsService {
    */
   respondToModification(requestId: string, modId: string, dto: RespondToEventModificationDto, role: UserRole, userId?: string): any {
     const request = this.findMutableRequest(requestId, role, userId);
+    if (request.eventId || ['confirmed', 'ongoing', 'completed'].includes(request.status)) {
+      throw new BadRequestException('Booked event details cannot be edited');
+    }
     const mod = (request.eventModifications || []).find((m: any) => m.id === modId);
     if (!mod) {
       throw new NotFoundException(`Modification request ${modId} not found`);
@@ -1476,4 +1789,411 @@ export class EventRequestsService {
     }
     throw new BadRequestException('Use the dedicated request workflow action for this status transition');
   }
+
+  /**
+   * Preview the cancellation terms for an event request.
+   *
+   * Rules:
+   *  - Pre-booking requests (not confirmed): no payment taken, so the
+   *    appropriate action is a withdrawal (no fee). canCancel=true as long as
+   *    the request is not already in a terminal state.
+   *  - Confirmed / deposit-paid requests: the 10% policy fee applies to any
+   *    payments actually recorded in the payments table. Minimum-notice window
+   *    is checked against the scheduled event date on the linked event (if any).
+   */
+  requestCancellationPreview(requestId: string, role: UserRole, userId?: string): any {
+    if (role !== UserRole.CLIENT && role !== UserRole.SUPER_ADMIN && role !== UserRole.EVENT_ORGANIZER) {
+      throw new ForbiddenException('Only clients and authorized organizers can view cancellation previews');
+    }
+
+    const request = this.findOne(requestId, role, userId);
+    const policy = getEventPolicy();
+    const { minimumNoticeDays, feePercent } = policy.cancellation;
+
+    // Already in terminal state
+    const terminal = ['cancelled', 'withdrawn', 'rejected', 'expired', 'completed'];
+    if (terminal.includes(request.status)) {
+      return {
+        success: true,
+        data: {
+          requestId,
+          eventName: request.eventName,
+          status: request.status,
+          canCancel: false,
+          unavailableReason: `Request is already ${request.status}.`,
+          paidAmount: 0,
+          cancellationFeePercent: feePercent,
+          cancellationFee: 0,
+          refundAmount: 0,
+          minimumNoticeDays,
+          isConfirmed: false,
+          policy,
+        },
+      };
+    }
+
+    // Check for duplicate cancellation record on the request itself
+    if ((request as any).cancellation) {
+      return {
+        success: true,
+        data: {
+          requestId,
+          eventName: request.eventName,
+          status: request.status,
+          canCancel: false,
+          unavailableReason: 'A cancellation has already been recorded for this request.',
+          paidAmount: 0,
+          cancellationFeePercent: feePercent,
+          cancellationFee: 0,
+          refundAmount: 0,
+          minimumNoticeDays,
+          isConfirmed: false,
+          policy,
+        },
+      };
+    }
+
+    const isConfirmed = request.status === 'confirmed';
+
+    // Organizers cannot cancel unconfirmed requests using booking cancellation
+    if (role === UserRole.EVENT_ORGANIZER && !isConfirmed) {
+      return {
+        success: true,
+        data: {
+          requestId,
+          eventName: request.eventName,
+          status: request.status,
+          canCancel: false,
+          unavailableReason: 'Booking cancellation is only available for confirmed bookings. For unconfirmed requests, use the rejection workflow.',
+          paidAmount: 0,
+          cancellationFeePercent: feePercent,
+          cancellationFee: 0,
+          refundAmount: 0,
+          minimumNoticeDays,
+          isConfirmed: false,
+          policy,
+        },
+      };
+    }
+
+    // Sum up actual payments for this request
+    const workflowPayments = completedEventPayments(this.db.eventWorkflowPayments, request);
+    const legacyPayments = this.db.payments.filter(
+      (p: any) =>
+        p.requestId === requestId ||
+        p.requestId === request.requestId ||
+        (request.eventId && p.eventId === request.eventId),
+    );
+    const relatedPayments = workflowPayments.length ? workflowPayments : legacyPayments;
+    const paidPaise = relatedPayments
+      .filter((p: any) => ['completed', 'success', 'paid'].includes(String(p.status).toLowerCase()))
+      .reduce((sum: number, p: any) => sum + Math.round((p.amount || 0) * 100), 0);
+
+    const cancellationFeePaise = Math.round(paidPaise * feePercent / 100);
+    const refundPaise = paidPaise - cancellationFeePaise;
+
+    // For confirmed events check minimum notice against the event date
+    let cancellationDeadline: string | null = null;
+    let canCancel = true;
+    let unavailableReason = '';
+
+    if (isConfirmed && request.eventDate) {
+      const eventStart = new Date(`${request.eventDate}T00:00:00`);
+      const deadline = new Date(eventStart.getTime() - minimumNoticeDays * 86400000);
+      cancellationDeadline = deadline.toISOString();
+      if (new Date() > deadline) {
+        canCancel = false;
+        unavailableReason = `Cancellation window closed. At least ${minimumNoticeDays} days notice is required before the event date.`;
+      }
+    }
+
+    const data: any = {
+      requestId,
+      eventName: request.eventName,
+      status: request.status,
+      canCancel,
+      unavailableReason: canCancel ? '' : unavailableReason,
+      cancellationDeadline,
+      minimumNoticeDays,
+      isConfirmed,
+      paidAmount: paidPaise / 100,
+      cancellationFeePercent: feePercent,
+      cancellationFee: cancellationFeePaise / 100,
+      refundAmount: refundPaise / 100,
+      refundProcessingTimeline: paidPaise > 0
+        ? '5–7 business days (pending review)'
+        : 'Not applicable — no payment has been charged yet',
+      policy,
+    };
+
+    return { success: true, data };
+  }
+
+  /**
+   * Cancel an event request on behalf of the client or organizer.
+   *
+   * For pre-booking requests:  records a withdrawal (no fee).
+   * For confirmed requests:    enforces notice window + 10% fee.
+   * In both cases the reason, timestamp, and policy version are persisted.
+   */
+  cancelRequest(
+    requestId: string,
+    dto: { reason: string; explanation?: string; expectedPaidAmount?: number; policyAccepted?: boolean; acceptedPolicyVersion?: string },
+    role: UserRole,
+    userId?: string,
+  ): any {
+    if (role !== UserRole.CLIENT && role !== UserRole.SUPER_ADMIN && role !== UserRole.EVENT_ORGANIZER) {
+      throw new ForbiddenException('Only clients and authorized organizers can cancel event requests');
+    }
+
+    const request = this.findOne(requestId, role, userId);
+
+    // Duplicate-cancellation guard
+    if ((request as any).cancellation) {
+      throw new ConflictException('A cancellation has already been recorded for this request.');
+    }
+
+    const terminal = ['cancelled', 'withdrawn', 'rejected', 'expired', 'completed'];
+    if (terminal.includes(request.status)) {
+      throw new BadRequestException(`Cannot cancel a request that is already ${request.status}.`);
+    }
+
+    const isConfirmed = request.status === 'confirmed';
+
+    // Organizers cannot cancel unconfirmed requests using booking cancellation
+    if (role === UserRole.EVENT_ORGANIZER && !isConfirmed) {
+      throw new BadRequestException('Booking cancellation is only available for confirmed bookings. For unconfirmed requests, use the rejection workflow.');
+    }
+
+    const reason = String(dto.reason || '').trim();
+    if (!reason || reason.length < 3) {
+      throw new BadRequestException('A cancellation reason is required (minimum 3 characters).');
+    }
+
+    const preview = this.requestCancellationPreview(requestId, role, userId);
+    const previewData = preview.data || preview;
+
+    if (!previewData.canCancel) {
+      throw new BadRequestException(previewData.unavailableReason || 'Cancellation is not permitted at this time.');
+    }
+
+    // Verify expectedPaidAmount hasn't changed (idempotency guard)
+    if (dto.expectedPaidAmount !== undefined) {
+      const roundedExpected = Math.round(Number(dto.expectedPaidAmount) * 100);
+      const roundedActual   = Math.round(previewData.paidAmount * 100);
+      if (roundedExpected !== roundedActual) {
+        throw new ConflictException(
+          'The amount paid has changed since you previewed the cancellation. ' +
+          'Please review the updated cancellation fee and refund amount before confirming.',
+        );
+      }
+    }
+
+    const now = new Date();
+    const policy = getEventPolicy();
+
+    // Related payments
+    const workflowPayments = completedEventPayments(this.db.eventWorkflowPayments, request);
+    const legacyPayments = this.db.payments.filter(
+      (p: any) =>
+        p.requestId === requestId ||
+        p.requestId === request.requestId ||
+        (request.eventId && p.eventId === request.eventId),
+    );
+    const relatedPayments = workflowPayments.length ? workflowPayments : legacyPayments;
+
+    // Build cancellation record
+    const cancellationRecord: any = {
+      reason,
+      explanation: dto.explanation || '',
+      cancelledBy: userId!,
+      cancelledAt: now,
+      policyVersion: dto.acceptedPolicyVersion || policy.version,
+      paidAmount: previewData.paidAmount,
+      cancellationFeePercent: previewData.cancellationFeePercent,
+      cancellationFee: previewData.cancellationFee,
+      refundAmount: previewData.refundAmount,
+      refundStatus: previewData.paidAmount > 0 ? 'pending' : 'not_applicable',
+      isConfirmed,
+    };
+
+    if (isConfirmed) {
+      // Full confirmed-booking cancellation
+      request.status = 'cancelled';
+      request.cancellation = cancellationRecord;
+      const auditAction = role === UserRole.EVENT_ORGANIZER ? 'Event Booking Cancelled by Organizer' : 'Request Cancelled by Client';
+      this.addAudit(request, auditAction, userId, role, {
+        reason,
+        explanation: dto.explanation,
+        cancellationFee: cancellationRecord.cancellationFee,
+        refundAmount: cancellationRecord.refundAmount,
+      });
+
+      // If linked event exists, cancel event and sync cancellation details
+      if (request.eventId) {
+        const event = this.db.events.find((e: any) => e.eventId === request.eventId || e.id === request.eventId);
+        if (event) {
+          event.status = 'cancelled';
+          event.cancellation = cancellationRecord;
+          (event as any).cancellationReason = reason;
+          event.updatedAt = now;
+        }
+      }
+
+      // If refund is applicable, create refund records
+      if (previewData.refundAmount > 0) {
+        const refundId = this.db.generateId('ref');
+        cancellationRecord.refundId = refundId;
+        const payment: any = relatedPayments.find((p: any) => ['completed', 'success', 'paid'].includes(String(p.status).toLowerCase()));
+        const paymentId = payment ? (payment.paymentId || payment.id) : 'mock-pay';
+        if (this.db.eventWorkflowRefunds) {
+          this.db.eventWorkflowRefunds.push({
+            refundId,
+            paymentId,
+            requestId: request.requestId,
+            eventId: request.eventId || '',
+            clientId: request.clientId,
+            organizerId: request.organizerId,
+            paidAmount: previewData.paidAmount,
+            cancellationFee: previewData.cancellationFee,
+            amount: previewData.refundAmount,
+            reason,
+            status: 'pending',
+            requestedAt: now,
+          });
+        }
+      }
+
+      // Notify party
+      if (role === UserRole.EVENT_ORGANIZER) {
+        this.notifyRequestClient(
+          request,
+          `The organizer cancelled the confirmed event booking "${request.eventName}": ${reason}`,
+          'booking_cancelled',
+        );
+      } else {
+        this.notifyRequestOrganizer(
+          request,
+          `Client cancelled the confirmed event request "${request.eventName}". Reason: ${reason}`,
+          'request_cancelled',
+        );
+      }
+    } else {
+      // Pre-booking: treat as a withdrawal (no fee)
+      request.status = 'withdrawn';
+      request.withdrawalReason = reason;
+      request.cancellation = cancellationRecord; // preserved for history
+      this.addAudit(request, 'Request Withdrawn by Client', userId, role, {
+        reason, note: 'No payment had been charged at the time of withdrawal.',
+      });
+
+      this.notifyRequestOrganizer(
+        request,
+        `Client withdrew the event request "${request.eventName}". Reason: ${reason}`,
+        'request_withdrawn',
+      );
+    }
+
+    request.updatedAt = now;
+
+    const message = isConfirmed
+      ? `Event booking cancelled. ${previewData.refundAmount > 0 ? `Refund of ₹${previewData.refundAmount.toFixed(2)} is pending review.` : 'No refund is applicable.'}`
+      : 'Event request withdrawn successfully.';
+
+    return {
+      success: true,
+      message,
+      data: {
+        request,
+        cancellation: cancellationRecord,
+      },
+    };
+  }
+
+  async getDocument(
+    requestId: string,
+    role: UserRole,
+    userId?: string,
+    version?: number,
+  ): Promise<{ stream: ReturnType<typeof createReadStream>; fileName: string; mimeType: string }> {
+    const request = this.db.eventRequests.find(r => r.requestId === requestId || (r as any).id === requestId);
+    if (!request) {
+      throw new NotFoundException(`Event request ${requestId} not found`);
+    }
+
+    // Role-based authorization
+    if (role === UserRole.CLIENT) {
+      const client = this.db.clients.find(c => c.userId === userId || c.clientId === userId);
+      if (!client || client.clientId !== request.clientId) {
+        throw new ForbiddenException('You are not authorized to access documents for this request');
+      }
+    } else if (role === UserRole.EVENT_ORGANIZER) {
+      const organizer = this.db.organizers.find(o => o.userId === userId || o.organizerId === userId);
+      if (!organizer || organizer.organizerId !== request.organizerId) {
+        throw new ForbiddenException('You are not authorized to access documents for this request');
+      }
+    } else if (role !== UserRole.SUPER_ADMIN) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    let fileNameOnDisk: string | undefined;
+    let originalName: string | undefined;
+
+    // Check specific version if requested
+    if (version !== undefined && request.proposals) {
+      const prop = request.proposals.find(p => p.version === Number(version));
+      if (prop?.documentFileName) {
+        fileNameOnDisk = prop.documentFileName;
+        originalName = prop.documentName;
+      }
+    }
+
+    // Check proposals from newest to oldest
+    if (!fileNameOnDisk && request.proposals) {
+      const sortedProps = [...request.proposals].reverse();
+      const propWithDoc = sortedProps.find(p => p.documentFileName);
+      if (propWithDoc) {
+        fileNameOnDisk = propWithDoc.documentFileName;
+        originalName = propWithDoc.documentName;
+      }
+    }
+
+    // Check active plan or plans linked to request
+    if (!fileNameOnDisk) {
+      let plan: any;
+      if (request.activeEventPlanId) {
+        plan = this.db.eventPlans.find(p => p.eventPlanId === request.activeEventPlanId);
+      }
+      if (!plan) {
+        const reqPlans = this.db.eventPlans.filter(p => p.requestId === request.requestId);
+        if (reqPlans.length > 0) {
+          reqPlans.sort((a, b) => (b.revision || 0) - (a.revision || 0));
+          plan = reqPlans[0];
+        }
+      }
+      if (plan?.documentFileName) {
+        fileNameOnDisk = plan.documentFileName;
+        originalName = plan.documentName;
+      }
+    }
+
+    if (!fileNameOnDisk) {
+      throw new NotFoundException('No event plan document is attached to this request');
+    }
+
+    const uploadDir = path.join(process.cwd(), 'uploads', 'event-plans');
+    const filePath = path.join(uploadDir, path.basename(fileNameOnDisk));
+
+    if (!existsSync(filePath)) {
+      throw new NotFoundException('Event plan document file is unavailable');
+    }
+
+    await access(filePath, constants.R_OK);
+    return {
+      stream: createReadStream(filePath),
+      fileName: originalName || 'event-plan.pdf',
+      mimeType: 'application/pdf',
+    };
+  }
 }
+

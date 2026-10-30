@@ -101,14 +101,14 @@ export class AttendeesService {
       throw new NotFoundException(`Attendee with ID ${attendeeId} not found`);
     }
     if (role === UserRole.ATTENDEE && attendee.userId !== userId) throw new ForbiddenException('You can only view your own attendee profile');
-    if (![UserRole.ATTENDEE, UserRole.EVENT_ORGANIZER, UserRole.EVENT_STAFF, UserRole.SUPER_ADMIN].includes(role)) throw new ForbiddenException('Access denied');
+    if (![UserRole.ATTENDEE, UserRole.EVENT_ORGANIZER, UserRole.EMPLOYEE, UserRole.SUPER_ADMIN].includes(role)) throw new ForbiddenException('Access denied');
 
     return this.mapAttendeeToFrontend(attendee);
   }
 
   // Get attendees by event ID
   findByEvent(eventId: string, role: UserRole, userId?: string): any[] {
-    if (role !== UserRole.SUPER_ADMIN && role !== UserRole.EVENT_ORGANIZER && role !== UserRole.EVENT_STAFF && role !== UserRole.CLIENT) {
+    if (role !== UserRole.SUPER_ADMIN && role !== UserRole.EVENT_ORGANIZER && role !== UserRole.EMPLOYEE && role !== UserRole.CLIENT) {
       throw new ForbiddenException('Insufficient permissions');
     }
     const event = this.dataStore.events.find(e => e.eventId === eventId);
@@ -116,10 +116,9 @@ export class AttendeesService {
     if (role === UserRole.EVENT_ORGANIZER) {
       const organizer = this.dataStore.organizers.find(o => o.userId === userId);
       if (!organizer || event.organizerId !== organizer.organizerId) throw new ForbiddenException('You can only view attendees for your own events');
-    } else if (role === UserRole.EVENT_STAFF) {
-      const staff = this.dataStore.staffProfiles.find(s => s.userId === userId);
-      const assigned = this.dataStore.staffAssignments.some(a => a.staffId === staff?.staffId && a.eventId === eventId && a.status === 'accepted');
-      if (!assigned) throw new ForbiddenException('You can only view attendees for accepted event assignments');
+    } else if (role === UserRole.EMPLOYEE) {
+      const type = this.dataStore.findUserById(userId || '')?.employeeType;
+      if (!['SUPPORT_EXECUTIVE', 'REGISTRATION_VERIFICATION', 'EVENT_OPERATIONS'].includes(String(type))) throw new ForbiddenException('Only support executives can review attendees');
     } else if (role === UserRole.CLIENT) {
       const client = this.dataStore.clients.find(c => c.userId === userId);
       if (!client || event.clientId !== client.clientId) throw new ForbiddenException('You can only view attendees for your own events');

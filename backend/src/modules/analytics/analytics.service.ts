@@ -1,6 +1,7 @@
 import { Injectable, ForbiddenException } from '@nestjs/common';
 import { DataStore } from '../../common/data-store';
 import { EmployeeType, UserRole } from '../../common/constants';
+import { } from '../../common/account-access';
 
 @Injectable()
 export class AnalyticsService {
@@ -16,20 +17,21 @@ export class AnalyticsService {
       .filter(p => p.status === 'completed')
       .reduce((sum, p) => sum + p.amount, 0) + this.db.eventWorkflowPayments
       .filter(payment => payment.status === 'completed').reduce((sum, payment) => sum + payment.amount, 0);
+    const users = this.db.users;
 
     return {
       success: true,
       message: 'Dashboard analytics',
       data: {
         users: {
-          total: this.db.users.length,
-          active: this.db.users.filter(u => u.status === 'active').length,
-          suspended: this.db.users.filter(u => u.status === 'suspended').length,
+          total: users.length,
+          active: users.filter(u => u.status === 'active').length,
+          suspended: users.filter(u => u.status === 'suspended').length,
           byRole: {
             super_admin: this.db.users.filter(u => u.userRole === UserRole.SUPER_ADMIN).length,
             client: this.db.users.filter(u => u.userRole === UserRole.CLIENT).length,
             event_organizer: this.db.users.filter(u => u.userRole === UserRole.EVENT_ORGANIZER).length,
-            event_staff: this.db.users.filter(u => u.userRole === UserRole.EVENT_STAFF).length,
+            employee: users.filter(u => u.userRole === UserRole.EMPLOYEE).length,
             attendee: this.db.users.filter(u => u.userRole === UserRole.ATTENDEE).length,
           },
         },
@@ -58,24 +60,17 @@ export class AnalyticsService {
           completed: this.db.payments.filter(p => p.status === 'completed').length,
           totalRevenue,
         },
-        staffAssignments: {
-          total: this.db.staffAssignments.length,
-          pending: this.db.staffAssignments.filter(a => a.status === 'pending').length,
-          accepted: this.db.staffAssignments.filter(a => a.status === 'accepted').length,
-        },
         attendance: {
           totalCheckIns: this.db.attendance.filter(a => a.status === 'checked-in').length,
         },
         reviews: {
           totalEventReviews: this.db.eventReviews.length,
-          totalStaffReviews: this.db.staffReviews.length,
           avgEventRating: this.db.eventReviews.length > 0
             ? parseFloat((this.db.eventReviews.reduce((s, r) => s + r.rating, 0) / this.db.eventReviews.length).toFixed(1))
             : 0,
         },
         reports: {
           totalEventReports: this.db.eventReports.length,
-          totalStaffReports: this.db.staffReports.length,
         },
       },
     };
@@ -117,7 +112,6 @@ export class AnalyticsService {
     const myRevenue = grossRevenue - refundedAmount;
 
     const myRequests = this.db.eventRequests.filter(r => r.organizerId === organizer.organizerId);
-    const myAssignments = this.db.staffAssignments.filter(a => a.organizerId === organizer.organizerId);
     const actionableStatuses = new Set(['submitted', 'pending', 'under_review', 'changes_requested', 'counteroffer_received']);
     const actionableRequests = myRequests.filter(request => actionableStatuses.has(request.status));
     const today = new Date();
@@ -190,7 +184,6 @@ export class AnalyticsService {
         totalRevenue: myRevenue,
         grossRevenue,
         refundedAmount,
-        staffAssigned: myAssignments.filter(a => a.status !== 'cancelled').length,
         pendingRequests: actionableRequests.length,
         approvedRequests: myRequests.filter(r => r.status === 'approved').length,
         eventsNeedingAttention: attentionEventIds.size,
@@ -217,11 +210,16 @@ export class AnalyticsService {
     const myRequests = this.db.eventRequests.filter(r => r.clientId === client.clientId);
     const myPlans = this.db.eventPlans.filter(p => p.clientId === client.clientId);
     const approvedPlanIds = myPlans.filter(p => p.status === 'approved').map(p => p.eventId).filter(Boolean);
-    const myEvents = this.db.events.filter(e => approvedPlanIds.includes(e.eventId));
-    const upcomingEvents = this.db.events
+    const confirmedRequestEventIds = myRequests
+      .filter(r => ['confirmed', 'completed'].includes(r.status) && r.eventId && !['cancelled', 'withdrawn', 'rejected', 'expired'].includes(r.status) && !r.cancellation)
+      .map(r => r.eventId);
+    const myEvents = this.db.events.filter(e =>
+      !['cancelled'].includes(e.status) && !e.cancellation &&
+      (e.clientId === client.clientId || approvedPlanIds.includes(e.eventId) || confirmedRequestEventIds.includes(e.eventId)),
+    );
+    const upcomingEvents = myEvents
       .filter((event) =>
-        event.clientId === client.clientId &&
-        ['published', 'ongoing'].includes(event.status) &&
+        ['published', 'ongoing', 'upcoming'].includes(event.status) &&
         new Date(`${event.date}T23:59:59`) >= new Date(),
       )
       .sort((a, b) => `${a.date}T${a.time}`.localeCompare(`${b.date}T${b.time}`))
@@ -239,7 +237,7 @@ export class AnalyticsService {
       data: {
         totalRequests: myRequests.length,
         pendingRequests: myRequests.filter(r => r.status === 'pending').length,
-        approvedRequests: myRequests.filter(r => r.status === 'approved').length,
+        approvedRequests: myRequests.filter(r => r.status === 'approved' || r.status === 'confirmed').length,
         rejectedRequests: myRequests.filter(r => r.status === 'rejected').length,
         totalEventPlans: myPlans.length,
         pendingPlans: myPlans.filter(p => p.status === 'submitted').length,
@@ -252,67 +250,23 @@ export class AnalyticsService {
     };
   }
 
-  // ✅ NEW: Event Staff Dashboard
-  getStaffDashboard(role: UserRole, userId: string): any {
-    if (role !== UserRole.EVENT_STAFF && role !== UserRole.SUPER_ADMIN) {
-      throw new ForbiddenException('Only EVENT_STAFF can view this dashboard');
-    }
+  getEmployeeDashboard(role: UserRole, userId: string): any {
+    if (role === UserRole.SUPER_ADMIN) return this.getDashboard(role);
+    if (role !== UserRole.EMPLOYEE) throw new ForbiddenException('Only employees can view this dashboard');
     const employeeType = this.db.findUserById(userId)?.employeeType;
-    const isSupportExec = role === UserRole.EVENT_STAFF && [
-      EmployeeType.SUPPORT_EXECUTIVE, EmployeeType.REGISTRATION_VERIFICATION, EmployeeType.EVENT_OPERATIONS,
-    ].includes(employeeType as EmployeeType);
-    if (isSupportExec) {
-      return {
-        success: true,
-        data: {
-          totalUsers: this.db.users.filter(user => user.userRole !== UserRole.EVENT_STAFF && !user.employeeType).length,
-          totalEvents: this.db.events.length,
-          totalRegistrations: this.db.registrations.length,
-          registrationsAwaitingReview: this.db.registrations.filter(registration =>
-            !registration.reviewStatus && ['registered', 'pending_payment', 'waitlisted'].includes(registration.status)).length,
-          openSupportTickets: this.db.supportTickets.filter(ticket => ticket.status !== 'resolved').length,
-          operationalIssues: this.db.supportTickets.filter(ticket => ticket.requestType === 'Event Related Issues' && ticket.status !== 'resolved').length,
-          activeEvents: this.db.events.filter(event => ['published', 'ongoing'].includes(event.status)).length,
-          upcomingEvents: this.db.events.filter(event => new Date(event.date) >= new Date()).length,
-        },
-      };
-    }
-    const staffUser = this.db.staffProfiles.find(s => s.userId === userId);
-    if (!staffUser) {
-      if (role === UserRole.SUPER_ADMIN) return this.getDashboard(role);
-      return { success: false, message: 'Staff profile not found' };
-    }
-
-    const myAssignments = this.db.staffAssignments.filter(a => a.staffId === staffUser.staffId);
-    const myEventIds = myAssignments.map(a => a.eventId);
-    const myReports = this.db.staffReports.filter(r => r.staffId === staffUser.staffId);
-
-    const departmentStats = (employeeType === EmployeeType.SUPPORT_FINANCE || employeeType === EmployeeType.FINANCE_EXECUTIVE)
-        ? {
-            pendingSupportRequests: this.db.eventRequests.filter(r => r.status === 'pending').length,
-            openIssues: this.db.eventRequests.filter(r => (r.status as string) === 'in_review').length,
-            successfulTransactions: this.db.payments.filter(p => p.status === 'completed').length,
-            pendingPayments: this.db.payments.filter(p => p.status === 'pending').length,
-          }
-        : {};
-
-    return {
-      success: true,
-      data: {
-        totalAssignments: myAssignments.length,
-        pendingAssignments: myAssignments.filter(a => a.status === 'pending').length,
-        acceptedAssignments: myAssignments.filter(a => a.status === 'accepted').length,
-        declinedAssignments: myAssignments.filter(a => a.status === 'declined').length,
-        completedAssignments: myAssignments.filter(a => a.status === 'completed').length,
-        myRating: staffUser.rating,
-        totalReportsSubmitted: myReports.length,
-        draftReports: myReports.filter(r => r.status === 'draft').length,
-        submittedReports: myReports.filter(r => r.status === 'submitted').length,
-        upcomingEvents: myEventIds.length, // Count of events assigned
-        availableDates: staffUser.availableDates || [],
-        ...departmentStats,
-      },
-    };
+    const finance = [EmployeeType.SUPPORT_FINANCE, EmployeeType.FINANCE_EXECUTIVE].includes(employeeType as EmployeeType);
+    return { success: true, data: {
+      totalUsers: this.db.users.filter(user => user.userRole !== UserRole.EMPLOYEE && !user.employeeType).length,
+      totalEvents: this.db.events.length,
+      totalRegistrations: this.db.registrations.length,
+      registrationsAwaitingReview: this.db.registrations.filter(registration => !registration.reviewStatus && ['pending_approval', 'registered', 'pending_payment', 'waitlisted'].includes(registration.status)).length,
+      openSupportTickets: this.db.supportTickets.filter(ticket => ticket.status !== 'resolved').length,
+      operationalIssues: this.db.supportTickets.filter(ticket => ticket.requestType === 'Event Related Issues' && ticket.status !== 'resolved').length,
+      activeEvents: this.db.events.filter(event => ['published', 'ongoing'].includes(event.status)).length,
+      upcomingEvents: this.db.events.filter(event => new Date(event.date) >= new Date()).length,
+      ...(finance ? { successfulTransactions: this.db.payments.filter(payment => payment.status === 'completed').length,
+        pendingPayments: this.db.payments.filter(payment => payment.status === 'pending').length } : {}),
+    } };
   }
 
   // ✅ NEW: Attendee Dashboard

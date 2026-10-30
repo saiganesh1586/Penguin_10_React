@@ -7,11 +7,6 @@ export class VerifyAttendanceDto {
   @IsNotEmpty()
   eventId!: string;
 
-  @ApiProperty({ description: 'Staff ID performing verification', example: 'staff-001' })
-  @IsString()
-  @IsNotEmpty()
-  staffId!: string;
-
   @ApiPropertyOptional({ description: 'QR code to verify', example: 'QR-001-EVT-001' })
   @IsString()
   @IsOptional()

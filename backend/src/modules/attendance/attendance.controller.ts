@@ -16,9 +16,9 @@ export class AttendanceController {
 
   @Post('verify')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Verify attendee check-in using QR code or verification ID (EVENT_STAFF only)' })
+  @ApiOperation({ summary: 'Verify attendee check-in using QR code or verification ID (EMPLOYEE only)' })
   @ApiResponse({ status: 200, description: 'Attendee checked in successfully' })
-  @ApiResponse({ status: 403, description: 'Only EVENT_STAFF can verify attendance' })
+  @ApiResponse({ status: 403, description: 'Only EMPLOYEE can verify attendance' })
   @ApiResponse({ status: 404, description: 'No registration found for provided QR/verification ID' })
   @ApiResponse({ status: 409, description: 'Attendee already checked in' })
   verify(@Body() dto: VerifyAttendanceDto, @UserRoleDecorator() role: UserRole, @UserId() userId: string) {

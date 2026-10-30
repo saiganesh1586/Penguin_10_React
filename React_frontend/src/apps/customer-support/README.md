@@ -1,16 +1,11 @@
-# customer-support
+# Customer Support portal
 
-Standalone customer support request page.
+- `app/App.jsx` checks the session and redirects excluded accounts.
+- `pages/CustomerSupportPage.jsx` composes the request form, history and conversation dialog with React state.
+- `api/client.js` handles authenticated requests and downloads; `api/supportApi.js` contains ticket, upload and follow-up endpoints.
+- `api/legacySupport.js` is the existing compatibility adapter used by other portal runtimes. The standalone React page does not load it.
+- `components/` contains the request form, history table and conversation dialog.
+- `hooks/` contains request, session and automatic refresh hooks.
+- `utils/supportConfig.js` contains existing categories and presentation helpers.
 
-Routes: /customer-support.
-
-- `api/`: Backend request helpers.
-- `app/`: Role entry component and runtime.
-- `assets/`: Files used only by this role.
-- `components/`: Reusable role UI components.
-- `context/`: React context providers.
-- `data/`: Static lookups or seed data.
-- `hooks/`: Role-specific React hooks.
-- `pages/`: Role screens.
-- `styles/`: Role stylesheets.
-- `utils/`: Role helper functions.
+Root session/configuration helpers live in `src/app/`. The portal retains the existing attendee stylesheet and support workflow.

@@ -4,8 +4,9 @@ import { access } from 'fs/promises';
 import * as path from 'path';
 import { DataStore, EventCompletionReport } from '../../common/data-store';
 import { UserRole } from '../../common/constants';
+import { eventAmountPaid } from '../../common/utils/event-payments';
 import {
-  CreateEventCompletionReportDto, CreateEventReportDto, CreateStaffReportDto,
+  CreateEventCompletionReportDto, CreateEventReportDto,
 } from './dto/report.dto';
 
 const EVENT_REPORT_UPLOAD_DIR = path.join(process.cwd(), 'uploads', 'event-reports');
@@ -36,7 +37,6 @@ export class ReportsService {
       organizerId: event.organizerId,
       eventId: dto.eventId,
       clientId: client.clientId,
-      submittedByStaffId: dto.submittedByStaffId,
       reportTitle: dto.reportTitle,
       reportDetails: dto.reportDetails,
       submissionDate: dto.submissionDate,
@@ -147,12 +147,7 @@ export class ReportsService {
     const request = this.db.eventRequests.find(item =>
       item.eventId === eventId && item.organizerId === organizer.organizerId,
     );
-    const verifiedPayment = request && this.db.eventWorkflowPayments.find(payment =>
-      payment.eventId === eventId &&
-      payment.requestId === request.requestId &&
-      payment.status === 'completed' &&
-      payment.amount === request.budget,
-    );
+    const verifiedPayment = request && eventAmountPaid(this.db.eventWorkflowPayments, request) >= Number(request.budget);
     if (event.status !== 'completed' || !request || request.status !== 'completed' || request.paymentStatus !== 'fully_paid' || !verifiedPayment) {
       removeFiles();
       throw new BadRequestException('A completion report can only be submitted for a completed, fully paid event');
@@ -246,75 +241,5 @@ export class ReportsService {
       throw new ForbiddenException('Access denied');
     }
     return report;
-  }
-
-  // STAFF REPORTS
-  createStaffReport(dto: CreateStaffReportDto, role: UserRole, userId?: string): any {
-    if (role !== UserRole.EVENT_STAFF && role !== UserRole.SUPER_ADMIN) {
-      throw new ForbiddenException('Only EVENT_STAFF can create staff reports');
-    }
-    const staff = this.db.staffProfiles.find(profile => profile.staffId === dto.staffId);
-    const event = this.db.events.find(item => item.eventId === dto.eventId);
-    if (!staff || !event) throw new NotFoundException('Staff or event not found');
-    if (role !== UserRole.SUPER_ADMIN && staff.userId !== userId) throw new ForbiddenException('You can only submit your own staff report');
-    if (event.organizerId !== dto.organizerId) throw new BadRequestException('The report must go to the event organizer');
-    // Staff should only report for assigned events
-    const assignment = this.db.staffAssignments.find(
-      a => a.staffId === dto.staffId && a.eventId === dto.eventId && a.status === 'accepted',
-    );
-    if (!assignment && role !== UserRole.SUPER_ADMIN) {
-      throw new ForbiddenException('You can only report for events you are assigned to');
-    }
-
-    const existing = this.db.staffReports.find(report => report.eventId === dto.eventId && report.staffId === dto.staffId);
-    if (existing) return { success: true, message: 'Staff report already submitted', data: existing };
-
-    const id = this.db.generateId('rpt-staff');
-    const report = {
-      staffReportId: id,
-      staffId: dto.staffId,
-      organizerId: dto.organizerId,
-      eventId: dto.eventId,
-      reportText: dto.reportText,
-      status: 'submitted' as const,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    this.db.staffReports.push(report);
-
-    // Notify organizer
-    const organizer = this.db.organizers.find(o => o.organizerId === dto.organizerId);
-    if (organizer) {
-      this.db.notifications.push({
-        notificationId: this.db.generateId('notif'),
-        userId: organizer.userId,
-        eventId: dto.eventId,
-        registrationId: undefined,
-        paymentId: undefined,
-        message: `Staff report submitted by ${dto.staffId} for event ${dto.eventId}`,
-        type: 'staff_report',
-        read: false,
-        dateTime: new Date(),
-        createdAt: new Date(),
-      });
-    }
-
-    return { success: true, message: 'Staff report created', data: report };
-  }
-
-  findAllStaffReports(role: UserRole, userId?: string): any[] {
-    let reports = [...this.db.staffReports];
-    if (role === UserRole.EVENT_STAFF) {
-      const staff = this.db.staffProfiles.find(s => s.userId === userId);
-      if (staff) reports = reports.filter(r => r.staffId === staff.staffId);
-      else reports = [];
-    } else if (role === UserRole.EVENT_ORGANIZER) {
-      const org = this.db.organizers.find(o => o.userId === userId);
-      if (org) reports = reports.filter(r => r.organizerId === org.organizerId);
-      else reports = [];
-    } else if (role !== UserRole.SUPER_ADMIN) {
-      throw new ForbiddenException('Access denied');
-    }
-    return reports;
   }
 }

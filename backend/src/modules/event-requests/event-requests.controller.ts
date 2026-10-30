@@ -9,7 +9,10 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Res,
+  StreamableFile,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiHeader, ApiQuery } from '@nestjs/swagger';
 import { EventRequestsService } from './event-requests.service';
 import {
@@ -96,6 +99,28 @@ export class EventRequestsController {
   @ApiResponse({ status: 404, description: 'Event request not found' })
   findOne(@Param('id') id: string, @UserRoleDecorator() role: UserRole, @UserId() userId: string) {
     return this.service.findOne(id, role, userId);
+  }
+
+  @Get(':id/document')
+  @ApiOperation({ summary: 'Download event plan document attached to proposal or request' })
+  @ApiResponse({ status: 200, description: 'Document stream' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Document or request not found' })
+  async downloadDocument(
+    @Param('id') id: string,
+    @Query('version') version: string | undefined,
+    @UserRoleDecorator() role: UserRole,
+    @UserId() userId: string,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<StreamableFile> {
+    const parsedVersion = version !== undefined ? Number(version) : undefined;
+    const result = await this.service.getDocument(id, role, userId, parsedVersion);
+    const fileName = result.fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+    response.set({
+      'Content-Type': result.mimeType || 'application/pdf',
+      'Content-Disposition': `attachment; filename="${fileName}"`,
+    });
+    return new StreamableFile(result.stream);
   }
 
   @Post(':id/review')
@@ -274,4 +299,34 @@ export class EventRequestsController {
   ) {
     return this.service.updateStatus(id, dto, role, userId);
   }
+
+  @Get(':id/cancellation-preview')
+  @ApiOperation({ summary: 'Preview the cancellation policy, fee, and refund for a client event request' })
+  @ApiResponse({ status: 200, description: 'Cancellation preview data' })
+  @ApiResponse({ status: 403, description: 'Only clients can view cancellation previews' })
+  @ApiResponse({ status: 404, description: 'Request not found' })
+  cancellationPreview(
+    @Param('id') id: string,
+    @UserRoleDecorator() role: UserRole,
+    @UserId() userId: string,
+  ) {
+    return this.service.requestCancellationPreview(id, role, userId);
+  }
+
+  @Post(':id/cancel')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Client cancels or withdraws their event request, applying the cancellation policy' })
+  @ApiResponse({ status: 200, description: 'Request cancelled or withdrawn' })
+  @ApiResponse({ status: 400, description: 'Cancellation not permitted or bad payload' })
+  @ApiResponse({ status: 403, description: 'Only clients can cancel their own requests' })
+  @ApiResponse({ status: 409, description: 'Duplicate cancellation or paid-amount mismatch' })
+  cancelRequest(
+    @Param('id') id: string,
+    @Body() dto: any,
+    @UserRoleDecorator() role: UserRole,
+    @UserId() userId: string,
+  ) {
+    return this.service.cancelRequest(id, dto, role, userId);
+  }
 }
+

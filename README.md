@@ -2,11 +2,11 @@
 
 ## Event Registration, Planning & Attendee Management Platform
 
-EventFlow connects clients, event organizers, attendees, event staff, support executives, finance executives, and administrators through a shared event management system.
+EventFlow connects clients, event organizers, attendees, support executives, finance executives, and administrators through a shared event management system.
 
 ## 1. Overview
 
-EventFlow is a web application that supports the event lifecycle: discovering events, submitting event requirements, negotiating plans, approving proposals, registering attendees, recording payments, coordinating staff, verifying attendance, and reviewing reports.
+EventFlow is a web application that supports the event lifecycle: discovering events, submitting event requirements, negotiating plans, approving proposals, registering attendees, recording payments, reviewing attendance, and reviewing reports.
 
 The application uses a React frontend and a NestJS REST API. Role-specific workspaces display backend data, while a local JSON data store preserves records between server restarts. Seeded accounts and sample records support development and project demonstrations.
 
@@ -24,13 +24,12 @@ EventFlow provides a shared system in which each participant can perform their a
 | --- | --- |
 | Attendee | Discover events, register, manage tickets, and follow event updates. |
 | Client | Request an event, review plans, approve the agreed scope, and complete event payments. |
-| Event Organizer | Plan and manage events, coordinate staff, review registrations, and submit event reports. |
-| Event Staff | Respond to assignments, maintain availability, verify attendance, and submit attendance reports. |
+| Event Organizer | Plan and manage events, coordinate with clients, review registrations, and submit event reports. |
 | Support Executive | Manage customer account details, review registrations, handle customer requests, and report operational findings. |
 | Finance Executive | Monitor payments, revenue, refund records, and financial reporting. |
 | Super Admin | Oversee platform activity, manage accounts, and review executive reports. |
 
-Support and finance executives use department-specific employee types under the backend's `event_staff` role. They have different permissions and interfaces from ordinary event staff.
+Support and finance executives use department-specific employee types under the backend's `employee` role. Saved executive accounts migrate automatically. The removed Event Staff role, workspace, assignment services, profiles, reports, and reviews are no longer part of the application.
 
 ## 4. Features by Actor
 
@@ -63,23 +62,11 @@ Support and finance executives use department-specific employee types under the 
 - Upload event plan PDFs and submit or revise linked plans.
 - Create and maintain event details, schedules, venue information, capacity, and ticket prices.
 - Review registrations and approve or decline them with an attendee-visible reason.
-- Discover staff, inspect availability, and send assignments with a role, fee, and notes.
-- Track assignment responses and attendance information.
+- View attendance information.
 - Complete eligible events after the required payment and date checks.
 - Submit completion reports, supporting photos, and event report documents to the requesting client.
 
-### 4.4 Event Staff
-
-- View assigned events and accept or decline assignments.
-- Maintain available dates and view booked dates.
-- Access registration information for assigned events.
-- Verify attendees using a scanned QR code or a manually entered verification ID.
-- View attendance information and submit attendance summaries to the organizer.
-- Receive assignment notifications and maintain personal account details.
-
-The event-staff workspace is available at `/staff`.
-
-### 4.5 Support Executive
+### 4.4 Support Executive
 
 - View a dashboard of users, events, registrations awaiting review, customer requests, and operational issues.
 - Search customer accounts and update permitted customer details or account status.
@@ -92,7 +79,7 @@ The event-staff workspace is available at `/staff`.
 
 Staff directories and other staff-management data are excluded from this workspace. Support executives cannot change other employee or administrator accounts or assign privileged account roles.
 
-### 4.6 Finance Executive
+### 4.5 Finance Executive
 
 - View recorded payment transactions and refund records.
 - Review total revenue and event-level financial summaries.
@@ -102,7 +89,7 @@ Staff directories and other staff-management data are excluded from this workspa
 
 The interface calculates commission at 15%. Payments, refunds, and payout figures are part of the demonstration workflow; they do not transfer money.
 
-### 4.7 Super Admin
+### 4.6 Super Admin
 
 - View platform totals for users, events, registrations, payments, and request activity.
 - Analyze user roles, account activity, joining trends, event categories, capacity, and revenue.
@@ -138,7 +125,7 @@ Accepting a request starts planning. The shared event is created only after the 
 2. The backend checks account eligibility, deadlines, capacity, and existing registrations.
 3. A paid registration requires demo payment; a free registration can receive its ticket directly.
 4. The organizer or an authorized support executive reviews the registration where applicable.
-5. Assigned staff or authorized organizers verify attendance using the ticket's verification information.
+5. Attendance and check-in records remain available to authorized users.
 6. Registration, attendance, payment, and notification records remain available to their permitted roles.
 
 ### Customer requests and executive reports
@@ -184,26 +171,11 @@ The frontend combines React components with preserved DOM-driven role runtimes l
 
 ## 8. Project structure
 
-```text
-Penguin_10_React/
-├── README.md
-├── Database/                    # Schema and ER diagram
-├── backend/                     # NestJS API
-└── React_frontend/
-    ├── index.html               # Vite page entry
-    ├── package.json             # Dependencies and scripts
-    ├── vite.config.js           # Build output in build/
-    ├── public/assets/           # Images, vendor scripts, demo reports
-    ├── tests/                   # Frontend tests
-    └── src/
-        ├── main.jsx             # React bootstrap
-        ├── app/                 # App shell and URL routes
-        ├── styles/global.css    # Shared stylesheet
-        ├── shared/              # APIs, components, utilities used by all roles
-        └── apps/                # One folder for each role interface
-```
+See [FRONTEND_STRUCTURE.md](FRONTEND_STRUCTURE.md) for the complete layout.
 
-Each role under `src/apps/` has `api/`, `app/`, `assets/`, `components/`, `context/`, `data/`, `hooks/`, `pages/`, `styles/`, `utils/`, and a README. The role page preserves the existing DOM-driven runtime; the app component is its route entry. Shared scripts stay in `src/shared/` because each role loads them through `LegacyRuntime`.
+The frontend follows the folder organization in `21_Dinetime_Devs_React-main.zip`: `src/app/` for the root application and common helpers, `src/apps/` for role portals, `src/styles/` for global CSS, and `scripts/` for checks. Authentication starts at `src/apps/auth/UnifiedAuthPage.jsx`; the landing portal starts at `src/apps/landing/LandingPage.jsx`. Other role entries are `src/apps/<role>/app/App.jsx`. API modules, components, hooks, and utilities belong to their respective portals.
+
+Customer Support uses React state and services. Other dashboard views retain their existing runtime behavior pending the remaining React migration.
 
 The [SQL schema](Database/Dbschema.sql) and [ER diagram](<Database/ER Diagram.png>) document the database design. The current backend runs with JSON persistence and does not require importing the SQL schema.
 
@@ -274,11 +246,10 @@ These credentials are part of the development seed data.
 | Attendee | `attendee@example.com` | `Attendee@123` | `/attendee` |
 | Support Executive | `employee@example.com` | `Employee@123` | `/employee1` |
 | Finance Executive | `marcus.ops@eventflow.com` | `Employee@123` | `/employee2` |
-| Event Staff | `staff@example.com` | `Staff@123` | Backend and staff workspace source; see Section 14. |
 
-Start at `/` or `/landing` to sign in. `/employee` aliases the support workspace. `/employee2` serves the Finance Executive workspace, and `/staff` serves the event-staff workspace.
+Start at `/` or `/landing` to sign in. `/employee` aliases the support workspace. `/employee2` serves the Finance Executive workspace. Removed URLs follow the application's default landing redirect.
 
-New attendee accounts become active after registration. New client, organizer, and ordinary staff accounts are saved with pending status and require activation before sign-in. Public registration cannot create administrator or department-executive accounts. Account email uniqueness is enforced across roles.
+New attendee accounts become active after registration. New client and organizer accounts are saved with pending status and require activation before sign-in. Public registration cannot create administrator or department-executive accounts. Account email uniqueness is enforced across roles.
 
 ## 11. Data Communication and Persistence
 
@@ -302,14 +273,13 @@ All paths below are relative to `http://localhost:3001`. Protected endpoints req
 | Authentication | `POST /api/auth/login`, `POST /api/auth/register`, `POST /api/auth/password` |
 | Shared workspace | `GET /api/workspace`; authorized customer and event operations under `/api/workspace` |
 | Public discovery | `GET /api/public/events` |
-| Accounts and profiles | `/api/users`, `/api/attendees`, `/api/staff` |
+| Accounts and profiles | `/api/users`, `/api/attendees` |
 | Events | `/api/events` |
 | Client planning | `/api/event-requests`, `/api/event-plans` |
 | Registrations | `/api/registrations`, including reviews and cancellation |
 | Payments | `/api/payments`, client event payments, and simulated refund processing |
-| Staff coordination | `/api/staff-assignments` |
 | Attendance | `/api/attendance`, including verification and reconciliation |
-| Reporting | `/api/reports/events`, `/api/reports/staff`, `/api/reports/support`, `/api/reports/operational` |
+| Reporting | `/api/reports/events`, `/api/reports/support`, `/api/reports/operational` |
 | Customer support | `/api/support` |
 | Notifications and analytics | `/api/notifications`, `/api/analytics` |
 
@@ -322,6 +292,7 @@ Use the Swagger UI for individual methods, request schemas, and response details
 ```sh
 cd React_frontend
 npm test
+npm run test:react
 npm run build
 ```
 
@@ -333,13 +304,13 @@ npm test
 npm run build
 ```
 
-Automated coverage includes authentication and account restrictions, cross-role data communication, event planning and approval, payments and cancellation, registration reviews and decline reasons, customer support conversations, executive report submission and feedback, staff assignments, QR scanning, persistence, and rendering updates. API integration tests use temporary data stores.
+Automated coverage includes authentication and account restrictions, cross-role data communication, event planning and approval, payments and cancellation, registration reviews and decline reasons, customer support conversations, executive report submission and feedback, account migration and removal, QR scanning, persistence, and rendering updates. API integration tests use temporary data stores.
 
 After a backend build, `npm run start:prod` starts the compiled backend. After a frontend build, `npm run preview` serves a local preview of the frontend output; the backend must still be running.
 
 ## 14. Current Implementation Notes
 
-- **Staff route:** `/staff` now serves the event-staff workspace.
+- **Removed role:** Saved data upgrades to remove Event Staff accounts and collections while preserving executive access, event records, registrations, and payments.
 - **React migration:** Several workspaces still use preserved JavaScript runtimes through `LegacyRuntime`; the interface is not entirely managed by React state.
 - **Demo payments:** Checkout, refunds, and financial records are simulated. There is no live payment gateway or bank payout integration.
 - **Demo verification:** The registration interface displays a demo OTP. It is not an email-delivered verification service.

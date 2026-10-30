@@ -1,3 +1,4 @@
+import { upgradeEmployeeAccounts } from './migrations/employee-accounts';
 /**
  * In-memory data store for the application
  * Simulates a database without actual persistence
@@ -14,7 +15,6 @@ const DATA_COLLECTIONS = [
   'superAdmins',
   'clients',
   'organizers',
-  'staffProfiles',
   'attendees',
   'events',
   'eventRequests',
@@ -28,13 +28,10 @@ const DATA_COLLECTIONS = [
   'refunds',
   'eventChanges',
   'attendance',
-  'staffAssignments',
   'eventReports',
-  'staffReports',
   'financeReportSubmissions',
   'supportExecutiveReports',
   'eventReviews',
-  'staffReviews',
   'notifications',
   'activityLogs',
   'supportTickets',
@@ -190,15 +187,6 @@ export interface OrganizerApplication {
   }>;
 }
 
-export interface EventStaff {
-  staffId: string;
-  userId: string;
-  availableDates: string[];
-  rating: number;
-  status: 'available' | 'unavailable' | 'busy';
-  createdAt: Date;
-}
-
 export interface Attendee {
   attendeeId: string;
   userId: string;
@@ -209,6 +197,7 @@ export interface Attendee {
 
 export interface Event {
   eventId: string;
+  visibility?: 'public' | 'private';
   organizerId: string;
   clientId?: string;
   superAdminId?: string;
@@ -267,6 +256,13 @@ export interface ProposalVersion {
   paymentSchedule?: string;
   cancellationTerms?: string;
   conditions?: string;
+  documentName?: string;
+  documentFileName?: string;
+  documentSize?: number;
+  documentType?: string;
+  uploadedAt?: Date;
+  uploaderId?: string;
+  uploaderName?: string;
   status: 'pending_client' | 'accepted' | 'revision_requested' | 'rejected' | 'expired';
   sentAt: Date;
   clientResponseAt?: Date;
@@ -293,6 +289,7 @@ export interface RequestAuditEntry {
 
 export interface EventRequest {
   requestId: string;
+  visibility?: 'public' | 'private';
   clientId: string;
   organizerId: string;
   eventName: string;
@@ -302,6 +299,7 @@ export interface EventRequest {
   city?: string;
   dateFlexibility?: 'exact' | 'flexible';
   budget: number;
+  ticketPrice?: number;
   capacity: number;
   requirements: string;
   notes?: string;
@@ -325,14 +323,29 @@ export interface EventRequest {
     action: string;
     performedBy: string;
     role: string;
+    version?: number;
     reason?: string;
     budget?: number;
+    proposedPrice?: number;
+    depositRequired?: number;
+    remainingBalance?: number;
     eventDate?: string;
     eventName?: string;
     eventType?: string;
     capacity?: number;
     venue?: string;
     requirements?: string;
+    services?: string;
+    deliverables?: string;
+    eventPlan?: string;
+    timeline?: string;
+    paymentTerms?: string;
+    paymentSchedule?: string;
+    cancellationTerms?: string;
+    validUntil?: string;
+    status?: string;
+    acceptedAt?: Date;
+    acceptedBy?: string;
     timestamp: Date;
   }>;
   activeEventPlanId?: string;
@@ -395,6 +408,10 @@ export interface EventPlan {
   documentName?: string;
   documentFileName?: string;
   documentSize?: number;
+  documentType?: string;
+  uploadedAt?: Date;
+  uploaderId?: string;
+  uploaderName?: string;
   revision?: number;
   revisionReason?: string;
   status: 'draft' | 'submitted' | 'revised' | 'approved' | 'rejected';
@@ -411,7 +428,7 @@ export interface EventWorkflowPayment {
   clientId: string;
   organizerId: string;
   amount: number;
-  status: 'completed';
+  status: 'completed' | 'pending' | 'failed' | 'cancelled';
   paymentDate: string;
   paymentMethod: 'DEMO_PROVIDER';
   createdAt: Date;
@@ -486,7 +503,7 @@ export interface Registration {
   attendeeId: string;
   eventId: string;
   registrationDate: string;
-  status: 'pending_payment' | 'registered' | 'waitlisted' | 'cancelled' | 'rejected' | 'no-show' | 'attended';
+  status: 'pending_approval' | 'pending_payment' | 'registered' | 'waitlisted' | 'cancelled' | 'rejected' | 'no-show' | 'attended';
   reviewStatus?: 'approved' | 'rejected';
   rejectionReason?: string;
   reviewedAt?: Date;
@@ -542,25 +559,12 @@ export interface Attendance {
   attendanceId: string;
   attendeeId: string;
   eventId: string;
-  staffId: string;
+  verifiedByUserId?: string;
   checkInTime: string;
   status: 'checked-in' | 'checked-out' | 'no-show';
   qrCode?: string;
   verificationId?: string;
   createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface StaffAssignment {
-  assignmentId: string;
-  eventId: string;
-  organizerId: string;
-  staffId: string;
-  role?: string;
-  fee?: number;
-  notes?: string;
-  status: 'pending' | 'accepted' | 'declined' | 'completed' | 'cancelled';
-  assignedAt: Date;
   updatedAt: Date;
 }
 
@@ -571,7 +575,6 @@ export interface EventReport {
   organizerId: string;
   eventId: string;
   clientId?: string;
-  submittedByStaffId?: string;
   reportTitle: string;
   reportDetails: string;
   submissionDate: string;
@@ -579,17 +582,6 @@ export interface EventReport {
   documentFileName?: string;
   documentMimeType?: string;
   documentSize?: number;
-  status: 'draft' | 'submitted' | 'reviewed';
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface StaffReport {
-  staffReportId: string;
-  staffId: string;
-  organizerId: string;
-  eventId: string;
-  reportText: string;
   status: 'draft' | 'submitted' | 'reviewed';
   createdAt: Date;
   updatedAt: Date;
@@ -624,17 +616,6 @@ export interface EventReview {
   rating: number;
   comment: string;
   date: string;
-  createdAt: Date;
-}
-
-export interface StaffReview {
-  reviewId: string;
-  reviewerId: string; // organizerId
-  staffId: string;
-  eventId: string;
-  rating: number;
-  comment: string;
-  reviewDate: string;
   createdAt: Date;
 }
 
@@ -711,7 +692,6 @@ export class DataStore {
   superAdmins: SuperAdmin[] = [];
   clients: Client[] = [];
   organizers: EventOrganizer[] = [];
-  staffProfiles: EventStaff[] = [];
   attendees: Attendee[] = [];
 
   // Event entities
@@ -731,11 +711,9 @@ export class DataStore {
 
   // Attendance & Assignments
   attendance: Attendance[] = [];
-  staffAssignments: StaffAssignment[] = [];
 
   // Reports & Reviews
   eventReports: EventReport[] = [];
-  staffReports: StaffReport[] = [];
   financeReportSubmissions: Array<{
     id: string; userId: string; userName: string; title: string; summary: string;
     reportType: string; filters: Record<string, unknown>; metrics: Record<string, number>;
@@ -744,7 +722,6 @@ export class DataStore {
   }> = [];
   supportExecutiveReports: SupportExecutiveReport[] = [];
   eventReviews: EventReview[] = [];
-  staffReviews: StaffReview[] = [];
 
   // Notifications
   notifications: Notification[] = [];
@@ -795,7 +772,7 @@ export class DataStore {
       notifications: this.notifications.filter(notification => notification.notificationId.startsWith('notif-demo-')),
       activityLogs: this.activityLogs.filter(log => log.id.startsWith('log-demo-')),
     };
-    const parsed = JSON.parse(fs.readFileSync(this.persistencePath, 'utf8'), (key, value) => {
+    const loaded = JSON.parse(fs.readFileSync(this.persistencePath, 'utf8'), (key, value) => {
       if (DATE_FIELDS.has(key) && typeof value === 'string') {
         const date = new Date(value);
         if (Number.isNaN(date.getTime())) throw new Error(`Invalid persisted date in field "${key}"`);
@@ -803,6 +780,7 @@ export class DataStore {
       }
       return value;
     }) as Record<string, unknown>;
+    const parsed = upgradeEmployeeAccounts(loaded);
 
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
       throw new Error(`Invalid EventFlow data file: ${this.persistencePath}`);
@@ -911,6 +889,7 @@ export class DataStore {
     }
     // Demo records deliberately move with the current date so development dashboards
     // do not slowly turn all seeded upcoming events into historical records.
+    if (Number(loaded.accountSchemaVersion || 0) < 2) this.persist();
     if (process.env.NODE_ENV !== 'production') {
       this.applyOrganizerDashboardDemoScenario();
       this.applyEventRequestDemoScenario();
@@ -923,7 +902,7 @@ export class DataStore {
     fs.mkdirSync(directory, { recursive: true });
     const snapshot: Partial<Record<DataCollection, unknown>> = {};
     for (const collection of DATA_COLLECTIONS) snapshot[collection] = this[collection];
-    Object.assign(snapshot, { demoSeedVersion: 2, organizerDashboardSeedVersion: 4, organizerReviewSeedVersion: 1, supportReportSeedVersion: 1 });
+    Object.assign(snapshot, { demoSeedVersion: 2, organizerDashboardSeedVersion: 4, organizerReviewSeedVersion: 1, supportReportSeedVersion: 1, accountSchemaVersion: 2 });
 
     const temporaryPath = `${this.persistencePath}.tmp`;
     fs.writeFileSync(temporaryPath, JSON.stringify(snapshot, null, 2), { encoding: 'utf8', mode: 0o600 });
@@ -972,7 +951,7 @@ export class DataStore {
         name: 'Marcus Vance',
         email: 'employee@example.com',
         password: 'Employee@123',
-        userRole: UserRole.EVENT_STAFF,
+        userRole: UserRole.EMPLOYEE,
         employeeType: EmployeeType.SUPPORT_EXECUTIVE,
         status: 'active',
         phoneNo: '9876543220',
@@ -984,7 +963,7 @@ export class DataStore {
         name: 'Marcus Vance',
         email: 'employee@eventflow.com',
         password: 'Employee@123',
-        userRole: UserRole.EVENT_STAFF,
+        userRole: UserRole.EMPLOYEE,
         employeeType: EmployeeType.SUPPORT_EXECUTIVE,
         status: 'active',
         phoneNo: '9876543220',
@@ -996,7 +975,7 @@ export class DataStore {
         name: 'Marcus Vance',
         email: 'marcus.ops@eventflow.com',
         password: 'Employee@123',
-        userRole: UserRole.EVENT_STAFF,
+        userRole: UserRole.EMPLOYEE,
         employeeType: EmployeeType.SUPPORT_FINANCE,
         status: 'active',
         phoneNo: '9876543220',
@@ -1008,7 +987,7 @@ export class DataStore {
         name: 'Elena Rostova',
         email: 'elena.coordinator@eventflow.com',
         password: 'Employee@123',
-        userRole: UserRole.EVENT_STAFF,
+        userRole: UserRole.EMPLOYEE,
         employeeType: EmployeeType.SUPPORT_EXECUTIVE,
         status: 'active',
         phoneNo: '9876543221',
@@ -1020,7 +999,7 @@ export class DataStore {
         name: 'Arjun Kapoor',
         email: 'arjun.events@eventflow.com',
         password: 'Employee@123',
-        userRole: UserRole.EVENT_STAFF,
+        userRole: UserRole.EMPLOYEE,
         employeeType: EmployeeType.SUPPORT_EXECUTIVE,
         status: 'active',
         phoneNo: '9876543222',
@@ -1032,122 +1011,12 @@ export class DataStore {
         name: 'Maya Lin',
         email: 'maya.ops@eventflow.com',
         password: 'Employee@123',
-        userRole: UserRole.EVENT_STAFF,
+        userRole: UserRole.EMPLOYEE,
         employeeType: EmployeeType.SUPPORT_FINANCE,
         status: 'active',
         phoneNo: '9876543223',
         createdAt: new Date('2024-03-22'),
         updatedAt: new Date('2024-03-22'),
-      },
-            {
-        userId: 'usr-staff-001',
-        name: 'James Wilson',
-        email: 'staff@example.com',
-        password: 'Staff@123',
-        userRole: UserRole.EVENT_STAFF,
-        status: 'active',
-        phoneNo: '7345678902',
-        createdAt: new Date('2024-01-15'),
-        updatedAt: new Date('2024-01-15'),
-      },
-      {
-        userId: 'usr-staff-002',
-        name: 'David Kim',
-        email: 'david@eventflow.com',
-        password: 'Staff@123',
-        userRole: UserRole.EVENT_STAFF,
-        status: 'active',
-        phoneNo: '7345678903',
-        createdAt: new Date('2024-03-01'),
-        updatedAt: new Date('2024-03-01'),
-      },
-      {
-        userId: 'usr-staff-003',
-        name: 'Nina Lopez',
-        email: 'nina@eventflow.com',
-        password: 'Staff@123',
-        userRole: UserRole.EVENT_STAFF,
-        status: 'active',
-        phoneNo: '7345678904',
-        createdAt: new Date('2024-03-20'),
-        updatedAt: new Date('2024-03-20'),
-      },
-      {
-        userId: 'usr-staff-004',
-        name: 'Ananya Verma',
-        email: 'ananya@eventflow.com',
-        password: 'Staff@123',
-        userRole: UserRole.EVENT_STAFF,
-        status: 'active',
-        phoneNo: '7345678905',
-        createdAt: new Date('2024-04-10'),
-        updatedAt: new Date('2024-04-10'),
-      },
-      {
-        userId: 'usr-staff-005',
-        name: 'Marcus Brody',
-        email: 'marcus@eventflow.com',
-        password: 'Staff@123',
-        userRole: UserRole.EVENT_STAFF,
-        status: 'active',
-        phoneNo: '7345678906',
-        createdAt: new Date('2024-04-18'),
-        updatedAt: new Date('2024-04-18'),
-      },
-      {
-        userId: 'usr-staff-006',
-        name: 'Sophie Dubois',
-        email: 'sophie@eventflow.com',
-        password: 'Staff@123',
-        userRole: UserRole.EVENT_STAFF,
-        status: 'active',
-        phoneNo: '7345678907',
-        createdAt: new Date('2024-05-02'),
-        updatedAt: new Date('2024-05-02'),
-      },
-      {
-        userId: 'usr-staff-007',
-        name: 'Rahul Sengupta',
-        email: 'rahul.s@eventflow.com',
-        password: 'Staff@123',
-        userRole: UserRole.EVENT_STAFF,
-        status: 'active',
-        phoneNo: '7345678908',
-        createdAt: new Date('2024-05-15'),
-        updatedAt: new Date('2024-05-15'),
-      },
-      {
-        userId: 'usr-staff-008',
-        name: 'Elena Rostova',
-        email: 'elena@eventflow.com',
-        password: 'Staff@123',
-        userRole: UserRole.EVENT_STAFF,
-        status: 'inactive',
-        phoneNo: '7345678909',
-        createdAt: new Date('2024-06-01'),
-        updatedAt: new Date('2024-06-01'),
-      },
-      {
-        userId: 'usr-staff-009',
-        name: 'Karthik Nair',
-        email: 'karthik.n@eventflow.com',
-        password: 'Staff@123',
-        userRole: UserRole.EVENT_STAFF,
-        status: 'active',
-        phoneNo: '7345678910',
-        createdAt: new Date('2024-06-12'),
-        updatedAt: new Date('2024-06-12'),
-      },
-      {
-        userId: 'usr-staff-010',
-        name: 'Zoe Martinez',
-        email: 'zoe@eventflow.com',
-        password: 'Staff@123',
-        userRole: UserRole.EVENT_STAFF,
-        status: 'inactive',
-        phoneNo: '7345678911',
-        createdAt: new Date('2024-07-01'),
-        updatedAt: new Date('2024-07-01'),
       },
       {
         userId: 'usr-attendee-001',
@@ -1228,137 +1097,6 @@ export class DataStore {
         businessName: 'Maya Event Logistics',
         rating: 4.7,
         createdAt: new Date('2024-03-22'),
-      },
-    ];
-
-        this.staffProfiles = [
-      {
-        staffId: 'staff-emp-001',
-        userId: 'usr-emp-001',
-        availableDates: ['2026-06-15', '2026-07-20', '2026-08-01'],
-        rating: 4.9,
-        status: 'available',
-        createdAt: new Date('2024-01-18'),
-      },
-      {
-        staffId: 'staff-emp-001b',
-        userId: 'usr-emp-001b',
-        availableDates: ['2026-06-15', '2026-07-20', '2026-08-01'],
-        rating: 4.9,
-        status: 'available',
-        createdAt: new Date('2024-01-18'),
-      },
-      {
-        staffId: 'staff-emp-001c',
-        userId: 'usr-emp-001c',
-        availableDates: ['2026-06-15', '2026-07-20', '2026-08-01'],
-        rating: 4.9,
-        status: 'available',
-        createdAt: new Date('2024-01-18'),
-      },
-      {
-        staffId: 'staff-emp-002',
-        userId: 'usr-emp-002',
-        availableDates: ['2026-06-15', '2026-07-20'],
-        rating: 4.8,
-        status: 'available',
-        createdAt: new Date('2024-02-12'),
-      },
-      {
-        staffId: 'staff-emp-003',
-        userId: 'usr-emp-003',
-        availableDates: ['2026-06-15', '2026-07-20'],
-        rating: 4.9,
-        status: 'available',
-        createdAt: new Date('2024-03-08'),
-      },
-      {
-        staffId: 'staff-emp-004',
-        userId: 'usr-emp-004',
-        availableDates: ['2026-06-15', '2026-07-20'],
-        rating: 4.7,
-        status: 'available',
-        createdAt: new Date('2024-03-22'),
-      },
-      {
-        staffId: 'staff-001',
-        userId: 'usr-staff-001',
-        availableDates: ['2026-06-15', '2026-07-20', '2026-08-01'],
-        rating: 4.8,
-        status: 'available',
-        createdAt: new Date('2024-01-15'),
-      },
-      {
-        staffId: 'staff-002',
-        userId: 'usr-staff-002',
-        availableDates: ['2026-06-15', '2026-07-10'],
-        rating: 4.9,
-        status: 'available',
-        createdAt: new Date('2024-03-01'),
-      },
-      {
-        staffId: 'staff-003',
-        userId: 'usr-staff-003',
-        availableDates: ['2026-06-20', '2026-08-05'],
-        rating: 4.7,
-        status: 'available',
-        createdAt: new Date('2024-03-20'),
-      },
-      {
-        staffId: 'staff-004',
-        userId: 'usr-staff-004',
-        availableDates: ['2026-06-15', '2026-07-25'],
-        rating: 4.9,
-        status: 'available',
-        createdAt: new Date('2024-04-10'),
-      },
-      {
-        staffId: 'staff-005',
-        userId: 'usr-staff-005',
-        availableDates: ['2026-07-01', '2026-08-15'],
-        rating: 4.6,
-        status: 'available',
-        createdAt: new Date('2024-04-18'),
-      },
-      {
-        staffId: 'staff-006',
-        userId: 'usr-staff-006',
-        availableDates: ['2026-06-15', '2026-07-20'],
-        rating: 4.8,
-        status: 'available',
-        createdAt: new Date('2024-05-02'),
-      },
-      {
-        staffId: 'staff-007',
-        userId: 'usr-staff-007',
-        availableDates: ['2026-06-15', '2026-08-10'],
-        rating: 4.7,
-        status: 'available',
-        createdAt: new Date('2024-05-15'),
-      },
-      {
-        staffId: 'staff-008',
-        userId: 'usr-staff-008',
-        availableDates: [],
-        rating: 4.5,
-        status: 'unavailable',
-        createdAt: new Date('2024-06-01'),
-      },
-      {
-        staffId: 'staff-009',
-        userId: 'usr-staff-009',
-        availableDates: ['2026-06-15', '2026-07-15', '2026-08-20'],
-        rating: 4.9,
-        status: 'available',
-        createdAt: new Date('2024-06-12'),
-      },
-      {
-        staffId: 'staff-010',
-        userId: 'usr-staff-010',
-        availableDates: [],
-        rating: 4.4,
-        status: 'unavailable',
-        createdAt: new Date('2024-07-01'),
       },
     ];
 
@@ -1954,55 +1692,6 @@ export class DataStore {
       { refundId: 'ref-demo-305', paymentId: 'pay-demo-305', registrationId: 'reg-demo-305', amount: 950, status: 'completed', reason: 'Attendee cancellation within the refund window', requestedAt: new Date('2026-10-08T12:00:00Z'), processedAt: new Date('2026-10-09T10:00:00Z') },
     ];
 
-    // ==================== STAFF ASSIGNMENTS (Sarah Chen -> James Wilson) ====================
-    this.staffAssignments = [
-      {
-        assignmentId: 'asgn-emp-101',
-        eventId: 'evt-emp-101',
-        organizerId: 'org-002',
-        staffId: 'staff-001',
-        status: 'accepted',
-        assignedAt: new Date('2024-03-01'),
-        updatedAt: new Date('2024-03-01'),
-      },
-      {
-        assignmentId: 'asgn-emp-102',
-        eventId: 'evt-emp-102',
-        organizerId: 'org-002',
-        staffId: 'staff-003',
-        status: 'accepted',
-        assignedAt: new Date('2024-03-05'),
-        updatedAt: new Date('2024-03-05'),
-      },
-      {
-        assignmentId: 'asgn-emp-103',
-        eventId: 'evt-emp-101',
-        organizerId: 'org-002',
-        staffId: 'staff-002',
-        status: 'pending',
-        assignedAt: new Date('2024-03-10'),
-        updatedAt: new Date('2024-03-10'),
-      },
-      {
-        assignmentId: 'asgn-001',
-        eventId: 'evt-001',
-        organizerId: 'org-001',
-        staffId: 'staff-001',
-        status: 'accepted',
-        assignedAt: new Date('2024-02-01'),
-        updatedAt: new Date('2024-02-02'),
-      },
-      {
-        assignmentId: 'asgn-002',
-        eventId: 'evt-002',
-        organizerId: 'org-001',
-        staffId: 'staff-001',
-        status: 'pending',
-        assignedAt: new Date('2024-03-10'),
-        updatedAt: new Date('2024-03-10'),
-      },
-    ];
-
     // ==================== SAMPLE SUPPORT EXECUTIVE REPORTS ====================
     this.supportExecutiveReports = [
       {
@@ -2065,15 +1754,6 @@ export class DataStore {
         createdAt: new Date(),
       },
       {
-        notificationId: 'notif-002',
-        userId: 'usr-staff-001', // James Wilson
-        message: 'You have been assigned to "Yoga & Wellness Retreat" by Sarah Chen.',
-        type: 'assignment',
-        read: false,
-        dateTime: new Date(),
-        createdAt: new Date(),
-      },
-      {
         notificationId: 'notif-003',
         userId: 'usr-client-001', // Michael Torres
         message: 'Your event request for "Corporate Anniversary" has been approved by Sarah Chen.',
@@ -2130,7 +1810,7 @@ export class DataStore {
         attendanceId: 'atnd-001',
         attendeeId: 'att-001',
         eventId: 'evt-001',
-        staffId: 'staff-001',
+        verifiedByUserId: 'usr-admin-001',
         checkInTime: '09:15 AM',
         status: 'checked-in',
         qrCode: 'V-PRIYA-001',
@@ -2142,7 +1822,7 @@ export class DataStore {
         attendanceId: 'atnd-002',
         attendeeId: 'att-002',
         eventId: 'evt-001',
-        staffId: 'staff-001',
+        verifiedByUserId: 'usr-admin-001',
         checkInTime: '09:30 AM',
         status: 'checked-in',
         qrCode: 'V-ROHAN-001',
@@ -2154,7 +1834,7 @@ export class DataStore {
         attendanceId: 'atnd-demo-311',
         attendeeId: 'att-002',
         eventId: 'evt-demo-311',
-        staffId: 'staff-001',
+        verifiedByUserId: 'usr-admin-001',
         checkInTime: '11:05 AM',
         status: 'checked-in',
         qrCode: 'DEMO-TICKET-311-ROHAN',
@@ -2166,7 +1846,7 @@ export class DataStore {
         attendanceId: 'atnd-demo-312',
         attendeeId: 'att-001',
         eventId: 'evt-demo-312',
-        staffId: 'staff-001',
+        verifiedByUserId: 'usr-admin-001',
         checkInTime: '',
         status: 'no-show',
         createdAt: new Date('2026-05-24T09:00:00Z'),
@@ -2175,14 +1855,161 @@ export class DataStore {
     ];
 
     this.activityLogs = [
+      // ── Client (usr-client-001) activity derived from real request audit history ──
+      {
+        id: 'log-demo-cli-001',
+        action: 'event_request_submitted',
+        resource: 'event-request',
+        role: UserRole.CLIENT,
+        actorUserId: 'usr-client-001',
+        timestamp: new Date('2024-03-20T09:00:00Z'),
+        status: 'success',
+        details: {
+          requestId: 'req-emp-101',
+          eventName: 'Torres Tech Q3 Product Launch',
+          description: 'Event request submitted — Torres Tech Q3 Product Launch',
+        },
+      },
+      {
+        id: 'log-demo-cli-002',
+        action: 'event_request_submitted',
+        resource: 'event-request',
+        role: UserRole.CLIENT,
+        actorUserId: 'usr-client-001',
+        timestamp: new Date('2024-03-15T10:00:00Z'),
+        status: 'success',
+        details: {
+          requestId: 'req-emp-102',
+          eventName: 'Annual Leadership Strategy Retreat',
+          description: 'Event request submitted — Annual Leadership Strategy Retreat',
+        },
+      },
+      {
+        id: 'log-demo-cli-003',
+        action: 'proposal_sent',
+        resource: 'event-request',
+        role: UserRole.CLIENT,
+        actorUserId: 'usr-client-001',
+        timestamp: new Date('2024-03-15T12:00:00Z'),
+        status: 'success',
+        details: {
+          requestId: 'req-emp-102',
+          eventName: 'Annual Leadership Strategy Retreat',
+          amount: 18000,
+          description: 'Organizer proposal received (₹18,000) — Annual Leadership Strategy Retreat',
+        },
+      },
+      {
+        id: 'log-demo-cli-004',
+        action: 'client_proposal_accepted',
+        resource: 'event-request',
+        role: UserRole.CLIENT,
+        actorUserId: 'usr-client-001',
+        timestamp: new Date('2024-03-16T09:00:00Z'),
+        status: 'success',
+        details: {
+          requestId: 'req-emp-102',
+          eventName: 'Annual Leadership Strategy Retreat',
+          amount: 18000,
+          description: 'Proposal accepted (₹18,000) — Annual Leadership Strategy Retreat',
+        },
+      },
+      {
+        id: 'log-demo-cli-005',
+        action: 'agreement_status_updated',
+        resource: 'event-request',
+        role: UserRole.CLIENT,
+        actorUserId: 'usr-client-001',
+        timestamp: new Date('2024-03-17T10:00:00Z'),
+        status: 'success',
+        details: {
+          requestId: 'req-emp-102',
+          eventName: 'Annual Leadership Strategy Retreat',
+          description: 'Agreement signed — Annual Leadership Strategy Retreat',
+        },
+      },
+      {
+        id: 'log-demo-cli-006',
+        action: 'deposit_payment_completed',
+        resource: 'event-request',
+        role: UserRole.CLIENT,
+        actorUserId: 'usr-client-001',
+        timestamp: new Date('2024-03-18T08:30:00Z'),
+        status: 'success',
+        details: {
+          requestId: 'req-emp-102',
+          eventName: 'Annual Leadership Strategy Retreat',
+          amount: 5000,
+          description: 'Deposit payment confirmed (₹5,000) — Annual Leadership Strategy Retreat',
+        },
+      },
+      {
+        id: 'log-demo-cli-007',
+        action: 'booking_confirmed',
+        resource: 'event-request',
+        role: UserRole.CLIENT,
+        actorUserId: 'usr-client-001',
+        timestamp: new Date('2024-03-18T09:00:00Z'),
+        status: 'success',
+        details: {
+          requestId: 'req-emp-102',
+          eventName: 'Annual Leadership Strategy Retreat',
+          description: 'Booking confirmed — Annual Leadership Strategy Retreat',
+        },
+      },
+      {
+        id: 'log-demo-cli-008',
+        action: 'event_request_submitted',
+        resource: 'event-request',
+        role: UserRole.CLIENT,
+        actorUserId: 'usr-client-001',
+        timestamp: new Date('2024-03-01T08:00:00Z'),
+        status: 'success',
+        details: {
+          requestId: 'req-001',
+          eventName: 'Tech Product Launch',
+          description: 'Event request submitted — Tech Product Launch',
+        },
+      },
+      {
+        id: 'log-demo-cli-009',
+        action: 'info_requested_by_organizer',
+        resource: 'event-request',
+        role: UserRole.CLIENT,
+        actorUserId: 'usr-client-001',
+        timestamp: new Date('2024-03-02T11:00:00Z'),
+        status: 'success',
+        details: {
+          requestId: 'req-001',
+          eventName: 'Tech Product Launch',
+          description: 'Organizer requested more info — Tech Product Launch',
+        },
+      },
+      {
+        id: 'log-demo-cli-010',
+        action: 'info_provided_by_client',
+        resource: 'event-request',
+        role: UserRole.CLIENT,
+        actorUserId: 'usr-client-001',
+        timestamp: new Date('2024-03-03T14:00:00Z'),
+        status: 'success',
+        details: {
+          requestId: 'req-001',
+          eventName: 'Tech Product Launch',
+          description: 'Additional information provided — Tech Product Launch',
+        },
+      },
+      // ── Attendee activity ──────────────────────────────────────────────────────
       { id: 'log-demo-301', action: 'registration_confirmed', resource: 'registration', role: UserRole.ATTENDEE, timestamp: new Date('2026-10-11T07:40:00Z'), status: 'success', details: { registrationId: 'reg-demo-310', eventId: 'evt-demo-310', attendeeId: 'att-001' } },
       { id: 'log-demo-302', action: 'registration_confirmed', resource: 'registration', role: UserRole.ATTENDEE, timestamp: new Date('2026-10-10T12:15:00Z'), status: 'success', details: { registrationId: 'reg-demo-309', eventId: 'evt-demo-309', attendeeId: 'att-002' } },
       { id: 'log-demo-303', action: 'registration_pending_payment', resource: 'registration', role: UserRole.ATTENDEE, timestamp: new Date('2026-10-10T11:00:00Z'), status: 'pending', details: { registrationId: 'reg-demo-303', eventId: 'evt-demo-303', attendeeId: 'att-001' } },
       { id: 'log-demo-304', action: 'waitlist_joined', resource: 'registration', role: UserRole.ATTENDEE, timestamp: new Date('2026-10-05T08:00:00Z'), status: 'success', details: { registrationId: 'reg-demo-304-wait', eventId: 'evt-demo-304', attendeeId: 'att-001' } },
       { id: 'log-demo-305', action: 'registration_cancelled_refunded', resource: 'registration', role: UserRole.ATTENDEE, timestamp: new Date('2026-10-09T10:00:00Z'), status: 'success', details: { registrationId: 'reg-demo-305', eventId: 'evt-demo-305', attendeeId: 'att-001', refundId: 'ref-demo-305' } },
-      { id: 'log-demo-306', action: 'attendee_checked_in', resource: 'attendance', role: UserRole.EVENT_STAFF, timestamp: new Date('2026-01-18T11:05:00Z'), status: 'success', details: { registrationId: 'reg-demo-311', eventId: 'evt-demo-311', attendeeId: 'att-002' } },
-      { id: 'log-demo-307', action: 'attendee_no_show', resource: 'attendance', role: UserRole.EVENT_STAFF, timestamp: new Date('2026-05-24T09:00:00Z'), status: 'success', details: { registrationId: 'reg-demo-312', eventId: 'evt-demo-312', attendeeId: 'att-001' } },
+      { id: 'log-demo-306', action: 'attendee_checked_in', resource: 'attendance', role: UserRole.EMPLOYEE, timestamp: new Date('2026-01-18T11:05:00Z'), status: 'success', details: { registrationId: 'reg-demo-311', eventId: 'evt-demo-311', attendeeId: 'att-002' } },
+      { id: 'log-demo-307', action: 'attendee_no_show', resource: 'attendance', role: UserRole.EMPLOYEE, timestamp: new Date('2026-05-24T09:00:00Z'), status: 'success', details: { registrationId: 'reg-demo-312', eventId: 'evt-demo-312', attendeeId: 'att-001' } },
     ];
+
+
 
     // ==================== REPORTS ====================
 
@@ -2195,19 +2022,6 @@ export class DataStore {
         reportTitle: 'Tech Conference 2024 - Final Report',
         reportDetails: 'Event was successful with 450 attendees. All sponsors satisfied.',
         submissionDate: '2024-06-20',
-        status: 'submitted',
-        createdAt: new Date('2024-06-20'),
-        updatedAt: new Date('2024-06-20'),
-      },
-    ];
-
-    this.staffReports = [
-      {
-        staffReportId: 'rpt-staff-001',
-        staffId: 'staff-001',
-        organizerId: 'org-001',
-        eventId: 'evt-001',
-        reportText: 'Event ran smoothly. Check-in process was efficient. Attendees were satisfied.',
         status: 'submitted',
         createdAt: new Date('2024-06-20'),
         updatedAt: new Date('2024-06-20'),
@@ -2247,19 +2061,6 @@ export class DataStore {
         reviewId: 'rev-org-demo-002', eventId: 'evt-002', clientId: 'cli-001', organizerId: 'org-001', rating: 5,
         comment: 'The wellness retreat was thoughtfully organized and ran smoothly. The venue, session timing, and on-site coordination made the day relaxing for everyone.',
         createdAt: new Date('2024-07-23'),
-      },
-    ];
-
-    this.staffReviews = [
-      {
-        reviewId: 'rev-staff-001',
-        reviewerId: 'org-001',
-        staffId: 'staff-001',
-        eventId: 'evt-001',
-        rating: 5,
-        comment: 'Frank did an excellent job. Very professional and efficient.',
-        reviewDate: '2024-06-22',
-        createdAt: new Date('2024-06-22'),
       },
     ];
 
@@ -2321,14 +2122,6 @@ export class DataStore {
         'The event capacity shown in the organizer dashboard does not match the current registrations.',
         7,
       ),
-      resolvedTicket(
-        'SUP-2026-00005',
-        'usr-staff-001',
-        'Event Staff & Check-in Support',
-        'Check-in not updating',
-        'Attendee check-ins are not updating in the attendance list after scanning.',
-        4,
-      ),
     ];
     this.applyOrganizerDashboardDemoScenario();
     this.applyEventRequestDemoScenario();
@@ -2349,7 +2142,7 @@ export class DataStore {
       { eventId: 'evt-003', name: 'Future of FinTech Forum', category: 'Finance', date: day(0), time: '10:00', location: 'Venue confirmation pending', capacity: 250, demoRegistrationCount: 0, ticketPrice: 1200, status: 'ongoing', attentionReasons: ['Confirm the final venue operations plan.'], preparationTasks: [{ taskId: 'prep-demo-003', title: 'Confirm the final venue', deadline: day(-1), status: 'in_progress', updatedAt: now }] },
       { eventId: 'evt-att-201', name: 'Product Design Conference India', category: 'Design', date: day(7), time: '09:30', location: 'BIEC Conference Hall, Bengaluru', capacity: 300, demoRegistrationCount: 286, ticketPrice: 1200, status: 'published', attentionReasons: ['Capacity is above 95%; review waitlist and seating.'] },
       { eventId: 'evt-att-202', name: 'Cloud Native Engineering Workshop', category: 'Technology', date: day(0), time: '10:00', location: 'Tidel Park Learning Centre, Chennai', capacity: 80, demoRegistrationCount: 68, ticketPrice: 750, status: 'ongoing' },
-      { eventId: 'evt-att-203', name: 'Community Demo Night', category: 'Networking', date: day(3), time: '17:30', location: 'Innovation Hub, Hyderabad', capacity: 140, demoRegistrationCount: 137, ticketPrice: 0, status: 'published', attentionReasons: ['Assign two additional check-in staff before doors open.'], preparationTasks: [{ taskId: 'prep-demo-203', title: 'Assign two additional check-in staff', deadline: day(-1), status: 'pending', updatedAt: now }] },
+      { eventId: 'evt-att-203', name: 'Community Demo Night', category: 'Networking', date: day(3), time: '17:30', location: 'Innovation Hub, Hyderabad', capacity: 140, demoRegistrationCount: 137, ticketPrice: 0, status: 'published', attentionReasons: ['Confirm check-in arrangements before doors open.'], preparationTasks: [{ taskId: 'prep-demo-203', title: 'Confirm check-in arrangements', deadline: day(-1), status: 'pending', updatedAt: now }] },
       { eventId: 'evt-att-204', name: 'Autumn Creator Expo', category: 'Creative', date: day(12), time: '11:00', location: 'Pragati Maidan, New Delhi', capacity: 450, demoRegistrationCount: 214, ticketPrice: 900, status: 'cancelled', cancellationReason: 'Venue closed for emergency maintenance.' },
       { eventId: 'evt-demo-301', name: 'AI Product & Cloud Summit', category: 'Technology', date: day(14), time: '09:00', location: 'Bangalore International Centre, Bengaluru', capacity: 500, demoRegistrationCount: 411, ticketPrice: 1800, status: 'published' },
       { eventId: 'evt-demo-306', name: 'Coastal Wellness Weekend', category: 'Health & Wellness', date: day(55), time: '07:30', location: 'Ashvem Beach Retreat, Goa', capacity: 75, demoRegistrationCount: 54, ticketPrice: 1200, status: 'published' },
@@ -2390,13 +2183,92 @@ export class DataStore {
       ['req-orgdash-action-005', 'Sustainable Retail Forum', 38, 'counteroffer_received'],
       ['req-orgdash-action-006', 'Leadership Strategy Retreat', 46, 'submitted'],
       ['req-orgdash-action-007', 'Creator Economy Networking Night', 53, 'pending'],
-    ].map(([requestId, eventName, offset, status], index) => ({
-      requestId: String(requestId), clientId: 'cli-001', organizerId: 'org-001', eventName: String(eventName),
-      eventDate: day(Number(offset)), budget: 75_000 + index * 15_000, capacity: 80 + index * 20,
-      requirements: `Review the client brief and confirm availability for ${eventName}.`, status: status as EventRequest['status'],
-      agreementStatus: 'not_sent', paymentStatus: 'unpaid', proposals: [], clarifications: [], auditHistory: [],
-      createdAt: new Date(now.getTime() - (index + 1) * 86_400_000), updatedAt: now,
-    }));
+    ].map(([requestId, eventName, offset, status], index) => {
+      const budget = 75_000 + index * 15_000;
+      const capacity = 80 + index * 20;
+      const reqDate = day(Number(offset));
+      const req: EventRequest = {
+        requestId: String(requestId), clientId: 'cli-001', organizerId: 'org-001', eventName: String(eventName),
+        eventDate: reqDate, budget, capacity,
+        eventType: 'Corporate',
+        venue: 'Grand Horizon Convention Center',
+        requirements: `Review the client brief and confirm availability for ${eventName}.`, status: status as EventRequest['status'],
+        agreementStatus: 'not_sent', paymentStatus: 'unpaid', proposals: [], negotiations: [], clarifications: [], auditHistory: [],
+        createdAt: new Date(now.getTime() - (index + 1) * 86_400_000), updatedAt: now,
+      };
+      if (requestId === 'req-orgdash-action-004') {
+        req.negotiations = [{
+          id: 'neg-orgdash-004',
+          action: 'changes_requested',
+          performedBy: 'usr-org-001',
+          role: 'event_organizer',
+          reason: 'Catering and venue setup require adjusted timeline or budget.',
+          timestamp: new Date(now.getTime() - 2 * 86_400_000),
+        }];
+      } else if (requestId === 'req-orgdash-action-005') {
+        const coBudget = 135_000;
+        const coDeposit = 40_500;
+        req.budget = coBudget;
+        req.capacity = 160;
+        req.eventType = 'Conference';
+        req.venue = 'Green Pavilion Hall B';
+        req.requirements = 'Eco-friendly materials, organic catering, hybrid streaming setup.';
+        req.proposals = [{
+          version: 1,
+          amount: 150_000,
+          depositRequired: 45_000,
+          proposedDate: reqDate,
+          validUntil: day(Number(offset) + 14),
+          terms: 'Full-day retail sustainability forum.',
+          eventPlan: 'Keynote, breakout panels, green product exhibition, live recording',
+          timeline: '09:00 Registration; 10:00 Opening Keynote; 13:00 Networking Lunch; 17:00 Wrap-up',
+          organizerFee: 30_000,
+          taxes: 27_000,
+          includedServices: 'Eco-friendly materials, organic catering, hybrid streaming setup',
+          attendeeCapacity: 160,
+          paymentSchedule: '30% Advance Deposit on Agreement, 70% Final Balance upon Completion',
+          cancellationTerms: '14+ days notice: 10% fee, 90% net refund. Within 14 days: Non-refundable.',
+          status: 'pending_client',
+          sentAt: new Date(now.getTime() - 4 * 86_400_000),
+        }];
+        req.negotiations = [{
+          id: 'neg-orgdash-005',
+          action: 'counteroffer',
+          performedBy: 'usr-client-001',
+          role: 'client',
+          version: 1,
+          budget: coBudget,
+          proposedPrice: coBudget,
+          depositRequired: coDeposit,
+          remainingBalance: coBudget - coDeposit,
+          eventDate: reqDate,
+          eventName: String(eventName),
+          eventType: 'Conference',
+          capacity: 160,
+          venue: 'Green Pavilion Hall B',
+          requirements: 'Eco-friendly materials, organic catering, hybrid streaming setup.',
+          reason: 'We propose ₹1,35,000 total price with a 30% advance deposit and hybrid streaming included.',
+          services: 'Eco-friendly materials, organic catering, hybrid streaming setup',
+          deliverables: 'Keynote, breakout panels, green product exhibition, live recording',
+          eventPlan: 'Full-day retail sustainability forum with keynote and breakout sessions',
+          timeline: '09:00 Registration; 10:00 Opening Keynote; 13:00 Networking Lunch; 17:00 Wrap-up',
+          paymentTerms: '30% Advance Deposit on Agreement, 70% Final Balance upon Completion',
+          paymentSchedule: '30% Advance Deposit on Agreement, 70% Final Balance upon Completion',
+          cancellationTerms: '14+ days notice: 10% fee, 90% net refund. Within 14 days: Non-refundable.',
+          validUntil: day(Number(offset) + 7),
+          timestamp: new Date(now.getTime() - 2 * 86_400_000),
+        }];
+        req.auditHistory = [{
+          id: 'aud-orgdash-005-1',
+          action: 'Counteroffer Sent by Client',
+          performedBy: 'usr-client-001',
+          role: 'client',
+          timestamp: new Date(now.getTime() - 2 * 86_400_000),
+          details: { budget: coBudget, notes: 'Client proposed ₹1,35,000 total price' },
+        }];
+      }
+      return req;
+    });
     const actionableIds = new Set(actionableRequests.map(request => request.requestId));
     this.eventRequests = this.eventRequests.filter(request => !request.requestId.startsWith('req-orgdash-action-') || actionableIds.has(request.requestId));
     for (const request of actionableRequests) {
@@ -2484,8 +2356,8 @@ export class DataStore {
     });
 
     const requests: EventRequest[] = [
-      makeRequest(1, 'submitted', 'cli-reqdemo-001', 'org-001', 'Northstar Product Reveal', 'Product Launch', 45, 180000, 260),
-      makeRequest(2, 'under_review', 'cli-001', 'org-001', 'Torres Leadership Forum', 'Conference', 70, 240000, 180),
+      makeRequest(1, 'submitted', 'cli-reqdemo-001', 'org-002', 'Northstar Product Reveal', 'Product Launch', 45, 180000, 260),
+      makeRequest(2, 'under_review', 'cli-001', 'org-002', 'Torres Leadership Forum', 'Conference', 70, 240000, 180),
       makeRequest(3, 'info_requested', 'cli-reqdemo-002', 'org-001', 'Mosaic Care Summit', 'Healthcare', 85, 95000, 120, {
         clarifications: [
           { id: 'clr-demo-flow-003-1', senderId: 'usr-org-001', senderRole: 'organizer', senderName: 'Sarah Chen', message: 'Please confirm the accessibility and dietary requirements.', timestamp: new Date(now.getTime() - 2 * 86_400_000) },
@@ -2496,17 +2368,17 @@ export class DataStore {
         agreementStatus: 'pending_signature', paymentStatus: 'deposit_pending',
       }),
       makeRequest(6, 'proposal_sent', 'cli-reqdemo-001', 'org-001', 'Northstar Design Exchange', 'Workshop', 130, 76000, 72),
-      makeRequest(7, 'changes_requested', 'cli-reqdemo-002', 'org-001', 'Mosaic Research Roundtable', 'Roundtable', 145, 110000, 80, {
+      makeRequest(7, 'changes_requested', 'cli-reqdemo-002', 'org-002', 'Mosaic Research Roundtable', 'Roundtable', 145, 110000, 80, {
         negotiations: [{ id: 'neg-demo-flow-007', action: 'changes_requested', performedBy: 'usr-org-001', role: 'event_organizer', reason: 'The requested date needs a larger venue.', eventDate: day(150), timestamp: now }],
       }),
-      makeRequest(8, 'counteroffer_received', 'cli-reqdemo-003', 'org-001', 'Greenline Community Day', 'Community', 160, 88000, 200, {
+      makeRequest(8, 'counteroffer_received', 'cli-reqdemo-003', 'org-002', 'Greenline Community Day', 'Community', 160, 88000, 200, {
         negotiations: [{ id: 'neg-demo-flow-008', action: 'counteroffer', performedBy: 'usr-reqdemo-client-003', role: 'client', reason: 'Please adjust the date and guest count.', budget: 98000, eventDate: day(165), capacity: 240, timestamp: now }],
       }),
       makeRequest(9, 'planning', 'cli-001', 'org-001', 'Torres Executive Retreat', 'Retreat', 175, 210000, 65),
       makeRequest(10, 'plan_submitted', 'cli-reqdemo-001', 'org-001', 'Northstar Annual Conference', 'Conference', 190, 420000, 500, {
         activeEventPlanId: 'plan-demo-flow-010',
       }),
-      makeRequest(11, 'confirmed', 'cli-reqdemo-002', 'org-001', 'Mosaic Innovation Congress', 'Conference', 205, 510000, 420, {
+      makeRequest(11, 'confirmed', 'cli-reqdemo-002', 'org-002', 'Mosaic Innovation Congress', 'Conference', 205, 510000, 420, {
         agreementStatus: 'agreed', paymentStatus: 'deposit_paid', eventId: 'evt-demo-flow-011',
         activeEventPlanId: 'plan-demo-flow-011', currentProposalVersion: 1,
       }),
@@ -2519,7 +2391,7 @@ export class DataStore {
       makeRequest(14, 'expired', 'cli-reqdemo-001', 'org-001', 'Northstar Investor Briefing', 'Corporate', -5, 195000, 100, {
         proposals: [{ version: 1, amount: 195000, depositRequired: 48750, proposedDate: day(-5), validUntil: day(-12), terms: 'Expired demo proposal.', status: 'expired', sentAt: new Date(now.getTime() - 20 * 86_400_000) }],
       }),
-      makeRequest(15, 'under_review', 'cli-reqdemo-002', 'org-001', 'Mosaic Clinical Workshop', 'Workshop', -3, 72000, 45, {
+      makeRequest(15, 'under_review', 'cli-reqdemo-002', 'org-002', 'Mosaic Clinical Workshop', 'Workshop', -3, 72000, 45, {
         updatedAt: new Date(now.getTime() - 18 * 86_400_000),
       }),
       makeRequest(16, 'awaiting_client', 'cli-reqdemo-003', 'org-001', 'Greenline Volunteer Dinner', 'Dinner', 250, 54000, 60, {
@@ -2571,7 +2443,7 @@ export class DataStore {
     requests[18].proposals = [pendingProposal(19, -30, 'accepted')];
 
     const eventScenarios: Event[] = [
-      { eventId: 'evt-demo-flow-011', organizerId: 'org-001', clientId: 'cli-reqdemo-002', name: requests[10].eventName,
+      { eventId: 'evt-demo-flow-011', organizerId: 'org-002', clientId: 'cli-reqdemo-002', name: requests[10].eventName,
         category: requests[10].eventType || 'Conference', date: requests[10].eventDate, time: requests[10].eventTime || '09:00',
         location: requests[10].venue || '', capacity: requests[10].capacity, ticketPrice: 0, status: 'ongoing',
         description: requests[10].requirements, demoScenario: 'event-request-workflow-v1', createdAt: now, updatedAt: now },
@@ -2623,7 +2495,6 @@ export class DataStore {
     this.superAdmins = [];
     this.clients = [];
     this.organizers = [];
-    this.staffProfiles = [];
     this.attendees = [];
     this.events = [];
     this.eventRequests = [];
@@ -2637,12 +2508,9 @@ export class DataStore {
     this.refunds = [];
     this.eventChanges = [];
     this.attendance = [];
-    this.staffAssignments = [];
     this.eventReports = [];
-    this.staffReports = [];
     this.supportExecutiveReports = [];
     this.eventReviews = [];
-    this.staffReviews = [];
     this.notifications = [];
     this.activityLogs = [];
     this.supportTickets = [];

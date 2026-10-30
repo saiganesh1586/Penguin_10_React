@@ -8,7 +8,7 @@
 
 - JWT token generation and validation (Just added)
 - Role-based access control (RoleGuard)
-- 5 User roles: SUPER_ADMIN, CLIENT, EVENT_ORGANIZER, EVENT_STAFF, ATTENDEE
+- 5 User roles: SUPER_ADMIN, CLIENT, EVENT_ORGANIZER, EMPLOYEE, ATTENDEE
 - Login endpoint returns JWT token for secure API calls
 - Custom decorators for extracting role and user ID from headers
 
@@ -23,18 +23,15 @@
 - **Event Plans** - Organizers create plans, clients approve/reject
 - **Registrations** - Attendees register for events (with real QR codes!)
 - **Payments** - Process ticket payments
-- **Attendance** - Staff verify attendees via QR code or verification ID
-- **Staff Assignments** - Organizers assign staff to events (with availability check!)
-- **Reports** - Event reports from staff/organizers
+- **Attendance** - Super administrators verify attendees via QR code or verification ID
 - **Notifications** - Full notification system (create/read/mark)
-- **Reviews** - Event and staff ratings
+- **Reviews** - Event ratings
 - **Analytics** - Role-specific dashboards for all 5 user types
 - **Activity Logs** - Audit trail
 
 #### 3. **Complete Business Logic** ✅
 
 - Event request → Event plan → Registration → Payment → Attendance workflow
-- Staff assignment with availability validation
 - Duplicate prevention for registrations and assignments
 - Role-based filtering and data visibility
 - Automatic notifications on key actions
@@ -48,7 +45,6 @@ In-memory DataStore with 13 entity types:
 - Users (5 roles)
 - Events, EventRequests, EventPlans
 - Registrations, Payments, Attendance
-- StaffAssignments, Reports, Reviews
 - Notifications, ActivityLogs
 - Seed data: 5 demo users + sample events/requests
 
@@ -67,12 +63,9 @@ Class-validator DTOs for:
 
 - **JWT Authentication** - Security improved with token-based auth
 - **QR Code Generation** - Real QR codes for registration tickets
-- **Staff Availability** - Assignment respects staff's available dates
 - **Role-Specific Dashboards**:
   - Super Admin: System-wide analytics
-  - Organizer: Events, revenue, staff assignments
   - Client: Event requests, event plans, approved events
-  - Staff: Assignments, reports, available dates, ratings
   - Attendee: Registered events, tickets, attendance status
 
 ---
@@ -116,7 +109,6 @@ Use these to test all 5 roles:
 | **Super Admin** | superadmin@example.com | Admin@123     |
 | **Client**      | client@example.com     | Client@123    |
 | **Organizer**   | organizer@example.com  | Organizer@123 |
-| **Staff**       | staff@example.com      | Staff@123     |
 | **Attendee**    | attendee@example.com   | Attendee@123  |
 
 ---
@@ -191,29 +183,6 @@ Body:
 }
 ```
 
-### 6. **Organizer Assigns Staff** (EVENT_ORGANIZER)
-
-```bash
-POST /api/staff-assignments
-Headers: x-role: event_organizer
-Body:
-{
-  "eventId": "evt-001",
-  "organizerId": "org-001",
-  "staffId": "stf-001"
-}
-```
-
-✅ Validates staff availability on event date!
-
-### 7. **Staff Accepts Assignment** (EVENT_STAFF)
-
-```bash
-PATCH /api/staff-assignments/{assignmentId}/status
-Headers: x-role: event_staff, x-user-id: usr-staff-001
-Body: { "status": "accepted" }
-```
-
 ### 8. **Attendee Registers for Event** (ATTENDEE)
 
 ```bash
@@ -244,22 +213,6 @@ Body:
 }
 ```
 
-### 10. **Staff Checks In Attendee** (EVENT_STAFF)
-
-```bash
-POST /api/attendance/verify
-Headers: x-role: event_staff
-Body:
-{
-  "eventId": "evt-001",
-  "staffId": "stf-001",
-  "verificationId": "ABC123DEF456",  # From registration ticket
-  "checkInTime": "2024-06-15T09:30:00Z"
-}
-```
-
----
-
 ## 📊 Dashboard Endpoints (Role-Based)
 
 ### Super Admin Dashboard
@@ -278,7 +231,6 @@ GET /api/analytics/organizer-dashboard
 Headers: x-role: event_organizer, x-user-id: usr-org-001
 ```
 
-Returns: My events, registrations, revenue, staff assignments
 
 ### Client Dashboard
 
@@ -288,15 +240,6 @@ Headers: x-role: client, x-user-id: usr-client-001
 ```
 
 Returns: My requests, event plans, approved events
-
-### Staff Dashboard
-
-```bash
-GET /api/analytics/staff-dashboard
-Headers: x-role: event_staff, x-user-id: usr-staff-001
-```
-
-Returns: My assignments, reports, available dates, rating
 
 ### Attendee Dashboard
 
@@ -334,7 +277,6 @@ Returns: Registered events, tickets, attendance status
 
 - Date range filters
 - Price range filters
-- Staff rating filters
 
 ### 5. **Rate Limiting** (For production)
 
@@ -364,7 +306,7 @@ All endpoints return consistent format:
 ```json
 {
   "statusCode": 403,
-  "message": "Only EVENT_ORGANIZER can assign staff",
+  "message": "Only EVENT_ORGANIZER can manage event requests",
   "error": "Forbidden"
 }
 ```
@@ -412,7 +354,7 @@ When attendee registers:
 1. System generates unique verification ID (12 chars)
 2. Encodes into QR code image (data URL)
 3. Returns both to frontend
-4. Staff scans QR or enters verification ID at check-in
+4. Super administrator scans QR or enters verification ID at check-in
 
 Example verification ID: `ABC123DEF456`
 
@@ -420,13 +362,11 @@ Example verification ID: `ABC123DEF456`
 
 ## ⚠️ Key Validations
 
-✅ Staff can only be assigned if available on event date  
 ✅ Attendees can't register twice for same event  
-✅ Staff can't be assigned twice to same event  
 ✅ Only ATTENDEE role can register  
 ✅ Only CLIENT role can request events  
 ✅ Only EVENT_ORGANIZER can create events  
-✅ Only EVENT_STAFF can verify attendance  
+✅ Only SUPER_ADMIN can verify attendance
 ✅ Password must be 6+ chars  
 ✅ Email must be valid format  
 ✅ Phone must be 10 digits
@@ -447,13 +387,11 @@ backend/
 │   │   ├── registrations/        # Attendee registration
 │   │   ├── payments/             # Payment processing
 │   │   ├── attendance/           # Check-in verification
-│   │   ├── staff-assignments/    # Staff assignment
-│   │   ├── reports/              # Event/staff reports
+│   │   ├── reports/              # Event reports
 │   │   ├── notifications/        # Notification system
-│   │   ├── reviews/              # Event/staff reviews
+│   │   ├── reviews/              # Event reviews
 │   │   ├── analytics/            # Dashboards (NEW)
 │   │   ├── activity-log/         # Audit trail
-│   │   ├── staff/                # Staff profiles
 │   │   └── attendees/            # Attendee profiles
 │   ├── common/
 │   │   ├── constants.ts          # UserRole enum
@@ -485,22 +423,10 @@ backend/
 - Check demo credentials above
 - Verify spelling (case-sensitive)
 
-### Issue: "Only EVENT_ORGANIZER can assign staff"
-
-- Make sure x-role header is: `event_organizer`
-- Not: `eventorganizer`, `EVENT_ORGANIZER`, etc.
-
 ### Issue: QR code not generating
 
 - Check qrcode npm package is installed
 - Falls back to verification ID if QR fails
-
-### Issue: Staff assignment rejected for availability
-
-- Check staff's availableDates in seed data
-- Event date must match staff's available date
-
----
 
 ## ✨ Next Steps for Frontend Integration
 
@@ -510,7 +436,7 @@ backend/
 4. **Event request form** → POST /api/event-requests (CLIENT only)
 5. **Registration form** → POST /api/registrations (ATTENDEE only)
 6. **QR code display** → Show registration.qrCode as <img src={registration.qrCode} />
-7. **Attendance check-in** → POST /api/attendance/verify (STAFF only)
+7. **Attendance check-in** → POST /api/attendance/verify (SUPER_ADMIN only)
 8. **Notifications** → GET /api/notifications and display in real-time
 
 ---

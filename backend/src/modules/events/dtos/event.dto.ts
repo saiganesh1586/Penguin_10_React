@@ -1,4 +1,5 @@
-import { ArrayMaxSize, IsArray, IsBoolean, IsString, IsNotEmpty, IsOptional, IsNumber, IsIn, Min, MinLength, MaxLength, ValidateNested } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsBoolean, IsString, IsNotEmpty, IsOptional, IsNumber, IsInt, IsIn, Min, Max, MinLength, MaxLength, ValidateNested } from 'class-validator';
+import { EVENTFLOW_NUMERIC_LIMITS } from '../../../common/validation-rules';
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import { EventPolicyAcknowledgementDto } from '../../../common/event-policy';
@@ -18,6 +19,11 @@ export class CancelClientEventDto extends EventPolicyAcknowledgementDto {
 }
 
 export class CreateEventDto {
+  @ApiProperty({ description: 'Private events require attendee approval before payment', enum: ['public', 'private'], required: false, default: 'public' })
+  @IsIn(['public', 'private'])
+  @IsOptional()
+  visibility?: 'public' | 'private';
+
   @IsIn(['draft', 'published', 'ongoing', 'completed', 'cancelled'])
   @IsOptional()
   status?: 'draft' | 'published' | 'ongoing' | 'completed' | 'cancelled';
@@ -69,8 +75,9 @@ export class CreateEventDto {
     description: 'Event capacity',
     example: 500,
   })
-  @IsNumber()
-  @Min(1)
+  @IsInt({ message: 'Event capacity must be a whole number' })
+  @Min(EVENTFLOW_NUMERIC_LIMITS.CAPACITY.MIN, { message: 'Event capacity must be at least 1 guest' })
+  @Max(EVENTFLOW_NUMERIC_LIMITS.CAPACITY.MAX, { message: 'Maximum event capacity is 50,000' })
   @IsNotEmpty()
   capacity!: number;
 
@@ -78,8 +85,9 @@ export class CreateEventDto {
     description: 'Ticket price',
     example: 99,
   })
-  @IsNumber()
-  @Min(0)
+  @IsNumber({ maxDecimalPlaces: 2 }, { message: 'Ticket price can have at most 2 decimal places' })
+  @Min(EVENTFLOW_NUMERIC_LIMITS.TICKET_PRICE.MIN, { message: 'Ticket price cannot be negative' })
+  @Max(EVENTFLOW_NUMERIC_LIMITS.TICKET_PRICE.MAX, { message: 'Ticket price cannot exceed ₹1,00,000' })
   @IsNotEmpty()
   ticketPrice!: number;
 
@@ -167,18 +175,20 @@ export class UpdateEventDto {
     description: 'Event capacity',
     required: false,
   })
-  @IsNumber()
+  @IsInt({ message: 'Event capacity must be a whole number' })
+  @Min(EVENTFLOW_NUMERIC_LIMITS.CAPACITY.MIN, { message: 'Event capacity must be at least 1 guest' })
+  @Max(EVENTFLOW_NUMERIC_LIMITS.CAPACITY.MAX, { message: 'Maximum event capacity is 50,000' })
   @IsOptional()
-  @Min(1)
   capacity?: number;
 
   @ApiProperty({
     description: 'Ticket price',
     required: false,
   })
-  @IsNumber()
+  @IsNumber({ maxDecimalPlaces: 2 }, { message: 'Ticket price can have at most 2 decimal places' })
+  @Min(EVENTFLOW_NUMERIC_LIMITS.TICKET_PRICE.MIN, { message: 'Ticket price cannot be negative' })
+  @Max(EVENTFLOW_NUMERIC_LIMITS.TICKET_PRICE.MAX, { message: 'Ticket price cannot exceed ₹1,00,000' })
   @IsOptional()
-  @Min(0)
   ticketPrice?: number;
 
   @ApiProperty({

@@ -1,6 +1,7 @@
 import {
-  IsString, IsNotEmpty, IsOptional, IsNumber, IsPositive, IsEnum, IsInt, Min, IsBoolean, IsIn, IsDateString,
+  IsString, IsNotEmpty, IsOptional, IsNumber, IsPositive, IsEnum, IsInt, Min, Max, IsBoolean, IsIn, IsDateString,
 } from 'class-validator';
+import { EVENTFLOW_NUMERIC_LIMITS } from '../../../common/validation-rules';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { EventPolicyAcknowledgementDto } from '../../../common/event-policy';
 
@@ -37,13 +38,27 @@ export class CreateEventRequestDto extends EventPolicyAcknowledgementDto {
   eventTime?: string;
 
   @ApiProperty({ description: 'Budget in INR', example: 50000 })
-  @IsNumber()
-  @IsPositive()
+  @IsNumber({ maxDecimalPlaces: 2 }, { message: 'Event budget can have at most 2 decimal places' })
+  @Min(EVENTFLOW_NUMERIC_LIMITS.BUDGET.MIN, { message: 'Event budget must be at least ₹1,000' })
+  @Max(EVENTFLOW_NUMERIC_LIMITS.BUDGET.MAX, { message: 'Event budget cannot exceed ₹1,00,00,000' })
   budget!: number;
 
+  @ApiPropertyOptional({ description: 'Ticket price per attendee in INR; 0 means free admission', example: 499.5, default: 0 })
+  @IsNumber({ maxDecimalPlaces: 2 }, { message: 'Ticket price can have at most 2 decimal places' })
+  @Min(EVENTFLOW_NUMERIC_LIMITS.TICKET_PRICE.MIN, { message: 'Ticket price cannot be negative' })
+  @Max(EVENTFLOW_NUMERIC_LIMITS.TICKET_PRICE.MAX, { message: 'Ticket price cannot exceed ₹1,00,000' })
+  @IsOptional()
+  ticketPrice?: number;
+
+  @ApiPropertyOptional({ description: 'Public events allow direct registration; private events require organizer approval before payment', enum: ['public', 'private'], default: 'public' })
+  @IsIn(['public', 'private'])
+  @IsOptional()
+  visibility?: 'public' | 'private';
+
   @ApiProperty({ description: 'Expected capacity', example: 200 })
-  @IsInt()
-  @Min(1)
+  @IsInt({ message: 'Event capacity must be a whole number' })
+  @Min(EVENTFLOW_NUMERIC_LIMITS.CAPACITY.MIN, { message: 'Event capacity must be at least 1 guest' })
+  @Max(EVENTFLOW_NUMERIC_LIMITS.CAPACITY.MAX, { message: 'Maximum event capacity is 50,000' })
   capacity!: number;
 
   @ApiPropertyOptional({ description: 'Preferred event city', example: 'Bangalore' })
@@ -100,13 +115,15 @@ export class ProvideMissingInfoDto {
 
 export class SendProposalDto {
   @ApiProperty({ description: 'Total proposed amount in INR', example: 60000 })
-  @IsNumber()
-  @IsPositive()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(EVENTFLOW_NUMERIC_LIMITS.BUDGET.MIN, { message: 'Proposed amount must be at least ₹1,000' })
+  @Max(EVENTFLOW_NUMERIC_LIMITS.BUDGET.MAX, { message: 'Proposed amount cannot exceed ₹1,00,00,000' })
   amount!: number;
 
   @ApiProperty({ description: 'Required deposit amount in INR', example: 15000 })
-  @IsNumber()
-  @Min(0)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0, { message: 'Deposit required cannot be negative' })
+  @Max(EVENTFLOW_NUMERIC_LIMITS.BUDGET.MAX, { message: 'Deposit required cannot exceed ₹1,00,00,000' })
   depositRequired!: number;
 
   @ApiPropertyOptional({ description: 'Proposed event date if different (YYYY-MM-DD)', example: '2026-09-05' })
@@ -140,7 +157,9 @@ export class SendProposalDto {
   timeline?: string;
 
   @ApiPropertyOptional({ description: 'Organizer management fee in INR' })
-  @IsNumber()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0, { message: 'Organizer fee cannot be negative' })
+  @Max(EVENTFLOW_NUMERIC_LIMITS.BUDGET.MAX, { message: 'Organizer fee cannot exceed ₹1,00,00,000' })
   @IsOptional()
   organizerFee?: number;
 
@@ -150,7 +169,9 @@ export class SendProposalDto {
   itemizedCosts?: string;
 
   @ApiPropertyOptional({ description: 'Taxes in INR' })
-  @IsNumber()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0, { message: 'Taxes cannot be negative' })
+  @Max(EVENTFLOW_NUMERIC_LIMITS.BUDGET.MAX, { message: 'Taxes cannot exceed ₹1,00,00,000' })
   @IsOptional()
   taxes?: number;
 
@@ -165,7 +186,9 @@ export class SendProposalDto {
   excludedServices?: string;
 
   @ApiPropertyOptional({ description: 'Attendee capacity limit' })
-  @IsInt()
+  @IsInt({ message: 'Attendee capacity must be a whole number' })
+  @Min(EVENTFLOW_NUMERIC_LIMITS.CAPACITY.MIN, { message: 'Attendee capacity must be at least 1 guest' })
+  @Max(EVENTFLOW_NUMERIC_LIMITS.CAPACITY.MAX, { message: 'Maximum event capacity is 50,000' })
   @IsOptional()
   attendeeCapacity?: number;
 
@@ -188,6 +211,26 @@ export class SendProposalDto {
   @IsString()
   @IsOptional()
   conditions?: string;
+
+  @ApiPropertyOptional({ description: 'Attached plan/proposal original filename' })
+  @IsString()
+  @IsOptional()
+  documentName?: string;
+
+  @ApiPropertyOptional({ description: 'Attached plan/proposal stored filename' })
+  @IsString()
+  @IsOptional()
+  documentFileName?: string;
+
+  @ApiPropertyOptional({ description: 'Attached plan/proposal document size in bytes' })
+  @IsNumber()
+  @IsOptional()
+  documentSize?: number;
+
+  @ApiPropertyOptional({ description: 'Attached plan/proposal document MIME type' })
+  @IsString()
+  @IsOptional()
+  documentType?: string;
 }
 
 export class ReviseProposalDto extends SendProposalDto {
@@ -217,8 +260,9 @@ export class RejectRequestDto {
   reasonType?: 'budget' | 'date' | 'both' | 'other' | 'permanent';
 
   @ApiPropertyOptional({ description: 'Proposed budget when requesting a budget change' })
-  @IsNumber()
-  @IsPositive()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(EVENTFLOW_NUMERIC_LIMITS.BUDGET.MIN, { message: 'Proposed budget must be at least ₹1,000' })
+  @Max(EVENTFLOW_NUMERIC_LIMITS.BUDGET.MAX, { message: 'Proposed budget cannot exceed ₹1,00,00,000' })
   @IsOptional()
   proposedBudget?: number;
 
@@ -250,8 +294,9 @@ export class ClientResponseDto {
   notes?: string;
 
   @ApiPropertyOptional({ description: 'Client counteroffer budget' })
-  @IsNumber()
-  @IsPositive()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(EVENTFLOW_NUMERIC_LIMITS.BUDGET.MIN, { message: 'Counteroffer budget must be at least ₹1,000' })
+  @Max(EVENTFLOW_NUMERIC_LIMITS.BUDGET.MAX, { message: 'Counteroffer budget cannot exceed ₹1,00,00,000' })
   @IsOptional()
   counterofferBudget?: number;
 
@@ -274,8 +319,9 @@ export class ClientResponseDto {
   counterofferEventType?: string;
 
   @ApiPropertyOptional({ description: 'Counteroffer guest capacity' })
-  @IsInt()
-  @Min(1)
+  @IsInt({ message: 'Event capacity must be a whole number' })
+  @Min(EVENTFLOW_NUMERIC_LIMITS.CAPACITY.MIN, { message: 'Event capacity must be at least 1 guest' })
+  @Max(EVENTFLOW_NUMERIC_LIMITS.CAPACITY.MAX, { message: 'Maximum event capacity is 50,000' })
   @IsOptional()
   counterofferCapacity?: number;
 
@@ -288,6 +334,47 @@ export class ClientResponseDto {
   @IsString()
   @IsOptional()
   counterofferRequirements?: string;
+
+  @ApiPropertyOptional({ description: 'Counteroffer advance deposit required' })
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @IsOptional()
+  counterofferDeposit?: number;
+
+  @ApiPropertyOptional({ description: 'Counteroffer services' })
+  @IsString()
+  @IsOptional()
+  counterofferServices?: string;
+
+  @ApiPropertyOptional({ description: 'Counteroffer deliverables' })
+  @IsString()
+  @IsOptional()
+  counterofferDeliverables?: string;
+
+  @ApiPropertyOptional({ description: 'Counteroffer event plan' })
+  @IsString()
+  @IsOptional()
+  counterofferEventPlan?: string;
+
+  @ApiPropertyOptional({ description: 'Counteroffer timeline' })
+  @IsString()
+  @IsOptional()
+  counterofferTimeline?: string;
+
+  @ApiPropertyOptional({ description: 'Counteroffer payment terms' })
+  @IsString()
+  @IsOptional()
+  counterofferPaymentTerms?: string;
+
+  @ApiPropertyOptional({ description: 'Counteroffer cancellation terms' })
+  @IsString()
+  @IsOptional()
+  counterofferCancellationTerms?: string;
+
+  @ApiPropertyOptional({ description: 'Counteroffer valid until date' })
+  @IsString()
+  @IsOptional()
+  counterofferValidUntil?: string;
 }
 
 export class UpdateAgreementStatusDto {
@@ -320,6 +407,21 @@ export class PayDepositDto {
   @IsString()
   @IsOptional()
   paymentMethod?: string;
+
+  @ApiPropertyOptional({ description: 'Simulated payment outcome or status', example: 'completed' })
+  @IsString()
+  @IsOptional()
+  status?: string;
+
+  @ApiPropertyOptional({ description: 'Payment method details', example: 'UPI' })
+  @IsString()
+  @IsOptional()
+  methodDetails?: string;
+
+  @ApiPropertyOptional({ description: 'Simulate payment failure', example: false })
+  @IsBoolean()
+  @IsOptional()
+  simulateFailure?: boolean;
 }
 
 export class RequestEventModificationDto {
@@ -334,13 +436,16 @@ export class RequestEventModificationDto {
   venue?: string;
 
   @ApiPropertyOptional({ description: 'New expected attendee count' })
-  @IsInt()
-  @Min(1)
+  @IsInt({ message: 'Event capacity must be a whole number' })
+  @Min(EVENTFLOW_NUMERIC_LIMITS.CAPACITY.MIN, { message: 'Event capacity must be at least 1 guest' })
+  @Max(EVENTFLOW_NUMERIC_LIMITS.CAPACITY.MAX, { message: 'Maximum event capacity is 50,000' })
   @IsOptional()
   capacity?: number;
 
   @ApiPropertyOptional({ description: 'New budget' })
-  @IsNumber()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(EVENTFLOW_NUMERIC_LIMITS.BUDGET.MIN, { message: 'Event budget must be at least ₹1,000' })
+  @Max(EVENTFLOW_NUMERIC_LIMITS.BUDGET.MAX, { message: 'Event budget cannot exceed ₹1,00,00,000' })
   @IsOptional()
   budget?: number;
 

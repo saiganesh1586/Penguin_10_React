@@ -1,7 +1,8 @@
 import { Injectable, ForbiddenException, BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { DataStore } from '../../common/data-store';
 import { UserRole } from '../../common/constants';
-import { CreateClientOrganizerReviewDto, CreateEventReviewDto, CreateStaffReviewDto } from '../reports/dto/report.dto';
+import { eventAmountPaid } from '../../common/utils/event-payments';
+import { CreateClientOrganizerReviewDto, CreateEventReviewDto } from '../reports/dto/report.dto';
 
 @Injectable()
 export class ReviewsService {
@@ -49,12 +50,7 @@ export class ReviewsService {
     }
     if (request) {
       const report = this.db.eventCompletionReports.find(item => item.eventId === event.eventId);
-      const verifiedPayment = this.db.eventWorkflowPayments.find(payment =>
-        payment.eventId === event.eventId &&
-        payment.requestId === request.requestId &&
-        payment.status === 'completed' &&
-        payment.amount === request.budget,
-      );
+      const verifiedPayment = eventAmountPaid(this.db.eventWorkflowPayments, request) >= Number(request.budget);
       if (request.status !== 'completed' || request.paymentStatus !== 'fully_paid' || !verifiedPayment || !report) {
         throw new ForbiddenException('A workflow event review is available after full payment and the completion report');
       }
@@ -117,37 +113,5 @@ export class ReviewsService {
         }),
       },
     };
-  }
-
-  createStaffReview(dto: CreateStaffReviewDto, role: UserRole): any {
-    if (role !== UserRole.EVENT_ORGANIZER && role !== UserRole.SUPER_ADMIN) {
-      throw new ForbiddenException('Only EVENT_ORGANIZER can review staff');
-    }
-    const id = this.db.generateId('rev-staff');
-    const review = {
-      reviewId: id,
-      reviewerId: dto.reviewerId,
-      staffId: dto.staffId,
-      eventId: dto.eventId,
-      rating: dto.rating,
-      comment: dto.comment,
-      reviewDate: new Date().toISOString().split('T')[0],
-      createdAt: new Date(),
-    };
-    this.db.staffReviews.push(review);
-
-    // Update staff average rating
-    const staff = this.db.staffProfiles.find(s => s.staffId === dto.staffId);
-    if (staff) {
-      const staffRevs = this.db.staffReviews.filter(r => r.staffId === dto.staffId);
-      staff.rating = parseFloat((staffRevs.reduce((sum, r) => sum + r.rating, 0) / staffRevs.length).toFixed(1));
-    }
-
-    return { success: true, message: 'Staff review submitted', data: review };
-  }
-
-  findAllStaffReviews(staffId?: string): any[] {
-    if (staffId) return this.db.staffReviews.filter(r => r.staffId === staffId);
-    return this.db.staffReviews;
   }
 }

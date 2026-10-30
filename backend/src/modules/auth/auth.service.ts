@@ -19,14 +19,20 @@ export class AuthService {
 
   register(dto: RegisterDto): any {
     // Public registration never accepts administrator or department employee roles.
-    if (![UserRole.ATTENDEE, UserRole.CLIENT, UserRole.EVENT_ORGANIZER, UserRole.EVENT_STAFF].includes(dto.userRole)) {
-      throw new BadRequestException('Choose an attendee, client, organizer, or staff account');
+    if (![UserRole.ATTENDEE, UserRole.CLIENT, UserRole.EVENT_ORGANIZER].includes(dto.userRole)) {
+      throw new BadRequestException('Choose an attendee, client, or organizer account');
     }
     const created = new UsersService().create(dto, UserRole.SUPER_ADMIN).data;
     const user = this.dataStore.findUserById(created.userId)!;
+    if (dto.profile?.yearsExperience !== undefined) {
+      const exp = Number(dto.profile.yearsExperience);
+      if (!Number.isInteger(exp) || exp < 0 || exp > 60) {
+        throw new BadRequestException('Years of experience must be a whole number between 0 and 60');
+      }
+    }
     const fields = ['dateOfBirth', 'gender', 'city', 'interests', 'organizationType', 'organizationName',
-      'organizationAddress', 'yearsExperience', 'eventCategories', 'service', 'staffPosition',
-      'staffCompany', 'staffCity', 'previousExperience'];
+      'organizationAddress', 'yearsExperience', 'eventCategories', 'service',
+      'previousExperience'];
     user.profile = Object.fromEntries(fields.filter(field => ['string', 'number'].includes(typeof dto.profile?.[field]))
       .map(field => [field, dto.profile![field]]));
     user.status = dto.userRole === UserRole.ATTENDEE ? 'active' : 'pending';
@@ -55,6 +61,8 @@ export class AuthService {
     if (!verifyPassword(loginDto.password || '', user.password || '')) {
       throw new UnauthorizedException('Invalid email or password');
     }
+
+
 
     if (user.status !== 'active') {
       throw new BadRequestException(`Account is ${user.status}. Please contact admin.`);
@@ -102,7 +110,8 @@ export class AuthService {
     // 1. Validate Step 1 common account fields
     if (!dto.fullName || !dto.fullName.trim()) throw new BadRequestException('Full Name is required');
     if (!dto.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(dto.email.trim())) throw new BadRequestException('A valid email address is required');
-    if (!dto.mobileNumber || !/^[0-9+\s-]{10,15}$/.test(dto.mobileNumber.trim())) throw new BadRequestException('A valid 10-15 digit mobile number is required');
+    const cleanedMobile = (dto.mobileNumber || '').replace(/[\s+-]/g, '').slice(-10);
+    if (!dto.mobileNumber || !/^[6-9]\d{9}$/.test(cleanedMobile)) throw new BadRequestException('Enter a valid 10-digit Indian mobile number');
     if (!dto.password || dto.password.length < 6) throw new BadRequestException('Password must be at least 6 characters');
     if (!dto.emailVerified) throw new BadRequestException('Email verification must be completed before submitting');
     if (!dto.mobileVerified) throw new BadRequestException('Mobile verification must be completed before submitting');
@@ -158,8 +167,9 @@ export class AuthService {
       if (!indep.city?.trim()) throw new BadRequestException('City is required');
       if (!indep.state?.trim()) throw new BadRequestException('State is required');
       if (!indep.pinCode?.trim() || !/^\d{6}$/.test(indep.pinCode.trim())) throw new BadRequestException('A valid 6-digit PIN code is required');
-      if (indep.yearsOfExperience === undefined || indep.yearsOfExperience === null || Number(indep.yearsOfExperience) < 0) {
-        throw new BadRequestException('Years of Experience must be a number of 0 or more');
+      const yearsExp = Number(indep.yearsOfExperience);
+      if (indep.yearsOfExperience === undefined || indep.yearsOfExperience === null || !Number.isInteger(yearsExp) || yearsExp < 0 || yearsExp > 60) {
+        throw new BadRequestException('Years of Experience must be a whole number between 0 and 60');
       }
       if (!Array.isArray(indep.areasOfSpecialization) || indep.areasOfSpecialization.length === 0) {
         throw new BadRequestException('At least one Area of Specialization must be selected');
@@ -297,7 +307,7 @@ export class AuthService {
   }
 
   reviewOrganizerApplication(referenceNumber: string, dto: ReviewOrganizerApplicationDto, reviewerId: string, reviewerRole: UserRole): any {
-    if (![UserRole.SUPER_ADMIN, UserRole.EVENT_STAFF].includes(reviewerRole)) {
+    if (![UserRole.SUPER_ADMIN, UserRole.EMPLOYEE].includes(reviewerRole)) {
       throw new ForbiddenException('Only administrators and authorized verification reviewers can review applications');
     }
 

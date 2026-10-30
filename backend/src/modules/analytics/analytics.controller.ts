@@ -25,7 +25,7 @@ export class AnalyticsController {
       example: {
         success: true,
         data: {
-          users: { total: 12, active: 12, byRole: { super_admin: 1, client: 2, event_organizer: 3, event_staff: 3, attendee: 3 } },
+          users: { total: 12, active: 12, byRole: { super_admin: 1, client: 2, event_organizer: 3, employee: 3, attendee: 3 } },
           events: { total: 4, published: 3, draft: 1 },
           eventRequests: { total: 2, pending: 1, approved: 1 },
           registrations: { total: 3 },
@@ -40,7 +40,7 @@ export class AnalyticsController {
   }
 
   @Get('organizer-dashboard')
-  @ApiOperation({ summary: 'Event organizer dashboard: my events, registrations, staff assignments, revenue' })
+  @ApiOperation({ summary: 'Event organizer dashboard: my events, registrations, revenue' })
   @ApiResponse({ status: 200, description: 'Organizer dashboard data' })
   @ApiResponse({ status: 403, description: 'Access denied' })
   getOrganizerDashboard(@UserRoleDecorator() role: UserRole, @UserId() userId: string) {
@@ -55,12 +55,12 @@ export class AnalyticsController {
     return this.service.getClientDashboard(role, userId);
   }
 
-  @Get('staff-dashboard')
-  @ApiOperation({ summary: 'Event staff dashboard: my assignments, reports submitted, available dates' })
-  @ApiResponse({ status: 200, description: 'Staff dashboard data' })
-  @ApiResponse({ status: 403, description: 'Only EVENT_STAFF can view' })
-  getStaffDashboard(@UserRoleDecorator() role: UserRole, @UserId() userId: string) {
-    return this.service.getStaffDashboard(role, userId);
+  @Get('employee-dashboard')
+  @ApiOperation({ summary: 'Employee dashboard: registrations, support requests, and operational totals' })
+  @ApiResponse({ status: 200, description: 'Employee dashboard data' })
+  @ApiResponse({ status: 403, description: 'Only EMPLOYEE can view' })
+  getEmployeeDashboard(@UserRoleDecorator() role: UserRole, @UserId() userId: string) {
+    return this.service.getEmployeeDashboard(role, userId);
   }
 
   @Get('attendee-dashboard')

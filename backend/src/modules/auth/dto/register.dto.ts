@@ -3,7 +3,7 @@ import { UserRole } from '../../../common/constants';
 import { CreateUserDto } from '../../users/dto/user.dto';
 
 export class RegisterDto extends CreateUserDto {
-  @IsIn([UserRole.ATTENDEE, UserRole.CLIENT, UserRole.EVENT_ORGANIZER, UserRole.EVENT_STAFF])
+  @IsIn([UserRole.ATTENDEE, UserRole.CLIENT, UserRole.EVENT_ORGANIZER])
   userRole!: UserRole;
 
   @IsObject()

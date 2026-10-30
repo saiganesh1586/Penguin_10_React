@@ -1,64 +1,27 @@
-import { useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import supportSource from '../../../shared/api/support.js?raw';
-import '../../attendee/styles/attendee.css';
+import { useState } from 'react';
+import useAutoRefresh from '../hooks/useAutoRefresh.js';
+import useSupportRequests from '../hooks/useSupportRequests.js';
+import SupportRequestForm from '../components/SupportRequestForm.jsx';
+import SupportTicketTable from '../components/SupportTicketTable.jsx';
+import SupportTicketDialog from '../components/SupportTicketDialog.jsx';
 
-export default function CustomerSupportPage() {
-  const contentRef = useRef(null);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    let active = true;
-    let user = null;
-    try {
-      user = JSON.parse(sessionStorage.getItem('ef_cu') || 'null');
-    } catch (error) {
-      console.error('Could not read the signed-in user for customer support.', error);
-    }
-
-    if (!user?.token) {
-      navigate('/landing', { replace: true });
-      return undefined;
-    }
-
-    const script = document.createElement('script');
-    script.textContent = supportSource;
-    document.body.appendChild(script);
-
-    const start = async () => {
-      try {
-        const support = window.EventFlowSupport;
-        const content = contentRef.current;
-        if (!support || !content) {
-          throw new Error('Customer Support could not be initialized.');
-        }
-        if (!support.canRequestSupport(user)) {
-          const role = String(user.role || user.userRole || '').trim().toLowerCase().replace(/[\s-]+/g, '_');
-          const employeeType = String(user.employeeType || role).trim().toUpperCase().replace(/[\s-]+/g, '_');
-          const home = ['superuser', 'super_admin', 'superadmin', 'admin'].includes(role)
-            ? '/admin'
-            : ['FINANCE_EXECUTIVE', 'SUPPORT_FINANCE'].includes(employeeType) ? '/employee2' : '/employee1';
-          navigate(home, { replace: true });
-          return;
-        }
-        content.innerHTML = await support.render(user, 'Sign out and return');
-        support.bind(content, user, () => {
-          sessionStorage.removeItem('ef_cu');
-          navigate('/landing', { replace: true });
-        }, 'Sign out and return');
-      } catch (error) {
-        if (active && contentRef.current) {
-          contentRef.current.textContent = error.message;
-        }
-      }
-    };
-
-    start();
-    return () => {
-      active = false;
-      script.remove();
-    };
-  }, [navigate]);
-
-  return <main className="support-standalone" id="page-content" ref={contentRef} />;
+export default function CustomerSupportPage({ user, onSignOut }) {
+  const requests = useSupportRequests(user);
+  const [editing, setEditing] = useState(false), [selectedId, setSelectedId] = useState(null);
+  const selected = requests.tickets.find(ticket => ticket.ticketId === selectedId);
+  useAutoRefresh(requests.refresh, { enabled: !editing && !selectedId && !requests.loading });
+  return <>
+    <div className="page-hd support-page-heading">
+      <div className="page-hd-left"><div className="page-title">Customer Support</div>
+        <div className="page-sub">Tell us what you need help with. Your ticket number, status, and support replies will be available here.</div>
+      </div>
+      <div className="page-hd-right"><button className="btn btn-ghost btn-sm" type="button" onClick={onSignOut}>Sign out and return</button></div>
+    </div>
+    <div className="support-layout">
+      {requests.error && <p className="support-feedback support-feedback-error" role="alert">Could not load support tickets: {requests.error}</p>}
+      <SupportRequestForm user={user} onSubmit={requests.create} onEditing={setEditing} />
+      <SupportTicketTable tickets={requests.tickets} onView={setSelectedId} />
+    </div>
+    {selected && <SupportTicketDialog key={selected.ticketId} ticket={selected} user={user} onClose={() => setSelectedId(null)} onFollowUp={requests.followUp} />}
+  </>;
 }

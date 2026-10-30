@@ -15,8 +15,6 @@ export class AppService {
         attendees: '/attendees',
         registrations: '/registrations',
         payments: '/payments',
-        staff: '/staff',
-        'staff-assignments': '/staff-assignments',
         attendance: '/attendance',
         reports: '/reports',
         reviews: '/reviews',
@@ -26,8 +24,8 @@ export class AppService {
         'api-docs': '/api',
       },
       docs: 'Visit http://localhost:3001/api for Swagger documentation',
-      roles: ['super_admin', 'client', 'event_organizer', 'event_staff', 'attendee'],
-      'pass-role-header': 'Add header: x-role: super_admin|client|event_organizer|event_staff|attendee',
+      roles: ['super_admin', 'client', 'event_organizer', 'employee', 'attendee'],
+      'pass-role-header': 'Add header: x-role: super_admin|client|event_organizer|employee|attendee',
     };
   }
 

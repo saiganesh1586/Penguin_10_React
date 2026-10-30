@@ -4,6 +4,7 @@ import { UserRole } from '../../common/constants';
 import { CreateRegistrationDto, ReviewRegistrationDto, UpdateRegistrationDetailsDto } from './dto/registration.dto';
 import { QrCodeService } from '../../common/utils/qr-code.service';
 import { isSupportExecutive } from '../../common/account-access';
+import { isEventOpenForRegistration, requiresRegistrationApproval } from '../../common/utils/event-registration';
 
 @Injectable()
 export class RegistrationsService {
@@ -21,8 +22,10 @@ export class RegistrationsService {
   }
   private async issueTicket(registration: Registration) {
     const verificationId = QrCodeService.generateVerificationId();
+    const qrCode = await QrCodeService.generateQRCode(verificationId);
+    if (registration.status !== 'registered') throw new ConflictException('Registration changed before the ticket could be issued');
     registration.verificationId = verificationId;
-    registration.qrCode = await QrCodeService.generateQRCode(verificationId);
+    registration.qrCode = qrCode;
     registration.updatedAt = new Date();
   }
   private notify(registration: Registration, message: string, type: string, paymentId?: string) {
@@ -65,7 +68,7 @@ export class RegistrationsService {
     if (!user || user.status !== 'active' || !user.name || !user.email) throw new BadRequestException('An active attendee profile with name and email is required');
     const event = this.db.events.find(e => e.eventId === dto.eventId);
     if (!event) throw new NotFoundException(`Event ${dto.eventId} not found`);
-    if (event.status !== 'published') throw new BadRequestException('Event is not open for registration');
+    if (!isEventOpenForRegistration(event, this.db.eventRequests)) throw new BadRequestException('Event is not open for registration');
     if (new Date(`${event.date}T23:59:59`) < new Date()) throw new BadRequestException('This event has already concluded');
     if (event.registrationDeadline && new Date(`${event.registrationDeadline}T23:59:59`) < new Date()) throw new BadRequestException('The registration deadline has passed');
     this.db.registrations.filter(r => r.attendeeId === attendee.attendeeId && r.eventId === event.eventId && r.status === 'pending_payment' && !this.activeReservation(r)).forEach(r => { r.status = 'cancelled'; r.cancellationReason = 'Payment reservation expired'; r.cancelledAt = new Date(); r.updatedAt = new Date(); });
@@ -74,17 +77,25 @@ export class RegistrationsService {
 
     const full = this.occupied(event.eventId) >= event.capacity;
     if (full && (!event.waitlistEnabled || !dto.joinWaitlist)) throw new ConflictException(event.waitlistEnabled ? 'Event is full. Join the waitlist instead.' : 'Event is full and the waitlist is closed');
-    const status: Registration['status'] = full ? 'waitlisted' : event.ticketPrice > 0 ? 'pending_payment' : 'registered';
+    const needsApproval = requiresRegistrationApproval(event);
+    const status: Registration['status'] = full ? 'waitlisted' : needsApproval ? 'pending_approval' : event.ticketPrice > 0 ? 'pending_payment' : 'registered';
     const now = new Date();
-    const registration: Registration = { registrationId: this.db.generateId('reg'), attendeeId: attendee.attendeeId, eventId: event.eventId, registrationDate: now.toISOString().slice(0, 10), status, additionalInfo: dto.additionalInfo, ticketType: dto.ticketType, reservationExpiresAt: status === 'pending_payment' ? new Date(now.getTime() + 15 * 60 * 1000) : undefined, createdAt: now, updatedAt: now };
+    const registration: Registration = { registrationId: this.db.generateId('reg'), attendeeId: attendee.attendeeId, eventId: event.eventId, registrationDate: now.toISOString().slice(0, 10), status, additionalInfo: dto.additionalInfo, ticketType: dto.ticketType,
+      reviewStatus: event.visibility === 'public' ? 'approved' : undefined, reviewedAt: event.visibility === 'public' ? now : undefined,
+      reservationExpiresAt: status === 'pending_payment' ? new Date(now.getTime() + 15 * 60 * 1000) : undefined, createdAt: now, updatedAt: now };
     // Insert the reservation before asynchronous ticket generation so concurrent requests see occupied capacity.
     this.db.registrations.push(registration);
     if (status === 'registered') {
       try { await this.issueTicket(registration); }
       catch { this.db.registrations = this.db.registrations.filter(r => r.registrationId !== registration.registrationId); throw new BadRequestException('Ticket generation failed; registration was rolled back'); }
     }
-    this.notify(registration, status === 'registered' ? `Registration confirmed for "${event.name}".` : status === 'waitlisted' ? `You joined the waitlist for "${event.name}".` : `Registration for "${event.name}" is pending payment.`, status === 'registered' ? 'registration_confirmed' : status);
-    return { success: true, message: status === 'registered' ? 'Registration confirmed' : status === 'waitlisted' ? 'Waitlist joined' : 'Registration pending payment', data: this.enrich(registration) };
+    this.notify(registration, status === 'registered' ? `Registration confirmed for "${event.name}".` : status === 'waitlisted' ? `You joined the waitlist for "${event.name}".` : status === 'pending_approval' ? `Your registration request for "${event.name}" is awaiting organizer approval. No payment has been collected.` : `Registration for "${event.name}" is pending payment.`, status === 'registered' ? 'registration_confirmed' : status);
+    if (needsApproval) {
+      const organizer = this.db.organizers.find(profile => profile.organizerId === event.organizerId);
+      if (organizer) this.db.notifications.push({ notificationId: this.db.generateId('notif'), userId: organizer.userId, eventId: event.eventId, registrationId: registration.registrationId,
+        message: `An attendee requested approval to register for "${event.name}".`, type: 'registration_requested', read: false, dateTime: now, createdAt: now });
+    }
+    return { success: true, message: status === 'registered' ? 'Registration confirmed' : status === 'waitlisted' ? 'Waitlist joined' : status === 'pending_approval' ? 'Registration request sent for organizer approval' : 'Registration pending payment', data: this.enrich(registration) };
   }
 
   findAll(role: UserRole, userId?: string): any[] {
@@ -92,7 +103,7 @@ export class RegistrationsService {
     if (role === UserRole.ATTENDEE) { const attendee = this.attendeeForUser(userId); registrations = attendee ? registrations.filter(r => r.attendeeId === attendee.attendeeId) : []; }
     else if (role === UserRole.EVENT_ORGANIZER) { const organizer = this.db.organizers.find(o => o.userId === userId); const ids = this.db.events.filter(e => e.organizerId === organizer?.organizerId).map(e => e.eventId); registrations = registrations.filter(r => ids.includes(r.eventId)); }
     else if (role === UserRole.CLIENT) { const client = this.db.clients.find(c => c.userId === userId); const ids = this.db.events.filter(e => e.clientId === client?.clientId).map(e => e.eventId); registrations = registrations.filter(r => ids.includes(r.eventId)); }
-    else if (role !== UserRole.SUPER_ADMIN && !(role === UserRole.EVENT_STAFF && isSupportExecutive(this.db.findUserById(userId || '')))) throw new ForbiddenException('Access denied');
+    else if (role !== UserRole.SUPER_ADMIN && !(role === UserRole.EMPLOYEE && isSupportExecutive(this.db.findUserById(userId || '')))) throw new ForbiddenException('Access denied');
     return registrations.map(r => this.enrich(r));
   }
 
@@ -125,7 +136,7 @@ export class RegistrationsService {
   }
 
   review(id: string, dto: ReviewRegistrationDto, role: UserRole, userId?: string): any {
-    const support = role === UserRole.EVENT_STAFF && isSupportExecutive(this.db.findUserById(userId || ''));
+    const support = role === UserRole.EMPLOYEE && isSupportExecutive(this.db.findUserById(userId || ''));
     if (![UserRole.EVENT_ORGANIZER, UserRole.SUPER_ADMIN].includes(role) && !support) throw new ForbiddenException('Only the event organizer or support executives can review registrations');
     const registration = this.db.registrations.find(r => r.registrationId === id);
     if (!registration) throw new NotFoundException('Registration not found');
@@ -136,18 +147,39 @@ export class RegistrationsService {
     if (!['approved', 'rejected'].includes(dto.decision)) throw new BadRequestException('Choose an approval or decline decision');
     const reason = typeof dto.reason === 'string' ? dto.reason.trim() : '';
     if (dto.decision === 'rejected' && (reason.length < 10 || reason.length > 1000)) throw new BadRequestException('Please explain the decline in 10 to 1000 characters');
-    if (registration.reviewStatus || !['registered', 'pending_payment', 'waitlisted'].includes(registration.status)) throw new ConflictException('This registration is no longer pending review');
+    if (event.visibility === 'public') throw new ConflictException('Public event registrations do not require organizer approval');
+    if (registration.reviewStatus || !['pending_approval', 'registered', 'pending_payment', 'waitlisted'].includes(registration.status)) throw new ConflictException('This registration is no longer pending review');
     if (['completed', 'cancelled'].includes(event.status) || new Date(`${event.date}T23:59:59`) < new Date()) throw new BadRequestException('Registrations for a past or closed event cannot be reviewed');
 
     const now = new Date();
     const priorStatus = registration.status;
+    const needsActivation = requiresRegistrationApproval(event) && ['pending_approval', 'pending_payment'].includes(priorStatus);
+    if (dto.decision === 'approved' && needsActivation && this.occupied(event.eventId) - (priorStatus === 'pending_payment' && this.activeReservation(registration) ? 1 : 0) >= event.capacity) {
+      throw new ConflictException('No seats are available to approve this registration');
+    }
+    const beforeApproval = { status: registration.status, reviewStatus: registration.reviewStatus, reviewedAt: registration.reviewedAt, updatedAt: registration.updatedAt,
+      reservationExpiresAt: registration.reservationExpiresAt, verificationId: registration.verificationId, qrCode: registration.qrCode };
     const releasedSeat = ['registered', 'pending_payment'].includes(priorStatus) && this.activeReservation(registration);
     const hadWaitlistOffer = !!registration.offerExpiresAt;
     registration.reviewStatus = dto.decision;
     registration.reviewedAt = now;
     registration.updatedAt = now;
     if (dto.decision === 'approved') {
-      this.notify(registration, `The organizer approved your registration for "${event.name}".`, 'registration_approved');
+      if (needsActivation) {
+        registration.status = event.ticketPrice > 0 ? 'pending_payment' : 'registered';
+        registration.reservationExpiresAt = event.ticketPrice > 0 ? new Date(now.getTime() + 15 * 60 * 1000) : undefined;
+        if (!event.ticketPrice) {
+          return this.issueTicket(registration).then(() => {
+            this.notify(registration, `The organizer approved your registration for "${event.name}". Your free ticket is ready in My Tickets.`, 'registration_approved');
+            return { success: true, message: 'Registration approved and free ticket issued', data: this.enrich(registration) };
+          }).catch(error => {
+            if (registration.status === 'registered' && registration.reviewedAt === now) Object.assign(registration, beforeApproval);
+            throw error;
+          });
+        }
+      }
+      if (requiresRegistrationApproval(event) && registration.status === 'waitlisted' && this.occupied(event.eventId) < event.capacity) this.offerNext(event.eventId);
+      this.notify(registration, `The organizer approved your registration for "${event.name}".${needsActivation && event.ticketPrice > 0 ? ` Pay ₹${event.ticketPrice} from My Tickets within 15 minutes to confirm your seat.` : ''}`, 'registration_approved');
       return { success: true, message: 'Registration approved', data: this.enrich(registration) };
     }
 
@@ -173,7 +205,8 @@ export class RegistrationsService {
     if (registration.status !== 'waitlisted' || !registration.offerExpiresAt) throw new BadRequestException('No active waitlist offer exists');
     if (registration.offerExpiresAt < new Date()) { registration.offerExpiresAt = undefined; throw new BadRequestException('The waitlist offer has expired'); }
     const event = this.db.events.find(e => e.eventId === registration.eventId);
-    if (!event || event.status !== 'published') throw new BadRequestException('Event is no longer open');
+    if (!event || !isEventOpenForRegistration(event, this.db.eventRequests)) throw new BadRequestException('Event is no longer open');
+    if (requiresRegistrationApproval(event) && registration.reviewStatus !== 'approved') throw new ForbiddenException('Organizer approval is required before accepting a private event place');
     if (this.occupied(event.eventId) >= event.capacity) throw new ConflictException('The offered place is no longer available');
     registration.offerExpiresAt = undefined;
     registration.status = event.ticketPrice > 0 ? 'pending_payment' : 'registered';
@@ -203,10 +236,12 @@ export class RegistrationsService {
   }
 
   private offerNext(eventId: string) {
-    const next = this.db.registrations.filter(r => r.eventId === eventId && r.status === 'waitlisted' && !r.offerExpiresAt).sort((a, b) => +a.createdAt - +b.createdAt)[0];
+    const event = this.db.events.find(e => e.eventId === eventId);
+    if (!event || this.occupied(eventId) >= event.capacity) return;
+    const next = this.db.registrations.filter(r => r.eventId === eventId && r.status === 'waitlisted' && !r.offerExpiresAt
+      && (!requiresRegistrationApproval(event) || r.reviewStatus === 'approved')).sort((a, b) => +a.createdAt - +b.createdAt)[0];
     if (!next) return;
     next.offerExpiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000); next.updatedAt = new Date();
-    const event = this.db.events.find(e => e.eventId === eventId);
     this.notify(next, `A place is available for "${event?.name || eventId}". Accept it within 48 hours.`, 'waitlist_offer');
   }
 }

@@ -54,7 +54,6 @@ async function bootstrap() {
       '- SuperAdmin: superadmin@example.com / Admin@123\n' +
       '- Client: client@example.com / Client@123\n' +
       '- Organizer: organizer@example.com / Organizer@123\n' +
-      '- Staff: staff@example.com / Staff@123\n' +
       '- Attendee: attendee@example.com / Attendee@123',
     )
     .setVersion('1.0.0')

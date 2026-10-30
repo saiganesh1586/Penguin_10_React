@@ -1,6 +1,7 @@
 import {
-  IsString, IsNotEmpty, IsNumber, IsPositive, IsIn,
+  IsString, IsNotEmpty, IsNumber, Min, Max, IsIn,
 } from 'class-validator';
+import { EVENTFLOW_NUMERIC_LIMITS } from '../../../common/validation-rules';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreatePaymentDto {
@@ -10,8 +11,9 @@ export class CreatePaymentDto {
   registrationId!: string;
 
   @ApiProperty({ description: 'Payment amount', example: 99 })
-  @IsNumber()
-  @IsPositive()
+  @IsNumber({ maxDecimalPlaces: 2 }, { message: 'Payment amount can have at most 2 decimal places' })
+  @Min(0.01, { message: 'Payment amount must be greater than zero' })
+  @Max(EVENTFLOW_NUMERIC_LIMITS.BUDGET.MAX, { message: 'Payment amount cannot exceed ₹1,00,00,000' })
   amount!: number;
 
   @ApiProperty({

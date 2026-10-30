@@ -1,8 +1,10 @@
 import { Injectable, NotFoundException, ForbiddenException, ConflictException, BadRequestException } from '@nestjs/common';
 import { DataStore } from '../../common/data-store';
 import { UserRole } from '../../common/constants';
+import { isEventOpenForRegistration, requiresRegistrationApproval } from '../../common/utils/event-registration';
 import { CreatePaymentDto } from './dto/payment.dto';
 import { QrCodeService } from '../../common/utils/qr-code.service';
+import { eventAmountPaid } from '../../common/utils/event-payments';
 
 @Injectable()
 export class PaymentsService {
@@ -21,14 +23,17 @@ export class PaymentsService {
       const attendee = this.db.attendees.find(a => a.userId === userId);
       if (!attendee || attendee.attendeeId !== registration.attendeeId) throw new ForbiddenException('You can only pay for your own registration');
     }
+    const event = this.db.events.find(e => e.eventId === registration.eventId);
+    if (event && requiresRegistrationApproval(event) && registration.reviewStatus !== 'approved') {
+      throw new ForbiddenException('Organizer approval is required before paying for this private event');
+    }
     if (registration.status !== 'pending_payment') throw new ConflictException('Registration is not awaiting payment');
     if (this.processingRegistrations.has(registration.registrationId)) throw new ConflictException('Payment is already being processed');
     if (registration.reservationExpiresAt && registration.reservationExpiresAt < new Date()) {
       registration.status = 'cancelled'; registration.cancellationReason = 'Payment reservation expired'; registration.cancelledAt = new Date(); registration.updatedAt = new Date();
       throw new ConflictException('Payment reservation expired; register again');
     }
-    const event = this.db.events.find(e => e.eventId === registration.eventId);
-    if (!event || event.status !== 'published') throw new ConflictException('Event is no longer open');
+    if (!event || !isEventOpenForRegistration(event, this.db.eventRequests)) throw new ConflictException('Event is no longer open');
     if (dto.amount !== event.ticketPrice) throw new ConflictException('Payment amount does not match the ticket price');
 
     // Prevent double payment
@@ -103,18 +108,22 @@ export class PaymentsService {
     if (!request || request.status !== 'confirmed') {
       throw new ConflictException('The event does not have an approved event plan');
     }
-    if (this.db.eventWorkflowPayments.some(payment =>
-      payment.eventId === eventId && payment.status === 'completed',
-    )) {
+    if (request.paymentStatus === 'fully_paid') {
       throw new ConflictException('This event has already been paid in full');
     }
 
     const approvedPlan = this.db.eventPlans.find(plan =>
       plan.eventPlanId === request.activeEventPlanId && plan.approvalStatus === 'approved',
     );
-    if (!approvedPlan || Number(approvedPlan.budget) <= 0 || Number(approvedPlan.budget) !== Number(request.budget)) {
+    const latestProposal = request.proposals?.[request.proposals.length - 1];
+    const acceptedProposal = latestProposal?.status === 'accepted' ? latestProposal : undefined;
+    const totalAmount = approvedPlan ? Number(approvedPlan.budget) : Number(acceptedProposal?.amount);
+    if (!Number.isFinite(totalAmount) || totalAmount <= 0 || (approvedPlan && totalAmount !== Number(request.budget))) {
       throw new ConflictException('The final agreed event budget is unavailable');
     }
+    const amountPaid = eventAmountPaid(this.db.eventWorkflowPayments, request);
+    const remainingBalance = Math.max(0, totalAmount - amountPaid);
+    if (remainingBalance === 0) throw new ConflictException('This event has already been paid in full');
 
     const now = new Date();
     const payment = {
@@ -123,7 +132,7 @@ export class PaymentsService {
       requestId: request.requestId,
       clientId: client.clientId,
       organizerId: request.organizerId,
-      amount: Number(approvedPlan.budget),
+      amount: remainingBalance,
       status: 'completed' as const,
       paymentDate: now.toISOString().slice(0, 10),
       paymentMethod: 'DEMO_PROVIDER' as const,
@@ -182,7 +191,7 @@ export class PaymentsService {
 
     const payment = this.db.payments.find(item => item.paymentId === refund.paymentId);
     if (!payment || payment.status !== 'completed' || payment.registrationId !== refund.registrationId) throw new ConflictException('Completed payment not found for refund');
-    if (!Number.isSafeInteger(refund.amount) || refund.amount <= 0 || refund.amount > payment.amount) throw new BadRequestException('Invalid refund amount');
+    if (typeof refund.amount !== 'number' || !Number.isFinite(refund.amount) || refund.amount <= 0 || refund.amount > payment.amount || Number(refund.amount.toFixed(2)) !== refund.amount) throw new BadRequestException('Invalid refund amount');
     if (this.db.refunds.some(item => item.refundId !== refundId && item.paymentId === payment.paymentId && item.status === 'completed')) throw new ConflictException('Payment has already been refunded');
     const registration = this.db.registrations.find(item => item.registrationId === refund.registrationId);
     const attendee = registration && this.db.attendees.find(item => item.attendeeId === registration.attendeeId);
@@ -228,7 +237,12 @@ export class PaymentsService {
     } else if (role !== UserRole.SUPER_ADMIN) {
       throw new ForbiddenException('Access denied');
     }
-    return payments;
+    return payments.sort((a, b) => {
+      const timeA = new Date(a.createdAt || a.paymentDate || 0).getTime();
+      const timeB = new Date(b.createdAt || b.paymentDate || 0).getTime();
+      if (timeB !== timeA) return timeB - timeA;
+      return (b.paymentId || '').localeCompare(a.paymentId || '');
+    });
   }
 
   findOne(id: string, role: UserRole, userId?: string): any {

@@ -112,6 +112,10 @@ export class EventPlansService {
       documentName: request.pendingPlanDocument.originalName,
       documentFileName: request.pendingPlanDocument.fileName,
       documentSize: request.pendingPlanDocument.size,
+      documentType: 'application/pdf',
+      uploadedAt: new Date(),
+      uploaderId: userId || request.organizerId,
+      uploaderName: this.getOrganizerName(request.organizerId, userId),
       revision,
       revisionReason: previousPlans.length ? request.planRevisionReason : undefined,
       status: 'submitted' as const,
@@ -137,6 +141,13 @@ export class EventPlansService {
     const client = this.db.clients.find(c => c.clientId === request.clientId);
     if (client) this.notify(client.userId, request.eventId, `Event plan "${plan.title}" (revision ${revision}) is ready for your review.`, 'event_plan');
     return { success: true, message: 'Event plan submitted for client review', data: plan };
+  }
+
+  private getOrganizerName(organizerId: string, userId?: string): string {
+    const organizer = this.db.organizers.find(o => o.organizerId === organizerId || o.userId === userId);
+    if (!organizer) return 'Organizer';
+    const user = this.db.findUserById(organizer.userId);
+    return user?.name || organizer.businessName || 'Organizer';
   }
 
   private createStandalonePlan(dto: CreateEventPlanDto, role: UserRole, userId?: string): any {
@@ -184,18 +195,27 @@ export class EventPlansService {
   }
 
   findAll(role: UserRole, userId?: string): any[] {
+    let plans: any[] = [];
     if (role === UserRole.CLIENT) {
-      const client = this.db.clients.find(c => c.userId === userId);
+      const client = this.db.clients.find(c => c.userId === userId || c.clientId === userId);
       if (!client) throw new ForbiddenException('Client profile not found');
-      return this.db.eventPlans.filter(plan => plan.clientId === client.clientId);
-    }
-    if (role === UserRole.EVENT_ORGANIZER) {
-      const organizer = this.db.organizers.find(o => o.userId === userId);
+      plans = this.db.eventPlans.filter(plan => plan.clientId === client.clientId);
+    } else if (role === UserRole.EVENT_ORGANIZER) {
+      const organizer = this.db.organizers.find(o => o.userId === userId || o.organizerId === userId);
       if (!organizer) throw new ForbiddenException('Organizer profile not found');
-      return this.db.eventPlans.filter(plan => plan.organizerId === organizer.organizerId);
+      plans = this.db.eventPlans.filter(plan => plan.organizerId === organizer.organizerId);
+    } else if (role === UserRole.SUPER_ADMIN) {
+      plans = [...this.db.eventPlans];
+    } else {
+      throw new ForbiddenException('Access denied');
     }
-    if (role !== UserRole.SUPER_ADMIN) throw new ForbiddenException('Access denied');
-    return [...this.db.eventPlans];
+
+    return plans.sort((a, b) => {
+      const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+      const timeB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+      if (timeB !== timeA) return timeB - timeA;
+      return (b.revision || 0) - (a.revision || 0);
+    });
   }
 
   findOne(planId: string, role: UserRole, userId?: string): any {
@@ -203,10 +223,10 @@ export class EventPlansService {
     if (!plan) throw new NotFoundException(`Event plan ${planId} not found`);
     if (role === UserRole.SUPER_ADMIN) return plan;
     if (role === UserRole.CLIENT) {
-      const client = this.db.clients.find(c => c.userId === userId);
+      const client = this.db.clients.find(c => c.userId === userId || c.clientId === userId);
       if (!client || client.clientId !== plan.clientId) throw new ForbiddenException('Access denied to this event plan');
     } else if (role === UserRole.EVENT_ORGANIZER) {
-      const organizer = this.db.organizers.find(o => o.userId === userId);
+      const organizer = this.db.organizers.find(o => o.userId === userId || o.organizerId === userId);
       if (!organizer || organizer.organizerId !== plan.organizerId) throw new ForbiddenException('Access denied to this event plan');
     } else {
       throw new ForbiddenException('Access denied');
@@ -219,13 +239,62 @@ export class EventPlansService {
     role: UserRole,
     userId?: string,
   ): Promise<{ stream: ReturnType<typeof createReadStream>; fileName: string }> {
-    const plan = this.findOne(planId, role, userId);
-    if (!plan.documentFileName) throw new NotFoundException('No PDF document is attached to this event plan');
+    let plan = this.db.eventPlans.find(p => p.eventPlanId === planId);
+    let request: any;
 
-    const filePath = path.join(EVENT_PLAN_UPLOAD_DIR, path.basename(plan.documentFileName));
+    if (!plan) {
+      // Check if planId is a requestId
+      request = this.db.eventRequests.find(r => r.requestId === planId || (r as any).id === planId);
+      if (request) {
+        if (request.activeEventPlanId) {
+          plan = this.db.eventPlans.find(p => p.eventPlanId === request.activeEventPlanId);
+        }
+        if (!plan) {
+          const reqPlans = this.db.eventPlans.filter(p => p.requestId === request.requestId);
+          if (reqPlans.length > 0) {
+            reqPlans.sort((a, b) => (b.revision || 0) - (a.revision || 0));
+            plan = reqPlans[0];
+          }
+        }
+      }
+    } else if (plan?.requestId) {
+      request = this.db.eventRequests.find(r => r.requestId === plan!.requestId);
+    }
+
+    // Role-based authorization
+    if (role === UserRole.CLIENT) {
+      const client = this.db.clients.find(c => c.userId === userId || c.clientId === userId);
+      if (!client) throw new ForbiddenException('Client profile not found');
+      if (plan && plan.clientId !== client.clientId) throw new ForbiddenException('Access denied to this event plan');
+      if (request && request.clientId !== client.clientId) throw new ForbiddenException('Access denied to this event plan');
+    } else if (role === UserRole.EVENT_ORGANIZER) {
+      const organizer = this.db.organizers.find(o => o.userId === userId || o.organizerId === userId);
+      if (!organizer) throw new ForbiddenException('Organizer profile not found');
+      if (plan && plan.organizerId !== organizer.organizerId) throw new ForbiddenException('Access denied to this event plan');
+      if (request && request.organizerId !== organizer.organizerId) throw new ForbiddenException('Access denied to this event plan');
+    } else if (role !== UserRole.SUPER_ADMIN) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    let fileNameOnDisk = plan?.documentFileName;
+    let originalName = plan?.documentName;
+
+    // If still not found and request exists, check proposals
+    if (!fileNameOnDisk && request?.proposals) {
+      const revProps = [...request.proposals].reverse();
+      const propWithDoc = revProps.find((p: any) => p.documentFileName);
+      if (propWithDoc) {
+        fileNameOnDisk = propWithDoc.documentFileName;
+        originalName = propWithDoc.documentName;
+      }
+    }
+
+    if (!fileNameOnDisk) throw new NotFoundException('No PDF document is attached to this event plan');
+
+    const filePath = path.join(EVENT_PLAN_UPLOAD_DIR, path.basename(fileNameOnDisk));
     if (!existsSync(filePath)) throw new NotFoundException('Event plan PDF is unavailable');
     await access(filePath, constants.R_OK);
-    return { stream: createReadStream(filePath), fileName: plan.documentName || 'event-plan.pdf' };
+    return { stream: createReadStream(filePath), fileName: originalName || 'event-plan.pdf' };
   }
 
   private removeUploadedFile(filePath?: string): void {
@@ -282,22 +351,6 @@ export class EventPlansService {
       const organizer = this.db.organizers.find(o => o.organizerId === plan.organizerId);
       if (organizer) this.notify(organizer.userId, request.eventId, `The client requested a new plan for "${request.eventName}": ${dto.reason.trim()}`, 'plan_revision_requested');
       return { success: true, message: 'Plan revision requested', data: plan };
-    }
-
-    if (this.db.events.some(event =>
-      event.organizerId === request.organizerId &&
-      event.date === request.eventDate &&
-      event.status !== 'cancelled',
-    )) {
-      throw new BadRequestException('The organizer already has an event on this date. Request a revised plan.');
-    }
-    if (this.db.eventRequests.some(other =>
-      other.requestId !== request.requestId &&
-      other.organizerId === request.organizerId &&
-      other.eventDate === request.eventDate &&
-      !['rejected', 'withdrawn', 'cancelled', 'expired', 'completed'].includes(other.status),
-    )) {
-      throw new BadRequestException('The organizer has another active request on this date. Request a revised plan.');
     }
 
     plan.approvalStatus = 'approved';

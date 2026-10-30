@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Query, Param, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiHeader, ApiQuery } from '@nestjs/swagger';
 import { ReviewsService } from './reviews.service';
-import { CreateClientOrganizerReviewDto, CreateEventReviewDto, CreateStaffReviewDto } from '../reports/dto/report.dto';
+import { CreateClientOrganizerReviewDto, CreateEventReviewDto } from '../reports/dto/report.dto';
 import { RoleGuard } from '../../common/guards/role.guard';
 import { UserRoleDecorator } from '../../common/decorators/user-role.decorator';
 import { UserId } from '../../common/decorators/user-id.decorator';
@@ -58,21 +58,5 @@ export class ReviewsController {
     @UserRoleDecorator() role: UserRole,
   ) {
     return this.service.findPublicOrganizerReviews(organizerId, role);
-  }
-
-  @Post('staff')
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Submit staff review (EVENT_ORGANIZER only, rating 1-5). Auto-updates staff rating.' })
-  @ApiResponse({ status: 201, description: 'Staff review submitted. Staff average rating recalculated.' })
-  @ApiResponse({ status: 403, description: 'Only EVENT_ORGANIZER can review staff' })
-  createStaffReview(@Body() dto: CreateStaffReviewDto, @UserRoleDecorator() role: UserRole) {
-    return this.service.createStaffReview(dto, role);
-  }
-
-  @Get('staff')
-  @ApiOperation({ summary: 'Get staff reviews' })
-  @ApiQuery({ name: 'staffId', required: false, description: 'Filter by staff ID' })
-  findAllStaffReviews(@Query('staffId') staffId?: string) {
-    return this.service.findAllStaffReviews(staffId);
   }
 }

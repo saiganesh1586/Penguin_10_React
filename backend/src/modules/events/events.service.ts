@@ -3,6 +3,8 @@ import { DataStore, Event, EventCancellation } from '../../common/data-store';
 import { CancelClientEventDto, CreateEventDto, UpdateEventDto } from './dtos/event.dto';
 import { UserRole } from '../../common/constants';
 import { assertEventPolicyAccepted, getEventPolicy } from '../../common/event-policy';
+import { completedEventPayments, eventAmountPaid } from '../../common/utils/event-payments';
+import { isEventOpenForRegistration } from '../../common/utils/event-registration';
 
 @Injectable()
 export class EventsService {
@@ -24,13 +26,6 @@ export class EventsService {
 
   private localDateKey(value = new Date()): string {
     return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
-  }
-
-  private assertScheduleAvailable(organizerId: string, date: string, time: string, excludeId?: string): void {
-    if (this.dataStore.events.some(event => event.eventId !== excludeId && event.organizerId === organizerId
-      && event.date === date && event.time === time && !['cancelled', 'completed'].includes(event.status))) {
-      throw new ConflictException('Another active event is already scheduled at this date and time');
-    }
   }
 
   private requireOrganizer(role: UserRole, userId: string | undefined, requestedOrganizerId?: string) {
@@ -72,11 +67,10 @@ export class EventsService {
         throw new ForbiddenException('Only approved organizers can publish events');
       }
     }
-    this.assertScheduleAvailable(organizer.organizerId, createEventDto.date, createEventDto.time);
-
     const eventId = this.dataStore.generateId('evt');
     const event: Event = {
       eventId,
+      visibility: createEventDto.visibility ?? 'public',
       organizerId: organizer.organizerId,
       clientId: createEventDto.clientId,
       name,
@@ -187,6 +181,22 @@ export class EventsService {
       events = events.filter(event => event.organizerId === organizer.organizerId);
     }
 
+    if (role === UserRole.CLIENT) {
+      const client = this.dataStore.clients.find(item => item.userId === userId || item.clientId === userId);
+      const clientId = client?.clientId || userId;
+      const clientRequestEventIds = new Set(
+        this.dataStore.eventRequests
+          .filter(r => r.clientId === clientId || r.clientId === userId)
+          .map(r => r.eventId)
+          .filter(Boolean),
+      );
+      events = events.filter(event =>
+        event.clientId === clientId ||
+        event.clientId === userId ||
+        clientRequestEventIds.has(event.eventId),
+      );
+    }
+
     if (search) {
       events = events.filter(
         (e) =>
@@ -200,7 +210,7 @@ export class EventsService {
     }
 
     if (role === UserRole.ATTENDEE) {
-      events = events.filter((e) => e.status === 'published' && new Date(`${e.date}T23:59:59`) >= new Date());
+      events = events.filter(e => isEventOpenForRegistration(e, this.dataStore.eventRequests) && new Date(`${e.date}T23:59:59`) >= new Date());
     }
 
     return events.map(e => this.mapEventToFrontend(e));
@@ -208,7 +218,7 @@ export class EventsService {
 
   // Get all published events without role restriction (public endpoint)
   findAllPublic(search?: string): any[] {
-    let events = this.dataStore.events.filter(e => e.status === 'published');
+    let events = this.dataStore.events.filter(e => e.status === 'published' && e.visibility !== 'private');
 
     if (search) {
       events = events.filter(
@@ -245,12 +255,25 @@ export class EventsService {
     if (!event) {
       throw new NotFoundException(`Event with ID ${eventId} not found`);
     }
-    if (role === UserRole.ATTENDEE && (event.status !== 'published' || new Date(`${event.date}T23:59:59`) < new Date())) {
+    if (role === UserRole.ATTENDEE && (!isEventOpenForRegistration(event, this.dataStore.eventRequests) || new Date(`${event.date}T23:59:59`) < new Date())) {
       throw new NotFoundException(`Event with ID ${eventId} not found`);
     }
     if (role === UserRole.EVENT_ORGANIZER) {
       const organizer = this.dataStore.organizers.find(o => o.userId === userId);
       if (!organizer || organizer.organizerId !== event.organizerId) throw new ForbiddenException('You can only access your own events');
+    }
+    if (role === UserRole.CLIENT) {
+      const client = this.dataStore.clients.find(item => item.userId === userId || item.clientId === userId);
+      const clientId = client?.clientId || userId;
+      const clientRequestEventIds = new Set(
+        this.dataStore.eventRequests
+          .filter(r => r.clientId === clientId || r.clientId === userId)
+          .map(r => r.eventId)
+          .filter(Boolean),
+      );
+      if (event.clientId !== clientId && event.clientId !== userId && !clientRequestEventIds.has(event.eventId)) {
+        throw new ForbiddenException('You can only access your own events');
+      }
     }
 
     return this.mapEventToFrontend(event);
@@ -262,15 +285,18 @@ export class EventsService {
     if (!event) throw new NotFoundException(`Event with ID ${eventId} not found`);
 
     if (role === UserRole.EVENT_ORGANIZER) {
-      const organizer = this.dataStore.organizers.find(o => o.userId === userId);
-      if (!organizer || organizer.organizerId !== event.organizerId) {
+      const organizer = this.dataStore.organizers.find(o => o.userId === userId || o.organizerId === userId);
+      const isOwner = organizer
+        ? (organizer.organizerId === event.organizerId || organizer.userId === event.organizerId)
+        : event.organizerId === userId;
+      if (!isOwner) {
         throw new ForbiddenException('You can only update your own events');
       }
     } else if (role !== UserRole.SUPER_ADMIN) {
       throw new ForbiddenException('Only organizers and super admin can update events');
     }
-    if (event.cancellation) {
-      throw new BadRequestException('A client-cancelled event cannot be edited. Its cancellation and refund record must be preserved.');
+    if (event.status === 'cancelled' || event.cancellation) {
+      throw new BadRequestException('This event has already been cancelled. Duplicate cancellations are blocked.');
     }
 
     const before = { name: event.name, category: event.category, date: event.date, time: event.time, location: event.location,
@@ -278,6 +304,11 @@ export class EventsService {
       preparationTasks: JSON.stringify(event.preparationTasks || []) };
     if (event.clientId && updateEventDto.status === 'completed') {
       throw new BadRequestException('Client events must be completed through the payment-verified completion workflow');
+    }
+    const booked = Boolean(event.clientId) || this.dataStore.eventRequests.some(request => request.eventId === eventId);
+    const cancellationOnly = updateEventDto.status === 'cancelled' && Object.keys(updateEventDto).every(key => ['status', 'changeReason'].includes(key));
+    if (booked && !cancellationOnly) {
+      throw new BadRequestException('Booked event details cannot be edited');
     }
     const occupied = this.dataStore.registrations.filter(r =>
       r.eventId === eventId && ['registered', 'attended', 'pending_payment'].includes(r.status) && this.isActiveReservation(r),
@@ -291,7 +322,6 @@ export class EventsService {
     if ((dto.date || dto.time) && !['ongoing', 'completed', 'cancelled'].includes(event.status) && proposedStart.getTime() < Date.now()) {
       throw new BadRequestException('An upcoming event cannot be moved into the past');
     }
-    if (dto.date || dto.time) this.assertScheduleAvailable(event.organizerId, proposedDate, proposedTime, eventId);
     if (dto.status && dto.status !== event.status) {
       const validTransitions: Record<Event['status'], Event['status'][]> = {
         draft: ['published', 'cancelled'], published: ['ongoing', 'completed', 'cancelled'],
@@ -373,6 +403,48 @@ export class EventsService {
         if (attendee) this.dataStore.notifications.push({ notificationId: this.dataStore.generateId('notif'), userId: attendee.userId, eventId, registrationId: registration.registrationId, message: `${event.name}: ${change.summary}`, type: change.type === 'cancelled' ? 'event_cancelled' : 'event_changed', read: false, dateTime: new Date(), createdAt: new Date() });
       }
     }
+    if (before.status !== event.status && event.status === 'cancelled') {
+      const cancellationRecord: EventCancellation = {
+        reason: dto.changeReason,
+        cancelledBy: userId || 'organizer',
+        cancelledAt: new Date(),
+        policyVersion: '1.0',
+        paidAmount: 0,
+        cancellationFeePercent: 0,
+        cancellationFee: 0,
+        refundAmount: 0,
+        refundStatus: 'not_applicable',
+        cancellationDeadline: event.cancellationDeadline || new Date().toISOString(),
+      };
+      event.cancellation = cancellationRecord;
+
+      const request = this.dataStore.eventRequests.find(item => item.eventId === eventId);
+      if (request && request.status !== 'cancelled') {
+        request.status = 'cancelled';
+        request.cancellation = {
+          reason: dto.changeReason,
+          cancelledBy: userId!,
+          cancelledAt: new Date(),
+          policyVersion: '1.0',
+          paidAmount: request.budget || 0,
+          cancellationFeePercent: 10,
+          cancellationFee: 0,
+          refundAmount: 0,
+          refundStatus: 'not_applicable',
+          cancellationDeadline: new Date().toISOString(),
+        };
+        request.updatedAt = new Date();
+        request.auditHistory = request.auditHistory || [];
+        request.auditHistory.push({
+          id: this.dataStore.generateId('aud'),
+          action: 'Event Booking Cancelled by Organizer',
+          performedBy: userId!,
+          role,
+          timestamp: new Date(),
+          details: { reason: dto.changeReason },
+        });
+      }
+    }
     this.dataStore.persist();
     return this.mapEventToFrontend(event);
   }
@@ -390,8 +462,8 @@ export class EventsService {
     const event = this.ownClientEvent(eventId, role, userId);
     const request = this.dataStore.eventRequests.find(item => item.eventId === eventId);
     const policy = event.policySnapshot || request?.policySnapshot || getEventPolicy();
-    const payment = this.dataStore.eventWorkflowPayments.find(item => item.eventId === eventId && item.status === 'completed');
-    const paidPaise = Math.round((payment?.amount || 0) * 100);
+    const payment = request && completedEventPayments(this.dataStore.eventWorkflowPayments, request)[0];
+    const paidPaise = Math.round((request ? eventAmountPaid(this.dataStore.eventWorkflowPayments, request) : 0) * 100);
     const feePaise = Math.round(paidPaise * policy.cancellation.feePercent / 100);
     const match = String(event.time || '10:00').trim().match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)?$/i);
     let hours = match ? Number(match[1]) : NaN;
@@ -463,13 +535,7 @@ export class EventsService {
     const organizer = this.dataStore.organizers.find(item => item.organizerId === event.organizerId);
     if (organizer) notify(organizer.userId, `The client cancelled "${event.name}": ${reason}`);
     notify(userId!, `You cancelled "${event.name}". Cancellation fee: ₹${cancellation.cancellationFee.toFixed(2)}. Refund due: ₹${cancellation.refundAmount.toFixed(2)}${refundId ? ' (pending review)' : ''}.`);
-    for (const assignment of this.dataStore.staffAssignments.filter(item => item.eventId === eventId && ['pending', 'accepted'].includes(item.status))) {
-      assignment.status = 'cancelled';
-      assignment.updatedAt = now;
-      const staff = this.dataStore.staffProfiles.find(item => item.staffId === assignment.staffId);
-      if (staff) notify(staff.userId, `Your assignment for "${event.name}" was cancelled because the client cancelled the event.`);
-    }
-    for (const registration of this.dataStore.registrations.filter(item => item.eventId === eventId && ['registered', 'pending_payment', 'waitlisted'].includes(item.status))) {
+    for (const registration of this.dataStore.registrations.filter(item => item.eventId === eventId && ['pending_approval', 'registered', 'pending_payment', 'waitlisted'].includes(item.status))) {
       registration.status = 'cancelled';
       registration.cancellationReason = `Event cancelled by client: ${reason}`;
       registration.cancelledAt = now;
@@ -507,12 +573,7 @@ export class EventsService {
     const request = this.dataStore.eventRequests.find(item =>
       item.eventId === eventId && item.organizerId === organizer.organizerId,
     );
-    const verifiedPayment = this.dataStore.eventWorkflowPayments.find(payment =>
-      payment.eventId === eventId &&
-      payment.requestId === request?.requestId &&
-      payment.status === 'completed' &&
-      payment.amount === request?.budget,
-    );
+    const verifiedPayment = request && eventAmountPaid(this.dataStore.eventWorkflowPayments, request) >= Number(request.budget);
     if (!request || request.status !== 'confirmed' || request.paymentStatus !== 'fully_paid' || !verifiedPayment) {
       throw new BadRequestException('Verified full payment is required before completing the event');
     }
@@ -553,8 +614,11 @@ export class EventsService {
     if (!event) throw new NotFoundException(`Event with ID ${eventId} not found`);
 
     if (role === UserRole.EVENT_ORGANIZER) {
-      const organizer = this.dataStore.organizers.find(o => o.userId === userId);
-      if (!organizer || organizer.organizerId !== event.organizerId) {
+      const organizer = this.dataStore.organizers.find(o => o.userId === userId || o.organizerId === userId);
+      const isOwner = organizer
+        ? (organizer.organizerId === event.organizerId || organizer.userId === event.organizerId)
+        : event.organizerId === userId;
+      if (!isOwner) {
         throw new ForbiddenException('You can only delete your own events');
       }
     } else if (role !== UserRole.SUPER_ADMIN) {
@@ -563,7 +627,10 @@ export class EventsService {
     if (event.cancellation) {
       throw new BadRequestException('A client-cancelled event cannot be deleted. Its cancellation and refund record must be preserved.');
     }
-    if (event.status !== 'draft' || this.dataStore.registrations.some(registration => registration.eventId === eventId)) {
+    const hasRegistrations = this.dataStore.registrations.some(registration => registration.eventId === eventId);
+    const hasPayments = this.dataStore.payments.some(p => (p as any).eventId === eventId) ||
+      this.dataStore.eventWorkflowPayments?.some(p => p.eventId === eventId);
+    if (event.status !== 'draft' || hasRegistrations || hasPayments) {
       throw new ConflictException('Only draft events without registrations can be deleted; cancel an active event instead');
     }
 
@@ -590,6 +657,9 @@ export class EventsService {
     }
     if (event.cancellation) {
       throw new BadRequestException('A client-cancelled event cannot be published again.');
+    }
+    if (event.clientId || this.dataStore.eventRequests.some(request => request.eventId === eventId)) {
+      throw new BadRequestException('Booked event details cannot be edited');
     }
 
     event.status = 'published';

@@ -26,6 +26,9 @@ export class UsersService {
 
   create(dto: CreateUserDto, role: UserRole): any {
     if (role !== UserRole.SUPER_ADMIN) throw new ForbiddenException('Only SUPER_ADMIN can create users');
+    if (dto.userRole === UserRole.EMPLOYEE) {
+      throw new ForbiddenException('Employee accounts are managed separately.');
+    }
     const existing = this.db.findUserByEmail(dto.email);
     if (existing) throw new ConflictException('Email already registered');
 
@@ -43,8 +46,6 @@ export class UsersService {
       this.db.clients.push({ clientId: this.db.generateId('cli'), userId, createdAt: new Date() });
     } else if (dto.userRole === UserRole.EVENT_ORGANIZER) {
       this.db.organizers.push({ organizerId: this.db.generateId('org'), userId, rating: 0, createdAt: new Date() });
-    } else if (dto.userRole === UserRole.EVENT_STAFF) {
-      this.db.staffProfiles.push({ staffId: this.db.generateId('staff'), userId, availableDates: [], rating: 0, status: 'available', createdAt: new Date() });
     } else if (dto.userRole === UserRole.ATTENDEE) {
       this.db.attendees.push({ attendeeId: this.db.generateId('att'), userId, createdAt: new Date() });
     } else if (dto.userRole === UserRole.SUPER_ADMIN) {
@@ -101,7 +102,6 @@ export class UsersService {
 
     this.db.clients = this.db.clients.filter(c => c.userId !== userId);
     this.db.organizers = this.db.organizers.filter(o => o.userId !== userId);
-    this.db.staffProfiles = this.db.staffProfiles.filter(s => s.userId !== userId);
     this.db.attendees = this.db.attendees.filter(a => a.userId !== userId);
     this.db.superAdmins = this.db.superAdmins.filter(s => s.userId !== userId);
 

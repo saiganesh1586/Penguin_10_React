@@ -98,35 +98,16 @@ Payment_Method VARCHAR(50),
 FOREIGN KEY(Registration_ID) REFERENCES Registration(Registration_ID)
 );
 
-CREATE TABLE Staff(
-Staff_ID INT PRIMARY KEY,
-User_ID INT NOT NULL,
-Rating FLOAT,
-Available_Dates VARCHAR(255),
-FOREIGN KEY(User_ID) REFERENCES Users(User_ID),
-);
-
-CREATE TABLE Event_Staff(
-Event_ID INT NOT NULL,
-Organizer_ID INT NOT NULL,
-Staff_ID INT NOT NULL,
-Status VARCHAR(50),
-PRIMARY KEY(Event_ID,Staff_ID),
-FOREIGN KEY(Event_ID) REFERENCES Event(Event_ID),
-FOREIGN KEY(Organizer_ID) REFERENCES Event_Organizer(Organizer_ID),
-FOREIGN KEY(Staff_ID) REFERENCES Staff(Staff_ID)
-);
-
 CREATE TABLE Attendance(
 Attendance_ID INT PRIMARY KEY,
 Attendee_ID INT NOT NULL,
 Event_ID INT NOT NULL,
-Staff_ID INT NOT NULL,
+VerifiedByUser_ID INT,
 CheckInTime DATETIME,
 Status VARCHAR(50),
 FOREIGN KEY(Attendee_ID) REFERENCES Attendee(Attendee_ID),
 FOREIGN KEY(Event_ID) REFERENCES Event(Event_ID),
-FOREIGN KEY(Staff_ID) REFERENCES Staff(Staff_ID)
+FOREIGN KEY(VerifiedByUser_ID) REFERENCES Users(User_ID)
 );
 
 CREATE TABLE Notification(
@@ -152,17 +133,4 @@ PRIMARY KEY(Attendee_ID,Event_ID),
 FOREIGN KEY(Attendee_ID) REFERENCES Attendee(Attendee_ID),
 FOREIGN KEY(Event_ID) REFERENCES Event(Event_ID),
 FOREIGN KEY(Client_ID) REFERENCES Client(Client_ID)
-);
-
-CREATE TABLE StaffReview(
-Organizer_ID INT NOT NULL,
-Staff_ID INT NOT NULL,
-Event_ID INT NOT NULL,
-Rating FLOAT,
-Comment VARCHAR(255),
-ReviewDate DATE,
-PRIMARY KEY(Organizer_ID,Staff_ID,Event_ID),
-FOREIGN KEY(Organizer_ID) REFERENCES Event_Organizer(Organizer_ID),
-FOREIGN KEY(Staff_ID) REFERENCES Staff(Staff_ID),
-FOREIGN KEY(Event_ID) REFERENCES Event(Event_ID)
 );

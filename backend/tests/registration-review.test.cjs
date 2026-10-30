@@ -55,7 +55,7 @@ test('declines require a trimmed, clear reason in both DTO validation and the se
 
 test('only the event organizer can review; other roles and other organizers cannot mutate it', t => {
   const { service, registration } = fixture(t);
-  for (const role of [UserRole.ATTENDEE, UserRole.CLIENT, UserRole.EVENT_STAFF]) {
+  for (const role of [UserRole.ATTENDEE, UserRole.CLIENT, UserRole.EMPLOYEE]) {
     assert.throws(() => service.review(registration.registrationId, { decision: 'rejected', reason }, role, 'usr-attendee-001'), /Only the event organizer/);
   }
   assert.throws(() => service.review(registration.registrationId, { decision: 'rejected', reason }, UserRole.EVENT_ORGANIZER, 'usr-emp-001'), /your own events/);
@@ -180,7 +180,7 @@ test('HTTP organizer decline validates the reason and delivers it to the attende
   assert.equal(own.status, 'rejected');
   assert.equal(own.rejectionReason, reason);
   assert.equal(own.declineViewedAt, undefined);
-  const attendeeSource = fs.readFileSync(path.join(__dirname, '../../frontend/src/apps/attendee/runtime.js'), 'utf8');
+  const attendeeSource = fs.readFileSync(path.join(__dirname, '../../React_frontend/src/apps/attendee/app/runtime.js'), 'utf8');
   function sourceSection(start, end) {
     const from = attendeeSource.indexOf(start);
     const to = attendeeSource.indexOf(end, from);

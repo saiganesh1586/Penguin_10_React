@@ -944,3 +944,544 @@
   ],
   "stack": "BadRequestException: Bad Request Exception\n    at ValidationPipe.exceptionFactory (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:101:20)\n    at ValidationPipe.transform (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:74:30)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async resolveParamValue (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:148:23)\n    at async Promise.all (index 2)\n    at async pipesFn (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:151:13)\n    at async C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:37:30"
 }
+{
+  "timestamp": "2026-10-24T18:04:27.604Z",
+  "method": "GET",
+  "url": "/api/event-requests/req-001/cancellation-preview",
+  "statusCode": 404,
+  "message": "Cannot GET /api/event-requests/req-001/cancellation-preview",
+  "stack": "NotFoundException: Cannot GET /api/event-requests/req-001/cancellation-preview\n    at callback (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\routes-resolver.js:77:19)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-proxy.js:9:23\n    at Layer.handle [as handle_request] (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\layer.js:95:5)\n    at trim_prefix (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\index.js:328:13)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\index.js:286:9\n    at router.process_params (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\index.js:346:12)\n    at next (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\index.js:280:10)\n    at RequestLoggingMiddleware.use (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\src\\common\\middleware\\request-logging.middleware.ts:25:5)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-proxy.js:9:23\n    at Layer.handle [as handle_request] (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\layer.js:95:5)"
+}
+{
+  "timestamp": "2026-10-24T18:04:27.644Z",
+  "method": "GET",
+  "url": "/api/events/req-001/cancellation-preview",
+  "statusCode": 404,
+  "message": "Event req-001 not found",
+  "stack": "NotFoundException: Event req-001 not found\n    at EventsService.ownClientEvent (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\src\\modules\\events\\events.service.ts:383:23)\n    at EventsService.clientCancellationPreview (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\src\\modules\\events\\events.service.ts:390:24)\n    at EventsController.cancellationPreview (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\src\\modules\\events\\events.controller.ts:107:54)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:38:29\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+}
+{
+  "timestamp": "2026-10-24T18:04:33.898Z",
+  "method": "GET",
+  "url": "/api/event-requests/req-emp-102/cancellation-preview",
+  "statusCode": 404,
+  "message": "Cannot GET /api/event-requests/req-emp-102/cancellation-preview",
+  "stack": "NotFoundException: Cannot GET /api/event-requests/req-emp-102/cancellation-preview\n    at callback (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\routes-resolver.js:77:19)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-proxy.js:9:23\n    at Layer.handle [as handle_request] (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\layer.js:95:5)\n    at trim_prefix (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\index.js:328:13)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\index.js:286:9\n    at router.process_params (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\index.js:346:12)\n    at next (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\index.js:280:10)\n    at RequestLoggingMiddleware.use (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\src\\common\\middleware\\request-logging.middleware.ts:25:5)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-proxy.js:9:23\n    at Layer.handle [as handle_request] (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\layer.js:95:5)"
+}
+{
+  "timestamp": "2026-10-24T18:04:33.910Z",
+  "method": "GET",
+  "url": "/api/events/req-emp-102/cancellation-preview",
+  "statusCode": 404,
+  "message": "Event req-emp-102 not found",
+  "stack": "NotFoundException: Event req-emp-102 not found\n    at EventsService.ownClientEvent (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\src\\modules\\events\\events.service.ts:383:23)\n    at EventsService.clientCancellationPreview (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\src\\modules\\events\\events.service.ts:390:24)\n    at EventsController.cancellationPreview (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\src\\modules\\events\\events.controller.ts:107:54)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:38:29\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+}
+{
+  "timestamp": "2026-10-24T18:04:37.061Z",
+  "method": "GET",
+  "url": "/api/event-requests/req-orgdash-action-003/cancellation-preview",
+  "statusCode": 404,
+  "message": "Cannot GET /api/event-requests/req-orgdash-action-003/cancellation-preview",
+  "stack": "NotFoundException: Cannot GET /api/event-requests/req-orgdash-action-003/cancellation-preview\n    at callback (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\routes-resolver.js:77:19)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-proxy.js:9:23\n    at Layer.handle [as handle_request] (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\layer.js:95:5)\n    at trim_prefix (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\index.js:328:13)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\index.js:286:9\n    at router.process_params (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\index.js:346:12)\n    at next (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\index.js:280:10)\n    at RequestLoggingMiddleware.use (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\src\\common\\middleware\\request-logging.middleware.ts:25:5)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-proxy.js:9:23\n    at Layer.handle [as handle_request] (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\layer.js:95:5)"
+}
+{
+  "timestamp": "2026-10-24T18:04:37.074Z",
+  "method": "GET",
+  "url": "/api/events/req-orgdash-action-003/cancellation-preview",
+  "statusCode": 404,
+  "message": "Event req-orgdash-action-003 not found",
+  "stack": "NotFoundException: Event req-orgdash-action-003 not found\n    at EventsService.ownClientEvent (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\src\\modules\\events\\events.service.ts:383:23)\n    at EventsService.clientCancellationPreview (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\src\\modules\\events\\events.service.ts:390:24)\n    at EventsController.cancellationPreview (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\src\\modules\\events\\events.controller.ts:107:54)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:38:29\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+}
+{
+  "timestamp": "2026-10-24T18:04:44.008Z",
+  "method": "GET",
+  "url": "/api/event-requests/req-orgdash-prep/cancellation-preview",
+  "statusCode": 404,
+  "message": "Cannot GET /api/event-requests/req-orgdash-prep/cancellation-preview",
+  "stack": "NotFoundException: Cannot GET /api/event-requests/req-orgdash-prep/cancellation-preview\n    at callback (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\routes-resolver.js:77:19)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-proxy.js:9:23\n    at Layer.handle [as handle_request] (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\layer.js:95:5)\n    at trim_prefix (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\index.js:328:13)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\index.js:286:9\n    at router.process_params (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\index.js:346:12)\n    at next (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\index.js:280:10)\n    at RequestLoggingMiddleware.use (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\src\\common\\middleware\\request-logging.middleware.ts:25:5)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-proxy.js:9:23\n    at Layer.handle [as handle_request] (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\layer.js:95:5)"
+}
+{
+  "timestamp": "2026-10-24T18:04:44.021Z",
+  "method": "GET",
+  "url": "/api/events/req-orgdash-prep/cancellation-preview",
+  "statusCode": 404,
+  "message": "Event req-orgdash-prep not found",
+  "stack": "NotFoundException: Event req-orgdash-prep not found\n    at EventsService.ownClientEvent (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\src\\modules\\events\\events.service.ts:383:23)\n    at EventsService.clientCancellationPreview (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\src\\modules\\events\\events.service.ts:390:24)\n    at EventsController.cancellationPreview (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\src\\modules\\events\\events.controller.ts:107:54)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:38:29\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+}
+{
+  "timestamp": "2026-10-24T18:04:49.361Z",
+  "method": "GET",
+  "url": "/api/event-requests/req-demo-flow-002/cancellation-preview",
+  "statusCode": 404,
+  "message": "Cannot GET /api/event-requests/req-demo-flow-002/cancellation-preview",
+  "stack": "NotFoundException: Cannot GET /api/event-requests/req-demo-flow-002/cancellation-preview\n    at callback (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\routes-resolver.js:77:19)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-proxy.js:9:23\n    at Layer.handle [as handle_request] (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\layer.js:95:5)\n    at trim_prefix (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\index.js:328:13)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\index.js:286:9\n    at router.process_params (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\index.js:346:12)\n    at next (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\index.js:280:10)\n    at RequestLoggingMiddleware.use (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\src\\common\\middleware\\request-logging.middleware.ts:25:5)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-proxy.js:9:23\n    at Layer.handle [as handle_request] (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\layer.js:95:5)"
+}
+{
+  "timestamp": "2026-10-24T18:04:49.374Z",
+  "method": "GET",
+  "url": "/api/events/req-demo-flow-002/cancellation-preview",
+  "statusCode": 404,
+  "message": "Event req-demo-flow-002 not found",
+  "stack": "NotFoundException: Event req-demo-flow-002 not found\n    at EventsService.ownClientEvent (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\src\\modules\\events\\events.service.ts:383:23)\n    at EventsService.clientCancellationPreview (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\src\\modules\\events\\events.service.ts:390:24)\n    at EventsController.cancellationPreview (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\src\\modules\\events\\events.controller.ts:107:54)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:38:29\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+}
+{
+  "timestamp": "2026-10-24T18:04:52.341Z",
+  "method": "GET",
+  "url": "/api/event-requests/req-demo-flow-002/cancellation-preview",
+  "statusCode": 404,
+  "message": "Cannot GET /api/event-requests/req-demo-flow-002/cancellation-preview",
+  "stack": "NotFoundException: Cannot GET /api/event-requests/req-demo-flow-002/cancellation-preview\n    at callback (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\routes-resolver.js:77:19)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-proxy.js:9:23\n    at Layer.handle [as handle_request] (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\layer.js:95:5)\n    at trim_prefix (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\index.js:328:13)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\index.js:286:9\n    at router.process_params (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\index.js:346:12)\n    at next (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\index.js:280:10)\n    at RequestLoggingMiddleware.use (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\src\\common\\middleware\\request-logging.middleware.ts:25:5)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-proxy.js:9:23\n    at Layer.handle [as handle_request] (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\layer.js:95:5)"
+}
+{
+  "timestamp": "2026-10-24T18:04:52.352Z",
+  "method": "GET",
+  "url": "/api/events/req-demo-flow-002/cancellation-preview",
+  "statusCode": 404,
+  "message": "Event req-demo-flow-002 not found",
+  "stack": "NotFoundException: Event req-demo-flow-002 not found\n    at EventsService.ownClientEvent (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\src\\modules\\events\\events.service.ts:383:23)\n    at EventsService.clientCancellationPreview (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\src\\modules\\events\\events.service.ts:390:24)\n    at EventsController.cancellationPreview (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\src\\modules\\events\\events.controller.ts:107:54)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:38:29\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+}
+{
+  "timestamp": "2026-10-25T05:29:38.641Z",
+  "method": "POST",
+  "url": "/api/event-requests/req-1792906093745-oph2ekg71/pay-deposit",
+  "statusCode": 400,
+  "message": [
+    "property methodDetails should not exist"
+  ],
+  "stack": "BadRequestException: Bad Request Exception\n    at ValidationPipe.exceptionFactory (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:101:20)\n    at ValidationPipe.transform (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:74:30)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async resolveParamValue (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:148:23)\n    at async Promise.all (index 2)\n    at async pipesFn (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:151:13)\n    at async C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:37:30"
+}
+{
+  "timestamp": "2026-10-25T05:29:45.622Z",
+  "method": "POST",
+  "url": "/api/event-requests/req-1792906093745-oph2ekg71/pay-deposit",
+  "statusCode": 400,
+  "message": [
+    "property methodDetails should not exist"
+  ],
+  "stack": "BadRequestException: Bad Request Exception\n    at ValidationPipe.exceptionFactory (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:101:20)\n    at ValidationPipe.transform (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:74:30)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async resolveParamValue (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:148:23)\n    at async Promise.all (index 2)\n    at async pipesFn (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:151:13)\n    at async C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:37:30"
+}
+{
+  "timestamp": "2026-10-25T05:29:46.120Z",
+  "method": "POST",
+  "url": "/api/event-requests/req-1792906093745-oph2ekg71/pay-deposit",
+  "statusCode": 400,
+  "message": [
+    "property methodDetails should not exist"
+  ],
+  "stack": "BadRequestException: Bad Request Exception\n    at ValidationPipe.exceptionFactory (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:101:20)\n    at ValidationPipe.transform (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:74:30)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async resolveParamValue (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:148:23)\n    at async Promise.all (index 2)\n    at async pipesFn (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:151:13)\n    at async C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:37:30"
+}
+{
+  "timestamp": "2026-10-25T05:29:46.308Z",
+  "method": "POST",
+  "url": "/api/event-requests/req-1792906093745-oph2ekg71/pay-deposit",
+  "statusCode": 400,
+  "message": [
+    "property methodDetails should not exist"
+  ],
+  "stack": "BadRequestException: Bad Request Exception\n    at ValidationPipe.exceptionFactory (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:101:20)\n    at ValidationPipe.transform (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:74:30)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async resolveParamValue (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:148:23)\n    at async Promise.all (index 2)\n    at async pipesFn (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:151:13)\n    at async C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:37:30"
+}
+{
+  "timestamp": "2026-10-25T05:29:46.512Z",
+  "method": "POST",
+  "url": "/api/event-requests/req-1792906093745-oph2ekg71/pay-deposit",
+  "statusCode": 400,
+  "message": [
+    "property methodDetails should not exist"
+  ],
+  "stack": "BadRequestException: Bad Request Exception\n    at ValidationPipe.exceptionFactory (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:101:20)\n    at ValidationPipe.transform (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:74:30)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async resolveParamValue (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:148:23)\n    at async Promise.all (index 2)\n    at async pipesFn (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:151:13)\n    at async C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:37:30"
+}
+{
+  "timestamp": "2026-10-25T05:29:47.274Z",
+  "method": "POST",
+  "url": "/api/event-requests/req-1792906093745-oph2ekg71/pay-deposit",
+  "statusCode": 400,
+  "message": [
+    "property methodDetails should not exist"
+  ],
+  "stack": "BadRequestException: Bad Request Exception\n    at ValidationPipe.exceptionFactory (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:101:20)\n    at ValidationPipe.transform (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:74:30)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async resolveParamValue (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:148:23)\n    at async Promise.all (index 2)\n    at async pipesFn (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:151:13)\n    at async C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:37:30"
+}
+{
+  "timestamp": "2026-10-25T05:29:47.485Z",
+  "method": "POST",
+  "url": "/api/event-requests/req-1792906093745-oph2ekg71/pay-deposit",
+  "statusCode": 400,
+  "message": [
+    "property methodDetails should not exist"
+  ],
+  "stack": "BadRequestException: Bad Request Exception\n    at ValidationPipe.exceptionFactory (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:101:20)\n    at ValidationPipe.transform (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:74:30)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async resolveParamValue (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:148:23)\n    at async Promise.all (index 2)\n    at async pipesFn (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:151:13)\n    at async C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:37:30"
+}
+{
+  "timestamp": "2026-10-25T05:29:47.710Z",
+  "method": "POST",
+  "url": "/api/event-requests/req-1792906093745-oph2ekg71/pay-deposit",
+  "statusCode": 400,
+  "message": [
+    "property methodDetails should not exist"
+  ],
+  "stack": "BadRequestException: Bad Request Exception\n    at ValidationPipe.exceptionFactory (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:101:20)\n    at ValidationPipe.transform (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:74:30)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async resolveParamValue (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:148:23)\n    at async Promise.all (index 2)\n    at async pipesFn (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:151:13)\n    at async C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:37:30"
+}
+{
+  "timestamp": "2026-10-25T05:29:50.365Z",
+  "method": "POST",
+  "url": "/api/event-requests/req-1792906093745-oph2ekg71/pay-deposit",
+  "statusCode": 400,
+  "message": [
+    "property methodDetails should not exist"
+  ],
+  "stack": "BadRequestException: Bad Request Exception\n    at ValidationPipe.exceptionFactory (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:101:20)\n    at ValidationPipe.transform (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:74:30)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async resolveParamValue (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:148:23)\n    at async Promise.all (index 2)\n    at async pipesFn (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:151:13)\n    at async C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:37:30"
+}
+{
+  "timestamp": "2026-10-25T05:29:50.567Z",
+  "method": "POST",
+  "url": "/api/event-requests/req-1792906093745-oph2ekg71/pay-deposit",
+  "statusCode": 400,
+  "message": [
+    "property methodDetails should not exist"
+  ],
+  "stack": "BadRequestException: Bad Request Exception\n    at ValidationPipe.exceptionFactory (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:101:20)\n    at ValidationPipe.transform (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:74:30)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async resolveParamValue (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:148:23)\n    at async Promise.all (index 2)\n    at async pipesFn (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:151:13)\n    at async C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:37:30"
+}
+{
+  "timestamp": "2026-10-25T05:29:50.756Z",
+  "method": "POST",
+  "url": "/api/event-requests/req-1792906093745-oph2ekg71/pay-deposit",
+  "statusCode": 400,
+  "message": [
+    "property methodDetails should not exist"
+  ],
+  "stack": "BadRequestException: Bad Request Exception\n    at ValidationPipe.exceptionFactory (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:101:20)\n    at ValidationPipe.transform (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:74:30)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async resolveParamValue (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:148:23)\n    at async Promise.all (index 2)\n    at async pipesFn (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:151:13)\n    at async C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:37:30"
+}
+{
+  "timestamp": "2026-10-25T05:29:50.934Z",
+  "method": "POST",
+  "url": "/api/event-requests/req-1792906093745-oph2ekg71/pay-deposit",
+  "statusCode": 400,
+  "message": [
+    "property methodDetails should not exist"
+  ],
+  "stack": "BadRequestException: Bad Request Exception\n    at ValidationPipe.exceptionFactory (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:101:20)\n    at ValidationPipe.transform (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:74:30)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async resolveParamValue (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:148:23)\n    at async Promise.all (index 2)\n    at async pipesFn (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:151:13)\n    at async C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:37:30"
+}
+{
+  "timestamp": "2026-10-25T05:29:51.123Z",
+  "method": "POST",
+  "url": "/api/event-requests/req-1792906093745-oph2ekg71/pay-deposit",
+  "statusCode": 400,
+  "message": [
+    "property methodDetails should not exist"
+  ],
+  "stack": "BadRequestException: Bad Request Exception\n    at ValidationPipe.exceptionFactory (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:101:20)\n    at ValidationPipe.transform (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:74:30)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async resolveParamValue (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:148:23)\n    at async Promise.all (index 2)\n    at async pipesFn (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:151:13)\n    at async C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:37:30"
+}
+{
+  "timestamp": "2026-10-25T05:29:51.399Z",
+  "method": "POST",
+  "url": "/api/event-requests/req-1792906093745-oph2ekg71/pay-deposit",
+  "statusCode": 400,
+  "message": [
+    "property methodDetails should not exist"
+  ],
+  "stack": "BadRequestException: Bad Request Exception\n    at ValidationPipe.exceptionFactory (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:101:20)\n    at ValidationPipe.transform (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:74:30)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async resolveParamValue (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:148:23)\n    at async Promise.all (index 2)\n    at async pipesFn (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:151:13)\n    at async C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:37:30"
+}
+{
+  "timestamp": "2026-10-25T05:29:51.594Z",
+  "method": "POST",
+  "url": "/api/event-requests/req-1792906093745-oph2ekg71/pay-deposit",
+  "statusCode": 400,
+  "message": [
+    "property methodDetails should not exist"
+  ],
+  "stack": "BadRequestException: Bad Request Exception\n    at ValidationPipe.exceptionFactory (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:101:20)\n    at ValidationPipe.transform (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:74:30)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async resolveParamValue (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:148:23)\n    at async Promise.all (index 2)\n    at async pipesFn (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:151:13)\n    at async C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:37:30"
+}
+{
+  "timestamp": "2026-10-25T05:29:53.363Z",
+  "method": "POST",
+  "url": "/api/event-requests/req-1792906093745-oph2ekg71/pay-deposit",
+  "statusCode": 400,
+  "message": [
+    "property methodDetails should not exist"
+  ],
+  "stack": "BadRequestException: Bad Request Exception\n    at ValidationPipe.exceptionFactory (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:101:20)\n    at ValidationPipe.transform (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:74:30)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async resolveParamValue (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:148:23)\n    at async Promise.all (index 2)\n    at async pipesFn (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:151:13)\n    at async C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:37:30"
+}
+{
+  "timestamp": "2026-10-25T05:29:53.687Z",
+  "method": "POST",
+  "url": "/api/event-requests/req-1792906093745-oph2ekg71/pay-deposit",
+  "statusCode": 400,
+  "message": [
+    "property methodDetails should not exist"
+  ],
+  "stack": "BadRequestException: Bad Request Exception\n    at ValidationPipe.exceptionFactory (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:101:20)\n    at ValidationPipe.transform (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:74:30)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async resolveParamValue (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:148:23)\n    at async Promise.all (index 2)\n    at async pipesFn (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:151:13)\n    at async C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:37:30"
+}
+{
+  "timestamp": "2026-10-25T13:30:41.235Z",
+  "method": "GET",
+  "url": "/api/v1/health",
+  "statusCode": 404,
+  "message": "Cannot GET /api/v1/health",
+  "stack": "NotFoundException: Cannot GET /api/v1/health\n    at callback (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\routes-resolver.js:77:19)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-proxy.js:9:23\n    at Layer.handle [as handle_request] (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\layer.js:95:5)\n    at trim_prefix (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\index.js:328:13)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\index.js:286:9\n    at router.process_params (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\index.js:346:12)\n    at next (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\index.js:280:10)\n    at RequestLoggingMiddleware.use (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\src\\common\\middleware\\request-logging.middleware.ts:25:5)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-proxy.js:9:23\n    at Layer.handle [as handle_request] (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\layer.js:95:5)"
+}
+{
+  "timestamp": "2026-10-25T13:30:46.799Z",
+  "method": "GET",
+  "url": "/api/docs",
+  "statusCode": 404,
+  "message": "Cannot GET /api/docs",
+  "stack": "NotFoundException: Cannot GET /api/docs\n    at callback (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\routes-resolver.js:77:19)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-proxy.js:9:23\n    at Layer.handle [as handle_request] (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\layer.js:95:5)\n    at trim_prefix (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\index.js:328:13)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\index.js:286:9\n    at router.process_params (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\index.js:346:12)\n    at next (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\index.js:280:10)\n    at RequestLoggingMiddleware.use (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\src\\common\\middleware\\request-logging.middleware.ts:25:5)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-proxy.js:9:23\n    at Layer.handle [as handle_request] (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\platform-express\\node_modules\\express\\lib\\router\\layer.js:95:5)"
+}
+{
+  "timestamp": "2026-10-25T14:10:09.337Z",
+  "method": "GET",
+  "url": "/api/event-requests",
+  "statusCode": 401,
+  "message": "Unauthorized",
+  "stack": "UnauthorizedException: Unauthorized\n    at RoleGuard.handleRequest (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\passport\\dist\\auth.guard.js:60:30)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\passport\\dist\\auth.guard.js:44:124\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\passport\\dist\\auth.guard.js:83:24\n    at allFailed (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\passport\\lib\\middleware\\authenticate.js:110:18)\n    at attempt (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\passport\\lib\\middleware\\authenticate.js:183:28)\n    at strategy.fail (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\passport\\lib\\middleware\\authenticate.js:314:9)\n    at JwtStrategy.authenticate (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\passport-jwt\\lib\\strategy.js:96:21)\n    at attempt (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\passport\\lib\\middleware\\authenticate.js:378:16)\n    at authenticate (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\passport\\lib\\middleware\\authenticate.js:379:7)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\passport\\dist\\auth.guard.js:88:3"
+}
+{
+  "timestamp": "2026-10-25T14:34:12.163Z",
+  "method": "HEAD",
+  "url": "/api/event-requests",
+  "statusCode": 401,
+  "message": "Unauthorized",
+  "stack": "UnauthorizedException: Unauthorized\n    at RoleGuard.handleRequest (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\passport\\dist\\auth.guard.js:60:30)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\passport\\dist\\auth.guard.js:44:124\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\passport\\dist\\auth.guard.js:83:24\n    at allFailed (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\passport\\lib\\middleware\\authenticate.js:110:18)\n    at attempt (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\passport\\lib\\middleware\\authenticate.js:183:28)\n    at strategy.fail (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\passport\\lib\\middleware\\authenticate.js:314:9)\n    at JwtStrategy.authenticate (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\passport-jwt\\lib\\strategy.js:96:21)\n    at attempt (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\passport\\lib\\middleware\\authenticate.js:378:16)\n    at authenticate (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\passport\\lib\\middleware\\authenticate.js:379:7)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\passport\\dist\\auth.guard.js:88:3"
+}
+{
+  "timestamp": "2026-10-25T14:36:46.362Z",
+  "method": "POST",
+  "url": "/api/auth/login",
+  "statusCode": 401,
+  "message": "Invalid email or password",
+  "stack": "UnauthorizedException: Invalid email or password\n    at AuthService.login (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\src\\modules\\auth\\auth.service.ts:56:13)\n    at AuthController.login (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\src\\modules\\auth\\auth.controller.ts:94:29)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:38:29\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+}
+{
+  "timestamp": "2026-10-25T14:37:19.489Z",
+  "method": "POST",
+  "url": "/api/auth/login",
+  "statusCode": 401,
+  "message": "Invalid email or password",
+  "stack": "UnauthorizedException: Invalid email or password\n    at AuthService.login (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\src\\modules\\auth\\auth.service.ts:56:13)\n    at AuthController.login (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\src\\modules\\auth\\auth.controller.ts:94:29)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:38:29\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+}
+{
+  "timestamp": "2026-10-25T16:26:13.643Z",
+  "method": "POST",
+  "url": "/api/event-requests/req-demo-flow-005/pay-deposit",
+  "statusCode": 400,
+  "message": [
+    "property methodDetails should not exist",
+    "property simulateFailure should not exist"
+  ],
+  "stack": "BadRequestException: Bad Request Exception\n    at ValidationPipe.exceptionFactory (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:101:20)\n    at ValidationPipe.transform (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:74:30)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async resolveParamValue (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:148:23)\n    at async Promise.all (index 2)\n    at async pipesFn (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:151:13)\n    at async C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:37:30"
+}
+{
+  "timestamp": "2026-10-25T16:26:19.205Z",
+  "method": "POST",
+  "url": "/api/event-requests/req-demo-flow-005/pay-deposit",
+  "statusCode": 400,
+  "message": [
+    "property methodDetails should not exist",
+    "property simulateFailure should not exist"
+  ],
+  "stack": "BadRequestException: Bad Request Exception\n    at ValidationPipe.exceptionFactory (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:101:20)\n    at ValidationPipe.transform (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:74:30)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async resolveParamValue (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:148:23)\n    at async Promise.all (index 2)\n    at async pipesFn (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:151:13)\n    at async C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:37:30"
+}
+{
+  "timestamp": "2026-10-25T16:26:22.118Z",
+  "method": "POST",
+  "url": "/api/event-requests/req-demo-flow-005/pay-deposit",
+  "statusCode": 400,
+  "message": [
+    "property methodDetails should not exist",
+    "property simulateFailure should not exist"
+  ],
+  "stack": "BadRequestException: Bad Request Exception\n    at ValidationPipe.exceptionFactory (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:101:20)\n    at ValidationPipe.transform (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:74:30)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async resolveParamValue (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:148:23)\n    at async Promise.all (index 2)\n    at async pipesFn (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:151:13)\n    at async C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:37:30"
+}
+{
+  "timestamp": "2026-10-26T09:13:27.180Z",
+  "method": "POST",
+  "url": "/api/event-requests",
+  "statusCode": 409,
+  "message": "A pending or active event request for \"FFSD\" on 2026-10-30 already exists.",
+  "stack": "ConflictException: A pending or active event request for \"FFSD\" on 2026-10-30 already exists.\n    at EventRequestsService.create (C:\\Users\\Mithin Reddy\\Downloads\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\event-requests\\event-requests.service.ts:261:13)\n    at EventRequestsController.create (C:\\Users\\Mithin Reddy\\Downloads\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\event-requests\\event-requests.controller.ts:83:25)\n    at C:\\Users\\Mithin Reddy\\Downloads\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:38:29\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+}
+{
+  "timestamp": "2026-10-26T09:15:03.131Z",
+  "method": "PATCH",
+  "url": "/api/event-plans/plan-1793006094640-vwifemuvm/approval",
+  "statusCode": 400,
+  "message": "The organizer already has an event on this date. Request a revised plan.",
+  "stack": "BadRequestException: The organizer already has an event on this date. Request a revised plan.\n    at EventPlansService.updateApproval (C:\\Users\\Mithin Reddy\\Downloads\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\event-plans\\event-plans.service.ts:292:13)\n    at EventPlansController.updateApproval (C:\\Users\\Mithin Reddy\\Downloads\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\event-plans\\event-plans.controller.ts:140:25)\n    at C:\\Users\\Mithin Reddy\\Downloads\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:38:29\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+}
+{
+  "timestamp": "2026-10-26T09:15:37.365Z",
+  "method": "PATCH",
+  "url": "/api/event-plans/plan-1793006129389-royeajbgy/approval",
+  "statusCode": 400,
+  "message": "The organizer already has an event on this date. Request a revised plan.",
+  "stack": "BadRequestException: The organizer already has an event on this date. Request a revised plan.\n    at EventPlansService.updateApproval (C:\\Users\\Mithin Reddy\\Downloads\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\event-plans\\event-plans.service.ts:292:13)\n    at EventPlansController.updateApproval (C:\\Users\\Mithin Reddy\\Downloads\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\event-plans\\event-plans.controller.ts:140:25)\n    at C:\\Users\\Mithin Reddy\\Downloads\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:38:29\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+}
+{
+  "timestamp": "2026-10-26T10:17:49.492Z",
+  "method": "POST",
+  "url": "/api/event-requests",
+  "statusCode": 409,
+  "message": "A pending or active event request for \"FFSD4t4t4\" on 2026-10-30 already exists.",
+  "stack": "ConflictException: A pending or active event request for \"FFSD4t4t4\" on 2026-10-30 already exists.\n    at EventRequestsService.create (C:\\Users\\Mithin Reddy\\Downloads\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\event-requests\\event-requests.service.ts:251:13)\n    at EventRequestsController.create (C:\\Users\\Mithin Reddy\\Downloads\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\event-requests\\event-requests.controller.ts:83:25)\n    at C:\\Users\\Mithin Reddy\\Downloads\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:38:29\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+}
+{
+  "timestamp": "2026-10-26T10:17:53.545Z",
+  "method": "POST",
+  "url": "/api/event-requests",
+  "statusCode": 409,
+  "message": "A pending or active event request for \"FFSD4t4t4\" on 2026-10-30 already exists.",
+  "stack": "ConflictException: A pending or active event request for \"FFSD4t4t4\" on 2026-10-30 already exists.\n    at EventRequestsService.create (C:\\Users\\Mithin Reddy\\Downloads\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\event-requests\\event-requests.service.ts:251:13)\n    at EventRequestsController.create (C:\\Users\\Mithin Reddy\\Downloads\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\event-requests\\event-requests.controller.ts:83:25)\n    at C:\\Users\\Mithin Reddy\\Downloads\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:38:29\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+}
+{
+  "timestamp": "2026-10-26T10:57:02.204Z",
+  "method": "POST",
+  "url": "/api/event-requests",
+  "statusCode": 409,
+  "message": "A pending or active event request for \"FFSD4t4t4w\" on 2026-10-30 already exists.",
+  "stack": "ConflictException: A pending or active event request for \"FFSD4t4t4w\" on 2026-10-30 already exists.\n    at EventRequestsService.create (C:\\Users\\Mithin Reddy\\Downloads\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\event-requests\\event-requests.service.ts:253:13)\n    at EventRequestsController.create (C:\\Users\\Mithin Reddy\\Downloads\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\event-requests\\event-requests.controller.ts:83:25)\n    at C:\\Users\\Mithin Reddy\\Downloads\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:38:29\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+}
+{
+  "timestamp": "2026-10-26T11:22:18.277Z",
+  "method": "POST",
+  "url": "/api/auth/organizer-application",
+  "statusCode": 400,
+  "message": [
+    "property fullName should not exist",
+    "property email should not exist",
+    "property mobileNumber should not exist",
+    "property password should not exist",
+    "property emailVerified should not exist",
+    "property mobileVerified should not exist",
+    "property organizerType should not exist",
+    "property companyDetails should not exist",
+    "property declarationAccepted should not exist"
+  ],
+  "stack": "BadRequestException: Bad Request Exception\n    at ValidationPipe.exceptionFactory (C:\\Users\\Mithin Reddy\\Downloads\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:101:20)\n    at ValidationPipe.transform (C:\\Users\\Mithin Reddy\\Downloads\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\common\\pipes\\validation.pipe.js:74:30)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async resolveParamValue (C:\\Users\\Mithin Reddy\\Downloads\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:148:23)\n    at async Promise.all (index 0)\n    at async pipesFn (C:\\Users\\Mithin Reddy\\Downloads\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:151:13)\n    at async C:\\Users\\Mithin Reddy\\Downloads\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:37:30"
+}
+{
+  "timestamp": "2026-10-26T11:22:23.113Z",
+  "method": "GET",
+  "url": "/api/auth/organizer-application/ORG-APP-2026-3591",
+  "statusCode": 404,
+  "message": "No organizer application found matching 'ORG-APP-2026-3591'",
+  "stack": "NotFoundException: No organizer application found matching 'ORG-APP-2026-3591'\n    at AuthService.getOrganizerApplicationStatus (C:\\Users\\Mithin Reddy\\Downloads\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\auth\\auth.service.ts:256:13)\n    at AuthController.getOrganizerApplicationStatus (C:\\Users\\Mithin Reddy\\Downloads\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\auth\\auth.controller.ts:35:29)\n    at C:\\Users\\Mithin Reddy\\Downloads\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:38:29\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+}
+{
+  "timestamp": "2026-10-29T11:11:38.665Z",
+  "method": "DELETE",
+  "url": "/api/events/evt-1793091060138-rmndhtnzo",
+  "statusCode": 409,
+  "message": "Only draft events without registrations can be deleted; cancel an active event instead",
+  "stack": "ConflictException: Only draft events without registrations can be deleted; cancel an active event instead\n    at EventsService.delete (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\events\\events.service.ts:611:13)\n    at EventsController.delete (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\events\\events.controller.ts:142:37)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:38:29\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+}
+{
+  "timestamp": "2026-10-29T11:11:46.650Z",
+  "method": "DELETE",
+  "url": "/api/events/evt-1793012277741-dail74v4k",
+  "statusCode": 409,
+  "message": "Only draft events without registrations can be deleted; cancel an active event instead",
+  "stack": "ConflictException: Only draft events without registrations can be deleted; cancel an active event instead\n    at EventsService.delete (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\events\\events.service.ts:611:13)\n    at EventsController.delete (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\events\\events.controller.ts:142:37)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:38:29\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+}
+{
+  "timestamp": "2026-10-29T11:11:51.857Z",
+  "method": "DELETE",
+  "url": "/api/events/evt-001",
+  "statusCode": 409,
+  "message": "Only draft events without registrations can be deleted; cancel an active event instead",
+  "stack": "ConflictException: Only draft events without registrations can be deleted; cancel an active event instead\n    at EventsService.delete (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\events\\events.service.ts:611:13)\n    at EventsController.delete (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\events\\events.controller.ts:142:37)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:38:29\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+}
+{
+  "timestamp": "2026-10-29T11:11:59.972Z",
+  "method": "DELETE",
+  "url": "/api/events/evt-003",
+  "statusCode": 409,
+  "message": "Only draft events without registrations can be deleted; cancel an active event instead",
+  "stack": "ConflictException: Only draft events without registrations can be deleted; cancel an active event instead\n    at EventsService.delete (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\events\\events.service.ts:611:13)\n    at EventsController.delete (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\events\\events.controller.ts:142:37)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:38:29\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+}
+{
+  "timestamp": "2026-10-29T11:28:14.641Z",
+  "method": "DELETE",
+  "url": "/api/events/evt-att-202",
+  "statusCode": 409,
+  "message": "Only draft events without registrations can be deleted; cancel an active event instead",
+  "stack": "ConflictException: Only draft events without registrations can be deleted; cancel an active event instead\n    at EventsService.delete (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\events\\events.service.ts:611:13)\n    at EventsController.delete (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\events\\events.controller.ts:142:37)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:38:29\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+}
+{
+  "timestamp": "2026-10-29T11:29:19.029Z",
+  "method": "DELETE",
+  "url": "/api/events/evt-002",
+  "statusCode": 409,
+  "message": "Only draft events without registrations can be deleted; cancel an active event instead",
+  "stack": "ConflictException: Only draft events without registrations can be deleted; cancel an active event instead\n    at EventsService.delete (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\events\\events.service.ts:611:13)\n    at EventsController.delete (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\events\\events.controller.ts:142:37)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:38:29\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+}
+{
+  "timestamp": "2026-10-30T06:36:20.888Z",
+  "method": "POST",
+  "url": "/api/event-requests/req-orgdash-action-005/accept-counteroffer",
+  "statusCode": 400,
+  "message": "Counteroffer details are missing",
+  "stack": "BadRequestException: Counteroffer details are missing\n    at EventRequestsService.acceptCounteroffer (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\event-requests\\event-requests.service.ts:1132:30)\n    at EventRequestsController.acceptCounteroffer (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\event-requests\\event-requests.controller.ts:142:25)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:38:29\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+}
+{
+  "timestamp": "2026-10-30T06:36:22.325Z",
+  "method": "POST",
+  "url": "/api/event-requests/req-orgdash-action-005/accept-counteroffer",
+  "statusCode": 400,
+  "message": "Counteroffer details are missing",
+  "stack": "BadRequestException: Counteroffer details are missing\n    at EventRequestsService.acceptCounteroffer (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\event-requests\\event-requests.service.ts:1132:30)\n    at EventRequestsController.acceptCounteroffer (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\event-requests\\event-requests.controller.ts:142:25)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:38:29\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+}
+{
+  "timestamp": "2026-10-30T06:36:35.342Z",
+  "method": "POST",
+  "url": "/api/event-requests/req-orgdash-action-005/accept-counteroffer",
+  "statusCode": 400,
+  "message": "Counteroffer details are missing",
+  "stack": "BadRequestException: Counteroffer details are missing\n    at EventRequestsService.acceptCounteroffer (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\event-requests\\event-requests.service.ts:1132:30)\n    at EventRequestsController.acceptCounteroffer (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\event-requests\\event-requests.controller.ts:142:25)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:38:29\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+}
+{
+  "timestamp": "2026-10-30T06:37:06.221Z",
+  "method": "POST",
+  "url": "/api/event-requests/req-orgdash-action-005/accept-counteroffer",
+  "statusCode": 400,
+  "message": "Counteroffer details are missing",
+  "stack": "BadRequestException: Counteroffer details are missing\n    at EventRequestsService.acceptCounteroffer (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\event-requests\\event-requests.service.ts:1132:30)\n    at EventRequestsController.acceptCounteroffer (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\event-requests\\event-requests.controller.ts:142:25)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:38:29\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+}
+{
+  "timestamp": "2026-10-30T06:37:07.023Z",
+  "method": "POST",
+  "url": "/api/event-requests/req-orgdash-action-005/accept-counteroffer",
+  "statusCode": 400,
+  "message": "Counteroffer details are missing",
+  "stack": "BadRequestException: Counteroffer details are missing\n    at EventRequestsService.acceptCounteroffer (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\event-requests\\event-requests.service.ts:1132:30)\n    at EventRequestsController.acceptCounteroffer (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\event-requests\\event-requests.controller.ts:142:25)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:38:29\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+}
+{
+  "timestamp": "2026-10-30T06:37:07.725Z",
+  "method": "POST",
+  "url": "/api/event-requests/req-orgdash-action-005/accept-counteroffer",
+  "statusCode": 400,
+  "message": "Counteroffer details are missing",
+  "stack": "BadRequestException: Counteroffer details are missing\n    at EventRequestsService.acceptCounteroffer (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\event-requests\\event-requests.service.ts:1132:30)\n    at EventRequestsController.acceptCounteroffer (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\event-requests\\event-requests.controller.ts:142:25)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:38:29\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+}
+{
+  "timestamp": "2026-10-30T06:37:07.933Z",
+  "method": "POST",
+  "url": "/api/event-requests/req-orgdash-action-005/accept-counteroffer",
+  "statusCode": 400,
+  "message": "Counteroffer details are missing",
+  "stack": "BadRequestException: Counteroffer details are missing\n    at EventRequestsService.acceptCounteroffer (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\event-requests\\event-requests.service.ts:1132:30)\n    at EventRequestsController.acceptCounteroffer (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\event-requests\\event-requests.controller.ts:142:25)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:38:29\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+}
+{
+  "timestamp": "2026-10-30T06:37:08.163Z",
+  "method": "POST",
+  "url": "/api/event-requests/req-orgdash-action-005/accept-counteroffer",
+  "statusCode": 400,
+  "message": "Counteroffer details are missing",
+  "stack": "BadRequestException: Counteroffer details are missing\n    at EventRequestsService.acceptCounteroffer (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\event-requests\\event-requests.service.ts:1132:30)\n    at EventRequestsController.acceptCounteroffer (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\event-requests\\event-requests.controller.ts:142:25)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:38:29\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+}
+{
+  "timestamp": "2026-10-30T06:37:08.378Z",
+  "method": "POST",
+  "url": "/api/event-requests/req-orgdash-action-005/accept-counteroffer",
+  "statusCode": 400,
+  "message": "Counteroffer details are missing",
+  "stack": "BadRequestException: Counteroffer details are missing\n    at EventRequestsService.acceptCounteroffer (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\event-requests\\event-requests.service.ts:1132:30)\n    at EventRequestsController.acceptCounteroffer (C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\src\\modules\\event-requests\\event-requests.controller.ts:142:25)\n    at C:\\Users\\sai ganesh\\Downloads\\FDFED_Main_Updated (2)\\FDFED_Main_Updated\\FDFED_Main_Updated\\backend\\node_modules\\@nestjs\\core\\router\\router-execution-context.js:38:29\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+}

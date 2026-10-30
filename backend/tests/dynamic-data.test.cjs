@@ -29,10 +29,10 @@ test('saved data communicates across authenticated role workspaces and survives 
   const base = `http://127.0.0.1:${app.getHttpServer().address().port}/api`;
   const login = (email, password) => app.get(AuthService).login({ email, password }).data.token;
   const admin = login('superadmin@example.com', 'Admin@123'), support = login('employee@example.com', 'Employee@123');
-  const organizer = login('organizer@example.com', 'Organizer@123'), staff = login('staff@example.com', 'Staff@123');
+  const organizer = login('organizer@example.com', 'Organizer@123');
   const attendee = login('attendee@example.com', 'Attendee@123'), finance = login('marcus.ops@eventflow.com', 'Employee@123');
   const client = login('client@example.com', 'Client@123');
-  const tokenByRole = { admin, support, organizer, staff, attendee, finance, client };
+  const tokenByRole = { admin, support, organizer, attendee, finance, client };
   async function call(token, method, route, body, expected = 200) {
     const response = await fetch(base + route, { method, headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(body ? { 'Content-Type': 'application/json' } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) });
@@ -41,7 +41,7 @@ test('saved data communicates across authenticated role workspaces and survives 
     return result.data ?? result;
   }
   const workspace = token => call(token, 'GET', '/workspace');
-  let event, registration, assignment;
+  let event, registration;
 
   await t.test('every role receives its real workspace without passwords, file storage paths, or unrelated personnel', async () => {
     await call(null, 'GET', '/workspace', null, 401);
@@ -52,8 +52,8 @@ test('saved data communicates across authenticated role workspaces and survives 
       assert.equal(JSON.stringify(result).includes('documentFileName'), false);
       for (const user of result.users) assert.equal(Object.hasOwn(user, 'password'), false);
       if (role === 'support') {
-        assert.equal(result.users.some(user => user.userRole === 'event_staff' || user.employeeType), false);
-        assert.equal(result.staffAssignments.length, 0); assert.equal(result.staffProfiles.length, 0);
+        assert.equal(result.users.some(user => user.userRole === 'employee' || user.employeeType), false);
+        assert.equal(Object.keys(result).some(key => /staff/i.test(key)), false);
       }
       if (role === 'attendee') assert.ok(result.registrations.every(item => item.attendee.userId === 'usr-attendee-001'));
       assert.ok(result.notifications.every(item => item.userId === result.currentUser.userId));
@@ -83,36 +83,20 @@ test('saved data communicates across authenticated role workspaces and survives 
   await t.test('support customer edits and registration reviews persist while personnel remain protected', async () => {
     await call(support, 'PATCH', '/workspace/customers/usr-attendee-001', { name: 'Updated Attendee' });
     assert.equal((await workspace(attendee)).currentUser.name, 'Updated Attendee');
-    for (const id of ['usr-admin-001', 'usr-staff-001', 'usr-emp-001c']) {
+    for (const id of ['usr-admin-001', 'usr-emp-002', 'usr-emp-001c']) {
       await call(support, 'PATCH', `/workspace/customers/${id}`, { name: 'Forbidden' }, 403);
       await call(support, 'DELETE', `/workspace/customers/${id}`, null, 403);
     }
     await call(finance, 'PATCH', '/workspace/customers/usr-attendee-001', { name: 'Forbidden' }, 403);
     await call(support, 'PATCH', '/workspace/customers/usr-attendee-001', { userRole: 'super_admin' }, 400);
-    await call(support, 'PATCH', `/registrations/${registration.registrationId}/review`, { decision: 'approved' });
-    assert.equal((await call(attendee, 'GET', `/registrations/${registration.registrationId}`)).reviewStatus, 'approved');
-    const stats = await call(support, 'GET', '/analytics/staff-dashboard');
-    assert.equal(stats.registrationsAwaitingReview, db.registrations.filter(item => !item.reviewStatus && ['registered', 'pending_payment', 'waitlisted'].includes(item.status)).length);
-    assert.ok((await call(attendee, 'GET', '/notifications')).some(item => item.registrationId === registration.registrationId && item.type === 'registration_approved'));
-  });
-
-  await t.test('staff assignments, responses, attendance reports and notifications reach their organizer', async () => {
-    const profile = db.staffProfiles.find(item => item.userId === 'usr-staff-001'); profile.availableDates = [];
-    assignment = await call(organizer, 'POST', '/staff-assignments', { eventId: event.eventId, organizerId: event.organizerId,
-      staffId: profile.staffId, role: 'Check-in desk', fee: 1500, notes: 'Arrive at 09:00.' }, 201);
-    const staffView = await workspace(staff);
-    assert.equal(staffView.staffAssignments.find(item => item.assignmentId === assignment.assignmentId).role, 'Check-in desk');
-    assert.ok(staffView.notifications.some(item => item.type === 'assignment' && item.eventId === event.eventId));
-    await call(staff, 'PATCH', `/staff-assignments/${assignment.assignmentId}/status`, { status: 'accepted' });
-    assert.equal((await workspace(organizer)).staffAssignments.find(item => item.assignmentId === assignment.assignmentId).status, 'accepted');
-    const report = { eventId: event.eventId, organizerId: event.organizerId, staffId: profile.staffId, reportText: 'One attendee checked in.' };
-    await call(staff, 'POST', '/reports/staff', { ...report, staffId: db.staffProfiles.find(item => item.userId !== profile.userId).staffId }, 403);
-    const submitted = await call(staff, 'POST', '/reports/staff', report, 201);
-    const retry = await call(staff, 'POST', '/reports/staff', report, 201);
-    assert.equal(retry.staffReportId, submitted.staffReportId);
-    assert.ok((await workspace(organizer)).staffReports.some(item => item.staffReportId === submitted.staffReportId));
-    await call(staff, 'PUT', `/staff/${profile.staffId}`, { availableDates: ['2099-11-21'] });
-    assert.deepEqual((await workspace(staff)).staffProfiles.find(item => item.staffId === profile.staffId).availableDates, ['2099-11-21']);
+    const privateEvent = await call(organizer, 'POST', '/events', { name: 'Private approval integration', category: 'Technology', date: '2099-11-20', time: '10:00', location: 'Review Hall', capacity: 20, ticketPrice: 0, visibility: 'private', status: 'published' }, 201);
+    const privateRegistration = await call(attendee, 'POST', '/registrations', { attendeeId: 'usr-attendee-001', eventId: privateEvent.eventId, ticketType: 'General' }, 201);
+    assert.equal(privateRegistration.status, 'pending_approval');
+    await call(support, 'PATCH', `/registrations/${privateRegistration.registrationId}/review`, { decision: 'approved' });
+    assert.equal((await call(attendee, 'GET', `/registrations/${privateRegistration.registrationId}`)).reviewStatus, 'approved');
+    const stats = await call(support, 'GET', '/analytics/employee-dashboard');
+    assert.equal(stats.registrationsAwaitingReview, db.registrations.filter(item => !item.reviewStatus && ['pending_approval', 'registered', 'pending_payment', 'waitlisted'].includes(item.status)).length);
+    assert.ok((await call(attendee, 'GET', '/notifications')).some(item => item.registrationId === privateRegistration.registrationId && item.type === 'registration_approved'));
   });
 
   await t.test('finance drafts stay private and submitted reports and admin reviews reach both workspaces', async () => {
@@ -155,7 +139,6 @@ test('saved data communicates across authenticated role workspaces and survives 
     db.persist(); DataStore.instance = undefined;
     const restored = DataStore.getInstance();
     assert.ok(restored.registrations.some(item => item.registrationId === registration.registrationId && item.reviewStatus === 'approved'));
-    assert.ok(restored.staffAssignments.some(item => item.assignmentId === assignment.assignmentId && item.status === 'accepted'));
     assert.ok(restored.supportExecutiveReports.some(item => item.title === 'Live finance reconciliation' && item.status === 'reviewed'));
     assert.equal(restored.findUserById('usr-emp-001').email, 'updated-support@example.com');
   });

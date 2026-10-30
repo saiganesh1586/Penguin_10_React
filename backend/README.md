@@ -52,12 +52,7 @@ backend/
 │   │   │   ├── attendees.controller.ts
 │   │   │   ├── attendees.service.ts
 │   │   │   └── attendees.module.ts
-│   │   ├── staff/
 │   │   │   ├── dtos/
-│   │   │   │   └── staff.dto.ts
-│   │   │   ├── staff.controller.ts
-│   │   │   ├── staff.service.ts
-│   │   │   └── staff.module.ts
 │   │   └── activity-log/
 │   │       ├── activity-log.controller.ts
 │   │       ├── activity-log.service.ts
@@ -177,7 +172,7 @@ Headers: role: attendee
     "description": "Welcome event for new students",
     "date": "2024-06-15",
     "location": "Main Auditorium",
-    "organizerId": "staff-001",
+    "organizerId": "org-001",
     "attendees": ["att-001", "att-002"],
     "capacity": 500,
     "status": "upcoming",
@@ -206,7 +201,7 @@ Body:
   "description": "Event description",
   "date": "2024-06-20",
   "location": "Hall A",
-  "organizerId": "staff-001",
+  "organizerId": "org-001",
   "capacity": 300
 }
 ```
@@ -314,74 +309,6 @@ Headers: role: admin
 
 ---
 
-### 👔 STAFF ENDPOINTS
-
-#### Get All Staff (Admin/Superuser only)
-
-```http
-GET /staff?search=Alice
-Headers: role: admin
-```
-
-#### Get Staff by ID (Admin/Superuser only)
-
-```http
-GET /staff/:id
-Headers: role: admin
-```
-
-#### Create Staff (Superuser only)
-
-```http
-POST /staff
-Headers: role: superuser, Content-Type: application/json
-
-Body:
-{
-  "name": "Alice Manager",
-  "role": "manager",
-  "email": "alice@college.edu",
-  "availability": ["Monday", "Wednesday", "Friday"],
-  "assignedEvents": ["evt-001"]
-}
-```
-
-#### Update Staff (Superuser only)
-
-```http
-PUT /staff/:id
-Headers: role: superuser, Content-Type: application/json
-
-Body:
-{
-  "name": "Bob Manager",
-  "status": "inactive"
-}
-```
-
-#### Delete Staff (Superuser only)
-
-```http
-DELETE /staff/:id
-Headers: role: superuser
-```
-
-#### Assign Event to Staff (Superuser only)
-
-```http
-POST /staff/:id/events/:eventId
-Headers: role: superuser
-```
-
-#### Get Staff Statistics
-
-```http
-GET /staff/statistics
-Headers: role: admin
-```
-
----
-
 ### 📊 ACTIVITY LOGS ENDPOINTS
 
 #### Get All Activity Logs
@@ -426,9 +353,6 @@ Headers: role: superuser
 | View Events     |    ✅     |  ✅   |    ✅    |
 | Create Attendee |    ✅     |  ✅   |    ❌    |
 | Delete Attendee |    ✅     |  ❌   |    ❌    |
-| Create Staff    |    ✅     |  ❌   |    ❌    |
-| View Staff      |    ✅     |  ✅   |    ❌    |
-| Delete Staff    |    ✅     |  ❌   |    ❌    |
 
 ### Implementation Details
 
@@ -472,7 +396,7 @@ const newEvent = await api.createEvent({
   name: "New Event",
   date: "2024-06-20",
   location: "Hall A",
-  organizerId: "staff-001",
+  organizerId: "org-001",
   capacity: 300,
 });
 
@@ -535,22 +459,6 @@ Use the provided `integrated-index.html` which includes:
 }
 ```
 
-### Staff
-
-```typescript
-{
-  id: string;
-  name: string;
-  role: 'coordinator' | 'support' | 'manager';
-  email: string;
-  availability: string[];    // Days of week
-  assignedEvents: string[];  // Array of event IDs
-  status: 'active' | 'inactive';
-  createdAt: Date;
-  updatedAt: Date;
-}
-```
-
 ### Activity Log
 
 ```typescript
@@ -582,7 +490,7 @@ curl -X POST http://localhost:3001/events \
     "description": "Annual tech conference",
     "date": "2024-07-15",
     "location": "Convention Center",
-    "organizerId": "staff-001",
+    "organizerId": "org-001",
     "capacity": 500
   }'
 ```
