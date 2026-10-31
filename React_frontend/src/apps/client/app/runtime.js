@@ -4935,17 +4935,18 @@ eventRequests: [
       if (!container) return;
 
       try {
-        const response = await apiGetClientDashboard();
-        const dashboard = response && response.data ? response.data : response;
-        const events = Array.isArray(dashboard?.upcomingEvents) ? dashboard.upcomingEvents : [];
+        const events = DB.events.filter(event => event.backendStatus === 'published' &&
+          event.visibility !== 'private' && !event.backendClientId && !event.clientId &&
+          new Date(`${event.date}T23:59:59`).getTime() >= Date.now())
+          .sort((a, b) => `${a.date}T${a.time}`.localeCompare(`${b.date}T${b.time}`));
         if (!g('client-upcoming-events')) return;
 
         if (events.length === 0) {
-          container.innerHTML = `<div class="h4 mb-12">Upcoming Events</div><div class="empty" style="padding:20px 0"><div class="empty-title">No upcoming events</div><div class="empty-desc">Confirmed future events will appear here.</div></div>`;
+          container.innerHTML = `<div class="h4 mb-12">Upcoming Events</div><div class="empty" style="padding:20px 0"><div class="empty-title">No upcoming events</div><div class="empty-desc">Published future events will appear here.</div></div>`;
           return;
         }
 
-        container.innerHTML = `<div class="h4 mb-12">Upcoming Events</div><div style="display:flex;flex-direction:column;gap:0">${events.map(event => `<div class="flex justify-between items-center gap-10" style="padding:12px 0;border-bottom:1px solid var(--border)"><div style="min-width:0"><div style="font-weight:600;font-size:13.5px">${escapeHtml(event.title || 'Event')}</div><div class="small" style="color:var(--text2)">${escapeHtml(clientUpcomingEventDate(event))}${event.location ? ` · ${escapeHtml(event.location)}` : ''}</div></div><button class="btn btn-ghost btn-xs" onclick="goNav('request-status')">Manage Event</button></div>`).join('')}</div>`;
+        container.innerHTML = `<div class="h4 mb-12">Upcoming Events</div><div style="display:flex;flex-direction:column;gap:0">${events.map(event => `<div class="flex justify-between items-center gap-10" style="padding:12px 0;border-bottom:1px solid var(--border)"><div style="min-width:0"><div style="font-weight:600;font-size:13.5px">${escapeHtml(event.title || 'Event')}</div><div class="small" style="color:var(--text2)">${escapeHtml(clientUpcomingEventDate(event))}${event.location ? ` · ${escapeHtml(event.location)}` : ''}</div></div><button class="btn btn-ghost btn-xs" onclick="viewClientPublishedEvent('${escapeHtml(event.id)}')">View Event</button></div>`).join('')}</div>`;
       } catch (error) {
         if (!g('client-upcoming-events')) return;
         container.innerHTML = `<div class="h4 mb-12">Upcoming Events</div><div class="empty" style="padding:20px 0"><div class="empty-title">Unable to load upcoming events</div><div class="empty-desc">Please try again.</div><button class="btn btn-ghost btn-sm mt-12" onclick="refreshClientUpcomingEvents()">Retry</button></div>`;
@@ -4953,6 +4954,16 @@ eventRequests: [
     }
 
     window.refreshClientUpcomingEvents = loadClientUpcomingEvents;
+
+    function viewClientPublishedEvent(eventId) {
+      const event = DB.events.find(item => String(item.id) === String(eventId) &&
+        item.backendStatus === 'published' && item.visibility !== 'private' && !item.backendClientId && !item.clientId);
+      if (!event) return toast('Event is no longer available.', 'error');
+      openModal(escapeHtml(event.title), `<div class="info-row"><span class="info-label">Date</span><span class="info-value">${escapeHtml(clientUpcomingEventDate(event))}</span></div>
+        <div class="info-row"><span class="info-label">Venue</span><span class="info-value">${escapeHtml(event.venue || '')}</span></div>
+        <div class="info-row"><span class="info-label">Category</span><span class="info-value">${escapeHtml(event.category || '')}</span></div>
+        <p>${escapeHtml(event.description || '')}</p>`, [{ lbl: 'Close', cls: 'btn-ghost', fn: 'closeModal()' }]);
+    }
 
     function clientActivityTime(timestamp) {
       const date = new Date(timestamp);
@@ -8493,7 +8504,6 @@ eventRequests: [
             item.createdAt ? new Date(item.createdAt).getTime() : 0,
             item.created ? new Date(item.created).getTime() : 0,
             item.sentAt ? new Date(item.sentAt).getTime() : 0,
-            item.date ? new Date(item.date).getTime() : 0,
           ];
           if (Array.isArray(item.proposals) && item.proposals.length > 0) {
             item.proposals.forEach(p => {
@@ -8999,7 +9009,7 @@ eventRequests: [
     <div class="grid-2"><div class="form-group"><label class="form-label">Event Type *</label><select class="form-control" id="nr-type"><option>Corporate</option><option>Conference</option><option>Wedding</option><option>Concert</option><option>Workshop</option><option>Other</option></select></div><div class="form-group"><label class="form-label">Preferred Date *</label><input class="form-control" id="nr-date" type="date"></div></div>
     <div class="grid-2"><div class="form-group"><label class="form-label">Expected Guests *</label><input class="form-control" id="nr-guests" type="number" placeholder="100"></div><div class="form-group"><label class="form-label">Budget (₹) *</label><input class="form-control" id="nr-budget" type="number" placeholder="10000"></div></div>
     <div class="form-group"><label class="form-label" for="nr-ticket-price">Ticket Price per Attendee (₹)</label><input class="form-control" id="nr-ticket-price" type="number" min="0" step="0.01" value="0"><p class="small muted">Set 0 for free admission.</p></div>
-    <div class="form-group"><label class="form-label" for="nr-visibility">Event Access</label><select class="form-control" id="nr-visibility"><option value="public">Public — direct registration</option><option value="private">Private — organizer approval required</option></select><p class="small muted">Public events allow direct payment and registration. Private events require approval before payment.</p></div>
+    <div class="form-group"><label class="form-label" for="nr-visibility">Event Access</label><select class="form-control" id="nr-visibility"><option value="public" selected>Public — direct registration</option><option value="private">Private — organizer approval required</option></select><p class="small muted">Public events allow direct payment and registration. Private events require approval before payment.</p></div>
     <div class="form-group"><label class="form-label">Preferred Venue (optional)</label><input class="form-control" id="nr-venue" placeholder="Grand Ballroom, Downtown"></div>
     <div class="form-group"><label class="form-label">Description & Requirements *</label><textarea class="form-control" id="nr-desc" style="min-height:100px" placeholder="Describe the event, theme, requirements…"></textarea></div>
     ${renderWorkflowEventPolicy(workflowEventPolicy, 'nr-policy')}

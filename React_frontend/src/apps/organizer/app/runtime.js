@@ -2600,10 +2600,11 @@ window.EventFlowModules['shared'] = true;
 
         case 'attendees':
           if (r === 'organizer') {
+            el.innerHTML = `<div class="org-attendees"><div class="page-hd"><div class="page-hd-left"><div class="page-title">Attendee Management</div><div class="page-sub">Loading your events and registrations…</div></div></div><div class="org-attendee-skeleton" aria-label="Loading attendees"><div></div><div></div><div></div></div></div>`;
             try {
               await syncOrganizerAttendees();
             } catch (error) {
-              el.innerHTML = `<div class="empty"><div class="empty-title">Registrations could not be loaded</div><p class="empty-desc">${escapeHtml(error.message || 'Please try again.')}</p><button class="btn btn-primary mt-16" onclick="renderPage('attendees')">Try Again</button></div>`;
+              el.innerHTML = `<div class="org-attendees card"><div class="empty" role="alert"><div class="empty-icon">⚠️</div><div class="empty-title">Registrations could not be loaded</div><p class="empty-desc">${escapeHtml(error.message || 'Please try again.')}</p><button class="btn btn-primary mt-16" onclick="renderPage('attendees')">Try Again</button></div></div>`;
               break;
             }
           }
@@ -4888,7 +4889,10 @@ window.EventFlowModules['shared'] = true;
       const allRegs = (DB && DB.registrations) || [];
       const totalAttendees = allRegs.filter(r => myEv.some(e => String(e.id) === String(r.eventId))).length;
       const allReqs = (DB && DB.eventRequests) || [];
-      const inReviewCount = allReqs.filter(r => String(r.organizer) === String(CU.id) && r.status === 'in_review').length;
+      const inReviewCount = allReqs.filter(r => String(r.organizer) === String(CU.id) && r.status === 'plan_submitted' &&
+        (DB.eventPlans || []).some(plan => String(plan.eventPlanId) === String(r.activeEventPlanId) && plan.approvalStatus === 'pending')).length;
+      const weeklyAttendees = allRegs.filter(r => myEv.some(e => String(e.id) === String(r.eventId)) &&
+        new Date(r.registrationDate || r.createdAt || r.date).getTime() >= Date.now() - 7 * 86400000).length;
 
       const searchQuery = (sessionStorage.getItem('org_events_search') || '').toLowerCase();
       const statusFilter = sessionStorage.getItem('org_events_status') || '';
@@ -4901,7 +4905,7 @@ window.EventFlowModules['shared'] = true;
   </div>
   <div class="grid-4 mb-20">
     <div class="stat-card"><div class="stat-icon" style="background:var(--accent-dim);color:var(--accent)">🗓️</div><div class="stat-value" style="color:var(--accent)">${myEv.length}</div><div class="stat-label">My Events</div><div class="stat-sub neutral">${upcoming.length} upcoming</div></div>
-    <div class="stat-card"><div class="stat-icon" style="background:var(--green-dim);color:var(--green)">👥</div><div class="stat-value" style="color:var(--green)">${totalAttendees}</div><div class="stat-label">Total Attendees</div><div class="stat-sub up">↑ 5 this week</div></div>
+    <div class="stat-card"><div class="stat-icon" style="background:var(--green-dim);color:var(--green)">👥</div><div class="stat-value" style="color:var(--green)">${totalAttendees}</div><div class="stat-label">Total Attendees</div><div class="stat-sub up">↑ ${weeklyAttendees} this week</div></div>
     <div class="stat-card"><div class="stat-icon" style="background:var(--blue-dim);color:var(--blue)">📋</div><div class="stat-value" style="color:var(--blue)">${inReviewCount}</div><div class="stat-label">Plans in Review</div><div class="stat-sub neutral">With clients</div></div>
   </div>
   <div class="mb-16">
@@ -4961,7 +4965,7 @@ window.EventFlowModules['shared'] = true;
 
     function filterOrganizerDashboardEvents(events, query, status, category) {
       return events.filter(event => {
-        const searchable = `${event.title || ''} ${event.city || ''}`.toLowerCase();
+        const searchable = `${event.title || ''} ${event.city || ''} ${event.venue || ''}`.toLowerCase();
         return (!query || searchable.includes(query))
           && (!status || event.status === status)
           && (!category || event.category === category);
@@ -5745,6 +5749,7 @@ window.EventFlowModules['shared'] = true;
         <select class="form-control" id="ne-status"><option value="upcoming">Upcoming</option><option value="full">Full</option></select>
       </div>
     </div>
+    <div class="form-group"><label class="form-label" for="ne-visibility">Event Access</label><select class="form-control" id="ne-visibility"><option value="public" selected>Public — direct registration</option><option value="private">Private — organizer approval required</option></select></div>
     <div class="grid-2">
       <div class="form-group"><label class="form-label">Date *</label><input class="form-control" id="ne-date" type="date"></div>
       <div class="form-group"><label class="form-label">Start Time</label><input class="form-control" id="ne-time" type="time" value="09:00"></div>
@@ -5781,7 +5786,8 @@ window.EventFlowModules['shared'] = true;
         location: venue,
         capacity: parseInt(cap),
         ticketPrice: parseInt(v('ne-price')) || 0,
-        status: v('ne-status') || 'upcoming',
+        visibility: v('ne-visibility') || 'public',
+        status: 'published',
         description: v('ne-desc') || '',
         organizerId: CU.userId || CU.id,
       };
@@ -5793,7 +5799,7 @@ window.EventFlowModules['shared'] = true;
           DB.events.push({
             id: evId, title, category: v('ne-cat'), date, time: v('ne-time'),
             venue, city: v('ne-city'), capacity: parseInt(cap), registered: 0,
-            price: parseInt(v('ne-price')) || 0, status: v('ne-status') || 'upcoming',
+            price: parseInt(v('ne-price')) || 0, status: v('ne-status') || 'upcoming', visibility: newEv.visibility,
             organizer: CU.id, description: v('ne-desc'), emoji: '📅', color: '#7c6ff7',
           });
           closeModal(); renderPage(_currentPage); toast('Event created!', 'success');
@@ -6361,6 +6367,10 @@ window.EventFlowModules['shared'] = true;
     function registrationPayload(response) {
       return response?.data ?? response;
     }
+    function organizerRegistrationVisibility(registration) {
+      return organizerRegistrationEvents.find(event => String(event.id) === String(registration.eventId))?.visibility
+        || registration.event?.visibility || 'public';
+    }
     function mapOrganizerRegistration(registration) {
       return {
         ...registration,
@@ -6369,7 +6379,7 @@ window.EventFlowModules['shared'] = true;
         attendeeId: registration.attendee?.userId || registration.attendeeId,
         date: registration.registrationDate,
         ticketId: registration.verificationId || '—',
-        approved: registration.reviewStatus === 'approved' || registration.event?.visibility === 'public',
+        approved: registration.reviewStatus === 'approved' || organizerRegistrationVisibility(registration) === 'public',
         payment: registration.payment?.status || 'not_due',
         amount: registration.payment?.amount ?? 0,
         checkedIn: registration.checkInStatus === 'checked-in' || registration.status === 'attended',
@@ -6379,14 +6389,19 @@ window.EventFlowModules['shared'] = true;
 
     async function syncOrganizerAttendees() {
       const [eventResponse, registrationResponse] = await Promise.all([apiGetEvents(), apiGetAttendeeRegistrations()]);
-      const events = registrationPayload(eventResponse) || [];
-      const registrations = registrationPayload(registrationResponse) || [];
-      organizerRegistrationEvents = events.filter(event => event.organizerUserId === (CU.userId || CU.id)).map(event => {
-        const existing = DB.events.find(item => String(item.id) === String(event.eventId) || (item.organizer === CU.id && item.title === (event.name || event.title)));
-        const mapped = { ...existing, ...event, id: event.eventId, title: event.name || event.title, venue: event.location, price: event.ticketPrice, organizer: CU.id };
+      const events = registrationPayload(eventResponse);
+      const registrations = registrationPayload(registrationResponse);
+      if (!Array.isArray(events) || !Array.isArray(registrations)) throw new Error('The server returned an invalid event or registration list.');
+      const eventIds = new Set();
+      const eventOrder = new Map(events.map((event, index) => [String(event.eventId), index]));
+      organizerRegistrationEvents = events.filter(event => event.eventId && !eventIds.has(String(event.eventId)) && eventIds.add(String(event.eventId))).map(event => {
+        const existing = DB.events.find(item => String(item.eventId || item.id) === String(event.eventId));
+        const mapped = { ...existing, ...event, id: event.eventId, title: event.name || event.title, venue: event.location, price: event.ticketPrice, organizer: CU.id,
+          registered: Number(event.registered ?? 0) };
         if (existing) Object.assign(existing, mapped); else DB.events.push(mapped);
         return mapped;
-      });
+      }).sort((a, b) => (new Date(b.createdAt).getTime() || 0) - (new Date(a.createdAt).getTime() || 0)
+        || eventOrder.get(String(b.id)) - eventOrder.get(String(a.id)));
       registrations.forEach(registration => {
         const attendee = registration.attendee;
         if (attendee) {
@@ -6395,10 +6410,9 @@ window.EventFlowModules['shared'] = true;
           if (existing) Object.assign(existing, mapped); else DB.users.push(mapped);
         }
       });
-      const eventIds = new Set(organizerRegistrationEvents.map(event => String(event.id)));
       const registrationIds = new Set(registrations.map(registration => registration.registrationId));
       DB.registrations = DB.registrations.filter(registration => !registration.organizerManaged && !eventIds.has(String(registration.eventId)) && !registrationIds.has(registration.registrationId || registration.id))
-        .concat(registrations.map(mapOrganizerRegistration));
+        .concat(registrations.filter(registration => eventIds.has(String(registration.eventId))).map(mapOrganizerRegistration));
     }
 
     function organizerRegistrationStatus(registration) {
@@ -6406,7 +6420,7 @@ window.EventFlowModules['shared'] = true;
       if (registration.status === 'cancelled') return 'Cancelled';
       if (registration.status === 'attended' || registration.checkedIn) return 'Attended';
       if (registration.status === 'no-show') return 'No-show';
-      if (registration.event?.visibility === 'public') return registration.status === 'pending_payment' ? 'Payment Pending' : 'No Approval Required';
+      if (organizerRegistrationVisibility(registration) === 'public') return registration.status === 'pending_payment' ? 'Payment Pending' : 'No Approval Required';
       return registration.approved ? 'Approved' : 'Pending';
     }
 
@@ -6419,37 +6433,49 @@ window.EventFlowModules['shared'] = true;
       const myEvents = CU.role === 'organizer' ? organizerRegistrationEvents : DB.events.filter(e => e.organizer === CU.id);
       const savedEventId = sessionStorage.getItem('org_attendees_event');
       const selectedEvent = myEvents.find(event => String(event.id) === savedEventId)
-        || myEvents.find(event => DB.registrations.some(registration => registration.eventId === event.id && canReviewOrganizerRegistration(registration, event)))
+        || myEvents.find(event => DB.registrations.some(registration => String(registration.eventId) === String(event.id) && canReviewOrganizerRegistration(registration, event)))
         || myEvents[0];
       const selectedEventId = selectedEvent?.id;
       if (selectedEventId) sessionStorage.setItem('org_attendees_event', String(selectedEventId));
-      const isPrivateEvent = selectedEvent && (selectedEvent.visibility === 'private' || (!selectedEvent.visibility && (selectedEvent.category === 'Wedding' || selectedEvent.tags?.includes('Private'))));
+      const isPrivateEvent = selectedEvent?.visibility === 'private';
 
       const regs = CU.role === 'organizer' ?
-        DB.registrations.filter(r => selectedEventId ? r.eventId === selectedEventId : selectedEvent && r.eventId === selectedEvent.id) :
+        DB.registrations.filter(r => r.organizerManaged && selectedEventId && String(r.eventId) === String(selectedEventId)) :
         (CU.role === 'superuser' ? DB.registrations : DB.registrations.filter(r => { const e = DB.events.find(ev => ev.id === r.eventId); return e && e.organizer === CU.id; }));
-      const checkedIn = regs.filter(r => r.checkedIn).length;
-      const approved = regs.filter(r => organizerRegistrationStatus(r) === 'Approved').length;
-
-      if (CU.role === 'organizer' && !myEvents.length) return '<div class="empty"><div class="empty-title">No events to manage</div><p class="empty-desc">Attendee registrations will appear here for your events.</p></div>';
+      if (CU.role === 'organizer' && !myEvents.length) return '<div class="org-attendees card"><div class="empty"><div class="empty-icon">📅</div><div class="empty-title">No events to manage</div><p class="empty-desc">Create an event to start managing attendee registrations.</p><button class="btn btn-primary mt-16" onclick="openAddEventModal()">Create Event</button></div></div>';
 
       if (CU.role === 'organizer' && myEvents.length > 0) {
+        const approvedCount = regs.filter(r => ['Approved', 'No Approval Required', 'Attended'].includes(organizerRegistrationStatus(r))).length;
+        const pendingCount = regs.filter(r => ['Pending', 'Payment Pending'].includes(organizerRegistrationStatus(r))).length;
+        const rejectedCount = regs.filter(r => organizerRegistrationStatus(r) === 'Declined').length;
+        const eventStatus = selectedEvent.status === 'published' ? 'Published' : selectedEvent.status === 'draft' ? 'Draft' : (selectedEvent.status || 'Event');
         return `
-    <div class="page-hd">
-      <div class="page-hd-left"><div class="page-title">Attendee Management</div><div class="page-sub">${regs.length} total · ${selectedEvent?.visibility === 'public' ? 'No organizer approval required' : `${approved} approved`}</div></div>
-      <div class="page-hd-right">
-      </div>
+    <div class="org-attendees">
+    <div class="page-hd org-attendees-heading">
+      <div class="page-hd-left"><div class="page-title">Attendee Management</div><div class="page-sub">${regs.length} attendees · ${approvedCount} approved · ${pendingCount} pending</div></div>
     </div>
-    <div class="card mb-16" style="padding:16px">
-      <label class="label mb-8">Select Event</label>
-      <select class="form-control" onchange="switchOrganizerEvent(this.value)">
-        ${myEvents.map(e => `<option value="${e.id}" ${e.id === selectedEventId ? 'selected' : ''}>${e.title} (${e.registered} registered)</option>`).join('')}
-      </select>
-      ${isPrivateEvent ? `<div class="badge badge-blue mt-8" style="display:inline-block">🔒 Private Event</div>` : ''} 
+    <div class="card org-attendee-event-card">
+      <div><div class="label mb-8">SELECT EVENT</div><div class="small">Choose an event to view its registrations</div></div>
+      <details class="org-event-picker">
+        <summary><span><strong>${escapeHtml(selectedEvent.title)}</strong><small>${escapeHtml(eventStatus)} · ${Number(selectedEvent.registered) || 0} registered</small></span><span aria-hidden="true">⌄</span></summary>
+        <div class="org-event-options"><div class="search-box input-group"><span class="input-icon">🔍</span><input class="form-control" aria-label="Search your events" placeholder="Search events…" oninput="filterOrganizerEventOptions(this.value)"></div>
+          <div class="org-event-option-list" role="listbox" aria-label="Your events">${myEvents.map(e => `<button type="button" role="option" aria-selected="${String(e.id) === String(selectedEventId)}" data-event-name="${escapeHtml(e.title)}" onclick="switchOrganizerEvent('${escapeHtml(e.id)}')"><span><strong>${escapeHtml(e.title)}</strong><small>${escapeHtml(e.status === 'published' ? 'Published' : e.status || 'Event')}</small></span><span class="org-event-option-count">${Number(e.registered) || 0} registered</span></button>`).join('')}</div>
+          <div class="org-event-no-match" hidden>No matching events</div>
+        </div>
+      </details>
+      ${isPrivateEvent ? `<span class="badge badge-blue">🔒 Private Event</span>` : ''}
     </div>
-    <div class="filter-row">
-      <div class="search-box input-group"><span class="input-icon">🔍</span><input class="form-control" id="at-q" placeholder="Search attendees…" oninput="refreshAttendees()"></div>
-      <select class="form-control filter-select" id="at-status" onchange="refreshAttendees()">
+    <div class="org-attendee-stats">
+      <div class="card"><span>Total Attendees</span><strong>${regs.length}</strong><small>For this event</small></div>
+      <div class="card"><span>Approved</span><strong>${approvedCount}</strong><small>Confirmed or attended</small></div>
+      <div class="card"><span>Pending</span><strong>${pendingCount}</strong><small>Awaiting review or payment</small></div>
+      <div class="card"><span>Rejected</span><strong>${rejectedCount}</strong><small>Declined registrations</small></div>
+    </div>
+    <div class="card org-attendee-list-card">
+    <div class="org-attendee-list-heading"><div><div class="h4">Attendees</div><div class="small">${escapeHtml(selectedEvent.title)} · ${regs.length} registrations</div></div></div>
+    <div class="filter-row org-attendee-filters">
+      <div class="search-box input-group"><span class="input-icon">🔍</span><input class="form-control" id="at-q" aria-label="Search attendees" placeholder="Search name, email or ticket ID…" oninput="refreshAttendees()"></div>
+      <select class="form-control filter-select" id="at-status" aria-label="Filter attendee status" onchange="refreshAttendees()">
         <option value="">All Status</option>
         ${selectedEvent?.visibility === 'public' ? '<option value="no approval required">No Approval Required</option><option value="payment pending">Payment Pending</option>' : '<option value="approved">Approved</option><option value="pending">Pending Review</option>'}
         <option value="rejected">Declined</option>
@@ -6458,6 +6484,7 @@ window.EventFlowModules['shared'] = true;
       </select>
     </div>
     <div id="attendees-tbl">${buildOrganizerAttendeesTbl(regs, selectedEvent, isPrivateEvent)}</div>
+    </div></div>
     `;
       }
 
@@ -6486,6 +6513,13 @@ window.EventFlowModules['shared'] = true;
       sessionStorage.setItem('org_attendees_event', eventId);
       renderPage('attendees');
     }
+    function filterOrganizerEventOptions(query) {
+      const options = [...document.querySelectorAll('.org-event-option-list [data-event-name]')];
+      const search = query.trim().toLowerCase();
+      options.forEach(option => { option.hidden = !option.dataset.eventName.toLowerCase().includes(search); });
+      const empty = document.querySelector('.org-event-no-match');
+      if (empty) empty.hidden = options.some(option => !option.hidden);
+    }
 
     function buildOrganizerAttendeesTbl(regs, event, isPrivate) {
       const q = (g('at-q') || {}).value?.toLowerCase() || '';
@@ -6497,21 +6531,21 @@ window.EventFlowModules['shared'] = true;
         return matchesSearch && matchesStatus;
       });
 
-      if (!filtered.length) return `<div class="empty"><div class="empty-icon">👥</div><div class="empty-title">No attendees found</div></div>`;
+      if (!filtered.length) return `<div class="empty org-attendee-empty"><div class="empty-icon">👥</div><div class="empty-title">${regs.length ? 'No attendees match your filters' : 'No registrations yet'}</div><p class="empty-desc">${regs.length ? 'Try a different name, ticket ID or status.' : 'Attendees will appear here when they register for this event.'}</p></div>`;
 
-      return `<div class="table-wrap"><table>
+      return `<div class="table-wrap org-attendee-table"><table>
     <thead><tr><th>Attendee</th><th>Email</th><th>Ticket ID</th><th>Amount</th><th>Review Status / Reason</th><th>Actions</th></tr></thead>
     <tbody>${filtered.map(r => {
         const u = DB.users.find(u => String(u.id) === String(r.attendeeId)) || { name: 'Unknown', email: '', avatar: '?', phone: '' };
         const status = organizerRegistrationStatus(r);
         return `<tr>
-        <td><div class="flex items-center gap-8"><div class="av av-xs">${u.avatar || u.name[0]}</div><div><div style="font-weight:500">${u.name}</div><div class="small">${u.phone || '—'}</div></div></div></td>
-        <td class="small">${u.email}</td>
-        <td><code class="mono" style="background:var(--surface3);padding:2px 6px;border-radius:5px">${r.ticketId}</code></td>
+        <td><div class="flex items-center gap-8"><div class="av av-xs">${escapeHtml(u.avatar || u.name?.[0] || '?')}</div><div><div class="org-attendee-name">${escapeHtml(u.name)}</div><div class="small">${escapeHtml(u.phone || '—')}</div></div></div></td>
+        <td class="small">${escapeHtml(u.email)}</td>
+        <td><code class="mono org-attendee-ticket">${escapeHtml(r.ticketId)}</code></td>
         <td style="color:var(--green);font-weight:600">${r.amount === 0 ? Number(r.event?.ticketPrice || 0) > 0 ? 'Not paid' : 'Free' : '₹' + r.amount}</td>
-        <td><span class="badge badge-${['Approved', 'No Approval Required'].includes(status) ? 'green' : ['Declined', 'Cancelled'].includes(status) ? 'red' : 'yellow'}">${status}</span>${r.rejectionReason ? `<div class="small mt-8" style="max-width:280px;white-space:pre-wrap;overflow-wrap:anywhere"><strong>Reason:</strong> ${escapeHtml(r.rejectionReason)}</div>` : ''}</td>
-        <td><div class="actions">
-          <button class="btn btn-ghost btn-xs" onclick="viewOrganizerAttendeeProfile('${r.id}')">Profile</button>
+        <td><span class="badge badge-${['Approved', 'No Approval Required', 'Attended'].includes(status) ? 'green' : ['Declined', 'Cancelled'].includes(status) ? 'red' : 'yellow'}">${status}</span><div class="small">${r.status === 'pending_approval' ? 'Access approval pending' : r.status === 'pending_payment' ? 'Registration awaiting payment' : r.status === 'registered' ? 'Registration confirmed' : r.status === 'waitlisted' ? 'Waitlisted' : ''}${r.payment === 'completed' ? ' · Payment completed' : r.payment === 'free' ? ' · Free ticket' : ''}</div>${r.rejectionReason ? `<div class="small mt-8" style="max-width:280px;white-space:pre-wrap;overflow-wrap:anywhere"><strong>Reason:</strong> ${escapeHtml(r.rejectionReason)}</div>` : ''}</td>
+        <td><div class="actions org-attendee-actions">
+          <button class="btn btn-ghost btn-xs" onclick="viewOrganizerAttendeeProfile('${r.id}')">View Profile</button>
           ${canReviewOrganizerRegistration(r, event) ? `<button class="btn btn-success btn-xs" onclick="organiserApproveAttendee('${r.id}')">✓ Approve</button><button class="btn btn-danger btn-xs" onclick="organiserRejectAttendee('${r.id}')">✕ Decline</button>` : ''}
         </div></td>
       </tr>`;
@@ -6649,20 +6683,10 @@ window.EventFlowModules['shared'] = true;
     }
     function refreshAttendees() {
       if (CU.role === 'organizer') {
-        const q = (g('at-q') || {}).value?.toLowerCase() || '';
-        const status = (g('at-status') || {}).value || '';
         const selectedEventId = sessionStorage.getItem('org_attendees_event') || '';
         const selectedEvent = organizerRegistrationEvents.find(e => String(e.id) === selectedEventId);
-        const isPrivate = selectedEvent && (selectedEvent.category === 'Wedding' || selectedEvent.tags?.includes('Private'));
-
-        let regs = DB.registrations.filter(r => selectedEventId ? String(r.eventId) === selectedEventId : selectedEvent && r.eventId === selectedEvent.id);
-        regs = regs.filter(r => {
-          const u = DB.users.find(u => u.id === r.attendeeId) || { name: '', email: '' };
-          const matchesSearch = !q || (u.name + u.email + r.ticketId).toLowerCase().includes(q);
-          const matchesStatus = !status || organizerRegistrationStatus(r).toLowerCase() === (status === 'rejected' ? 'declined' : status);
-          return matchesSearch && matchesStatus;
-        });
-        g('attendees-tbl').innerHTML = buildOrganizerAttendeesTbl(regs, selectedEvent, isPrivate);
+        const regs = DB.registrations.filter(r => r.organizerManaged && String(r.eventId) === selectedEventId);
+        g('attendees-tbl').innerHTML = buildOrganizerAttendeesTbl(regs, selectedEvent, selectedEvent?.visibility === 'private');
       } else {
         const q = (g('at-q') || {}).value?.toLowerCase() || '';
         const evId = parseInt((g('at-ev') || {}).value) || 0;
@@ -7374,6 +7398,9 @@ window.EventFlowModules['shared'] = true;
           title: event.name || event.title,
           date: event.date,
           venue: event.location || event.venue,
+          price: event.ticketPrice ?? event.price ?? 0,
+          backendStatus: event.status,
+          status: event.status === 'published' ? 'upcoming' : event.status === 'draft' ? 'pending' : event.status,
           organizer: event.organizerUserId || (CU.role === 'organizer' ? CU.id : event.organizerId),
           clientId: CU.role === 'client' ? CU.id : event.clientId,
         });

@@ -5535,6 +5535,8 @@ window.EventFlowModules['shared'] = true;
       const regForThis = reg || (role === 'attendee'
         ? attendeeRegistrationCatalog.find(r => !['cancelled', 'waitlisted'].includes(r.status) && String(r.eventId) === String(e.id))
         : DB.registrations.find(r => r.status !== 'cancelled' && String(r.attendeeId) === String(CU.id) && String(r.eventId) === String(e.id)));
+      const registrationClosed = e.registrationDeadline && new Date(`${e.registrationDeadline}T23:59:59`) < new Date();
+      const registrationUnavailable = !regForThis && (registrationClosed || ['full', 'completed', 'cancelled'].includes(e.status));
       const bannerContent = e.image ? `
         <img src="${e.image}" alt="${e.title || 'Event'}" class="ev-banner-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
         <div class="ev-banner-fallback" style="display:none;align-items:center;justify-content:center;font-size:52px;width:100%;height:100%">${e.emoji || '📅'}</div>
@@ -5559,7 +5561,7 @@ window.EventFlowModules['shared'] = true;
         <div class="prog"><div class="prog-fill" style="width:${pct}%"></div></div>
       </div>
       <div class="ev-footer">
-        ${role === 'attendee' ? `<div class="flex gap-6" style="width:100%;justify-content:space-between"><button class="btn btn-sm ${regForThis ? 'btn-ghost' : 'btn-primary'}" onclick="regForEvent('${e.id}')" ${e.status === 'full' || e.status === 'completed' || e.status === 'cancelled' ? 'disabled' : ''} style="${e.status === 'full' || e.status === 'completed' || e.status === 'cancelled' ? 'opacity:.5' : ''}">${regForThis ? regForThis.status === 'pending_approval' ? 'Approval Pending' : regForThis.status === 'pending_payment' ? 'Payment Pending' : regForThis.status === 'attended' ? 'Attended' : '✓ Registered' : e.status === 'full' ? 'Event Full' : e.visibility === 'private' ? 'Request Approval' : 'Register'}</button><button class="btn btn-ghost btn-xs" onclick="openViewEventDrawer('${e.id}')" title="View event details">View Details</button></div>` :
+        ${role === 'attendee' ? `<div class="flex gap-6" style="width:100%;justify-content:space-between"><button class="btn btn-sm ${regForThis ? 'btn-ghost' : 'btn-primary'}" onclick="regForEvent('${e.id}')" ${registrationUnavailable ? 'disabled' : ''} style="${registrationUnavailable ? 'opacity:.5' : ''}">${regForThis ? regForThis.status === 'pending_approval' ? 'Approval Pending' : regForThis.status === 'pending_payment' ? 'Payment Pending' : regForThis.status === 'rejected' ? 'Declined' : regForThis.status === 'attended' ? 'Attended' : '✓ Registered' : e.status === 'full' ? 'Event Full' : registrationClosed ? 'Registration Closed' : e.visibility === 'private' ? 'Request Approval' : 'Register'}</button><button class="btn btn-ghost btn-xs" onclick="openViewEventDrawer('${e.id}')" title="View event details">View Details</button></div>` :
           role === 'organizer' ? `<div class="actions"><button class="btn btn-ghost btn-xs" onclick="openViewEventDrawer('${e.id}')" title="View event details">👁️ View</button><button class="btn btn-ghost btn-xs" onclick="openEditEventModal('${e.id}')">✏️ Edit</button><button class="btn btn-xs btn-danger" onclick="deleteEvent('${e.id}')">🗑️</button></div>` :
             role === 'superuser' ? `<div class="actions"><button class="btn btn-ghost btn-xs w-full" onclick="openViewEventDrawer('${e.id}')" title="View event details">👁️ View</button></div>` :
               role === 'employee' || role === 'client' ? `<div class="flex gap-6"><button class="btn btn-ghost btn-xs w-full" onclick="openViewEventDrawer('${e.id}')" title="View event details">👁️ View Details</button></div>` :
@@ -5903,10 +5905,19 @@ function openViewEventDrawer(id, registrationId = null) {
     // ════════════════════════════════════════════════
     let attendeeEventCatalog = [];
     function normalizeAttendeeEvent(event) {
-      const existing = DB.events.find(e => e.eventId === event.eventId || e.title === event.title);
+      const existing = DB.events.find(e => String(e.eventId || e.id) === String(event.eventId || event.id));
+      const registered = Number(event.registered ?? existing?.registered ?? 0);
       const remaining = event.remainingCapacity !== undefined
         ? Number(event.remainingCapacity)
-        : Math.max(0, Number(event.capacity || 0) - Number(event.registered || 0));
+        : Math.max(0, Number(event.capacity || 0) - registered);
+      const start = event.date ? new Date(`${event.date}T${event.time || '00:00'}`) : null;
+      const end = event.endDate
+        ? new Date(`${event.endDate}T${event.endTime || '23:59:59'}`)
+        : event.date ? new Date(`${event.date}T${event.endTime || '23:59:59'}`) : null;
+      const now = new Date();
+      const calendarStatus = start && !Number.isNaN(start.getTime())
+        ? now < start ? 'upcoming' : end && now > end ? 'completed' : 'ongoing'
+        : event.status === 'published' ? 'upcoming' : event.status;
       const normalized = {
         ...(existing || {}),
         ...event,
@@ -5916,9 +5927,10 @@ function openViewEventDrawer(id, registrationId = null) {
         emoji: event.emoji || existing?.emoji || '📅',
         venue: event.venue || event.location,
         price: Number(event.price ?? event.ticketPrice ?? 0),
-        registered: Number(event.registered || 0),
+        registered,
         remainingCapacity: remaining,
-        status: remaining === 0 ? 'full' : (event.status === 'published' ? 'upcoming' : event.status),
+        visibility: event.visibility === 'private' ? 'private' : 'public',
+        status: ['cancelled', 'draft'].includes(event.status) ? event.status : calendarStatus === 'completed' ? 'completed' : remaining === 0 && Number(event.capacity) > 0 ? 'full' : calendarStatus,
       };
       const index = DB.events.findIndex(e => String(e.id) === String(normalized.id));
       if (index >= 0) DB.events[index] = normalized;
@@ -5935,11 +5947,17 @@ function openViewEventDrawer(id, registrationId = null) {
           if (r.event?.eventId) set.add(String(r.event.eventId));
         });
       (DB.registrations || [])
-        .filter(r => r.status !== 'cancelled' && (String(r.attendeeId) === String(CU?.id) || String(r.attendeeId) === String(CU?.userId) || r.attendeeId === 5))
+        .filter(r => r.status !== 'cancelled' && (String(r.attendeeId) === String(CU?.id) || String(r.attendeeId) === String(CU?.userId)))
         .forEach(r => {
           if (r.eventId) set.add(String(r.eventId));
         });
       return set;
+    }
+
+    function newestBrowseEventFirst(a, b) {
+      const createdA = Date.parse(a.createdAt || a.created || a.updatedAt || '') || 0;
+      const createdB = Date.parse(b.createdAt || b.created || b.updatedAt || '') || 0;
+      return createdB - createdA || String(b.eventId || b.id || '').localeCompare(String(a.eventId || a.id || ''));
     }
 
     function pageBrowseEvents() {
@@ -5951,7 +5969,7 @@ function openViewEventDrawer(id, registrationId = null) {
         new Date(`${e.date}T23:59:59`) >= now &&
         !registeredIds.has(String(e.id)) &&
         !registeredIds.has(String(e.eventId))
-      );
+      ).sort(newestBrowseEventFirst);
       return `
   <div class="page-hd">
     <div class="page-hd-left"><div class="page-title">Browse Events</div><div class="page-sub">Discover and register for new upcoming events.</div></div>
@@ -5969,7 +5987,7 @@ function openViewEventDrawer(id, registrationId = null) {
       ${[...new Set(avail.map(e => e.city).filter(Boolean))].map(c => `<option>${escapeHtml(c)}</option>`).join('')}
     </select>
   </div>
-  <div class="events-grid" id="browse-grid">${avail.length ? avail.map(e => evCard(e, 'attendee')).join('') : `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">📅</div><div class="empty-title">No new upcoming events to register</div><p class="empty-desc">You are already registered for all available events or check back soon for new events.</p></div>`}</div>`;
+  <div class="events-grid" id="browse-grid">${avail.length ? avail.map(e => evCard(e, 'attendee')).join('') : `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">📅</div><div class="empty-title">No new upcoming events</div><p class="empty-desc">Your registrations are in My Tickets. Check back soon for new events.</p></div>`}</div>`;
     }
     function refreshBrowse() {
       const q = (g('be-q') || {}).value?.toLowerCase() || '';
@@ -5984,7 +6002,7 @@ function openViewEventDrawer(id, registrationId = null) {
           && (!cat || e.category === cat)
           && (!price || (price === 'free' && e.price === 0) || (price === 'paid' && e.price > 0))
           && (!city || e.city === city);
-      });
+      }).sort(newestBrowseEventFirst);
       g('browse-grid').innerHTML = list.map(e => evCard(e, 'attendee')).join('') || `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔍</div><div class="empty-title">No events match</div><p class="empty-desc">Try adjusting your filters.</p></div>`;
     }
     function toggleRegTerms(checked) {
@@ -6090,6 +6108,15 @@ function openViewEventDrawer(id, registrationId = null) {
         || (attendeeEventCatalog || []).find(ev => String(ev.id) === String(eventId) || String(ev.eventId) === String(eventId));
       if (!e) { toast('Event not found.', 'error'); return; }
 
+      const existing = (attendeeRegistrationCatalog || []).find(r => r.status !== 'cancelled' && String(r.eventId) === String(eventId))
+        || (DB.registrations || []).find(r => r.status !== 'cancelled' && String(r.attendeeId) === String(CU.id) && String(r.eventId) === String(eventId));
+      if (existing) {
+        if (existing.status === 'waitlisted') { toast('Registration is unavailable for this event.', 'info'); return; }
+        toast('You already have an active registration for this event.', 'info');
+        openViewTicketModal(existing.id || existing.registrationId);
+        return;
+      }
+
       // Revalidate event state
       if (e.status === 'cancelled') {
         toast('This event has been cancelled and is no longer accepting registrations.', 'error');
@@ -6101,16 +6128,6 @@ function openViewEventDrawer(id, registrationId = null) {
       }
       if (e.status === 'full') {
         toast('Sorry, this event is full.', 'error');
-        return;
-      }
-
-      // Revalidate attendee registration eligibility
-      const existing = (attendeeRegistrationCatalog || []).find(r => r.status !== 'cancelled' && String(r.eventId) === String(eventId))
-        || (DB.registrations || []).find(r => r.status !== 'cancelled' && String(r.attendeeId) === String(CU.id) && String(r.eventId) === String(eventId));
-      if (existing) {
-        if (existing.status === 'waitlisted') { toast('Registration is unavailable for this event.', 'info'); return; }
-        toast('You already have an active registration for this event.', 'info');
-        openViewTicketModal(existing.id || existing.registrationId);
         return;
       }
 
@@ -6179,7 +6196,7 @@ function openViewEventDrawer(id, registrationId = null) {
         </div>
       `;
 
-      const proceedBtnLabel = e.price === 0 ? 'Confirm Free Registration' : 'Proceed to Payment';
+      const proceedBtnLabel = e.visibility === 'private' ? 'Request Approval' : e.price === 0 ? 'Confirm Free Registration' : 'Proceed to Payment';
       const proceedBtnClass = e.price === 0 ? 'btn-success' : 'btn-primary';
 
       openModal(
@@ -6248,7 +6265,7 @@ function openViewEventDrawer(id, registrationId = null) {
       const proceedBtn = g('reg-proceed-btn') || g('modal-foot')?.querySelector('.btn-primary, .btn-success, .btn-warning');
       if (proceedBtn) {
         proceedBtn.disabled = true;
-        proceedBtn.textContent = e.price > 0 ? 'Reserving your place…' : 'Processing Registration…';
+        proceedBtn.textContent = e.visibility === 'private' ? 'Sending Request…' : e.price > 0 ? 'Reserving your place…' : 'Processing Registration…';
       }
 
       const attendeeId = CU.userId || CU.id;
@@ -6271,25 +6288,16 @@ function openViewEventDrawer(id, registrationId = null) {
         });
       })
       .then(function (regData) {
+        const registration = normalizeAttendeeRegistration(regData);
+        if (_currentPage === 'browse-events') refreshBrowse();
+        if (registration.status === 'pending_approval') {
+          closeModal();
+          toast('Registration request sent for organizer approval.', 'success');
+          goNav('my-tickets');
+          return;
+        }
         // Case A: Free Event — Skip payment after acceptance and validation
-        if (e.price === 0) {
-          const n = DB._nextId.regs++;
-          const ticketId = regData.verificationId || regData.ticketId || `TKT-2026-${String(n).padStart(3, '0')}`;
-          const seat = e.category === 'Conference' ? `A-${Math.floor(Math.random() * 200 + 1).toString().padStart(3, '0')}` : 'GA';
-          DB.registrations.push({
-            id: n,
-            registrationId: regData.registrationId,
-            attendeeId: CU.id,
-            eventId: e.id,
-            date: today(),
-            ticketId,
-            status: 'confirmed',
-            payment: 'free',
-            amount: 0,
-            checkedIn: false,
-            seat,
-            verificationId: ticketId
-          });
+        if (registration.status === 'confirmed') {
           e.registered = Math.min((e.registered || 0) + 1, e.capacity);
           if (e.registered >= e.capacity) e.status = 'full';
           saveDB();
@@ -6306,7 +6314,7 @@ function openViewEventDrawer(id, registrationId = null) {
       .catch(function (err) {
         if (proceedBtn) {
           proceedBtn.disabled = false;
-          proceedBtn.textContent = e.price > 0 ? `Proceed to Payment (₹${e.price})` : 'Confirm Registration';
+          proceedBtn.textContent = e.visibility === 'private' ? 'Request Approval' : e.price > 0 ? `Proceed to Payment (₹${e.price})` : 'Confirm Registration';
         }
         toast(err.message || 'Registration could not be completed.', err.status === 409 ? 'warning' : 'error');
       });

@@ -689,6 +689,7 @@ export class EventsService {
 
     event.status = 'published';
     event.updatedAt = new Date();
+    this.dataStore.persist();
     return this.mapEventToFrontend(event);
   }
 

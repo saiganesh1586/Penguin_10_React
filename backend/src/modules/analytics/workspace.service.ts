@@ -49,6 +49,7 @@ export class WorkspaceService {
     const registrationIds = new Set(registrations.map(registration => registration.registrationId));
     const registeredEventIds = new Set(registrations.map(registration => registration.eventId));
     const events = this.events.findAll(UserRole.SUPER_ADMIN).filter(event => operator || ownEventIds.has(event.eventId) ||
+      (role === UserRole.CLIENT && event.status === 'published' && event.visibility !== 'private' && !event.clientId) ||
       (role === UserRole.ATTENDEE && (registeredEventIds.has(event.eventId) ||
         (isEventOpenForRegistration(event, this.db.eventRequests) && new Date(`${event.date}T23:59:59`) >= new Date()))));
     const getRequestTimestamp = (r: any) => {

@@ -283,7 +283,7 @@
       if (!name || !venue || !date || capacity < 1) return toast('Enter the title, venue, date, and a valid capacity.', 'error');
       return mutate('new-event', () => send('/events', 'POST', { name, date, location: venue, capacity,
         time: field('ne-time') || '09:00', category: field('ne-cat') || 'Conference', city: field('ne-city'),
-        ticketPrice: Number(field('ne-price')) || 0, status: eventStatus(field('ne-status') || 'published'),
+        ticketPrice: Number(field('ne-price')) || 0, visibility: field('ne-visibility') || 'public', status: eventStatus(field('ne-status') || 'published'),
         description: field('ne-desc'), organizerId: current().organizerId || userId(current()),
       }), 'Event created');
     });

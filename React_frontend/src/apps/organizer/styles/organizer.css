@@ -2582,3 +2582,75 @@ body[data-eventflow-role="organizer"] .organizer-date {
 }
 body[data-eventflow-role="organizer"] .organizer-date small { color: inherit; text-transform: uppercase; }
 body[data-eventflow-role="organizer"] .organizer-dashboard-empty { padding: 28px 12px; }
+
+/* Organizer Attendee Management content */
+body[data-eventflow-role="organizer"] .org-attendees { display: grid; gap: 20px; }
+body[data-eventflow-role="organizer"] .org-attendees-heading { margin-bottom: 0; }
+body[data-eventflow-role="organizer"] .org-attendee-event-card {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 16px; padding: 20px;
+}
+body[data-eventflow-role="organizer"] .org-attendee-event-card > div:first-child { min-width: 180px; }
+body[data-eventflow-role="organizer"] .org-event-picker { position: relative; flex: 1; min-width: 260px; }
+body[data-eventflow-role="organizer"] .org-event-picker summary {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  padding: 12px 15px; border: 1px solid var(--border2); border-radius: 10px;
+  background: var(--surface3); color: var(--text); cursor: pointer; list-style: none;
+}
+body[data-eventflow-role="organizer"] .org-event-picker summary::-webkit-details-marker { display: none; }
+body[data-eventflow-role="organizer"] .org-event-picker summary:focus-visible,
+body[data-eventflow-role="organizer"] .org-event-option-list button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+body[data-eventflow-role="organizer"] .org-event-picker summary strong,
+body[data-eventflow-role="organizer"] .org-event-option-list strong { display: block; font-size: 13px; }
+body[data-eventflow-role="organizer"] .org-event-picker summary small,
+body[data-eventflow-role="organizer"] .org-event-option-list small { display: block; margin-top: 3px; color: var(--text3); font-size: 11px; }
+body[data-eventflow-role="organizer"] .org-event-options {
+  position: absolute; z-index: 20; top: calc(100% + 7px); left: 0; right: 0;
+  padding: 10px; border: 1px solid var(--border2); border-radius: 12px;
+  background: var(--surface2); box-shadow: 0 18px 42px rgba(0, 0, 0, .28);
+}
+body[data-eventflow-role="organizer"] .org-event-option-list { max-height: 260px; overflow: auto; margin-top: 8px; }
+body[data-eventflow-role="organizer"] .org-event-option-list button {
+  width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 10px 12px; border: 0; border-radius: 8px; background: transparent;
+  color: var(--text); text-align: left; cursor: pointer; font: inherit;
+}
+body[data-eventflow-role="organizer"] .org-event-option-list button:hover,
+body[data-eventflow-role="organizer"] .org-event-option-list button[aria-selected="true"] { background: var(--accent-dim); }
+body[data-eventflow-role="organizer"] .org-event-option-list button[hidden] { display: none; }
+body[data-eventflow-role="organizer"] .org-event-option-count { color: var(--accent); white-space: nowrap; font-size: 11px; font-weight: 600; }
+body[data-eventflow-role="organizer"] .org-event-no-match { padding: 14px; color: var(--text3); font-size: 12px; }
+body[data-eventflow-role="organizer"] .org-event-no-match[hidden] { display: none; }
+body[data-eventflow-role="organizer"] .org-attendee-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+body[data-eventflow-role="organizer"] .org-attendee-stats .card { padding: 18px; border-top: 2px solid var(--accent); }
+body[data-eventflow-role="organizer"] .org-attendee-stats span,
+body[data-eventflow-role="organizer"] .org-attendee-stats small { display: block; color: var(--text2); font-size: 12px; }
+body[data-eventflow-role="organizer"] .org-attendee-stats strong { display: block; margin: 8px 0 4px; color: var(--text); font-size: 28px; line-height: 1; }
+body[data-eventflow-role="organizer"] .org-attendee-list-card { padding: 0; overflow: hidden; }
+body[data-eventflow-role="organizer"] .org-attendee-list-heading { padding: 20px 22px 0; }
+body[data-eventflow-role="organizer"] .org-attendee-list-heading .small { margin-top: 4px; color: var(--text3); }
+body[data-eventflow-role="organizer"] .org-attendee-filters { padding: 18px 22px; margin: 0; }
+body[data-eventflow-role="organizer"] .org-attendee-filters .search-box { flex: 1; min-width: 220px; }
+body[data-eventflow-role="organizer"] .org-attendee-filters select { min-width: 170px; }
+body[data-eventflow-role="organizer"] .org-attendee-table { border-top: 1px solid var(--border); }
+body[data-eventflow-role="organizer"] .org-attendee-table table { width: 100%; }
+body[data-eventflow-role="organizer"] .org-attendee-table th,
+body[data-eventflow-role="organizer"] .org-attendee-table td { padding: 15px 18px; vertical-align: middle; }
+body[data-eventflow-role="organizer"] .org-attendee-table th { color: var(--text3); font-size: 11px; letter-spacing: .04em; text-transform: uppercase; }
+body[data-eventflow-role="organizer"] .org-attendee-table tbody tr:hover { background: var(--surface2); }
+body[data-eventflow-role="organizer"] .org-attendee-name { font-weight: 600; color: var(--text); }
+body[data-eventflow-role="organizer"] .org-attendee-ticket { padding: 4px 7px; border-radius: 5px; background: var(--surface3); }
+body[data-eventflow-role="organizer"] .org-attendee-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+body[data-eventflow-role="organizer"] .org-attendee-empty { padding: 44px 18px; border-top: 1px solid var(--border); }
+body[data-eventflow-role="organizer"] .org-attendee-skeleton { display: grid; gap: 14px; }
+body[data-eventflow-role="organizer"] .org-attendee-skeleton div { height: 82px; border-radius: 12px; background: linear-gradient(90deg, var(--surface2), var(--surface3), var(--surface2)); background-size: 200% 100%; animation: org-attendee-shimmer 1.4s linear infinite; }
+@keyframes org-attendee-shimmer { to { background-position: -200% 0; } }
+@media (max-width: 900px) { body[data-eventflow-role="organizer"] .org-attendee-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) {
+  body[data-eventflow-role="organizer"] .org-attendee-event-card { align-items: stretch; }
+  body[data-eventflow-role="organizer"] .org-event-picker { min-width: 100%; }
+  body[data-eventflow-role="organizer"] .org-attendee-stats { gap: 9px; }
+  body[data-eventflow-role="organizer"] .org-attendee-stats .card { padding: 14px; }
+  body[data-eventflow-role="organizer"] .org-attendee-stats strong { font-size: 23px; }
+  body[data-eventflow-role="organizer"] .org-attendee-filters { display: grid; padding: 14px; }
+  body[data-eventflow-role="organizer"] .org-attendee-filters .search-box { min-width: 0; }
+}

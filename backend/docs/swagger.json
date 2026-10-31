@@ -440,7 +440,7 @@
     "/api/events/{id}/cancel": {
       "post": {
         "operationId": "EventsController_cancelClientEvent",
-        "summary": "Client cancels their ongoing event at least 14 days before its start, with a 10% fee on the amount paid",
+        "summary": "Client cancels an event under its accepted, versioned cancellation policy",
         "parameters": [
           {
             "name": "x-user-id",
@@ -6105,6 +6105,34 @@
             "type": "string",
             "description": "Cancellation deadline and refund terms"
           },
+          "cancellationNoticeDays": {
+            "type": "number",
+            "description": "Required client notice in whole days before the event",
+            "minimum": 0,
+            "maximum": 3650
+          },
+          "cancellationFeePercent": {
+            "type": "number",
+            "description": "Cancellation fee as a percentage of successful payments",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "cancellationRefundEligible": {
+            "type": "boolean",
+            "description": "Whether a refund can be issued when cancellation is within the notice window"
+          },
+          "cancellationApprovalMode": {
+            "type": "string",
+            "enum": [
+              "automatic",
+              "manual"
+            ],
+            "description": "Whether eligible demo refunds are created automatically or require organizer review"
+          },
+          "cancellationAdditionalTerms": {
+            "type": "string",
+            "description": "Additional cancellation conditions shown to and accepted by the client"
+          },
           "conditions": {
             "type": "string",
             "description": "Additional conditions"
@@ -6208,6 +6236,34 @@
           "cancellationTerms": {
             "type": "string",
             "description": "Cancellation deadline and refund terms"
+          },
+          "cancellationNoticeDays": {
+            "type": "number",
+            "description": "Required client notice in whole days before the event",
+            "minimum": 0,
+            "maximum": 3650
+          },
+          "cancellationFeePercent": {
+            "type": "number",
+            "description": "Cancellation fee as a percentage of successful payments",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "cancellationRefundEligible": {
+            "type": "boolean",
+            "description": "Whether a refund can be issued when cancellation is within the notice window"
+          },
+          "cancellationApprovalMode": {
+            "type": "string",
+            "enum": [
+              "automatic",
+              "manual"
+            ],
+            "description": "Whether eligible demo refunds are created automatically or require organizer review"
+          },
+          "cancellationAdditionalTerms": {
+            "type": "string",
+            "description": "Additional cancellation conditions shown to and accepted by the client"
           },
           "conditions": {
             "type": "string",
@@ -6573,6 +6629,14 @@
       "UpdateEventPlanApprovalDto": {
         "type": "object",
         "properties": {
+          "policyAccepted": {
+            "type": "boolean",
+            "description": "Explicit acceptance of the proposal cancellation policy"
+          },
+          "acceptedPolicyVersion": {
+            "type": "string",
+            "description": "Exact proposal policy version displayed to the client"
+          },
           "approvalStatus": {
             "type": "string",
             "description": "Approval status",
@@ -6586,6 +6650,10 @@
           "reason": {
             "type": "string",
             "description": "Reason for requesting a revised plan"
+          },
+          "comments": {
+            "type": "string",
+            "description": "Optional additional explanation when rejecting a plan"
           }
         },
         "required": [
