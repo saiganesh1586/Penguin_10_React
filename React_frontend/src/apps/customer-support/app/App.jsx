@@ -1,5 +1,5 @@
 import { Navigate } from 'react-router-dom';
-import useStoredSession from '../hooks/useStoredSession.js';
+import useStoredSession from '../context/useStoredSession.js';
 import { workspaceFor } from '../../../app/session.js';
 import { canRequestSupport } from '../utils/supportConfig.js';
 import CustomerSupportPage from '../pages/CustomerSupportPage.jsx';

@@ -3,9 +3,10 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const portalSource = require('./portal-source.cjs');
 
 const root = path.join(__dirname, '../src/apps');
-const admin = fs.readFileSync(path.join(root, 'admin/app/runtime.js'), 'utf8');
+const admin = portalSource('admin');
 
 test('Super Admin settings and employee inbox have explicit routes', () => {
   assert.match(admin, /pg === 'settings' \|\| pg === 'profile'/);

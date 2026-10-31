@@ -1,3 +1,4 @@
+const portalSource = require('./portal-source.cjs');
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -109,7 +110,7 @@ test('support agents send a reply and status together, preserve failed drafts, a
 
 function eventRequestHarness() {
   const h = harness();
-  const runtime = fs.readFileSync(path.join(__dirname, '../src/apps/support-executive/app/runtime.js'), 'utf8');
+  const runtime = portalSource('support-executive');
   const start = runtime.indexOf('    function supportExecutiveEventRequests(');
   const end = runtime.indexOf('    // ─── PAGE 4:', start);
   assert.ok(start >= 0 && end > start);

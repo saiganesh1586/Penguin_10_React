@@ -1,11 +1,12 @@
+const portalSource = require('./portal-source.cjs');
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-const clientRuntime = fs.readFileSync(path.join(__dirname, '../src/apps/client/app/runtime.js'), 'utf8');
-const orgRuntime = fs.readFileSync(path.join(__dirname, '../src/apps/organizer/app/runtime.js'), 'utf8');
+const clientRuntime = portalSource('client');
+const orgRuntime = portalSource('organizer');
 
 test('1. Discover Organizers: includes category, city/location, ratings, and published pricing filters without availability calendar', () => {
   const start = clientRuntime.indexOf('    function pageFindOrganizers()');

@@ -1,4 +1,5 @@
 const test = require('node:test');
+const portalSource = require('./portal-source.cjs');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -71,7 +72,7 @@ function runtimeHarness(app, user) {
     sessionStorage: { getItem: () => 'support' },
     pageSettings: () => '<h1>Account Settings</h1>',
   });
-  const source = fs.readFileSync(path.join(__dirname, `../src/apps/${({ employee1: 'support-executive', employee2: 'finance-executive', landing: 'landing' })[app] || app}/${app === 'landing' ? 'runtime.js' : 'app/runtime.js'}`), 'utf8');
+  const source = portalSource(({ employee1: 'support-executive', employee2: 'finance-executive', landing: 'landing' })[app] || app);
   const start = source.indexOf('    async function renderPageContent(');
   const end = source.indexOf('    function dashAdmin(', start);
   assert.ok(start >= 0 && end > start);

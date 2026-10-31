@@ -22,6 +22,7 @@ React_frontend/
       Navbar.jsx
       Sidebar.jsx
       LegacyRuntime.jsx
+      LegacyPageMarkup.jsx
       account-policy.js
       data-sync.js
       legacyEvents.js
@@ -29,30 +30,35 @@ React_frontend/
       theme.js
     apps/
       auth/
-        UnifiedAuthPage.jsx
+        pages/UnifiedAuthPage.jsx
+        README.md
       landing/
-        LandingPage.jsx
-        HomePage.jsx
-        FindEventsPage.jsx
-        GalleryPage.jsx
-        AboutPage.jsx
-        ContactPage.jsx
-        PublicEventCatalog.jsx
-        landing.css
-        home.css
-        runtime.js
-      admin/
         app/App.jsx
         app/runtime.js
+        components/PublicEventCatalog.jsx
+        pages/
+        styles/landing.css
+        styles/home.css
+        README.md
+      admin/
+        api/
+        app/App.jsx
+        app/runtime.js
+        context/
         pages/
         styles/admin.css
       attendee/
+        api/
         app/
+        components/
+        context/
         pages/
         styles/
         utils/ticket-scanner.js
       client/
+        api/
         app/
+        context/
         pages/
         styles/
       customer-support/
@@ -61,21 +67,30 @@ React_frontend/
         api/legacySupport.js
         app/App.jsx
         components/
-        hooks/
+        context/useStoredSession.js
+        context/useSupportRequests.js
         pages/CustomerSupportPage.jsx
+        pages/TicketDetailsPage.jsx
         utils/supportConfig.js
+        utils/useAutoRefresh.js
       finance-executive/
+        api/
         app/
+        context/
         pages/
         styles/
       organizer/
+        api/
         app/
+        context/
         pages/
         styles/
         utils/organizer-registration.js
       support-executive/
         api/supportReports.js
+        api/portal-api.js
         app/
+        context/
         pages/
         styles/
     styles/global.css
@@ -84,9 +99,9 @@ React_frontend/
 ## File ownership
 
 - `src/app/` holds root routing, session/configuration, and modules reused by multiple portals, following the reference's common application helpers.
-- `src/apps/auth/UnifiedAuthPage.jsx` is the common login entry. It selects the existing login markup for each workspace so credential labels, text, and handlers stay unchanged.
-- `src/apps/landing/LandingPage.jsx` is the landing portal entry. Its page components and CSS live beside it.
-- Each remaining portal starts at `src/apps/<role>/app/App.jsx`. Its pages, styles, API modules, components, hooks, and utilities live inside that portal, as applicable to its implementation.
+- `src/apps/auth/pages/UnifiedAuthPage.jsx` is the common login entry. It selects the existing login markup for each workspace so credential labels, text, and handlers stay unchanged.
+- `src/apps/landing/app/App.jsx` is the landing portal entry. Its pages, catalog component and CSS live in `pages/`, `components/` and `styles/`.
+- Each remaining portal starts at `src/apps/<role>/app/App.jsx`. Its pages, styles, API modules, components, state, and utilities live inside that portal, as applicable to its implementation.
 - Customer Support owns its authenticated API client, ticket API and request/conversation hooks. Support Executive owns the existing report API adapter. Attendee owns ticket scanning; Organizer owns organizer registration utilities. Common consumers import these modules directly.
 - Automated checks live in `scripts/`. `npm test` runs the existing JavaScript workflow checks; `npm run test:react` runs the React tests. Run `npm run build` for production output in `build/`.
 - Event Staff remains removed. Browser routes, API endpoints, public assets, CSS classes, text, and workflows remain unchanged.

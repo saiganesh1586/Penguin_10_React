@@ -1,3 +1,4 @@
+const portalSource = require('./portal-source.cjs');
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -5,7 +6,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 function setupClientEnvironment() {
-  const runtimeCode = fs.readFileSync(path.resolve(__dirname, '../src/apps/client/app/runtime.js'), 'utf8');
+  const runtimeCode = portalSource('client');
 
   let lastToast = null;
   let renderedPage = '';

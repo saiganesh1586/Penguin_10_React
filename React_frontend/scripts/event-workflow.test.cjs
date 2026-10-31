@@ -3,8 +3,9 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const portalSource = require('./portal-source.cjs');
 
-const sources = Object.fromEntries(['client', 'organizer'].map(role => [role, fs.readFileSync(path.join(__dirname, `../src/apps/${role}/app/runtime.js`), 'utf8')]));
+const sources = Object.fromEntries(['client', 'organizer'].map(role => [role, portalSource(role)]));
 const escapeHtml = value => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 const policy = { version: 'test-policy-1', cancellation: { minimumNoticeDays: 14, feePercent: 10 }, sections: [
   { title: 'Event rules', items: ['Agree on venue permissions and safety arrangements.'] },

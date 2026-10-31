@@ -1,10 +1,11 @@
+const portalSource = require('./portal-source.cjs');
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-const clientRuntime = fs.readFileSync(path.join(__dirname, '../src/apps/client/app/runtime.js'), 'utf8');
+const clientRuntime = portalSource('client');
 
 test('Accept Changes refreshes the saved request and opens Ongoing Events as planning from either client entry', async () => {
   for (const entry of ['review-modal', 'workflow-details']) {

@@ -1,10 +1,11 @@
+const portalSource = require('./portal-source.cjs');
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const orgRuntime = fs.readFileSync(path.join(__dirname, '../src/apps/organizer/app/runtime.js'), 'utf8');
-const clientRuntime = fs.readFileSync(path.join(__dirname, '../src/apps/client/app/runtime.js'), 'utf8');
+const orgRuntime = portalSource('organizer');
+const clientRuntime = portalSource('client');
 
 test('1. Organizer Request Details: contains Accept & Create Proposal, Reject Request, and Back to Requests buttons', () => {
   const vrdStart = orgRuntime.indexOf('function viewRequestDetail(reqId)');

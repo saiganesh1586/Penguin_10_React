@@ -1,3 +1,4 @@
+const portalSource = require('./portal-source.cjs');
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -5,7 +6,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const source = fs.readFileSync(path.join(__dirname, '../src/app/data-sync.js'), 'utf8');
 const policy = fs.readFileSync(path.join(__dirname, '../src/app/account-policy.js'), 'utf8');
-const runtime = fs.readFileSync(path.join(__dirname, '../src/apps/support-executive/app/runtime.js'), 'utf8');
+const runtime = portalSource('support-executive');
 
 function harness() {
   const user = { userId: 'agent', id: 'agent', name: 'Support Agent', userRole: 'employee', role: 'employee', employeeType: 'SUPPORT_EXECUTIVE', token: 'token' };
@@ -194,7 +195,7 @@ test('an in-flight load cannot restore a signed-out session or render its privat
 
 test('admin revenue charts use actual ticket and client payments without estimates, padding or double counting', async () => {
   const h = harness(); await h.context.renderPage('dashboard');
-  const admin = fs.readFileSync(path.join(__dirname, '../src/apps/admin/app/runtime.js'), 'utf8');
+  const admin = portalSource('admin');
   const start = admin.indexOf('    function pageRevenueReports()');
   const end = admin.indexOf('    function ', start + '    function pageRevenueReports()'.length);
   const charts = [];
@@ -220,7 +221,7 @@ test('admin revenue charts use actual ticket and client payments without estimat
 
 test('restored admin bar graphs render refreshed server records and keep role and stage filters', async () => {
   const h = harness();
-  const admin = fs.readFileSync(path.join(__dirname, '../src/apps/admin/app/runtime.js'), 'utf8');
+  const admin = portalSource('admin');
   h.context.escapeHtml = value => String(value).replace(/[&<>]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[char]);
   h.context.ROLE_LABELS = { attendee: 'Attendee', employee: 'Employee', client: 'Client', organizer: 'Organizer', superuser: 'Super Admin' };
   h.server.currentUser.userRole = 'super_admin';

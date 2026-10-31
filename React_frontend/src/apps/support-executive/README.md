@@ -1,10 +1,13 @@
 # Support Executive portal
 
 - `app/App.jsx` is the portal entry and imports the common authentication component.
-- `pages/` contains this portal's public page components.
+- `pages/` contains the signed-in Dashboard, user/event management, support issues, reports, finance, notification, profile and settings renderer modules.
+- `api/portal-api.js` and `context/portal-state.js` contain the existing API and state code.
 - `styles/` contains its unchanged styles.
-- `app/runtime.js` retains the existing dashboard behavior and inline API calls; its React migration is incomplete.
+- `app/runtime.js` keeps routing and shared handlers. `App.jsx` assembles the extracted code in its original order.
 
-Root routes, common layout, and common helpers live in `src/app/`. Login markup lives in `src/apps/auth/UnifiedAuthPage.jsx`. Portal-specific API, component, context, data, hook, asset and utility modules belong inside the portal when implemented.
+Root routes, common layout, and common helpers live in `src/app/`. Login markup lives in `src/apps/auth/pages/UnifiedAuthPage.jsx`. Portal-specific API, component, context, data, hook, asset and utility modules belong inside the portal when implemented.
 
 The report API adapter is `api/supportReports.js`.
+
+Common public pages are reused from `src/apps/landing/`.

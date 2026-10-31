@@ -3,9 +3,10 @@ const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
+const portalSource = require('./portal-source.cjs');
 
 const runtimePath = path.resolve(__dirname, '../src/apps/client/app/runtime.js');
-const runtimeSource = fs.readFileSync(runtimePath, 'utf8');
+const runtimeSource = portalSource('client');
 
 test('accepted changes appear as ongoing planning without creating a confirmed or paid booking', () => {
   const sandbox = setupSandbox({ eventRequests: [{

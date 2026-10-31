@@ -1,26 +1,81 @@
 import DashboardLayout from '../../../app/DashboardLayout.jsx';
 import Sidebar from '../../../app/Sidebar.jsx';
 import Navbar from '../../../app/Navbar.jsx';
-import PublicHomePage from '../pages/PublicHomePage.jsx';
-import LoginPage from '../../auth/UnifiedAuthPage.jsx';
-import FindEventsPage from '../pages/FindEventsPage.jsx';
-import GalleryPage from '../pages/GalleryPage.jsx';
-import AboutPage from '../pages/AboutPage.jsx';
-import ContactPage from '../pages/ContactPage.jsx';
+import PublicHomePage from '../../landing/pages/PortalPublicHomePage.jsx';
+import LoginPage from '../../auth/pages/UnifiedAuthPage.jsx';
+import FindEventsPage from '../../landing/pages/PortalFindEventsPage.jsx';
+import GalleryPage from '../../landing/pages/GalleryPage.jsx';
+import AboutPage from '../../landing/pages/AboutPage.jsx';
+import ContactPage from '../../landing/pages/ContactPage.jsx';
 import React from 'react';
+import { createRoot } from 'react-dom/client';
+import { flushSync } from 'react-dom';
+import DashboardPage from '../pages/DashboardPage.jsx';
+import BrowseEventsPage from '../pages/BrowseEventsPage.jsx';
+import MyTicketsPage from '../pages/MyTicketsPage.jsx';
+import NotificationsPage from '../pages/NotificationsPage.jsx';
+import ProfilePage from '../pages/ProfilePage.jsx';
+import SettingsPage from '../pages/SettingsPage.jsx';
 import LegacyRuntime from '../../../app/LegacyRuntime.jsx';
 import { legacyEvent } from '../../../app/legacyEvents.js';
-import source from './runtime.js?raw';
+import runtime from './runtime.js?raw';
+import attendeeApi from '../api/attendee-api.js?raw';
+import attendeeState from '../context/attendee-state.js?raw';
+import dashboardPage from '../pages/DashboardPage.jsx?raw';
+import eventDetailsPage from '../pages/EventDetailsPage.jsx?raw';
+import browseEventsPage from '../pages/BrowseEventsPage.jsx?raw';
+import registrationPage from '../components/RegistrationFlow.jsx?raw';
+import myTicketsPage from '../pages/MyTicketsPage.jsx?raw';
+import notificationsPage from '../pages/NotificationsPage.jsx?raw';
+import profilePage from '../pages/ProfilePage.jsx?raw';
+import settingsPage from '../pages/SettingsPage.jsx?raw';
 import '../styles/attendee.css';
 
+function pageRuntime(raw) {
+  const start = '/* ATTENDEE_RUNTIME_START */';
+  const end = '/* ATTENDEE_RUNTIME_END */';
+  const from = raw.indexOf(start), to = raw.indexOf(end);
+  if (from < 0 || to < from) throw new Error('Attendee page source is incomplete');
+  return raw.slice(from + start.length, to);
+}
+
+const source = Object.entries({ api: attendeeApi, state: attendeeState, dashboard: pageRuntime(dashboardPage),
+  eventDetails: pageRuntime(eventDetailsPage), browseEvents: pageRuntime(browseEventsPage), registration: registrationPage,
+  myTickets: pageRuntime(myTicketsPage), notifications: pageRuntime(notificationsPage),
+  profile: pageRuntime(profilePage), settings: pageRuntime(settingsPage) })
+  .reduce((code, [name, page]) => {
+    const marker = `/* ATTENDEE_PAGE_${name} */\n`;
+    if (!code.includes(marker)) throw new Error(`Missing Attendee source section: ${name}`);
+    return code.replace(marker, page);
+  }, runtime);
+
+const attendeePages = { dashboard: DashboardPage, 'browse-events': BrowseEventsPage,
+  'my-tickets': MyTicketsPage, notifications: NotificationsPage, profile: ProfilePage, settings: SettingsPage };
+let activePageRoot = null;
+const attendeePageBridge = {
+  clear(container) {
+    if (activePageRoot?.container === container) {
+      activePageRoot.root.unmount();
+      activePageRoot = null;
+    }
+  },
+  render(container, page, html) {
+    this.clear(container);
+    const root = createRoot(container);
+    activePageRoot = { container, root };
+    flushSync(() => root.render(React.createElement(attendeePages[page], { html })));
+  },
+};
+
 export default function AttendeeWorkspace() {
+  if (typeof window !== 'undefined') window.EventFlowAttendeePages = attendeePageBridge;
   return <>
 
 <PublicHomePage />
 
 <LoginPage workspace="attendee" />
 
-<FindEventsPage />
+<FindEventsPage eventGridId="public-events-grid" />
 
 <GalleryPage />
 

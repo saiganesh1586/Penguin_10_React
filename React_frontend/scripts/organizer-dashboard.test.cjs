@@ -1,10 +1,11 @@
+const portalSource = require('./portal-source.cjs');
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-const source = fs.readFileSync(path.join(__dirname, '../src/apps/organizer/app/runtime.js'), 'utf8');
+const source = portalSource('organizer');
 const start = source.indexOf('    function dashOrganizer()');
 const end = source.indexOf('    function searchOrganizerEvents(query)', start);
 assert.ok(start >= 0 && end > start);

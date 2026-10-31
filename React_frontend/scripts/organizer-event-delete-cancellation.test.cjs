@@ -1,10 +1,11 @@
+const portalSource = require('./portal-source.cjs');
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-const orgRuntime = fs.readFileSync(path.join(__dirname, '../src/apps/organizer/app/runtime.js'), 'utf8');
+const orgRuntime = portalSource('organizer');
 
 function setupTestEnvironment(initialEvents = [], initialRegistrations = [], initialPayments = []) {
   const elements = new Map();

@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import useAutoRefresh from '../hooks/useAutoRefresh.js';
-import useSupportRequests from '../hooks/useSupportRequests.js';
+import useAutoRefresh from '../utils/useAutoRefresh.js';
+import useSupportRequests from '../context/useSupportRequests.js';
 import SupportRequestForm from '../components/SupportRequestForm.jsx';
 import SupportTicketTable from '../components/SupportTicketTable.jsx';
-import SupportTicketDialog from '../components/SupportTicketDialog.jsx';
+import TicketDetailsPage from './TicketDetailsPage.jsx';
 
 export default function CustomerSupportPage({ user, onSignOut }) {
   const requests = useSupportRequests(user);
@@ -22,6 +22,6 @@ export default function CustomerSupportPage({ user, onSignOut }) {
       <SupportRequestForm user={user} onSubmit={requests.create} onEditing={setEditing} />
       <SupportTicketTable tickets={requests.tickets} onView={setSelectedId} />
     </div>
-    {selected && <SupportTicketDialog key={selected.ticketId} ticket={selected} user={user} onClose={() => setSelectedId(null)} onFollowUp={requests.followUp} />}
+    {selected && <TicketDetailsPage key={selected.ticketId} ticket={selected} user={user} onClose={() => setSelectedId(null)} onFollowUp={requests.followUp} />}
   </>;
 }

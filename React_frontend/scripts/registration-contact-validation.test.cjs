@@ -3,9 +3,10 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { JSDOM, VirtualConsole } = require('jsdom');
+const portalSource = require('./portal-source.cjs');
 
 const read = file => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
-const portals = ['landing/runtime.js', ...['admin', 'attendee', 'client', 'organizer', 'finance-executive', 'support-executive'].map(role => `${role}/app/runtime.js`)];
+const portals = ['landing/app/runtime.js', ...['admin', 'attendee', 'client', 'organizer', 'finance-executive', 'support-executive'].map(role => `${role}/app/runtime.js`)];
 const flush = () => new Promise(resolve => setImmediate(resolve));
 
 async function fixture(t, portal = portals[0]) {
@@ -41,7 +42,7 @@ async function fixture(t, portal = portals[0]) {
   };
   // Give the global validator the same visible-field condition it sees in a browser.
   w.HTMLElement.prototype.getClientRects = function () { return this.closest('[style*="display:none"]') ? [] : [{}]; };
-  const source = read(`src/apps/${portal}`);
+  const source = portalSource(portal.split('/')[0]);
   w.eval(source.slice(source.indexOf('function openModal('), source.indexOf('function closeModalOnBg(')));
   w.eval(read('src/app/theme.js'));
   w.eval(read('src/apps/organizer/utils/organizer-registration.js'));

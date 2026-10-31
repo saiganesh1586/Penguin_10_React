@@ -1,10 +1,11 @@
+const portalSource = require('./portal-source.cjs');
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const shared = fs.readFileSync(path.join(__dirname, '../src/apps/support-executive/api/supportReports.js'), 'utf8');
-const runtime = fs.readFileSync(path.join(__dirname, '../src/apps/support-executive/app/runtime.js'), 'utf8');
+const runtime = portalSource('support-executive');
 function section(source, from, to) {
   const start = source.indexOf(from), end = source.indexOf(to, start);
   assert.ok(start >= 0 && end > start, from);

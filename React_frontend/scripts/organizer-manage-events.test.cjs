@@ -1,10 +1,11 @@
+const portalSource = require('./portal-source.cjs');
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-const runtime = fs.readFileSync(path.join(__dirname, '../src/apps/organizer/app/runtime.js'), 'utf8');
+const runtime = portalSource('organizer');
 const sync = fs.readFileSync(path.join(__dirname, '../src/app/data-sync.js'), 'utf8');
 
 test('Manage Events exposes all required backend-driven views and filter controls', () => {

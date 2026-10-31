@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-const source = fs.readFileSync(path.join(__dirname, '../src/apps/attendee/app/runtime.js'), 'utf8');
+const source = require('./attendee-source.cjs')();
 const start = source.indexOf('function normalizeAttendeeEvent(event) {');
 const end = source.indexOf('function getRegisteredEventIdSet()', start);
 assert.ok(start >= 0 && end > start);

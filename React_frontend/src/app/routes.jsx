@@ -1,7 +1,7 @@
 import { lazy } from 'react';
 import { Navigate } from 'react-router-dom';
 
-const Landing = lazy(() => import('../apps/landing/LandingPage.jsx'));
+const Landing = lazy(() => import('../apps/landing/app/App.jsx'));
 const CustomerSupport = lazy(() => import('../apps/customer-support/app/App.jsx'));
 const Admin = lazy(() => import('../apps/admin/app/App.jsx'));
 const Attendee = lazy(() => import('../apps/attendee/app/App.jsx'));

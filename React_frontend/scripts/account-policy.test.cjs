@@ -1,3 +1,4 @@
+const portalSource = require('./portal-source.cjs');
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -54,7 +55,7 @@ test('the shared email check blocks another account and permits the current acco
 
 test('user management keeps its account filters and actions with no duplicate account feature in any role runtime', () => {
   for (const app of apps) {
-    const source = fs.readFileSync(path.join(__dirname, `../src/apps/${({ employee1: 'support-executive', employee2: 'finance-executive', landing: 'landing' })[app] || app}/${app === 'landing' ? 'runtime.js' : 'app/runtime.js'}`), 'utf8');
+    const source = portalSource(({ employee1: 'support-executive', employee2: 'finance-executive', landing: 'landing' })[app] || app);
     assert.doesNotMatch(source, /Duplicate Account|duplicate-account|openDuplicateUsersModal|usr-dup-001|Priya Patel \(Secondary\)/i, app);
     assert.match(source, /EventFlowAccountPolicy\.migrateLegacyDemoData\(DB\)/, app);
     const context = harness({ DB: { users: [{ id: '1', name: 'Sample user', email: 'user@example.com', phone: '12345', role: 'attendee', status: 'active' }] },
@@ -69,7 +70,7 @@ test('user management keeps its account filters and actions with no duplicate ac
 });
 
 test('account edits reject a used email before changing the stored profile', () => {
-  const source = fs.readFileSync(path.join(__dirname, '../src/apps/support-executive/app/runtime.js'), 'utf8');
+  const source = portalSource('support-executive');
   const db = { users: [{ id: '1', name: 'First', email: 'first@example.com', role: 'attendee' }, { id: '2', name: 'Second', email: 'second@example.com', role: 'attendee' }] };
   const values = { 'edit-usr-name': 'Changed', 'edit-usr-email': ' SECOND@EXAMPLE.COM ' };
   const notices = [];

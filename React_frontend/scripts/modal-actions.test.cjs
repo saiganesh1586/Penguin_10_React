@@ -2,11 +2,12 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const portalSource = require('./portal-source.cjs');
 const vm = require('node:vm');
 
 for (const role of ['admin', 'attendee', 'client', 'finance-executive', 'organizer', 'support-executive', 'landing']) {
   test(`${role} modals render one Cancel and preserve its handler and other actions`, () => {
-    const source = fs.readFileSync(path.join(__dirname, '../src/apps', role, role === 'landing' ? 'runtime.js' : 'app/runtime.js'), 'utf8');
+    const source = portalSource(role);
     const footer = { children: [], style: {}, set innerHTML(value) { this.children = []; }, appendChild(node) { this.children.push(node); } };
     const classes = new Set(), elements = { 'modal-title': {}, 'modal-body': {}, 'modal-foot': footer,
       'modal-overlay': { classList: { add: name => classes.add(name), remove: name => classes.delete(name) }, style: {} } };

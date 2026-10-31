@@ -1,4 +1,5 @@
 const test = require('node:test');
+const portalSource = require('./portal-source.cjs');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -45,7 +46,7 @@ test('browser migration removes staff collections and preserves event and paymen
 
 test('every remaining role entry routes migrated executives to their own workspace', () => {
   for (const role of ['admin', 'attendee', 'client', 'finance-executive', 'organizer', 'landing', 'support-executive']) {
-    const source = fs.readFileSync(path.join(__dirname, '../src/apps', role, role === 'landing' ? 'runtime.js' : 'app/runtime.js'), 'utf8');
+    const source = portalSource(role);
     const start = source.indexOf('function getRoleWorkspace(user)');
     const end = source.indexOf('function routeToRoleWorkspace(', start);
     const context = vm.createContext({});

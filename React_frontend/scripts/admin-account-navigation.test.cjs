@@ -1,10 +1,11 @@
+const portalSource = require('./portal-source.cjs');
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-const source = fs.readFileSync(path.join(__dirname, '../src/apps/admin/app/runtime.js'), 'utf8');
+const source = portalSource('admin');
 const component = fs.readFileSync(path.join(__dirname, '../src/apps/admin/app/App.jsx'), 'utf8');
 const supportSource = fs.readFileSync(path.join(__dirname, '../src/apps/customer-support/api/legacySupport.js'), 'utf8');
 function section(from, to) {

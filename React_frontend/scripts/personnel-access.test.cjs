@@ -1,11 +1,12 @@
 const test = require('node:test');
+const portalSource = require('./portal-source.cjs');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const policySource = fs.readFileSync(path.join(__dirname, '../src/app/account-policy.js'), 'utf8');
 const apps = ['admin', 'attendee', 'client', 'employee1', 'employee2', 'landing', 'organizer'];
-const sourceFor = app => fs.readFileSync(path.join(__dirname, `../src/apps/${({ employee1: 'support-executive', employee2: 'finance-executive', landing: 'landing' })[app] || app}/${app === 'landing' ? 'runtime.js' : 'app/runtime.js'}`), 'utf8');
+const sourceFor = app => portalSource(({ employee1: 'support-executive', employee2: 'finance-executive', landing: 'landing' })[app] || app);
 function section(source, from, to, last = false) {
   const start = last ? source.lastIndexOf(from) : source.indexOf(from), end = source.indexOf(to, start);
   assert.ok(start >= 0 && end > start, from);

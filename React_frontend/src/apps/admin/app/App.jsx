@@ -1,17 +1,44 @@
 import DashboardLayout from '../../../app/DashboardLayout.jsx';
 import Sidebar from '../../../app/Sidebar.jsx';
 import Navbar from '../../../app/Navbar.jsx';
-import PublicHomePage from '../pages/PublicHomePage.jsx';
-import LoginPage from '../../auth/UnifiedAuthPage.jsx';
-import FindEventsPage from '../pages/FindEventsPage.jsx';
-import GalleryPage from '../pages/GalleryPage.jsx';
-import AboutPage from '../pages/AboutPage.jsx';
-import ContactPage from '../pages/ContactPage.jsx';
+import PublicHomePage from '../../landing/pages/PortalPublicHomePage.jsx';
+import LoginPage from '../../auth/pages/UnifiedAuthPage.jsx';
+import FindEventsPage from '../../landing/pages/PortalFindEventsPage.jsx';
+import GalleryPage from '../../landing/pages/GalleryPage.jsx';
+import AboutPage from '../../landing/pages/AboutPage.jsx';
+import ContactPage from '../../landing/pages/ContactPage.jsx';
 import React from 'react';
 import LegacyRuntime from '../../../app/LegacyRuntime.jsx';
 import { legacyEvent } from '../../../app/legacyEvents.js';
-import source from './runtime.js?raw';
+import runtime from './runtime.js?raw';
+import portalApi from '../api/portal-api.js?raw';
+import portalState from '../context/portal-state.js?raw';
+import rawDashboardPage from '../pages/DashboardPage.jsx?raw';
+import rawUserReportsPage from '../pages/UserReportsPage.jsx?raw';
+import rawEventReportsPage from '../pages/EventReportsPage.jsx?raw';
+import rawRevenueReportsPage from '../pages/RevenueReportsPage.jsx?raw';
+import rawEmployeeReportsPage from '../pages/EmployeeReportsPage.jsx?raw';
 import '../styles/admin.css';
+
+function pageRuntime(raw) {
+  const start = '/* PORTAL_RUNTIME_START */';
+  const end = '/* PORTAL_RUNTIME_END */';
+  const from = raw.indexOf(start), to = raw.indexOf(end);
+  if (from < 0 || to < from) throw new Error('Portal page source is incomplete');
+  return raw.slice(from + start.length, to);
+}
+
+const source = Object.entries({ api: portalApi, state: portalState,
+  dashAdmin: pageRuntime(rawDashboardPage),
+  pageUserReports: pageRuntime(rawUserReportsPage),
+  pageEventReports: pageRuntime(rawEventReportsPage),
+  pageRevenueReports: pageRuntime(rawRevenueReportsPage),
+  pageEmployeeReports: pageRuntime(rawEmployeeReportsPage) })
+  .reduce((code, [name, section]) => {
+    const marker = `/* PORTAL_SECTION_${name} */`;
+    if (!code.includes(marker)) throw new Error(`Missing portal section: ${name}`);
+    return code.replace(marker, section);
+  }, runtime);
 
 export default function AdminWorkspace() {
   return <>

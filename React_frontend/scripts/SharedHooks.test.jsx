@@ -1,6 +1,6 @@
 import { act, render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import useAutoRefresh from '../src/apps/customer-support/hooks/useAutoRefresh.js';
+import useAutoRefresh from '../src/apps/customer-support/utils/useAutoRefresh.js';
 
 function Poller({ refresh, enabled = true }) { useAutoRefresh(refresh, { enabled, interval: 1000 }); return null; }
 afterEach(() => vi.useRealTimers());

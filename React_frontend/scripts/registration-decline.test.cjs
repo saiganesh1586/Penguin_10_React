@@ -1,3 +1,4 @@
+const portalSource = require('./portal-source.cjs');
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -5,8 +6,8 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 const frontend = path.join(__dirname, '..');
-const organizerSource = fs.readFileSync(path.join(frontend, 'src/apps/organizer/app/runtime.js'), 'utf8');
-const attendeeSource = fs.readFileSync(path.join(frontend, 'src/apps/attendee/app/runtime.js'), 'utf8');
+const organizerSource = portalSource('organizer');
+const attendeeSource = require('./attendee-source.cjs')();
 const event = { eventId: 'evt-review-test', organizerUserId: 'usr-org-001', organizerId: 'org-001', name: 'Workshop', date: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10), status: 'published', capacity: 20, ticketPrice: 0, location: 'Workshop Hall' };
 const registration = { registrationId: 'reg-review-test', eventId: event.eventId, attendeeId: 'att-001', attendee: { userId: 'usr-attendee-001', name: 'Test Attendee', email: 'attendee@example.com' }, event, status: 'registered', ticketType: 'General Admission' };
 const reason = 'The required <training> certificate was not attached & needs to be provided.';
@@ -250,7 +251,7 @@ test('opening an old confirmed ticket fetches the latest rejection and displays 
 });
 
 test('organizer profiles show the event, review, reviewer name and rating', async () => {
-  const source = fs.readFileSync(path.join(frontend, 'src/apps/client/app/runtime.js'), 'utf8');
+  const source = portalSource('client');
   let html;
   const context = vm.createContext({
     DB: { users: [{ id: 'usr-org-001', name: 'Sarah Chen' }] },

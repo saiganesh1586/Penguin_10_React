@@ -1,10 +1,12 @@
 # Attendee portal
 
-- `app/App.jsx` is the portal entry and imports the common authentication component.
-- `pages/` contains this portal's public page components.
-- `styles/` contains its unchanged styles.
-- `app/runtime.js` retains the existing dashboard behavior and inline API calls; its React migration is incomplete.
+- `app/App.jsx` is the React entry and keeps the existing layout, navigation, authentication component and CSS import.
+- `api/attendee-api.js` contains the existing API and session helpers.
+- `context/attendee-state.js` contains the existing state and persistence logic. This portal does not use a React Context provider.
+- `pages/` contains the Attendee-specific public Find Events page, plus the authenticated Dashboard, Browse Events, My Tickets, Notifications, Profile and Settings pages. Event details remains a drawer and its renderer is in `pages/EventDetailsPage.jsx`. The common public home, About, Contact and Gallery pages are reused from `src/apps/landing/`.
+- `components/RegistrationFlow.jsx` contains the registration, payment and cancellation dialogs. `src/app/LegacyPageMarkup.jsx` renders page markup with the existing handlers.
+- `styles/attendee.css` and `utils/ticket-scanner.js` retain the existing styles and QR helper.
 
-Root routes, common layout, and common helpers live in `src/app/`. Login markup lives in `src/apps/auth/UnifiedAuthPage.jsx`. Portal-specific API, component, context, data, hook, asset and utility modules belong inside the portal when implemented.
+`app/runtime.js` keeps routing and shared handlers. `App.jsx` assembles the page code at its original positions before running the legacy handlers, preserving the existing navigation and backend workflows.
 
-Ticket scanning is in `utils/ticket-scanner.js`.
+Login and registration markup is shared from `src/apps/auth/pages/UnifiedAuthPage.jsx`.

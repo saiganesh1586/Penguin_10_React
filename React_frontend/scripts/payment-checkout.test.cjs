@@ -1,11 +1,12 @@
+const portalSource = require('./portal-source.cjs');
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { JSDOM, VirtualConsole } = require('jsdom');
 const read = file => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
-const client = read('src/apps/client/app/runtime.js');
-const organizer = read('src/apps/organizer/app/runtime.js');
+const client = portalSource('client');
+const organizer = portalSource('organizer');
 function section(source, from, to) {
   const start = source.indexOf(from), end = source.indexOf(to, start);
   assert.ok(start >= 0 && end > start, from);
