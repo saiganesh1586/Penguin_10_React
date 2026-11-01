@@ -65,6 +65,9 @@ test('client cancellations retain the fee and distinguish no-payment and missing
   assert.match(html, /27,000.00/);
   assert.match(html, /The company schedule changed/);
   assert.doesNotMatch(html, /Full refund due|Refund completed/);
+  const simulated = h.context.renderWorkflowCancellation({ ...own, refundSimulated: true }, h.request);
+  assert.match(simulated, /Simulated refund pending provider confirmation/);
+  assert.match(simulated, /This demo refund is simulated/);
   const unpaid = h.context.renderWorkflowCancellation({ ...own, paidAmount: 0, cancellationFee: 0, refundAmount: 0, refundStatus: 'not_applicable' }, h.request);
   assert.match(unpaid, /No payment was taken; no refund is needed/);
   assert.doesNotMatch(unpaid, /awaiting review|It has not been paid/);

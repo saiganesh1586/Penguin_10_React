@@ -70,7 +70,8 @@ export function seedOrganizerAttendeeDemo(store: DemoStore, now = new Date()): v
     });
     if (status === 'cancelled' && hasPayment && !store.refunds.some(item => item.registrationId === registrationId)) store.refunds.push({
       refundId: `ref-demo-orgatt-${registrationId}`, paymentId, registrationId, amount: event.ticketPrice,
-      status: 'pending', reason: 'Demo attendee cancellation within the event policy.', requestedAt: cancelledAt,
+      payerId: attendee.attendeeId, recipientUserId: attendee.userId, recipientRole: 'attendee',
+      status: 'pending', simulated: true, reason: 'Demo attendee cancellation within the event policy.', requestedAt: cancelledAt,
     });
   });
 }

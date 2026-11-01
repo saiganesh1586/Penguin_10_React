@@ -190,8 +190,9 @@ export class RegistrationsService {
     registration.reservationExpiresAt = undefined;
     registration.offerExpiresAt = undefined;
     const payment = this.db.payments.find(p => p.registrationId === id && p.status === 'completed');
-    if (payment && !this.db.refunds.some(refund => refund.registrationId === id && ['pending', 'completed'].includes(refund.status))) {
-      this.db.refunds.push({ refundId: this.db.generateId('ref'), paymentId: payment.paymentId, registrationId: id, amount: payment.amount, status: 'pending', reason: `Organizer declined registration: ${reason}`, requestedAt: now });
+    const attendee = this.db.attendees.find(item => item.attendeeId === registration.attendeeId);
+    if (payment && !this.db.refunds.some(refund => refund.paymentId === payment.paymentId && ['pending', 'completed'].includes(refund.status))) {
+      this.db.refunds.push({ refundId: this.db.generateId('ref'), paymentId: payment.paymentId, payerId: registration.attendeeId, recipientUserId: attendee?.userId, recipientRole: 'attendee', registrationId: id, amount: payment.amount, status: 'pending', simulated: true, reason: `Organizer declined registration: ${reason}`, requestedAt: now });
     }
     this.notify(registration, `Your registration for "${event.name}" was declined. Reason: ${reason}${payment ? ' A full refund of your ticket payment is pending.' : ''}`, 'registration_rejected', payment?.paymentId);
     if (releasedSeat || hadWaitlistOffer) this.offerNext(event.eventId);
@@ -225,13 +226,22 @@ export class RegistrationsService {
     if (registration.status === 'attended') throw new BadRequestException('A checked-in registration cannot be cancelled');
     const event = this.db.events.find(e => e.eventId === registration.eventId);
     if (!event) throw new NotFoundException('Event not found');
+    const payment = this.db.payments.find(p => p.registrationId === id && p.status === 'completed');
+    const attendee = this.db.attendees.find(item => item.attendeeId === registration.attendeeId);
+    if (payment && this.db.refunds.some(item => item.paymentId === payment.paymentId && ['pending', 'completed'].includes(item.status))) {
+      throw new ConflictException('A refund has already been requested for this ticket payment');
+    }
     const priorStatus = registration.status; const now = new Date();
     registration.status = 'cancelled'; registration.cancellationReason = reason; registration.cancelledAt = now; registration.qrCode = undefined; registration.verificationId = undefined; registration.offerExpiresAt = undefined; registration.updatedAt = now;
-    const payment = this.db.payments.find(p => p.registrationId === id && p.status === 'completed');
     let refund: any = null;
-    if (payment) { const eligible = !event.cancellationDeadline || now <= new Date(`${event.cancellationDeadline}T23:59:59`); refund = { refundId: this.db.generateId('ref'), paymentId: payment.paymentId, registrationId: id, amount: eligible ? payment.amount : 0, status: eligible ? 'pending' : 'not_applicable', reason, requestedAt: now }; this.db.refunds.push(refund); }
+    if (payment) {
+      const eligible = !event.cancellationDeadline || now <= new Date(`${event.cancellationDeadline}T23:59:59`);
+      refund = { refundId: this.db.generateId('ref'), paymentId: payment.paymentId, payerId: registration.attendeeId, recipientUserId: attendee?.userId, recipientRole: 'attendee', registrationId: id, amount: eligible ? payment.amount : 0, status: eligible ? 'pending' : 'not_applicable', simulated: true, reason, requestedAt: now };
+      this.db.refunds.push(refund);
+    }
     this.notify(registration, refund?.status === 'pending' ? `Registration cancelled. Refund of ₹${refund.amount} is pending.` : `Registration cancelled for "${event.name}".`, refund?.status === 'pending' ? 'refund_pending' : 'registration_cancelled', payment?.paymentId);
     if (['registered', 'pending_payment'].includes(priorStatus)) this.offerNext(event.eventId);
+    this.db.persist();
     return { success: true, message: 'Registration cancelled', data: this.enrich(registration) };
   }
 

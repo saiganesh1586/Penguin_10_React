@@ -454,6 +454,8 @@ export interface EventCancellation {
   cancellationFeePercent: number;
   cancellationFee: number;
   refundAmount: number;
+  organizerRefundAmount?: number;
+  refundSimulated?: boolean;
   refundStatus: 'pending' | 'not_applicable';
   refundId?: string;
   cancellationDeadline: string;
@@ -462,6 +464,9 @@ export interface EventCancellation {
 export interface EventWorkflowRefund {
   refundId: string;
   paymentId: string;
+  payerId?: string;
+  recipientUserId?: string;
+  recipientRole?: 'client';
   eventId: string;
   requestId?: string;
   clientId: string;
@@ -545,9 +550,13 @@ export interface Payment {
 export interface Refund {
   refundId: string;
   paymentId: string;
+  payerId?: string;
+  recipientUserId?: string;
+  recipientRole?: 'attendee';
   registrationId: string;
   amount: number;
   status: 'pending' | 'completed' | 'failed' | 'not_applicable';
+  simulated?: boolean;
   reason: string;
   requestedAt: Date;
   processedAt?: Date;

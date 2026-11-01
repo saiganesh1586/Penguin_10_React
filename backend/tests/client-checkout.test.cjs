@@ -27,7 +27,7 @@ function fixture(t) {
     proposals: [], auditHistory: [], createdAt: now, updatedAt: now };
   const plan = { eventPlanId: 'plan-checkout', requestId: request.requestId, organizerId: request.organizerId, clientId: request.clientId,
     title: 'Approved plan', budget: 60000, approvalStatus: 'approved', status: 'approved', revision: 1, createdAt: now, updatedAt: now };
-  db.eventRequests = [request]; db.eventPlans = [plan]; db.events = []; db.eventWorkflowPayments = []; db.notifications = [];
+  db.eventRequests = [request]; db.eventPlans = [plan]; db.events = []; db.eventWorkflowPayments = []; db.eventWorkflowRefunds = []; db.notifications = [];
   t.after(() => {
     DataStore.instance = undefined;
     if (previousFile === undefined) delete process.env.EVENTFLOW_DATA_FILE; else process.env.EVENTFLOW_DATA_FILE = previousFile;

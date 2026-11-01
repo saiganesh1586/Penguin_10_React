@@ -5877,15 +5877,16 @@ eventRequests: [
         c[key] != null && c[key] !== '' && Number.isFinite(Number(c[key])) && Number(c[key]) >= 0);
       const refundAmount = hasAmounts ? Number(c.refundAmount) : null;
       const refundStatus = c.refundStatus || request.refundStatus;
+      const simulatedRefund = c.refundSimulated === true;
       const refunded = ['completed', 'refunded'].includes(refundStatus);
       const refundTitle = !hasAmounts ? 'Payment and refund details not recorded' : refundAmount === 0
         ? Number(c.paidAmount) === 0 ? 'No payment was taken; no refund is needed.' : 'No refund due under the recorded policy'
-        : refunded ? 'Refund completed' : refundStatus === 'pending' ? 'Refund pending review'
+        : refunded ? 'Refund completed' : refundStatus === 'pending' ? simulatedRefund ? 'Simulated refund pending provider confirmation' : 'Refund pending review'
         : refundStatus === 'processing' ? 'Refund processing' : 'Refund due — status not recorded';
       const nextStep = !hasAmounts ? 'Contact your organizer for the payment and refund details.'
         : refundAmount === 0 ? 'There is no refund to wait for.'
         : refunded ? 'Your refund is marked as completed. Contact the organizer if you need help checking it.'
-        : refundStatus === 'pending' ? 'Your refund is recorded and awaiting review. It has not been paid yet. Contact the organizer if you need an update.'
+        : refundStatus === 'pending' ? simulatedRefund ? 'This demo refund is simulated and awaiting provider confirmation; no payment has been sent yet.' : 'Your refund is recorded and awaiting review. It has not been paid yet. Contact the organizer if you need an update.'
         : 'Contact your organizer for an update on the refund.';
       const policy = request.policySnapshot || event?.policySnapshot;
       const processing = refundAmount > 0 && refundStatus === 'pending' && policy?.cancellation?.processingTimeline;

@@ -55,8 +55,10 @@ export function seedEventCancellationDemo(store: DemoStore, now = new Date()): v
       reason: scenario.reason!, cancelledBy: scenario.cancelledBy === 'organizer' ? organizer.userId : client.userId,
       cancelledAt, policyVersion: policy.version, paidAmount: scenario.paid,
       cancellationFeePercent: feePercent, cancellationFee: fee, refundAmount: scenario.paid - fee,
-      refundStatus: scenario.paid > 0 ? 'pending' : 'not_applicable',
-      ...(scenario.paid > 0 ? { refundId } : {}), cancellationDeadline: deadline,
+      organizerRefundAmount: 0,
+      refundSimulated: scenario.paid - fee > 0,
+      refundStatus: scenario.paid - fee > 0 ? 'pending' : 'not_applicable',
+      ...(scenario.paid - fee > 0 ? { refundId } : {}), cancellationDeadline: deadline,
     } : undefined;
     const paymentStatus: EventRequest['paymentStatus'] = scenario.paid >= scenario.budget ? 'fully_paid' : scenario.paid > 0 ? 'deposit_paid' : 'unpaid';
     store.eventRequests.push({
@@ -101,12 +103,13 @@ export function seedEventCancellationDemo(store: DemoStore, now = new Date()): v
     });
     if (cancellation?.refundId) insertMissing(store.eventWorkflowRefunds, 'refundId', {
       refundId, paymentId, requestId, eventId, clientId: client.clientId, organizerId: organizer.organizerId,
+      payerId: client.clientId, recipientUserId: client.userId, recipientRole: 'client',
       paidAmount: scenario.paid, cancellationFee: cancellation.cancellationFee, amount: cancellation.refundAmount,
       reason: cancellation.reason, status: 'pending', simulated: true, requestedAt: cancelledAt,
     });
     if (cancellation) for (const userId of [client.userId, organizer.userId]) insertMissing(store.notifications, 'notificationId', {
       notificationId: `notif-demo-cancel-${scenario.key}-${userId}`, userId, eventId,
-      message: `${scenario.title}: ${cancellation.reason} Refund due: INR ${cancellation.refundAmount.toLocaleString('en-IN')} (pending review).`,
+      message: `${scenario.title}: ${cancellation.reason} Simulated refund due: INR ${cancellation.refundAmount.toLocaleString('en-IN')} (pending provider confirmation).`,
       type: 'event_cancelled', read: false, dateTime: cancelledAt, createdAt: cancelledAt,
     });
   }

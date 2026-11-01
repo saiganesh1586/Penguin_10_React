@@ -11,7 +11,7 @@ import { constants, createReadStream, existsSync } from 'fs';
 import { access } from 'fs/promises';
 import * as path from 'path';
 import { assertEventPolicyAccepted, EventPolicyAcknowledgementDto, getEventPolicy } from '../../common/event-policy';
-import { completedEventPayments } from '../../common/utils/event-payments';
+import { allocatePaymentRefunds, completedEventPayments } from '../../common/utils/event-payments';
 import { acceptedProposalFor } from '../../common/utils/accepted-proposal';
 import {
   CreateEventRequestDto,
@@ -2128,7 +2128,9 @@ export class EventRequestsService {
       cancellationFeePercent: previewData.cancellationFeePercent,
       cancellationFee: previewData.cancellationFee,
       refundAmount: previewData.refundAmount,
-      refundStatus: previewData.paidAmount > 0 ? 'pending' : 'not_applicable',
+      organizerRefundAmount: 0,
+      refundSimulated: previewData.refundAmount > 0,
+      refundStatus: previewData.refundAmount > 0 ? 'pending' : 'not_applicable',
       isConfirmed,
     };
 
@@ -2158,22 +2160,28 @@ export class EventRequestsService {
       // If refund is applicable, create refund records
       if (previewData.refundAmount > 0) {
         const captured = relatedPayments.filter((p: any) => ['completed', 'success', 'paid'].includes(String(p.status).toLowerCase()));
-        captured.forEach((payment: any, index: number) => {
-          const paidAmount = Number(payment.amount || 0);
-          const cancellationFee = Math.round(paidAmount * previewData.cancellationFeePercent) / 100;
+        const client = this.db.clients.find(item => item.clientId === request.clientId);
+        const allocations = allocatePaymentRefunds(captured, previewData.cancellationFeePercent);
+        allocations.forEach(({ payment, paidAmount, cancellationFee, amount }) => {
+          if (amount <= 0 || this.db.eventWorkflowRefunds.some(refund =>
+            refund.paymentId === payment.paymentId && ['pending', 'completed'].includes(refund.status),
+          )) return;
           const refundId = this.db.generateId('ref');
-          if (index === 0) cancellationRecord.refundId = refundId;
+          if (!cancellationRecord.refundId) cancellationRecord.refundId = refundId;
           this.db.eventWorkflowRefunds.push({
-            refundId, paymentId: payment.paymentId || payment.id,
+            refundId, paymentId: payment.paymentId,
+            payerId: 'clientId' in payment ? payment.clientId : request.clientId,
+            recipientUserId: client?.userId,
+            recipientRole: 'client',
             requestId: request.requestId, eventId: request.eventId || '',
             clientId: request.clientId, organizerId: request.organizerId,
-            paidAmount, cancellationFee, amount: Math.max(0, paidAmount - cancellationFee),
+            paidAmount, cancellationFee, amount,
             reason, status: 'pending', simulated: true, requestedAt: now,
           });
         });
       }
 
-      const financialSummary = `Amount paid: ₹${Number(cancellationRecord.paidAmount).toFixed(2)}. Cancellation fee: ₹${Number(cancellationRecord.cancellationFee).toFixed(2)}. Refund due: ₹${Number(cancellationRecord.refundAmount).toFixed(2)}${cancellationRecord.refundAmount > 0 ? ' (pending review)' : ' (no refund needed)'}. No further booking payments are due.`;
+      const financialSummary = `Amount paid: ₹${Number(cancellationRecord.paidAmount).toFixed(2)}. Cancellation fee: ₹${Number(cancellationRecord.cancellationFee).toFixed(2)}. Refund due: ₹${Number(cancellationRecord.refundAmount).toFixed(2)}${cancellationRecord.refundAmount > 0 ? ' (simulated; pending provider confirmation)' : ' (no refund needed)'}. No further booking payments are due.`;
       this.notifyRequestClient(
         request,
         `${role === UserRole.EVENT_ORGANIZER ? 'The organizer cancelled' : role === UserRole.CLIENT ? 'You cancelled' : 'An administrator cancelled'} "${request.eventName}". Reason: ${reason}${dto.explanation ? ` — ${dto.explanation}` : ''}. ${financialSummary}`,
@@ -2205,9 +2213,10 @@ export class EventRequestsService {
     request.updatedAt = now;
 
     const message = isConfirmed
-      ? `Event cancelled. ${previewData.refundAmount > 0 ? `Refund of ₹${previewData.refundAmount.toFixed(2)} is pending review.` : 'No refund is applicable.'}`
+      ? `Event cancelled. ${previewData.refundAmount > 0 ? `Simulated refund of ₹${previewData.refundAmount.toFixed(2)} is pending provider confirmation.` : 'No refund is applicable.'}`
       : 'Event request withdrawn successfully.';
 
+    this.db.persist();
     return {
       success: true,
       message,
@@ -2304,4 +2313,3 @@ export class EventRequestsService {
     };
   }
 }
-

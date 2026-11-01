@@ -3,7 +3,7 @@ import { DataStore, Event, EventCancellation } from '../../common/data-store';
 import { CancelClientEventDto, CreateEventDto, UpdateEventDto } from './dtos/event.dto';
 import { UserRole } from '../../common/constants';
 import { assertEventPolicyAccepted, getEventPolicy } from '../../common/event-policy';
-import { completedEventPayments, eventAmountPaid } from '../../common/utils/event-payments';
+import { allocatePaymentRefunds, completedEventPayments, eventAmountPaid } from '../../common/utils/event-payments';
 import { isEventOpenForRegistration } from '../../common/utils/event-registration';
 
 @Injectable()
@@ -12,6 +12,54 @@ export class EventsService {
 
   constructor() {
     this.dataStore = DataStore.getInstance();
+  }
+
+  private queueTicketRefunds(registration: DataStore['registrations'][number], reason: string, now: Date): number {
+    const attendee = this.dataStore.attendees.find(item => item.attendeeId === registration.attendeeId);
+    const payments = this.dataStore.payments.filter(payment =>
+      payment.registrationId === registration.registrationId && payment.status === 'completed',
+    );
+    let queuedAmount = 0;
+    for (const payment of payments) {
+      if (!Number.isFinite(payment.amount) || payment.amount <= 0) {
+        throw new BadRequestException(`Completed ticket payment ${payment.paymentId} has an invalid amount`);
+      }
+      const previousRefunds = this.dataStore.refunds.filter(refund =>
+        refund.paymentId === payment.paymentId && ['pending', 'completed'].includes(refund.status),
+      );
+      if (previousRefunds.some(refund => refund.status === 'pending')) continue;
+      const refundedAmount = previousRefunds.reduce((sum, refund) => sum + Number(refund.amount || 0), 0);
+      const remainingAmount = Math.round((payment.amount - refundedAmount) * 100) / 100;
+      if (remainingAmount <= 0) continue;
+      const refund = {
+        refundId: this.dataStore.generateId('ref'),
+        paymentId: payment.paymentId,
+        payerId: registration.attendeeId,
+        recipientUserId: attendee?.userId,
+        recipientRole: 'attendee' as const,
+        registrationId: registration.registrationId,
+        amount: remainingAmount,
+        status: 'pending' as const,
+        simulated: true,
+        reason,
+        requestedAt: now,
+      };
+      this.dataStore.refunds.push(refund);
+      queuedAmount += refund.amount;
+      if (attendee) this.dataStore.notifications.push({
+        notificationId: this.dataStore.generateId('notif'),
+        userId: attendee.userId,
+        eventId: registration.eventId,
+        registrationId: registration.registrationId,
+        paymentId: payment.paymentId,
+        message: `Simulated ticket refund of ₹${refund.amount} is pending provider confirmation.`,
+        type: 'refund_pending',
+        read: false,
+        dateTime: now,
+        createdAt: now,
+      });
+    }
+    return queuedAmount;
   }
 
   private eventStart(date: string, time: string): Date {
@@ -385,17 +433,15 @@ export class EventsService {
     if (before.preparationTasks !== JSON.stringify(event.preparationTasks || [])) changes.push({ type: 'preparation_updated', summary: 'Preparation checklist updated' });
     for (const change of changes) {
       this.dataStore.eventChanges.push({ changeId: this.dataStore.generateId('chg'), eventId, ...change, createdAt: new Date() });
-      const affected = this.dataStore.registrations.filter(r => r.eventId === eventId && r.status !== 'cancelled');
+      const affected = this.dataStore.registrations.filter(r => r.eventId === eventId &&
+        (change.type === 'cancelled'
+          ? ['pending_approval', 'registered', 'pending_payment', 'waitlisted'].includes(r.status)
+          : r.status !== 'cancelled'));
       for (const registration of affected) {
         const attendee = this.dataStore.attendees.find(a => a.attendeeId === registration.attendeeId);
         if (change.type === 'cancelled') {
           registration.status = 'cancelled'; registration.cancelledAt = new Date(); registration.cancellationReason = dto.changeReason; registration.qrCode = undefined; registration.verificationId = undefined; registration.updatedAt = new Date();
-          const payment = this.dataStore.payments.find(p => p.registrationId === registration.registrationId && p.status === 'completed');
-          if (payment && !this.dataStore.refunds.some(r => r.registrationId === registration.registrationId)) {
-            const refund = { refundId: this.dataStore.generateId('ref'), paymentId: payment.paymentId, registrationId: registration.registrationId, amount: payment.amount, status: 'pending' as const, reason: dto.changeReason, requestedAt: new Date() };
-            this.dataStore.refunds.push(refund);
-            if (attendee) this.dataStore.notifications.push({ notificationId: this.dataStore.generateId('notif'), userId: attendee.userId, eventId, registrationId: registration.registrationId, paymentId: payment.paymentId, message: `Event cancelled. Simulated refund of ₹${refund.amount} is pending.`, type: 'refund_pending', read: false, dateTime: new Date(), createdAt: new Date() });
-          }
+          this.queueTicketRefunds(registration, dto.changeReason, new Date());
         }
         if (change.type === 'postponed') {
           registration.qrCode = undefined; registration.verificationId = undefined; registration.updatedAt = new Date();
@@ -404,34 +450,42 @@ export class EventsService {
       }
     }
     if (before.status !== event.status && event.status === 'cancelled') {
+      const request = this.dataStore.eventRequests.find(item => item.eventId === eventId);
       const cancellationRecord: EventCancellation = {
         reason: dto.changeReason,
         cancelledBy: userId || 'organizer',
         cancelledByRole: role,
         cancelledByName: this.dataStore.findUserById(userId || '')?.name,
         cancelledAt: new Date(),
-        policyVersion: '1.0',
+        policyVersion: request?.policySnapshot?.version || event.policySnapshot?.version || '1.0',
         paidAmount: 0,
         cancellationFeePercent: 0,
         cancellationFee: 0,
         refundAmount: 0,
+        organizerRefundAmount: 0,
+        refundSimulated: false,
         refundStatus: 'not_applicable',
         cancellationDeadline: event.cancellationDeadline || new Date().toISOString(),
       };
       event.cancellation = cancellationRecord;
 
-      const request = this.dataStore.eventRequests.find(item => item.eventId === eventId);
       if (request && request.status !== 'cancelled') {
         const captured = completedEventPayments(this.dataStore.eventWorkflowPayments, request);
-        const paidAmount = captured.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+        const allocations = allocatePaymentRefunds(captured, 0);
+        const paidAmount = allocations.reduce((sum, allocation) => sum + allocation.paidAmount, 0);
+        const client = this.dataStore.clients.find(item => item.clientId === request.clientId);
         let firstRefundId: string | undefined;
-        captured.forEach(payment => {
+        allocations.forEach(({ payment, paidAmount: paymentPaidAmount, amount }) => {
+          if (amount <= 0 || this.dataStore.eventWorkflowRefunds.some(refund =>
+            refund.paymentId === payment.paymentId && ['pending', 'completed'].includes(refund.status as string),
+          )) return;
           const refundId = this.dataStore.generateId('ref-event');
           firstRefundId ||= refundId;
           this.dataStore.eventWorkflowRefunds.push({
             refundId, paymentId: payment.paymentId, eventId, requestId: request.requestId,
+            payerId: payment.clientId, recipientUserId: client?.userId, recipientRole: 'client',
             clientId: request.clientId, organizerId: request.organizerId,
-            paidAmount: payment.amount, cancellationFee: 0, amount: payment.amount,
+            paidAmount: paymentPaidAmount, cancellationFee: 0, amount,
             reason: dto.changeReason, status: 'pending', simulated: true, requestedAt: new Date(),
           });
         });
@@ -442,11 +496,13 @@ export class EventsService {
           cancelledByRole: role,
           cancelledByName: this.dataStore.findUserById(userId || '')?.name,
           cancelledAt: new Date(),
-          policyVersion: '1.0',
+          policyVersion: request.policySnapshot?.version || event.policySnapshot?.version || '1.0',
           paidAmount,
           cancellationFeePercent: 0,
           cancellationFee: 0,
           refundAmount: paidAmount,
+          organizerRefundAmount: 0,
+          refundSimulated: paidAmount > 0,
           refundStatus: paidAmount > 0 ? 'pending' : 'not_applicable',
           refundId: firstRefundId,
           cancellationDeadline: new Date().toISOString(),
@@ -462,8 +518,7 @@ export class EventsService {
           timestamp: new Date(),
           details: { reason: dto.changeReason, paidAmount, clientRefundAmount: paidAmount, organizerRefundAmount: 0 },
         });
-        const client = this.dataStore.clients.find(item => item.clientId === request.clientId);
-        if (client) this.dataStore.notifications.push({ notificationId: this.dataStore.generateId('notif'), userId: client.userId, eventId, requestId: request.requestId, registrationId: undefined, paymentId: undefined, message: `The organizer cancelled "${event.name}". Reason: ${dto.changeReason}. Amount paid: ₹${paidAmount.toFixed(2)}. Cancellation fee: ₹0.00. Full refund due: ₹${paidAmount.toFixed(2)}${paidAmount > 0 ? ' (pending review)' : ' (no payment was collected)'}. No further booking payments are due.`, type: 'event_cancelled', read: false, dateTime: new Date(), createdAt: new Date() });
+        if (client) this.dataStore.notifications.push({ notificationId: this.dataStore.generateId('notif'), userId: client.userId, eventId, requestId: request.requestId, registrationId: undefined, paymentId: undefined, message: `The organizer cancelled "${event.name}". Reason: ${dto.changeReason}. Amount paid: ₹${paidAmount.toFixed(2)}. Cancellation fee: ₹0.00. Full refund due: ₹${paidAmount.toFixed(2)}${paidAmount > 0 ? ' (simulated; pending provider confirmation)' : ' (no payment was collected)'}. No further booking payments are due.`, type: 'event_cancelled', read: false, dateTime: new Date(), createdAt: new Date() });
       }
     }
     this.dataStore.persist();
@@ -532,21 +587,32 @@ export class EventsService {
       cancelledByRole: role, cancelledByName: this.dataStore.findUserById(userId || '')?.name,
       paidAmount: preview.paidAmount, cancellationFeePercent: preview.cancellationFeePercent,
       cancellationFee: preview.cancellationFee, refundAmount: preview.refundAmount,
+      organizerRefundAmount: 0,
+      refundSimulated: preview.refundAmount > 0,
       refundStatus: refundId ? 'pending' : 'not_applicable', refundId,
       cancellationDeadline: preview.cancellationDeadline!,
     };
     if (refundId && request) {
       const captured = completedEventPayments(this.dataStore.eventWorkflowPayments, request);
-      captured.forEach((payment, index) => {
-        const fee = Math.round(payment.amount * preview.cancellationFeePercent) / 100;
+      const allocations = allocatePaymentRefunds(captured, preview.cancellationFeePercent);
+      const client = this.dataStore.clients.find(item => item.clientId === request.clientId);
+      let firstRefundId: string | undefined;
+      allocations.forEach(({ payment, paidAmount, cancellationFee, amount }) => {
+        if (amount <= 0 || this.dataStore.eventWorkflowRefunds.some(refund =>
+          refund.paymentId === payment.paymentId && ['pending', 'completed'].includes(refund.status as string),
+        )) return;
+        const transactionRefundId = firstRefundId ? this.dataStore.generateId('ref-event') : refundId;
+        firstRefundId ||= transactionRefundId;
         this.dataStore.eventWorkflowRefunds.push({
-          refundId: index === 0 ? refundId : this.dataStore.generateId('ref-event'),
+          refundId: transactionRefundId,
+          payerId: payment.clientId, recipientUserId: client?.userId, recipientRole: 'client',
           paymentId: payment.paymentId, eventId, requestId: request.requestId,
           clientId: event.clientId!, organizerId: event.organizerId,
-          paidAmount: payment.amount, cancellationFee: fee,
-          amount: Math.max(0, payment.amount - fee), reason, status: 'pending', simulated: true, requestedAt: now,
+          paidAmount, cancellationFee, amount, reason, status: 'pending', simulated: true, requestedAt: now,
         });
       });
+      cancellation.refundId = firstRefundId;
+      cancellation.refundStatus = firstRefundId ? 'pending' : 'not_applicable';
     }
     event.status = 'cancelled';
     event.cancellation = cancellation;
@@ -564,7 +630,7 @@ export class EventsService {
     };
     const organizer = this.dataStore.organizers.find(item => item.organizerId === event.organizerId);
     if (organizer) notify(organizer.userId, `The client cancelled "${event.name}": ${reason}`);
-    notify(userId!, `You cancelled "${event.name}". Reason: ${reason}. Amount paid: ₹${cancellation.paidAmount.toFixed(2)}. Cancellation fee: ₹${cancellation.cancellationFee.toFixed(2)}. Refund due: ₹${cancellation.refundAmount.toFixed(2)}${refundId ? ' (pending review)' : ' (no refund needed)'}. No further booking payments are due.`);
+    notify(userId!, `You cancelled "${event.name}". Reason: ${reason}. Amount paid: ₹${cancellation.paidAmount.toFixed(2)}. Cancellation fee: ₹${cancellation.cancellationFee.toFixed(2)}. Refund due: ₹${cancellation.refundAmount.toFixed(2)}${cancellation.refundId ? ' (simulated; pending provider confirmation)' : ' (no refund needed)'}. No further booking payments are due.`);
     for (const registration of this.dataStore.registrations.filter(item => item.eventId === eventId && ['pending_approval', 'registered', 'pending_payment', 'waitlisted'].includes(item.status))) {
       registration.status = 'cancelled';
       registration.cancellationReason = `Event cancelled by client: ${reason}`;
@@ -573,14 +639,12 @@ export class EventsService {
       registration.qrCode = undefined;
       registration.verificationId = undefined;
       registration.offerExpiresAt = undefined;
-      const payment = this.dataStore.payments.find(item => item.registrationId === registration.registrationId && item.status === 'completed');
       const attendee = this.dataStore.attendees.find(item => item.attendeeId === registration.attendeeId);
-      if (payment && !this.dataStore.refunds.some(item => item.registrationId === registration.registrationId)) {
-        this.dataStore.refunds.push({ refundId: this.dataStore.generateId('ref'), paymentId: payment.paymentId, registrationId: registration.registrationId, amount: payment.amount, status: 'pending', reason: 'Event cancelled by client', requestedAt: now });
-      }
-      if (attendee) notify(attendee.userId, `"${event.name}" was cancelled by the client. Your ticket is invalid.${payment ? ' Your ticket refund is pending review.' : ''}`, registration.registrationId, payment?.paymentId);
+      const ticketRefundAmount = this.queueTicketRefunds(registration, 'Event cancelled by client', now);
+      if (attendee) notify(attendee.userId, `"${event.name}" was cancelled by the client. Your ticket is invalid.${ticketRefundAmount > 0 ? ' Your ticket refund is pending provider confirmation.' : ''}`, registration.registrationId);
     }
-    return { success: true, message: 'Event cancelled. Any refund due is pending review.', data: { event: this.mapEventToFrontend(event), cancellation } };
+    this.dataStore.persist();
+    return { success: true, message: 'Event cancelled. Any simulated refund due is pending provider confirmation.', data: { event: this.mapEventToFrontend(event), cancellation } };
   }
 
   completeClientEvent(eventId: string, role: UserRole, userId?: string): any {

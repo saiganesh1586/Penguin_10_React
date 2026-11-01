@@ -6056,7 +6056,7 @@ window.EventFlowModules['shared'] = true;
         <div class="info-row"><span class="info-label">Amount paid</span><span>${workflowMoney(cancellation.paidAmount)}</span></div>
         <div class="info-row"><span class="info-label">Cancellation fee (${cancellation.cancellationFeePercent}%)</span><span>${workflowMoney(cancellation.cancellationFee)}</span></div>
         <div class="info-row"><span class="info-label">Refund due</span><strong>${workflowMoney(cancellation.refundAmount)}</strong></div>
-        <p class="small">${cancellation.refundStatus === 'pending' ? 'Refund pending review.' : 'No payment was taken; no refund is needed.'} Cancelled: ${workflowHtml(workflowPolicyDate(cancellation.cancelledAt))}</p></section>` : '';
+        <p class="small">${cancellation.refundStatus === 'pending' ? cancellation.refundSimulated ? 'Simulated refund pending provider confirmation.' : 'Refund pending review.' : 'No payment was taken; no refund is needed.'} Cancelled: ${workflowHtml(workflowPolicyDate(cancellation.cancelledAt))}</p></section>` : '';
     }
 
     function mapWorkflowRequest(request) {

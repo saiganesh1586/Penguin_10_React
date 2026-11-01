@@ -88,11 +88,14 @@ export class AnalyticsService {
 
     const myEvents = this.db.events.filter(e => e.organizerId === organizer.organizerId);
     const myEventIds = myEvents.map(e => e.eventId);
+    const activeEventIds = new Set(myEvents.filter(event => event.status !== 'cancelled').map(event => event.eventId));
     const myRegs = this.db.registrations.filter(r => myEventIds.includes(r.eventId));
     const myRegistrationIds = new Set(myRegs.map(registration => registration.registrationId));
     const capturedTicketPayments = new Map<string, typeof this.db.payments[number]>();
     this.db.payments.forEach(payment => {
-      if (!myRegistrationIds.has(payment.registrationId) || !['completed', 'refunded'].includes(payment.status)) return;
+      if (!myRegistrationIds.has(payment.registrationId) ||
+        !activeEventIds.has(myRegs.find(registration => registration.registrationId === payment.registrationId)?.eventId || '') ||
+        !['completed', 'refunded'].includes(payment.status)) return;
       const previous = capturedTicketPayments.get(payment.registrationId);
       if (!previous || new Date(payment.createdAt).getTime() > new Date(previous.createdAt).getTime()) {
         capturedTicketPayments.set(payment.registrationId, payment);
@@ -100,11 +103,13 @@ export class AnalyticsService {
     });
     const ticketPayments = [...capturedTicketPayments.values()];
     const workflowPayments = this.db.eventWorkflowPayments.filter(payment =>
-      myEventIds.includes(payment.eventId) && payment.status === 'completed');
+      activeEventIds.has(payment.eventId) && payment.status === 'completed');
     const completedTicketRefunds = this.db.refunds.filter(refund =>
-      myRegistrationIds.has(refund.registrationId) && refund.status === 'completed');
+      myRegistrationIds.has(refund.registrationId) &&
+      activeEventIds.has(myRegs.find(registration => registration.registrationId === refund.registrationId)?.eventId || '') &&
+      refund.status === 'completed');
     const completedWorkflowRefunds = this.db.eventWorkflowRefunds.filter(refund =>
-      myEventIds.includes(refund.eventId) && (refund.status as string) === 'completed');
+      activeEventIds.has(refund.eventId) && (refund.status as string) === 'completed');
     const grossRevenue = [...ticketPayments, ...workflowPayments]
       .reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
     const refundedAmount = [...completedTicketRefunds, ...completedWorkflowRefunds]

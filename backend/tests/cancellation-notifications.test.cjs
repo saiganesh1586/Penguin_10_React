@@ -52,7 +52,7 @@ test('every client booking cancellation records its actor and sends a linked fin
       assert.ok(notices[0].message.includes(reason));
       assert.match(notices[0].message, /Amount paid: ₹30000.00/);
       assert.match(notices[0].message, organizer ? /Cancellation fee: ₹0.00/ : /Cancellation fee: ₹3000.00/);
-      assert.match(notices[0].message, /pending review/);
+      assert.match(notices[0].message, /simulated; pending provider confirmation/);
       assert.match(notices[0].message, /No further booking payments are due/);
       assert.equal(db.eventWorkflowRefunds.filter(item => item.requestId === requestId).length, 1);
       db.persist();

@@ -193,7 +193,17 @@ export class PaymentsService {
     const payment = this.db.payments.find(item => item.paymentId === refund.paymentId);
     if (!payment || payment.status !== 'completed' || payment.registrationId !== refund.registrationId) throw new ConflictException('Completed payment not found for refund');
     if (typeof refund.amount !== 'number' || !Number.isFinite(refund.amount) || refund.amount <= 0 || refund.amount > payment.amount || Number(refund.amount.toFixed(2)) !== refund.amount) throw new BadRequestException('Invalid refund amount');
-    if (this.db.refunds.some(item => item.refundId !== refundId && item.paymentId === payment.paymentId && item.status === 'completed')) throw new ConflictException('Payment has already been refunded');
+    const priorRefunds = this.db.refunds.filter(item =>
+      item.refundId !== refundId && item.paymentId === payment.paymentId && ['pending', 'completed'].includes(item.status),
+    );
+    if (priorRefunds.some(item => item.status === 'completed')) {
+      throw new ConflictException('Payment has already been refunded; total refunds cannot exceed the original payment');
+    }
+    const alreadyReserved = priorRefunds.filter(item => item.status === 'pending' &&
+      Number.isFinite(item.amount) && item.amount > 0 && item.amount <= payment.amount &&
+      Number(item.amount.toFixed(2)) === item.amount,
+    ).reduce((sum, item) => sum + item.amount, 0);
+    if (refund.amount + alreadyReserved > payment.amount) throw new ConflictException('Refunds cannot exceed the original payment amount');
     const registration = this.db.registrations.find(item => item.registrationId === refund.registrationId);
     const attendee = registration && this.db.attendees.find(item => item.attendeeId === registration.attendeeId);
     const now = new Date();
@@ -217,6 +227,7 @@ export class PaymentsService {
       });
     }
 
+    this.db.persist();
     return { success: true, simulated: true, data: refund };
   }
 

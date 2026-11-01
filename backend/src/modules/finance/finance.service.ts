@@ -46,10 +46,17 @@ export class FinanceService {
       const previous = captured.get(payment.registrationId);
       if (!previous || new Date(String(payment.createdAt)).getTime() > new Date(String(previous.createdAt)).getTime()) captured.set(payment.registrationId, payment);
     }
-    const capturedRows = Array.from(captured.values());
+    const capturedRows = Array.from(captured.values()).filter(payment =>
+      this.db.events.find(event => event.eventId === payment.eventId)?.status !== 'cancelled',
+    );
     const refunds = this.db.refunds.filter(item => inRange(item.processedAt || item.requestedAt));
+    const revenueRefunds = refunds.filter(refund =>
+      this.db.events.find(event => event.eventId === this.db.registrations.find(
+        registration => registration.registrationId === refund.registrationId,
+      )?.eventId)?.status !== 'cancelled',
+    );
     const grossRevenue = capturedRows.reduce((sum, item) => sum + Number(item.amount || 0), 0);
-    const refundedAmount = refunds.filter(item => item.status === 'completed').reduce((sum, item) => sum + Number(item.amount || 0), 0);
+    const refundedAmount = revenueRefunds.filter(item => item.status === 'completed').reduce((sum, item) => sum + Number(item.amount || 0), 0);
     const recentTransactions = payments.slice().sort((a, b) => new Date(String(b.createdAt)).getTime() - new Date(String(a.createdAt)).getTime()).slice(0, 8);
     const recentRefunds = this.enrichRefunds().filter(item => inRange(item.processedAt || item.requestedAt)).sort((a, b) => +new Date(b.processedAt || b.requestedAt) - +new Date(a.processedAt || a.requestedAt)).slice(0, 8);
     const eventRevenueMap = new Map<string, { eventId: string | null; eventName: string; revenue: number; ticketsSold: number }>();
@@ -61,7 +68,7 @@ export class FinanceService {
     }
     const eventRevenue = Array.from(eventRevenueMap.values()).sort((a, b) => b.revenue - a.revenue);
     const revenueTrend = Array.from(dailyRevenueMap.entries()).sort((a, b) => a[0].localeCompare(b[0])).map(entry => ({ date: entry[0], revenue: entry[1] }));
-    return { currency: 'INR', eventRevenue, revenueTrend, totals: { grossRevenue, netRevenue: grossRevenue - refundedAmount, successfulPayments: capturedRows.length, failedPayments: payments.filter(item => item.status === 'failed').length, pendingPayments: payments.filter(item => item.status === 'pending').length, refundedAmount, pendingRefundRequests: refunds.filter(item => item.status === 'pending').length, ticketsSold: captured.size, platformCommission: null }, capabilities: { commissionConfigured: false, organizerPayouts: false, gatewayReconciliation: false, paymentProvider: 'DEMO_PROVIDER' }, recentTransactions, recentRefunds };
+    return { currency: 'INR', eventRevenue, revenueTrend, totals: { grossRevenue, netRevenue: grossRevenue - refundedAmount, successfulPayments: capturedRows.length, failedPayments: payments.filter(item => item.status === 'failed').length, pendingPayments: payments.filter(item => item.status === 'pending').length, refundedAmount, pendingRefundRequests: refunds.filter(item => item.status === 'pending').length, ticketsSold: capturedRows.length, platformCommission: null }, capabilities: { commissionConfigured: false, organizerPayouts: false, gatewayReconciliation: false, paymentProvider: 'DEMO_PROVIDER' }, recentTransactions, recentRefunds };
   }
   transactions(userId: string, role: UserRole, query: Record<string, unknown>) {
     this.assertFinanceEmployee(userId, role);
@@ -162,6 +169,7 @@ export class FinanceService {
     const refundedByEvent = new Map<string, number>();
     for (const refund of this.enrichRefunds()) {
       if (refund.status !== 'completed' || !inRange(refund.processedAt)) continue;
+      if (this.db.events.find(event => event.eventId === refund.eventId)?.status === 'cancelled') continue;
       refundedByEvent.set(refund.eventId || '', (refundedByEvent.get(refund.eventId || '') || 0) + refund.amount);
     }
     const events = dashboard.eventRevenue.map(row => ({ ...row, refundedAmount: refundedByEvent.get(row.eventId || '') || 0, netRevenue: row.revenue - (refundedByEvent.get(row.eventId || '') || 0), commissionAmount: null, organizerPayable: null }));
@@ -205,6 +213,12 @@ export class FinanceService {
     const status = String(query.status || '').toLowerCase();
     const payments = this.enrichPayments().filter(row => inRange(row.createdAt) && (!eventId || row.eventId === eventId) && (!organizerId || this.db.events.some(event => event.eventId === row.eventId && event.organizerId === organizerId)) && (!status || row.status === status));
     const refunds = this.enrichRefunds().filter(row => inRange(row.processedAt || row.requestedAt) && (!eventId || row.eventId === eventId) && (!organizerId || row.organizerId === organizerId) && (!status || row.status === status));
+    const revenuePayments = payments.filter(payment =>
+      this.db.events.find(event => event.eventId === payment.eventId)?.status !== 'cancelled',
+    );
+    const revenueRefunds = refunds.filter(refund =>
+      this.db.events.find(event => event.eventId === refund.eventId)?.status !== 'cancelled',
+    );
     let rows: Record<string, unknown>[];
     if (type === 'transactions') rows = payments;
     else if (type === 'refunds') rows = refunds;
@@ -212,14 +226,14 @@ export class FinanceService {
       const groups = new Map<string, { period: string; eventId?: string | null; eventName?: string; grossRevenue: number; refunds: number; netRevenue: number; ticketsSold: number }>();
       const keyFor = (date: string, id?: string | null) => type === 'events' ? id || 'unknown' : type === 'monthly' ? date.slice(0, 7) : date.slice(0, 10);
       const paid = new Set<string>();
-      for (const row of payments) {
+      for (const row of revenuePayments) {
         if (!['completed', 'refunded'].includes(row.status) || paid.has(row.registrationId)) continue;
         paid.add(row.registrationId);
         const key = keyFor(String(row.createdAt), row.eventId);
         const item = groups.get(key) || { period: key, eventId: row.eventId, eventName: row.eventName, grossRevenue: 0, refunds: 0, netRevenue: 0, ticketsSold: 0 };
         item.grossRevenue += row.amount; item.ticketsSold++; groups.set(key, item);
       }
-      for (const row of refunds) {
+      for (const row of revenueRefunds) {
         if (row.status !== 'completed') continue;
         const key = keyFor(String(row.processedAt || row.requestedAt), row.eventId);
         const item = groups.get(key) || { period: key, eventId: row.eventId, eventName: row.eventName, grossRevenue: 0, refunds: 0, netRevenue: 0, ticketsSold: 0 };
@@ -228,9 +242,9 @@ export class FinanceService {
       rows = [...groups.values()].map(item => ({ ...item, netRevenue: item.grossRevenue - item.refunds })).sort((a, b) => String(a.period).localeCompare(String(b.period)));
     }
     const uniqueCaptured = new Map<string, typeof payments[number]>();
-    for (const payment of payments) if (['completed', 'refunded'].includes(payment.status) && !uniqueCaptured.has(payment.registrationId)) uniqueCaptured.set(payment.registrationId, payment);
+    for (const payment of revenuePayments) if (['completed', 'refunded'].includes(payment.status) && !uniqueCaptured.has(payment.registrationId)) uniqueCaptured.set(payment.registrationId, payment);
     const grossRevenue = [...uniqueCaptured.values()].reduce((sum, payment) => sum + payment.amount, 0);
-    const refundedAmount = refunds.filter(refund => refund.status === 'completed').reduce((sum, refund) => sum + refund.amount, 0);
+    const refundedAmount = revenueRefunds.filter(refund => refund.status === 'completed').reduce((sum, refund) => sum + refund.amount, 0);
     return { type, rows, total: rows.length, generatedAt: new Date().toISOString(), filters: { from: query.from || null, to: query.to || null, eventId: eventId || null, organizerId: organizerId || null, status: status || null }, options: { events: this.db.events.map(event => ({ id: event.eventId, name: event.name })), organizers: this.db.organizers.map(organizer => ({ id: organizer.organizerId, name: organizer.businessName || this.db.findUserById(organizer.userId)?.name || organizer.organizerId })) }, currency: 'INR', summary: { grossRevenue, refundedAmount, netRevenue: grossRevenue - refundedAmount } };
   }
   submissions(userId: string, role: UserRole) {
