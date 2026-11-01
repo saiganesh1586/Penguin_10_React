@@ -6,12 +6,28 @@ const vm = require('node:vm');
 const portalSource = require('./portal-source.cjs');
 
 const sources = Object.fromEntries(['client', 'organizer'].map(role => [role, portalSource(role)]));
-const escapeHtml = value => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-const policy = { version: 'test-policy-1', cancellation: { minimumNoticeDays: 14, feePercent: 10 }, sections: [
-  { title: 'Event rules', items: ['Agree on venue permissions and safety arrangements.'] },
-  { title: 'Cancellation and refund policy', items: ['Cancel at least 14 days before the event. A 10% fee applies to the amount paid.'] },
-  { title: 'Terms and conditions', items: ['Accepting a request starts planning. The client approves the final event plan.'] },
-] };
+const escapeHtml = value =>
+  String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+const policy = {
+  version: 'test-policy-1',
+  cancellation: { minimumNoticeDays: 14, feePercent: 10 },
+  sections: [
+    { title: 'Event rules', items: ['Agree on venue permissions and safety arrangements.'] },
+    {
+      title: 'Cancellation and refund policy',
+      items: ['Cancel at least 14 days before the event. A 10% fee applies to the amount paid.'],
+    },
+    {
+      title: 'Terms and conditions',
+      items: ['Accepting a request starts planning. The client approves the final event plan.'],
+    },
+  ],
+};
 function section(source, from, to) {
   const start = source.indexOf(from);
   const end = source.indexOf(to, start);
@@ -25,57 +41,166 @@ function harness(role, state) {
     CU: { id: role === 'client' ? 'usr-client-001' : 'usr-org-001', role },
     DB: { users: [], events: [], eventRequests: [], eventPlans: [], notifications: [] },
     _workflowAvailability: null,
-    g: id => elements.get(id), v: id => elements.get(id)?.value || '', escapeHtml,
-    reqBadge: () => 'blue', _workflowReturnPage: 'request-status', _currentPage: 'request-status',
+    g: id => elements.get(id),
+    v: id => elements.get(id)?.value || '',
+    escapeHtml,
+    reqBadge: () => 'blue',
+    _workflowReturnPage: 'request-status',
+    _currentPage: 'request-status',
     apiGetEventRequests: async () => ({ data: structuredClone(state.requests) }),
     apiGetEventPlans: async () => structuredClone(state.plans),
     apiGetWorkflowEvents: async () => structuredClone(state.events),
-    apiGetNotifications: async () => [], apiGetCompletionReports: async () => [],
+    apiGetNotifications: async () => [],
+    apiGetCompletionReports: async () => [],
     apiGetEventReports: async () => structuredClone(state.fileReports || []),
-    apiGetPrivateOrganizerReviews: async () => [], toast() {},
+    apiGetPrivateOrganizerReviews: async () => [],
+    toast() {},
     apiGetEventPolicy: async () => ({ data: structuredClone(policy) }),
-    closeModal() {}, closeDrawer() {}, renderPage: async () => {},
+    closeModal() {},
+    closeDrawer() {},
+    renderPage: async () => {},
   });
-  vm.runInContext(section(sources[role], '    function workflowPayload(', '    function viewRequestDrawer('), context);
-  return { context, content, elements, async render() {
-    await context.syncWorkflowData();
-    context.renderWorkflowRequestDetails(state.requests[0].requestId);
-    return content.innerHTML;
-  } };
+  vm.runInContext(
+    section(sources[role], 'function workflowPayload(', 'function viewRequestDrawer('),
+    context
+  );
+  return {
+    context,
+    content,
+    elements,
+    async render() {
+      await context.syncWorkflowData();
+      context.renderWorkflowRequestDetails(state.requests[0].requestId);
+      return content.innerHTML;
+    },
+  };
 }
 function fixture() {
-  return { requests: [{ requestId: 'req-flow', clientId: 'cli-001', clientUserId: 'usr-client-001', organizerId: 'org-001', organizerUserId: 'usr-org-001', eventName: 'Client conference', eventType: 'Conference', eventDate: '2099-11-20', budget: 50000, capacity: 80, requirements: 'Catering and sound equipment.', status: 'submitted' }], plans: [], events: [] };
+  return {
+    requests: [
+      {
+        requestId: 'req-flow',
+        clientId: 'cli-001',
+        clientUserId: 'usr-client-001',
+        organizerId: 'org-001',
+        organizerUserId: 'usr-org-001',
+        eventName: 'Client conference',
+        eventType: 'Conference',
+        eventDate: '2099-11-20',
+        budget: 50000,
+        capacity: 80,
+        requirements: 'Catering and sound equipment.',
+        status: 'submitted',
+      },
+    ],
+    plans: [],
+    events: [],
+  };
 }
 
 async function approvedClientCheckout() {
   const state = fixture();
-  Object.assign(state.requests[0], { status: 'awaiting_client', budget: 60000, agreementStatus: 'pending_signature', paymentStatus: 'unpaid',
-    activeEventPlanId: 'plan-flow', proposals: [], auditHistory: [] });
-  state.plans = [{ eventPlanId: 'plan-flow', requestId: 'req-flow', title: 'Approved final plan', budget: 60000, approvalStatus: 'approved', revision: 1 }];
-  const h = harness('client', state), calls = [], notices = [], navigation = [];
+  Object.assign(state.requests[0], {
+    status: 'awaiting_client',
+    budget: 60000,
+    agreementStatus: 'pending_signature',
+    paymentStatus: 'unpaid',
+    activeEventPlanId: 'plan-flow',
+    proposals: [],
+    auditHistory: [],
+  });
+  state.plans = [
+    {
+      eventPlanId: 'plan-flow',
+      requestId: 'req-flow',
+      title: 'Approved final plan',
+      budget: 60000,
+      approvalStatus: 'approved',
+      revision: 1,
+    },
+  ];
+  const h = harness('client', state),
+    calls = [],
+    notices = [],
+    navigation = [];
   let modal, checkout;
   await h.render();
-  h.context.openModal = (title, body, buttons) => { modal = { title, body, buttons }; };
+  h.context.openModal = (title, body, buttons) => {
+    modal = { title, body, buttons };
+  };
   h.context.toast = (message, type) => notices.push({ message, type });
   h.context.goNav = page => navigation.push(page);
-  h.context.window = { EventFlowCheckout: { open: options => { checkout = options; } } };
+  h.context.window = {
+    EventFlowCheckout: {
+      open: options => {
+        checkout = options;
+      },
+    },
+  };
   h.context.apiGetClientRequests = async () => ({ data: structuredClone(state.requests) });
-  const syncStart = sources.client.indexOf('    async function syncClientEventRequests(');
-  vm.runInContext("let _workflowEventTab = 'ongoing';" + sources.client.match(/function getClientWorkflowEvents\(\)[\s\S]*?window\.pageWorkflowEvents = pageWorkflowEvents;/)[0]
-    + sources.client.slice(syncStart, sources.client.indexOf('    function pageRequestStatus(', syncStart)), h.context);
-  h.context.apiUpdateAgreementStatus = async (id, agreementStatus) => { calls.push('agreement'); state.requests[0].agreementStatus = agreementStatus; };
+  const syncStart = sources.client.indexOf('async function syncClientEventRequests(');
+  vm.runInContext(
+    "let _workflowEventTab = 'ongoing';" +
+      sources.client.match(
+        /function getClientWorkflowEvents\(\)[\s\S]*?window\.pageWorkflowEvents = pageWorkflowEvents;/
+      )[0] +
+      sources.client.slice(
+        syncStart,
+        sources.client.indexOf('function pageRequestStatus(', syncStart)
+      ),
+    h.context
+  );
+  h.context.apiUpdateAgreementStatus = async (id, agreementStatus) => {
+    calls.push('agreement');
+    state.requests[0].agreementStatus = agreementStatus;
+  };
   h.context.apiPayDeposit = async () => {
     calls.push('deposit');
-    Object.assign(state.requests[0], { status: 'confirmed', paymentStatus: 'deposit_paid', eventId: 'evt-checkout' });
-    state.events = [{ eventId: 'evt-checkout', clientUserId: 'usr-client-001', organizerUserId: 'usr-org-001', name: 'Client conference', date: '2099-11-20', status: 'ongoing' }];
-    return { data: { amountPaid: 18000, outstandingBalance: 42000, paymentStatus: 'deposit_paid', bookingStatus: 'confirmed', eventId: 'evt-checkout' } };
+    Object.assign(state.requests[0], {
+      status: 'confirmed',
+      paymentStatus: 'deposit_paid',
+      eventId: 'evt-checkout',
+    });
+    state.events = [
+      {
+        eventId: 'evt-checkout',
+        clientUserId: 'usr-client-001',
+        organizerUserId: 'usr-org-001',
+        name: 'Client conference',
+        date: '2099-11-20',
+        status: 'ongoing',
+      },
+    ];
+    return {
+      data: {
+        amountPaid: 18000,
+        outstandingBalance: 42000,
+        paymentStatus: 'deposit_paid',
+        bookingStatus: 'confirmed',
+        eventId: 'evt-checkout',
+      },
+    };
   };
   for (const [id, element] of Object.entries({
-    'client-agree-terms': { checked: false }, 'pay-modal-err': { style: {}, textContent: '' },
-    'payment-modal-container': { innerHTML: '' }, 'modal-foot': { innerHTML: '', style: {} },
-  })) h.elements.set(id, element);
-  return { ...h, state, calls, notices, navigation, getModal: () => modal, getCheckout: () => checkout,
-    async authorizePayment() { await h.context.submitClientMockPayment('req-flow'); return checkout.onAuthorize({ method: 'upi' }); } };
+    'client-agree-terms': { checked: false },
+    'pay-modal-err': { style: {}, textContent: '' },
+    'payment-modal-container': { innerHTML: '' },
+    'modal-foot': { innerHTML: '', style: {} },
+  }))
+    h.elements.set(id, element);
+  return {
+    ...h,
+    state,
+    calls,
+    notices,
+    navigation,
+    getModal: () => modal,
+    getCheckout: () => checkout,
+    async authorizePayment() {
+      await h.context.submitClientMockPayment('req-flow');
+      return checkout.onAuthorize({ method: 'upi' });
+    },
+  };
 }
 
 test('approved plan details and ongoing cards offer checkout before an event record exists, with one cancellation action', async () => {
@@ -112,17 +237,30 @@ test('approved plan details and ongoing cards offer checkout before an event rec
 test('agreement failures stop payment, and pending verification does not display booking-confirmed success', async () => {
   const failed = await approvedClientCheckout();
   failed.elements.get('client-agree-terms').checked = true;
-  failed.context.apiUpdateAgreementStatus = async () => { throw new Error('Agreement could not be saved'); };
+  failed.context.apiUpdateAgreementStatus = async () => {
+    throw new Error('Agreement could not be saved');
+  };
   await failed.authorizePayment();
   assert.deepEqual(failed.calls, []);
-  assert.match(failed.elements.get('payment-modal-container').innerHTML, /Agreement could not be saved/);
+  assert.match(
+    failed.elements.get('payment-modal-container').innerHTML,
+    /Agreement could not be saved/
+  );
   assert.equal(failed.context.DB.eventRequests[0].status, 'awaiting_client');
   const pending = await approvedClientCheckout();
   pending.elements.get('client-agree-terms').checked = true;
-  pending.context.apiPayDeposit = async () => ({ data: { bookingStatus: 'awaiting_client', paymentStatus: 'deposit_pending', amountPaid: 0 } });
+  pending.context.apiPayDeposit = async () => ({
+    data: { bookingStatus: 'awaiting_client', paymentStatus: 'deposit_pending', amountPaid: 0 },
+  });
   await pending.authorizePayment();
-  assert.doesNotMatch(pending.elements.get('payment-modal-container').innerHTML, /Booking Confirmed!/);
-  assert.equal(pending.notices.some(notice => notice.type === 'success'), false);
+  assert.doesNotMatch(
+    pending.elements.get('payment-modal-container').innerHTML,
+    /Booking Confirmed!/
+  );
+  assert.equal(
+    pending.notices.some(notice => notice.type === 'success'),
+    false
+  );
 });
 
 test('remaining balance actions use the payment API, and disappear after full payment', async () => {
@@ -143,9 +281,15 @@ test('remaining balance actions use the payment API, and disappear after full pa
   await h.getCheckout().onAuthorize({ method: 'upi' });
   assert.equal(h.context.DB.eventRequests[0].paymentStatus, 'fully_paid');
   const item = h.context.getClientWorkflowEvents().upcoming[0];
-  assert.doesNotMatch(h.context.renderWorkflowEventCard(item, 'upcoming'), /Pay Remaining Amount|Pay Now/);
+  assert.doesNotMatch(
+    h.context.renderWorkflowEventCard(item, 'upcoming'),
+    /Pay Remaining Amount|Pay Now/
+  );
   h.context.openClientPaymentModal('req-flow');
-  assert.equal(h.getModal().buttons.some(button => button.lbl === 'Pay Remaining Amount'), false);
+  assert.equal(
+    h.getModal().buttons.some(button => button.lbl === 'Pay Remaining Amount'),
+    false
+  );
 });
 
 test('confirmed booking details provide remaining payment while cards offer details and cancellation', async () => {
@@ -153,7 +297,15 @@ test('confirmed booking details provide remaining payment while cards offer deta
   h.elements.get('client-agree-terms').checked = true;
   await h.authorizePayment();
   const request = h.context.DB.eventRequests[0];
-  request.eventModifications = [{ id: 'old-mod', requesterRole: 'organizer', status: 'pending_approval', reason: 'Earlier request', newValues: {} }];
+  request.eventModifications = [
+    {
+      id: 'old-mod',
+      requesterRole: 'organizer',
+      status: 'pending_approval',
+      reason: 'Earlier request',
+      newValues: {},
+    },
+  ];
   h.context.DB.eventWorkflowPayments = [
     { paymentId: 'captured', requestId: 'req-flow', amount: 24000, status: 'completed' },
     { paymentId: 'failed', requestId: 'req-flow', amount: 999999, status: 'failed' },
@@ -162,14 +314,22 @@ test('confirmed booking details provide remaining payment while cards offer deta
   h.context.renderWorkflowRequestDetails('req-flow');
   assert.match(h.content.innerHTML, /Remaining amount: ₹36,000/);
   assert.match(h.content.innerHTML, /Pay Remaining Amount/);
-  assert.doesNotMatch(h.content.innerHTML, /Pay Now|Booking Confirmation|Update Event|Approve Changes|Decline Changes/);
+  assert.doesNotMatch(
+    h.content.innerHTML,
+    /Pay Now|Booking Confirmation|Update Event|Approve Changes|Decline Changes/
+  );
   assert.match(h.content.innerHTML, /Cancel Event/);
   h.context.openClientPaymentModal('req-flow');
   assert.equal(h.getModal().title, 'Booking Payment');
   assert.match(h.getModal().body, /24,000/);
   assert.match(h.getModal().body, /36,000/);
   assert.doesNotMatch(h.getModal().body, /client-agree-terms|mock-pay-method/);
-  assert.ok(h.getModal().buttons.find(button => button.lbl === 'Pay Remaining Amount').fn.includes('36000'));
+  assert.ok(
+    h
+      .getModal()
+      .buttons.find(button => button.lbl === 'Pay Remaining Amount')
+      .fn.includes('36000')
+  );
   assert.ok(!h.getModal().buttons.some(button => /submitClientMockPayment/.test(button.fn)));
   for (const tab of ['upcoming', 'ongoing']) {
     const card = h.context.renderWorkflowEventCard(h.context.getClientWorkflowEvents().all[0], tab);
@@ -182,28 +342,65 @@ test('confirmed booking details provide remaining payment while cards offer deta
   h.context.DB.eventWorkflowPayments = [];
   h.context.openClientPaymentModal('req-flow');
   assert.equal(h.getModal().title, 'Booking Payment');
-  assert.ok(h.getModal().buttons.find(button => button.lbl === 'Pay Remaining Amount').fn.includes('60000'));
+  assert.ok(
+    h
+      .getModal()
+      .buttons.find(button => button.lbl === 'Pay Remaining Amount')
+      .fn.includes('60000')
+  );
   assert.ok(!h.getModal().buttons.some(button => /submitClientMockPayment/.test(button.fn)));
 });
 
 test('both role editors refuse booked client events while public event editing remains available', async () => {
   for (const role of ['client', 'organizer']) {
     const state = fixture();
-    Object.assign(state.requests[0], { status: 'confirmed', paymentStatus: 'deposit_paid', eventId: 'evt-locked' });
-    state.events = [{ eventId: 'evt-locked', name: 'Booked event', status: 'ongoing', clientId: 'cli-001', clientUserId: 'usr-client-001', organizerUserId: 'usr-org-001' }];
-    const h = harness(role, state), modals = [], notices = [];
+    Object.assign(state.requests[0], {
+      status: 'confirmed',
+      paymentStatus: 'deposit_paid',
+      eventId: 'evt-locked',
+    });
+    state.events = [
+      {
+        eventId: 'evt-locked',
+        name: 'Booked event',
+        status: 'ongoing',
+        clientId: 'cli-001',
+        clientUserId: 'usr-client-001',
+        organizerUserId: 'usr-org-001',
+      },
+    ];
+    const h = harness(role, state),
+      modals = [],
+      notices = [];
     await h.render();
     h.context.openModal = (...args) => modals.push(args);
     h.context.toast = message => notices.push(message);
-    vm.runInContext(section(sources[role], '    function openEditEventModal(', '    function deleteEvent('), h.context);
-    if (role === 'organizer') vm.runInContext(section(sources.organizer, '    function openUpdateConfirmedEventModal(', '    function calculateModCost('), h.context);
+    vm.runInContext(
+      section(sources[role], 'function openEditEventModal(', 'function deleteEvent('),
+      h.context
+    );
+    if (role === 'organizer')
+      vm.runInContext(
+        section(
+          sources.organizer,
+          'function openUpdateConfirmedEventModal(',
+          'function calculateModCost('
+        ),
+        h.context
+      );
     h.context.openEditEventModal('evt-locked');
     h.context.saveEditEvent('evt-locked');
     h.context.openUpdateConfirmedEventModal('req-flow', 'evt-locked');
     assert.equal(modals.length, 0);
     assert.equal(notices.length, 3);
     assert.ok(notices.every(message => /cannot be edited/.test(message)));
-    h.context.DB.events.push({ id: 'evt-public', title: 'Public workshop', date: '2099-11-20', time: '10:00', capacity: 50 });
+    h.context.DB.events.push({
+      id: 'evt-public',
+      title: 'Public workshop',
+      date: '2099-11-20',
+      time: '10:00',
+      capacity: 50,
+    });
     h.context.openEditEventModal('evt-public');
     assert.equal(modals.length, 1);
     assert.match(modals[0][0], /Public workshop/);
@@ -213,18 +410,29 @@ test('both role editors refuse booked client events while public event editing r
 function loadOrganizerEventViews(h) {
   h.context._workflowEventTab = 'ongoing';
   h.context._currentPage = 'my-events';
-  vm.runInContext(section(sources.organizer, '    function isCancelledWorkflowEvent(', '    function openModal('), h.context);
+  vm.runInContext(
+    section(sources.organizer, 'function isCancelledWorkflowEvent(', 'function openModal('),
+    h.context
+  );
 }
 
 test('organizer ongoing events refresh to show client-accepted planning and open the existing plan workflow', async () => {
   const state = fixture();
-  Object.assign(state.requests[0], { status: 'changes_requested', agreementStatus: 'not_sent', paymentStatus: 'unpaid' });
+  Object.assign(state.requests[0], {
+    status: 'changes_requested',
+    agreementStatus: 'not_sent',
+    paymentStatus: 'unpaid',
+  });
   const h = harness('organizer', state);
   await h.context.syncWorkflowData();
   loadOrganizerEventViews(h);
   assert.equal(h.context.getOngoingWorkflowItems().length, 0);
-  Object.assign(state.requests[0], { status: 'planning', budget: 75000, eventDate: '2099-11-22',
-    auditHistory: [{ action: 'Client Accepted Requested Changes' }] });
+  Object.assign(state.requests[0], {
+    status: 'planning',
+    budget: 75000,
+    eventDate: '2099-11-22',
+    auditHistory: [{ action: 'Client Accepted Requested Changes' }],
+  });
   await h.context.syncWorkflowData();
   const html = h.context.pageWorkflowEvents();
   assert.match(html, /Ongoing Events \(1\)/);
@@ -239,7 +447,8 @@ test('organizer ongoing events refresh to show client-accepted planning and open
   assert.equal(h.context.DB.eventRequests[0].paymentStatus, 'unpaid');
   h.context.goNav = page => {
     h.context._currentPage = page;
-    if (page === 'request-details') h.context.renderWorkflowRequestDetails(h.context._workflowRequestId);
+    if (page === 'request-details')
+      h.context.renderWorkflowRequestDetails(h.context._workflowRequestId);
   };
   vm.runInContext(html.match(/onclick="(viewWorkflowRequestDrawer[^\"]*)"/)[1], h.context);
   assert.equal(h.context._workflowRequestId, 'req-flow');
@@ -249,24 +458,46 @@ test('organizer ongoing events refresh to show client-accepted planning and open
 });
 
 test('organizer and client keep the same accepted planning work visible through review and payment after reload', async () => {
-  for (const status of ['planning', 'plan_submitted', 'plan_revision_requested', 'proposal_sent', 'awaiting_client']) {
+  for (const status of [
+    'planning',
+    'plan_submitted',
+    'plan_revision_requested',
+    'proposal_sent',
+    'awaiting_client',
+  ]) {
     const state = fixture();
-    Object.assign(state.requests[0], { status, paymentStatus: 'unpaid', auditHistory: [{ action: 'Client Accepted Requested Changes' }] });
-    const organizer = harness('organizer', state), client = harness('client', state);
+    Object.assign(state.requests[0], {
+      status,
+      paymentStatus: 'unpaid',
+      auditHistory: [{ action: 'Client Accepted Requested Changes' }],
+    });
+    const organizer = harness('organizer', state),
+      client = harness('client', state);
     await organizer.context.syncWorkflowData();
     await client.context.syncWorkflowData();
     loadOrganizerEventViews(organizer);
     client.context.window = {};
-    vm.runInContext("let _workflowEventTab = 'ongoing';" + sources.client.match(/function getClientWorkflowEvents\(\)[\s\S]*?window\.pageWorkflowEvents = pageWorkflowEvents;/)[0], client.context);
+    vm.runInContext(
+      "let _workflowEventTab = 'ongoing';" +
+        sources.client.match(
+          /function getClientWorkflowEvents\(\)[\s\S]*?window\.pageWorkflowEvents = pageWorkflowEvents;/
+        )[0],
+      client.context
+    );
     const work = organizer.context.getOngoingWorkflowItems();
     assert.equal(work.length, 1, status);
     assert.equal(work[0].isPlanning, true, status);
     assert.equal(work[0].event, undefined, status);
     assert.equal(work[0].request.status, status);
-    assert.equal(client.context.getClientWorkflowEvents().ongoing[0].requestId, work[0].request.requestId, status);
+    assert.equal(
+      client.context.getClientWorkflowEvents().ongoing[0].requestId,
+      work[0].request.requestId,
+      status
+    );
     const html = organizer.context.pageWorkflowEvents();
     assert.match(html, /Ongoing Events \(1\)/);
-    if (status === 'plan_submitted' || status === 'proposal_sent') assert.match(html, /Awaiting Client Review/);
+    if (status === 'plan_submitted' || status === 'proposal_sent')
+      assert.match(html, /Awaiting Client Review/);
     if (status === 'awaiting_client') assert.match(html, /Awaiting Payment/);
     assert.equal(organizer.context.DB.events.length, 0, status);
     assert.equal(organizer.context.DB.eventRequests[0].paymentStatus, 'unpaid', status);
@@ -275,12 +506,34 @@ test('organizer and client keep the same accepted planning work visible through 
 
 test('organizer planning lists exclude other organizers, unopened requests and closed workflows', async () => {
   const state = fixture();
-  const accepted = { ...state.requests[0], status: 'planning', auditHistory: [{ action: 'Client Accepted Requested Changes' }] };
-  state.requests = [accepted,
-    { ...accepted, requestId: 'private', organizerId: 'org-other', organizerUserId: 'usr-other', eventName: 'Other organizer private event' },
-    { ...accepted, requestId: 'pending', eventName: 'Unopened request', status: 'submitted', auditHistory: [] },
+  const accepted = {
+    ...state.requests[0],
+    status: 'planning',
+    auditHistory: [{ action: 'Client Accepted Requested Changes' }],
+  };
+  state.requests = [
+    accepted,
+    {
+      ...accepted,
+      requestId: 'private',
+      organizerId: 'org-other',
+      organizerUserId: 'usr-other',
+      eventName: 'Other organizer private event',
+    },
+    {
+      ...accepted,
+      requestId: 'pending',
+      eventName: 'Unopened request',
+      status: 'submitted',
+      auditHistory: [],
+    },
     { ...accepted, requestId: 'cancelled-record', cancellation: { reason: 'Cancelled' } },
-    ...['rejected', 'withdrawn', 'expired', 'cancelled', 'completed'].map(status => ({ ...accepted, requestId: status, status, eventName: 'Closed workflow ' + status })),
+    ...['rejected', 'withdrawn', 'expired', 'cancelled', 'completed'].map(status => ({
+      ...accepted,
+      requestId: status,
+      status,
+      eventName: 'Closed workflow ' + status,
+    })),
   ];
   const h = harness('organizer', state);
   await h.context.syncWorkflowData();
@@ -289,8 +542,20 @@ test('organizer planning lists exclude other organizers, unopened requests and c
   const html = h.context.pageWorkflowEvents();
   assert.doesNotMatch(html, /Other organizer private event|Unopened request|Closed workflow/);
   h.context.DB.organizers = [{ organizerId: 'org-profile', userId: h.context.CU.id }];
-  h.context.DB.eventRequests = [{ id: 'profile-request', organizerId: 'org-profile', status: 'planning', eventName: 'Profile-linked planning' },
-    { id: 'other-profile', organizerId: 'org-other', status: 'planning', eventName: 'Other profile' }];
+  h.context.DB.eventRequests = [
+    {
+      id: 'profile-request',
+      organizerId: 'org-profile',
+      status: 'planning',
+      eventName: 'Profile-linked planning',
+    },
+    {
+      id: 'other-profile',
+      organizerId: 'org-other',
+      status: 'planning',
+      eventName: 'Other profile',
+    },
+  ];
   assert.equal(h.context.getOngoingWorkflowItems().length, 1);
   assert.equal(h.context.getOngoingWorkflowItems()[0].request.id, 'profile-request');
 });
@@ -299,17 +564,59 @@ test('organizer counts each booked event and planning request once without reviv
   const state = fixture();
   const own = state.requests[0];
   state.requests = [
-    { ...own, requestId: 'booked', eventId: 'evt-booked', status: 'confirmed', paymentStatus: 'fully_paid', eventName: 'Booked conference' },
+    {
+      ...own,
+      requestId: 'booked',
+      eventId: 'evt-booked',
+      status: 'confirmed',
+      paymentStatus: 'fully_paid',
+      eventName: 'Booked conference',
+    },
     { ...own, requestId: 'planning', status: 'planning', eventName: 'Planning conference' },
     { ...own, requestId: 'planning', status: 'planning', eventName: 'Planning conference' },
-    { ...own, requestId: 'ended', eventId: 'evt-ended', status: 'planning', eventName: 'Already completed' },
-    { ...own, requestId: 'cancelled', eventId: 'evt-cancelled', status: 'planning', eventName: 'Already cancelled' },
+    {
+      ...own,
+      requestId: 'ended',
+      eventId: 'evt-ended',
+      status: 'planning',
+      eventName: 'Already completed',
+    },
+    {
+      ...own,
+      requestId: 'cancelled',
+      eventId: 'evt-cancelled',
+      status: 'planning',
+      eventName: 'Already cancelled',
+    },
   ];
-  const booked = { eventId: 'evt-booked', organizerUserId: 'usr-org-001', name: 'Booked conference', status: 'ongoing', date: own.eventDate };
-  state.events = [booked, { ...booked },
-    { eventId: 'evt-ended', organizerUserId: 'usr-org-001', status: 'completed', name: 'Already completed' },
-    { eventId: 'evt-cancelled', organizerUserId: 'usr-org-001', status: 'cancelled', name: 'Already cancelled' },
-    { eventId: 'unrelated', organizerUserId: 'usr-org-001', status: 'ongoing', name: 'Unlinked public event' },
+  const booked = {
+    eventId: 'evt-booked',
+    organizerUserId: 'usr-org-001',
+    name: 'Booked conference',
+    status: 'ongoing',
+    date: own.eventDate,
+  };
+  state.events = [
+    booked,
+    { ...booked },
+    {
+      eventId: 'evt-ended',
+      organizerUserId: 'usr-org-001',
+      status: 'completed',
+      name: 'Already completed',
+    },
+    {
+      eventId: 'evt-cancelled',
+      organizerUserId: 'usr-org-001',
+      status: 'cancelled',
+      name: 'Already cancelled',
+    },
+    {
+      eventId: 'unrelated',
+      organizerUserId: 'usr-org-001',
+      status: 'ongoing',
+      name: 'Unlinked public event',
+    },
   ];
   const h = harness('organizer', state);
   await h.context.syncWorkflowData();
@@ -320,9 +627,12 @@ test('organizer counts each booked event and planning request once without reviv
   assert.equal(items.filter(item => !item.isPlanning).length, 1);
   const html = h.context.pageWorkflowEvents();
   assert.match(html, /Ongoing Events \(2\)/);
-  assert.equal((html.match(/<strong>Booked conference<\/strong>/g) || []).length, 1);
-  assert.equal((html.match(/<strong>Planning conference<\/strong>/g) || []).length, 1);
-  assert.doesNotMatch(h.context.pageOngoingEvents(true), /Already completed|Already cancelled|Unlinked public event/);
+  assert.equal((html.match(/class="ev-title">Booked conference<\/div>/g) || []).length, 1);
+  assert.equal((html.match(/class="ev-title">Planning conference<\/div>/g) || []).length, 1);
+  assert.doesNotMatch(
+    h.context.pageOngoingEvents(true),
+    /Already completed|Already cancelled|Unlinked public event/
+  );
   state.requests[0].status = 'completed';
   state.events[0].status = state.events[1].status = 'completed';
   await h.context.syncWorkflowData();
@@ -331,42 +641,96 @@ test('organizer counts each booked event and planning request once without reviv
 });
 
 async function rejectionDialog() {
-  const state = fixture(), h = harness('organizer', state), calls = [], notices = [];
+  const state = fixture(),
+    h = harness('organizer', state),
+    calls = [],
+    notices = [];
   await h.render();
   const classes = new Set(['hidden']);
-  const overlay = { classList: { add: name => classes.add(name), remove: name => classes.delete(name) } };
-  const footer = { children: [], style: {}, set innerHTML(value) { this.children = []; }, appendChild(button) { this.children.push(button); } };
+  const overlay = {
+    classList: { add: name => classes.add(name), remove: name => classes.delete(name) },
+  };
+  const footer = {
+    children: [],
+    style: {},
+    set innerHTML(value) {
+      this.children = [];
+    },
+    appendChild(button) {
+      this.children.push(button);
+    },
+  };
   for (const [id, value] of Object.entries({
-    'modal-title': {}, 'modal-body': {}, 'modal-foot': footer, 'modal-overlay': overlay,
-    'workflow-reject-type': { value: 'budget' }, 'workflow-reject-reason': { value: '' },
-    'workflow-reject-budget': { style: {} }, 'workflow-reject-date': { style: {} },
-    'workflow-reject-policy': { style: {} }, 'workflow-change-policy': { checked: false },
-    'workflow-new-budget': { value: '' }, 'workflow-new-date': { value: '' }, 'workflow-reject-error': { textContent: '' },
-  })) h.elements.set(id, value);
-  h.context.document = { createElement() { return { attributes: {}, setAttribute(name, value) { this.attributes[name] = value; } }; } };
+    'modal-title': {},
+    'modal-body': {},
+    'modal-foot': footer,
+    'modal-overlay': overlay,
+    'workflow-reject-type': { value: 'budget' },
+    'workflow-reject-reason': { value: '' },
+    'workflow-reject-budget': { style: {} },
+    'workflow-reject-date': { style: {} },
+    'workflow-reject-policy': { style: {} },
+    'workflow-change-policy': { checked: false },
+    'workflow-new-budget': { value: '' },
+    'workflow-new-date': { value: '' },
+    'workflow-reject-error': { textContent: '' },
+  }))
+    h.elements.set(id, value);
+  h.context.document = {
+    createElement() {
+      return {
+        attributes: {},
+        setAttribute(name, value) {
+          this.attributes[name] = value;
+        },
+      };
+    },
+  };
   h.context.requestAnimationFrame = callback => callback();
   h.context.toast = (message, type) => notices.push({ message, type });
   h.context.apiRequest = async (endpoint, options) => {
     const body = JSON.parse(options.body);
     calls.push({ endpoint, method: options.method, body });
-    Object.assign(state.requests[0], body.reasonType === 'permanent'
-      ? { status: 'rejected', rejectionReason: body.reason }
-      : { status: 'changes_requested' });
+    Object.assign(
+      state.requests[0],
+      body.reasonType === 'permanent'
+        ? { status: 'rejected', rejectionReason: body.reason }
+        : { status: 'changes_requested' }
+    );
     return { success: true, data: structuredClone(state.requests[0]) };
   };
-  vm.runInContext(section(sources.organizer, '    function openModal(', '    function closeModalOnBg(')
-    + section(sources.organizer, 'async function apiRejectEventRequest(', 'async function apiRespondToEventRequest('), h.context);
+  vm.runInContext(
+    section(sources.organizer, 'function openModal(', 'function closeModalOnBg(') +
+      section(
+        sources.organizer,
+        'async function apiRejectEventRequest(',
+        'async function apiRespondToEventRequest('
+      ),
+    h.context
+  );
   await h.context.openWorkflowRejectModal('req-flow');
-  return { ...h, calls, notices, footer, isOpen: () => classes.has('open'), click(label) {
-    const button = footer.children.find(item => item.textContent === label);
-    assert.ok(button, `Missing ${label} button`);
-    return typeof button.onclick === 'function' ? button.onclick() : vm.runInContext(button.attributes.onclick, h.context);
-  } };
+  return {
+    ...h,
+    calls,
+    notices,
+    footer,
+    isOpen: () => classes.has('open'),
+    click(label) {
+      const button = footer.children.find(item => item.textContent === label);
+      assert.ok(button, `Missing ${label} button`);
+      return typeof button.onclick === 'function'
+        ? button.onclick()
+        : vm.runInContext(button.attributes.onclick, h.context);
+    },
+  };
 }
 
 test('organizer rejection dialog has one Cancel, a Reject action, and the existing Send Response action', async () => {
   const h = await rejectionDialog();
-  assert.deepEqual(h.footer.children.map(button => button.textContent), ['Cancel', 'Reject', 'Send Response']);
+  assert.deepEqual(
+    h.footer.children.map(button => button.textContent),
+    ['Cancel', 'Reject', 'Send Response']
+  );
   await h.click('Reject');
   assert.equal(h.elements.get('workflow-reject-error').textContent, 'Please enter a reason.');
   assert.equal(h.calls.length, 0);
@@ -380,24 +744,42 @@ test('Reject permanently rejects the request with its reason even when budget ch
   const h = await rejectionDialog();
   h.elements.get('workflow-reject-reason').value = '  The requested date is unavailable.  ';
   await h.click('Reject');
-  assert.deepEqual(h.calls, [{ endpoint: '/event-requests/req-flow/reject', method: 'POST',
-    body: { reason: 'The requested date is unavailable.', reasonType: 'permanent' } }]);
+  assert.deepEqual(h.calls, [
+    {
+      endpoint: '/event-requests/req-flow/reject',
+      method: 'POST',
+      body: { reason: 'The requested date is unavailable.', reasonType: 'permanent' },
+    },
+  ]);
   assert.equal(h.context.DB.eventRequests[0].status, 'rejected');
   assert.equal(h.context.DB.eventRequests[0].rejectionReason, 'The requested date is unavailable.');
   assert.equal(h.isOpen(), false);
-  assert.ok(h.notices.some(notice => notice.type === 'success' && notice.message === 'Request permanently rejected'));
+  assert.ok(
+    h.notices.some(
+      notice => notice.type === 'success' && notice.message === 'Request permanently rejected'
+    )
+  );
 });
 
 test('failed permanent rejection keeps the dialog and reason available for retry', async () => {
   const h = await rejectionDialog();
   h.elements.get('workflow-reject-reason').value = 'The venue is unavailable.';
-  h.context.apiRequest = async () => { throw new Error('Unable to save rejection'); };
+  h.context.apiRequest = async () => {
+    throw new Error('Unable to save rejection');
+  };
   await h.click('Reject');
   assert.equal(h.context.DB.eventRequests[0].status, 'submitted');
   assert.equal(h.elements.get('workflow-reject-reason').value, 'The venue is unavailable.');
   assert.equal(h.isOpen(), true);
-  assert.ok(h.notices.some(notice => notice.type === 'error' && notice.message === 'Unable to save rejection'));
-  assert.equal(h.notices.some(notice => notice.type === 'success'), false);
+  assert.ok(
+    h.notices.some(
+      notice => notice.type === 'error' && notice.message === 'Unable to save rejection'
+    )
+  );
+  assert.equal(
+    h.notices.some(notice => notice.type === 'success'),
+    false
+  );
 });
 
 test('Send Response still requires policy agreement and sends the proposed budget as a change', async () => {
@@ -426,10 +808,19 @@ test('both pages refresh the same workflow and expose actions only to the respon
   assert.doesNotMatch(await client.render(), /onclick="openWorkflowPlanModal/);
   state.requests[0].status = 'plan_submitted';
   state.requests[0].activeEventPlanId = 'plan-flow';
-  state.plans.push({ eventPlanId: 'plan-flow', requestId: 'req-flow', title: 'Full plan', description: 'Detailed event plan', budget: 50000, approvalStatus: 'pending', documentFileName: 'plan.pdf', documentName: 'Conference plan.pdf' });
+  state.plans.push({
+    eventPlanId: 'plan-flow',
+    requestId: 'req-flow',
+    title: 'Full plan',
+    description: 'Detailed event plan',
+    budget: 50000,
+    approvalStatus: 'pending',
+    documentFileName: 'plan.pdf',
+    documentName: 'Conference plan.pdf',
+  });
   const clientPlan = await client.render();
   assert.match(clientPlan, /Accept Plan/);
-  assert.match(clientPlan, /Request New Plan/);
+  assert.match(clientPlan, /Request Changes/);
   assert.match(clientPlan, /View PDF/);
   assert.doesNotMatch(await organizer.render(), /onclick="reviewWorkflowPlan/);
   state.requests[0].status = 'plan_revision_requested';
@@ -445,9 +836,17 @@ test('clients see negotiation choices and escaped rejection reasons', async () =
   const state = fixture();
   const h = harness('client', state);
   state.requests[0].status = 'changes_requested';
-  state.requests[0].negotiations = [{ action: 'changes_requested', reason: 'A larger budget is needed.', budget: 60000 }];
+  state.requests[0].negotiations = [
+    { action: 'changes_requested', reason: 'A larger budget is needed.', budget: 60000 },
+  ];
   let html = await h.render();
-  for (const label of ['Accept Changes', 'Reject Changes', 'Send Counteroffer', 'A larger budget is needed.']) assert.ok(html.includes(label));
+  for (const label of [
+    'Accept Changes',
+    'Reject Changes',
+    'Send Counteroffer',
+    'A larger budget is needed.',
+  ])
+    assert.ok(html.includes(label));
   state.requests[0].status = 'rejected';
   state.requests[0].rejectionReason = 'The <venue> is unavailable & cannot be booked.';
   html = await h.render();
@@ -458,8 +857,19 @@ test('clients see negotiation choices and escaped rejection reasons', async () =
 
 test('approved events show payment for the client and completion requirements for the organizer', async () => {
   const state = fixture();
-  Object.assign(state.requests[0], { status: 'confirmed', eventId: 'evt-flow', paymentStatus: 'unpaid' });
-  state.events.push({ eventId: 'evt-flow', name: 'Client conference', date: '2099-11-20', status: 'ongoing', clientId: 'cli-001', organizerId: 'org-001' });
+  Object.assign(state.requests[0], {
+    status: 'confirmed',
+    eventId: 'evt-flow',
+    paymentStatus: 'unpaid',
+  });
+  state.events.push({
+    eventId: 'evt-flow',
+    name: 'Client conference',
+    date: '2099-11-20',
+    status: 'ongoing',
+    clientId: 'cli-001',
+    organizerId: 'org-001',
+  });
   const client = harness('client', state);
   const organizer = harness('organizer', state);
   assert.match(await client.render(), /Pay Remaining Amount/);
@@ -467,7 +877,10 @@ test('approved events show payment for the client and completion requirements fo
   assert.match(organizer.content.innerHTML, /client must complete full payment/);
   state.requests[0].paymentStatus = 'deposit_paid';
   assert.match(await organizer.render(), /Payment status<\/span><span[^>]*>Deposit Paid<\/span>/);
-  assert.match(organizer.content.innerHTML, /Deposit received\. The remaining balance must be paid/);
+  assert.match(
+    organizer.content.innerHTML,
+    /Deposit received\. The remaining balance must be paid/
+  );
   assert.doesNotMatch(organizer.content.innerHTML, /Mark Event as Completed/);
   state.requests[0].paymentStatus = 'fully_paid';
   assert.doesNotMatch(await client.render(), /Pay Remaining Amount|Pay Now/);
@@ -481,16 +894,30 @@ test('client submission calls the backend and cannot create a local-only request
   const h = harness('client', fixture());
   await h.context.syncWorkflowData();
   h.elements.set('req-policy', { checked: true });
-  const values = { 'req-title': 'New conference', 'req-type': 'Conference', 'req-date': '2099-11-20', 'req-city': 'Mumbai', 'req-guests': '80', 'req-budget': '50000', 'req-desc': 'Conference requirements', 'req-venue': 'City Hall' };
+  const values = {
+    'req-title': 'New conference',
+    'req-type': 'Conference',
+    'req-date': '2099-11-20',
+    'req-city': 'Mumbai',
+    'req-guests': '80',
+    'req-budget': '50000',
+    'req-desc': 'Conference requirements',
+    'req-venue': 'City Hall',
+  };
   for (const [id, value] of Object.entries(values)) h.elements.set(id, { value });
   h.context.openModal = () => {};
   const notices = [];
   h.context.toast = (...args) => notices.push(args);
   h.context.DB.users.push({ id: 'usr-org-001', role: 'organizer', name: 'Test Organizer' });
   let payload;
-  h.context.apiCreateEventRequest = async data => { payload = data; };
+  h.context.apiCreateEventRequest = async data => {
+    payload = data;
+  };
   h.context.runWorkflowAction = action => action();
-  vm.runInContext(section(sources.client, '    let eventRequestDraft = null;', '    function pageUpcomingEvents('), h.context);
+  vm.runInContext(
+    section(sources.client, 'let eventRequestDraft = null;', 'function pageUpcomingEvents('),
+    h.context
+  );
   await h.context.loadWorkflowEventPolicy();
   const before = h.context.DB.eventRequests.length;
   h.elements.get('req-policy').checked = false;
@@ -499,7 +926,10 @@ test('client submission calls the backend and cannot create a local-only request
   assert.equal(payload, undefined, 'Unchecked terms must block submission');
   h.elements.get('req-policy').checked = true;
   h.context.reviewEventRequest('usr-org-001');
-  assert.ok(vm.runInContext('eventRequestDraft', h.context), `Accepted request should reach the review step: ${JSON.stringify(notices)}`);
+  assert.ok(
+    vm.runInContext('eventRequestDraft', h.context),
+    `Accepted request should reach the review step: ${JSON.stringify(notices)}`
+  );
   await h.context.submitEventRequest('usr-org-001');
   assert.equal(payload.organizerId, 'usr-org-001');
   assert.equal(payload.eventName, 'New conference');
@@ -529,18 +959,24 @@ test('client event request submission excludes startTime, endTime, budgetFlexibi
     'req-venue': 'Grand Palace Hall',
   };
   for (const [id, value] of Object.entries(values)) h.elements.set(id, { value });
-  let modalTitle = null, modalContent = null;
+  let modalTitle = null,
+    modalContent = null;
   h.context.openModal = (title, body) => {
     modalTitle = title;
     modalContent = body;
   };
   let closeModalCalls = 0;
-  h.context.closeModal = () => { closeModalCalls++; };
+  h.context.closeModal = () => {
+    closeModalCalls++;
+  };
   const toasts = [];
   h.context.toast = (msg, type) => toasts.push({ msg, type });
   h.context.DB.users.push({ id: 'usr-org-001', role: 'organizer', name: 'Test Organizer' });
 
-  vm.runInContext(section(sources.client, '    let eventRequestDraft = null;', '    function pageUpcomingEvents('), h.context);
+  vm.runInContext(
+    section(sources.client, 'let eventRequestDraft = null;', 'function pageUpcomingEvents('),
+    h.context
+  );
   await h.context.loadWorkflowEventPolicy();
 
   for (const invalid of ['-1', '1.234', 'not-a-price']) {
@@ -584,9 +1020,11 @@ test('client event request submission excludes startTime, endTime, budgetFlexibi
   assert.equal(toasts.at(-1)?.type, 'error');
 
   let resolveSubmission;
-  const inFlightPromise = new Promise(resolve => { resolveSubmission = resolve; });
+  const inFlightPromise = new Promise(resolve => {
+    resolveSubmission = resolve;
+  });
   let payloadSent = null;
-  h.context.apiCreateEventRequest = async (payload) => {
+  h.context.apiCreateEventRequest = async payload => {
     submitCalls++;
     payloadSent = payload;
     await inFlightPromise;
@@ -608,10 +1046,13 @@ test('client event request submission excludes startTime, endTime, budgetFlexibi
   assert.equal(payloadSent.ticketPrice, 499.5);
   assert.equal(payloadSent.visibility, 'private');
   assert.equal(closeModalCalls, 1, 'Modal should be closed on success');
-  assert.equal(vm.runInContext('eventRequestDraft', h.context), null, 'Draft should be cleared on success');
+  assert.equal(
+    vm.runInContext('eventRequestDraft', h.context),
+    null,
+    'Draft should be cleared on success'
+  );
   assert.equal(toasts.at(-1)?.type, 'success');
 });
-
 
 test('organizer submits the selected PDF before submitting its linked event plan', async () => {
   const state = fixture();
@@ -619,14 +1060,23 @@ test('organizer submits the selected PDF before submitting its linked event plan
   const h = harness('organizer', state);
   await h.render();
   const calls = [];
-  h.elements.set('workflow-plan-pdf', { files: [{ name: 'conference.pdf', type: 'application/pdf', size: 100 }] });
+  h.elements.set('workflow-plan-pdf', {
+    files: [{ name: 'conference.pdf', type: 'application/pdf', size: 100 }],
+  });
   h.context.apiUploadEventPlanDocument = async (id, file) => calls.push(['upload', id, file.name]);
-  h.context.apiCreateEventPlan = async body => calls.push(['submit', body.requestId, body.budget, body.capacity]);
+  h.context.apiCreateEventPlan = async body =>
+    calls.push(['submit', body.requestId, body.budget, body.capacity]);
   let pending;
-  h.context.runWorkflowAction = action => { pending = action(); return pending; };
+  h.context.runWorkflowAction = action => {
+    pending = action();
+    return pending;
+  };
   await h.context.submitWorkflowPlan('req-flow');
   await pending;
-  assert.deepEqual(calls, [['upload', 'req-flow', 'conference.pdf'], ['submit', 'req-flow', 50000, 80]]);
+  assert.deepEqual(calls, [
+    ['upload', 'req-flow', 'conference.pdf'],
+    ['submit', 'req-flow', 50000, 80],
+  ]);
 });
 
 test('both client creation entry points link to policies and terms and require agreement before calling the server', async () => {
@@ -636,8 +1086,14 @@ test('both client creation entry points link to policies and terms and require a
   h.context.openDrawer = (title, body) => panels.push(body);
   h.context.syncOrganizerDirectory = async () => {};
   h.context.DB.users.push({ id: 'usr-org-001', role: 'organizer', name: 'Test Organizer' });
-  vm.runInContext(section(sources.client, '    async function openNewRequestForm(', '    function submitPlan('), h.context);
-  vm.runInContext(section(sources.client, '    async function openRequestModal(', '    function pageUpcomingEvents('), h.context);
+  vm.runInContext(
+    section(sources.client, 'async function openNewRequestForm(', 'function submitPlan('),
+    h.context
+  );
+  vm.runInContext(
+    section(sources.client, 'async function openRequestModal(', 'function pageUpcomingEvents('),
+    h.context
+  );
   await h.context.openNewRequestForm();
   await h.context.openRequestModal('usr-org-001');
   assert.match(panels[0], /id="nr-policy"/);
@@ -651,12 +1107,26 @@ test('both client creation entry points link to policies and terms and require a
     assert.match(html, /Terms and Conditions/);
     assert.match(html, /14 days/);
     assert.match(html, /cancellation fee is 10%/);
-    assert.doesNotMatch(html, /<details|Agree on venue permissions|The client approves the final event plan/);
+    assert.doesNotMatch(
+      html,
+      /<details|Agree on venue permissions|The client approves the final event plan/
+    );
   }
-  const values = { 'nr-organizer': 'usr-org-001', 'nr-title': 'New conference', 'nr-type': 'Conference', 'nr-date': '2099-11-20', 'nr-guests': '80', 'nr-budget': '50000', 'nr-desc': 'Conference requirements', 'nr-venue': 'City Hall' };
+  const values = {
+    'nr-organizer': 'usr-org-001',
+    'nr-title': 'New conference',
+    'nr-type': 'Conference',
+    'nr-date': '2099-11-20',
+    'nr-guests': '80',
+    'nr-budget': '50000',
+    'nr-desc': 'Conference requirements',
+    'nr-venue': 'City Hall',
+  };
   for (const [id, value] of Object.entries(values)) h.elements.set(id, { value });
   let payload;
-  h.context.apiCreateEventRequest = async data => { payload = data; };
+  h.context.apiCreateEventRequest = async data => {
+    payload = data;
+  };
   h.context.runWorkflowAction = action => action();
   h.elements.set('nr-policy', { checked: false });
   await h.context.submitRequest();
@@ -684,20 +1154,55 @@ test('client and organizer open separate policy and terms views without losing f
     const html = await h.render();
     assert.match(html, /openWorkflowPolicyDocument\('policies'/);
     assert.match(html, /openWorkflowPolicyDocument\('terms'/);
-    let focused, openModalCalls = 0;
-    const input = { value: 'Unsaved conference details', isConnected: true, focus() { focused = input; } };
+    let focused,
+      openModalCalls = 0;
+    const input = {
+      value: 'Unsaved conference details',
+      isConnected: true,
+      focus() {
+        focused = input;
+      },
+    };
     const checkbox = { checked: true };
     h.elements.set('req-title', input);
     h.elements.set('workflow-accept-policy', checkbox);
     const overlays = [];
-    const document = { activeElement: input, body: { appendChild(node) { overlays.push(node); } }, createElement() {
-      const listeners = {};
-      const closeButton = { focus() { focused = closeButton; } };
-      return { style: {}, innerHTML: '', removed: false, listeners, setAttribute() {}, addEventListener(type, handler) { listeners[type] = handler; },
-        querySelector() { return closeButton; }, remove() { this.removed = true; } };
-    } };
+    const document = {
+      activeElement: input,
+      body: {
+        appendChild(node) {
+          overlays.push(node);
+        },
+      },
+      createElement() {
+        const listeners = {};
+        const closeButton = {
+          focus() {
+            focused = closeButton;
+          },
+        };
+        return {
+          style: {},
+          innerHTML: '',
+          removed: false,
+          listeners,
+          setAttribute() {},
+          addEventListener(type, handler) {
+            listeners[type] = handler;
+          },
+          querySelector() {
+            return closeButton;
+          },
+          remove() {
+            this.removed = true;
+          },
+        };
+      },
+    };
     h.context.document = document;
-    h.context.openModal = () => { openModalCalls++; };
+    h.context.openModal = () => {
+      openModalCalls++;
+    };
     h.context.openWorkflowPolicyDocument('policies', savedPolicy.version);
     assert.equal(overlays.length, 1);
     assert.match(overlays[0].innerHTML, /Cancellation and refund policy/);
@@ -712,7 +1217,10 @@ test('client and organizer open separate policy and terms views without losing f
     assert.equal(overlays.length, 2);
     assert.match(overlays[1].innerHTML, /Terms and conditions/);
     assert.match(overlays[1].innerHTML, /The client approves the final event plan/);
-    assert.doesNotMatch(overlays[1].innerHTML, /Cancellation and refund policy|Confirm the &lt;venue&gt;/);
+    assert.doesNotMatch(
+      overlays[1].innerHTML,
+      /Cancellation and refund policy|Confirm the &lt;venue&gt;/
+    );
     overlays[1].listeners.keydown({ key: 'Escape', preventDefault() {}, stopPropagation() {} });
     assert.equal(overlays[1].removed, true);
     assert.equal(input.value, 'Unsaved conference details');
@@ -728,9 +1236,16 @@ test('organizer acceptance, counteroffers, and proposed changes use the exact po
   state.requests[0].policySnapshot = savedPolicy;
   const h = harness('organizer', state);
   await h.render();
-  let modal, payload, calls = 0;
-  h.context.openModal = (title, body) => { modal = body; };
-  h.context.apiAcceptEventRequest = async (id, body) => { calls++; payload = body; };
+  let modal,
+    payload,
+    calls = 0;
+  h.context.openModal = (title, body) => {
+    modal = body;
+  };
+  h.context.apiAcceptEventRequest = async (id, body) => {
+    calls++;
+    payload = body;
+  };
   h.context.apiAcceptCounteroffer = h.context.apiAcceptEventRequest;
   h.context.apiRejectEventRequest = h.context.apiAcceptEventRequest;
   h.context.runWorkflowAction = action => action();
@@ -762,9 +1277,30 @@ test('organizer acceptance, counteroffers, and proposed changes use the exact po
 
 function cancellationFixture() {
   const state = fixture();
-  Object.assign(state.requests[0], { status: 'confirmed', eventId: 'evt-flow', paymentStatus: 'fully_paid' });
-  state.events.push({ eventId: 'evt-flow', name: 'Client conference', date: '2099-11-20', status: 'ongoing', clientId: 'cli-001', organizerId: 'org-001' });
-  const preview = { eventId: 'evt-flow', canCancel: true, minimumNoticeDays: 14, cancellationDeadline: '2099-11-06T04:30:00.000Z', paidAmount: 50000, cancellationFeePercent: 10, cancellationFee: 5000, refundAmount: 45000, policy };
+  Object.assign(state.requests[0], {
+    status: 'confirmed',
+    eventId: 'evt-flow',
+    paymentStatus: 'fully_paid',
+  });
+  state.events.push({
+    eventId: 'evt-flow',
+    name: 'Client conference',
+    date: '2099-11-20',
+    status: 'ongoing',
+    clientId: 'cli-001',
+    organizerId: 'org-001',
+  });
+  const preview = {
+    eventId: 'evt-flow',
+    canCancel: true,
+    minimumNoticeDays: 14,
+    cancellationDeadline: '2099-11-06T04:30:00.000Z',
+    paidAmount: 50000,
+    cancellationFeePercent: 10,
+    cancellationFee: 5000,
+    refundAmount: 45000,
+    policy,
+  };
   return { state, preview };
 }
 
@@ -775,16 +1311,37 @@ test('client cancellation previews the fee and refund, requires a reason and con
   assert.match(await h.render(), /onclick="openClientCancelRequestModal\('req-flow'\)/);
   assert.doesNotMatch(await organizer.render(), /onclick="openWorkflowCancellation/);
   let modal, actions, payload, visited;
-  h.context.openModal = (title, body, buttons) => { modal = body; actions = buttons; };
+  h.context.openModal = (title, body, buttons) => {
+    modal = body;
+    actions = buttons;
+  };
   h.context.apiPreviewClientEventCancellation = async () => ({ data: structuredClone(preview) });
   h.context.apiCancelClientEvent = async (id, body) => {
     payload = body;
     state.requests[0].status = state.events[0].status = 'cancelled';
-    state.requests[0].cancellation = { reason: body.reason, paidAmount: 50000, cancellationFeePercent: 10, cancellationFee: 5000, refundAmount: 45000, refundStatus: 'pending', cancelledAt: '2099-10-01T10:00:00Z' };
+    state.requests[0].cancellation = {
+      reason: body.reason,
+      paidAmount: 50000,
+      cancellationFeePercent: 10,
+      cancellationFee: 5000,
+      refundAmount: 45000,
+      refundStatus: 'pending',
+      cancelledAt: '2099-10-01T10:00:00Z',
+    };
   };
-  h.context.viewWorkflowRequestDrawer = id => { visited = id; };
+  h.context.viewWorkflowRequestDrawer = id => {
+    visited = id;
+  };
   await h.context.openWorkflowCancellation('evt-flow');
-  for (const text of ['50,000.00', '5,000.00', '45,000.00', 'Cancellation fee (10%)', 'Cancellation deadline', 'pending review']) assert.ok(modal.includes(text), text);
+  for (const text of [
+    '50,000.00',
+    '5,000.00',
+    '45,000.00',
+    'Cancellation fee (10%)',
+    'Cancellation deadline',
+    'pending review',
+  ])
+    assert.ok(modal.includes(text), text);
   assert.ok(actions.some(item => item.lbl === 'Confirm Cancellation'));
   h.elements.set('workflow-cancel-error', { textContent: '' });
   h.elements.set('workflow-cancel-reason', { value: ' ' });
@@ -806,7 +1363,10 @@ test('client cancellation previews the fee and refund, requires a reason and con
     assert.match(html, /Our conference plans changed/);
     assert.match(html, /45,000.00/);
     assert.match(html, /Refund pending review/);
-    assert.doesNotMatch(html, /onclick="openWorkflowCancellation|onclick="openClientCancelRequestModal|Pay Remaining Amount|Pay Now/);
+    assert.doesNotMatch(
+      html,
+      /onclick="openWorkflowCancellation|onclick="openClientCancelRequestModal|Pay Remaining Amount|Pay Now/
+    );
   }
 });
 
@@ -814,10 +1374,24 @@ test('a closed cancellation window has no confirmation action and failed cancell
   const { state, preview } = cancellationFixture();
   const h = harness('client', state);
   await h.render();
-  let modal, actions, calls = 0;
-  h.context.openModal = (title, body, buttons) => { modal = body; actions = buttons; };
-  h.context.apiPreviewClientEventCancellation = async () => ({ data: { ...preview, canCancel: false, unavailableReason: 'Cancellation closes 14 days before the event.' } });
-  h.context.apiCancelClientEvent = async () => { calls++; throw Error('Payment changed. Review a new quote.'); };
+  let modal,
+    actions,
+    calls = 0;
+  h.context.openModal = (title, body, buttons) => {
+    modal = body;
+    actions = buttons;
+  };
+  h.context.apiPreviewClientEventCancellation = async () => ({
+    data: {
+      ...preview,
+      canCancel: false,
+      unavailableReason: 'Cancellation closes 14 days before the event.',
+    },
+  });
+  h.context.apiCancelClientEvent = async () => {
+    calls++;
+    throw Error('Payment changed. Review a new quote.');
+  };
   await h.context.openWorkflowCancellation('evt-flow');
   assert.match(modal, /Cancellation closes 14 days/);
   assert.ok(!actions.some(item => item.lbl === 'Confirm Cancellation'));
@@ -838,15 +1412,37 @@ test('a closed cancellation window has no confirmation action and failed cancell
 test('organizer reports use the requesting client and save files through the API, preserving failures for retry', async () => {
   const state = fixture();
   Object.assign(state.requests[0], { eventId: 'evt-report', status: 'completed' });
-  state.events.push({ eventId: 'evt-report', name: 'Client conference', status: 'completed', clientId: 'cli-001', clientUserId: 'usr-client-001', organizerId: 'org-001' });
+  state.events.push({
+    eventId: 'evt-report',
+    name: 'Client conference',
+    status: 'completed',
+    clientId: 'cli-001',
+    clientUserId: 'usr-client-001',
+    organizerId: 'org-001',
+  });
   const h = harness('organizer', state);
   await h.render();
-  h.context.DB.users.push({ id: 'usr-admin-001', name: 'Admin', role: 'superuser' }, { id: 'usr-client-001', name: 'Requesting Client', email: 'client@example.com', role: 'client' });
-  vm.runInContext(section(sources.organizer, '    function reportContactHtml(', '    function pageReports('), h.context);
-  vm.runInContext(section(sources.organizer, '    function getEventReportRecipients(', '    function deleteEventReport('), h.context);
-  let modal, submissions = 0, closes = 0;
-  h.context.openModal = (title, body) => { modal = body; };
-  h.context.closeModal = () => { closes++; };
+  h.context.DB.users.push(
+    { id: 'usr-admin-001', name: 'Admin', role: 'superuser' },
+    { id: 'usr-client-001', name: 'Requesting Client', email: 'client@example.com', role: 'client' }
+  );
+  vm.runInContext(
+    section(sources.organizer, 'function reportContactHtml(', 'function pageReports('),
+    h.context
+  );
+  vm.runInContext(
+    section(sources.organizer, 'function getEventReportRecipients(', 'function deleteEventReport('),
+    h.context
+  );
+  let modal,
+    submissions = 0,
+    closes = 0;
+  h.context.openModal = (title, body) => {
+    modal = body;
+  };
+  h.context.closeModal = () => {
+    closes++;
+  };
   h.context.openSubmitReportModal('evt-report');
   assert.match(modal, /Requesting Client/);
   assert.match(modal, /automatically to the client who requested this event/);
@@ -854,24 +1450,52 @@ test('organizer reports use the requesting client and save files through the API
   const file = { name: 'event-report.pdf', size: 100 };
   h.elements.set('report-file', { files: [file] });
   h.elements.set('event-report-error', { textContent: '' });
-  h.context.apiUploadEventReport = async () => { submissions++; throw Error('Upload failed; try again.'); };
+  h.context.apiUploadEventReport = async () => {
+    submissions++;
+    throw Error('Upload failed; try again.');
+  };
   await h.context.submitEventReport('evt-report');
   assert.equal(closes, 0);
   assert.match(h.elements.get('event-report-error').textContent, /Upload failed/);
   assert.equal(h.elements.get('report-file').files[0], file);
   assert.equal(h.context.DB.reports.length, 0);
-  h.context.apiUploadEventReport = async (eventId, selected) => { submissions++; assert.equal(eventId, 'evt-report'); assert.equal(selected, file); };
+  h.context.apiUploadEventReport = async (eventId, selected) => {
+    submissions++;
+    assert.equal(eventId, 'evt-report');
+    assert.equal(selected, file);
+  };
   await h.context.submitEventReport('evt-report');
   assert.equal(submissions, 2);
   assert.equal(closes, 1);
-  assert.equal(h.context.getEventReportRecipients({ id: 'unlinked-event' }).length, 0, 'An event without a client must never fall back to admin');
+  assert.equal(
+    h.context.getEventReportRecipients({ id: 'unlinked-event' }).length,
+    0,
+    'An event without a client must never fall back to admin'
+  );
 });
 
 test('the client can see and download organizer report files in the completed event details', async () => {
   const state = fixture();
   Object.assign(state.requests[0], { eventId: 'evt-report', status: 'completed' });
-  state.events.push({ eventId: 'evt-report', name: 'Client conference', status: 'completed', clientId: 'cli-001' });
-  state.fileReports = [{ eventReportId: 'rpt-file', eventId: 'evt-report', clientId: 'cli-001', clientUserId: 'usr-client-001', clientName: 'Michael Torres', reportTitle: 'Conference summary', reportDetails: 'Final event services and expenses.', documentName: 'conference-summary.pdf', documentFileName: 'stored-report.pdf' }];
+  state.events.push({
+    eventId: 'evt-report',
+    name: 'Client conference',
+    status: 'completed',
+    clientId: 'cli-001',
+  });
+  state.fileReports = [
+    {
+      eventReportId: 'rpt-file',
+      eventId: 'evt-report',
+      clientId: 'cli-001',
+      clientUserId: 'usr-client-001',
+      clientName: 'Michael Torres',
+      reportTitle: 'Conference summary',
+      reportDetails: 'Final event services and expenses.',
+      documentName: 'conference-summary.pdf',
+      documentFileName: 'stored-report.pdf',
+    },
+  ];
   const h = harness('client', state);
   const html = await h.render();
   assert.match(html, /Conference summary/);
@@ -883,12 +1507,33 @@ test('the client can see and download organizer report files in the completed ev
 
 test('organizer submitted reports open real uploads and labeled sample files with working download controls', async () => {
   const h = harness('organizer', fixture());
-  vm.runInContext(section(sources.organizer, '    const organizerReportSamples =', '    function reportContactHtml('), h.context);
-  const sample = { id: 'rpt-org-001', submittedBy: 'usr-org-001', fileName: 'healthcare-innovation-forum-final-report.pdf' };
-  const uploaded = { id: 'rpt-upload', eventReportId: 'rpt-upload', submittedBy: 'usr-org-001', documentName: 'uploaded-summary.pdf', documentFileName: 'stored.pdf' };
-  const missing = { id: 'rpt-legacy', submittedBy: 'usr-org-001', eventId: 'evt-legacy', recipientId: 'usr-client-001',
-    fileName: 'original-not-saved.pdf', reportTitle: 'Tech Conference 2024 - Final Report',
-    reportDetails: 'Event was successful with 450 attendees. All sponsors satisfied.', submittedAt: '2024-06-20', status: 'submitted' };
+  vm.runInContext(
+    section(sources.organizer, 'const organizerReportSamples =', 'function reportContactHtml('),
+    h.context
+  );
+  const sample = {
+    id: 'rpt-org-001',
+    submittedBy: 'usr-org-001',
+    fileName: 'healthcare-innovation-forum-final-report.pdf',
+  };
+  const uploaded = {
+    id: 'rpt-upload',
+    eventReportId: 'rpt-upload',
+    submittedBy: 'usr-org-001',
+    documentName: 'uploaded-summary.pdf',
+    documentFileName: 'stored.pdf',
+  };
+  const missing = {
+    id: 'rpt-legacy',
+    submittedBy: 'usr-org-001',
+    eventId: 'evt-legacy',
+    recipientId: 'usr-client-001',
+    fileName: 'original-not-saved.pdf',
+    reportTitle: 'Tech Conference 2024 - Final Report',
+    reportDetails: 'Event was successful with 450 attendees. All sponsors satisfied.',
+    submittedAt: '2024-06-20',
+    status: 'submitted',
+  };
   h.context.DB.reports = [sample, uploaded, missing];
   const sampleHtml = h.context.renderOrganizerReportFile(sample);
   assert.match(sampleHtml, /View File/);
@@ -902,17 +1547,57 @@ test('organizer submitted reports open real uploads and labeled sample files wit
   assert.match(h.context.renderOrganizerReportFile(missing), /saved report details \(TXT\)/);
   assert.doesNotMatch(h.context.renderOrganizerReportFile(missing), /View File/);
   h.context.DB.events = [{ id: 'evt-legacy', title: 'India AI Leadership Summit' }];
-  h.context.DB.users = [{ id: 'usr-client-001', name: 'Michael Torres', email: 'client@example.com' }];
-  const calls = [], previews = [], links = [], errors = [], blobs = [];
+  h.context.DB.users = [
+    { id: 'usr-client-001', name: 'Michael Torres', email: 'client@example.com' },
+  ];
+  const calls = [],
+    previews = [],
+    links = [],
+    errors = [],
+    blobs = [];
   h.context.API_BASE_URL = 'http://localhost/api';
   h.context.getAuthHeader = () => 'Bearer test-token';
-  h.context.window = { open() { const preview = { location: {}, close() { this.closed = true; } }; previews.push(preview); return preview; } };
+  h.context.window = {
+    open() {
+      const preview = {
+        location: {},
+        close() {
+          this.closed = true;
+        },
+      };
+      previews.push(preview);
+      return preview;
+    },
+  };
   h.context.Blob = Blob;
-  h.context.URL = { createObjectURL: blob => { blobs.push(blob); return 'blob:report-file'; }, revokeObjectURL() {} };
+  h.context.URL = {
+    createObjectURL: blob => {
+      blobs.push(blob);
+      return 'blob:report-file';
+    },
+    revokeObjectURL() {},
+  };
   h.context.setTimeout = () => {};
-  h.context.document = { body: { appendChild(link) { links.push(link); } }, createElement() { return { click() { this.clicked = true; }, remove() {} }; } };
+  h.context.document = {
+    body: {
+      appendChild(link) {
+        links.push(link);
+      },
+    },
+    createElement() {
+      return {
+        click() {
+          this.clicked = true;
+        },
+        remove() {},
+      };
+    },
+  };
   h.context.toast = message => errors.push(message);
-  h.context.fetch = async (url, options) => { calls.push([url, options]); return { ok: true, blob: async () => ({}) }; };
+  h.context.fetch = async (url, options) => {
+    calls.push([url, options]);
+    return { ok: true, blob: async () => ({}) };
+  };
   await h.context.openOrganizerReportFile(sample.id);
   assert.equal(calls[0][0], '/assets/demo-reports/rpt-org-001.html');
   assert.equal(calls[0][1].headers, undefined);

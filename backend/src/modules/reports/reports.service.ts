@@ -1,36 +1,55 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+} from '@nestjs/common';
 import { constants, createReadStream, existsSync, readFileSync, unlinkSync } from 'fs';
 import { access } from 'fs/promises';
 import * as path from 'path';
 import { DataStore, EventCompletionReport } from '../../common/data-store';
 import { UserRole } from '../../common/constants';
 import { eventAmountPaid } from '../../common/utils/event-payments';
-import {
-  CreateEventCompletionReportDto, CreateEventReportDto,
-} from './dto/report.dto';
+import { CreateEventCompletionReportDto, CreateEventReportDto } from './dto/report.dto';
 
 const EVENT_REPORT_UPLOAD_DIR = path.join(process.cwd(), 'uploads', 'event-reports');
 
 @Injectable()
 export class ReportsService {
   private db: DataStore;
-  constructor() { this.db = DataStore.getInstance(); }
+  constructor() {
+    this.db = DataStore.getInstance();
+  }
 
   // EVENT REPORTS
-  createEventReport(dto: CreateEventReportDto, role: UserRole, userId?: string, file?: Express.Multer.File): any {
+  createEventReport(
+    dto: CreateEventReportDto,
+    role: UserRole,
+    userId?: string,
+    file?: Express.Multer.File
+  ): any {
     if (role !== UserRole.EVENT_ORGANIZER && role !== UserRole.SUPER_ADMIN) {
       throw new ForbiddenException('Only EVENT_ORGANIZER can create event reports');
     }
     const event = this.db.events.find(item => item.eventId === dto.eventId);
     if (!event) throw new NotFoundException('Event not found');
     const organizer = this.db.organizers.find(item => item.userId === userId);
-    if (role === UserRole.EVENT_ORGANIZER && (!organizer || organizer.organizerId !== event.organizerId)) {
+    if (
+      role === UserRole.EVENT_ORGANIZER &&
+      (!organizer || organizer.organizerId !== event.organizerId)
+    ) {
       throw new ForbiddenException('You can only report on your own events');
     }
-    if (event.status !== 'completed') throw new BadRequestException('Reports can only be submitted for completed events');
+    if (event.status !== 'completed')
+      throw new BadRequestException('Reports can only be submitted for completed events');
     const request = this.db.eventRequests.find(item => item.eventId === event.eventId);
-    const client = this.db.clients.find(item => item.clientId === (request?.clientId || event.clientId));
-    if (!client) throw new BadRequestException('This event has no requesting client. A client report cannot be submitted.');
+    const client = this.db.clients.find(
+      item => item.clientId === (request?.clientId || event.clientId)
+    );
+    if (!client)
+      throw new BadRequestException(
+        'This event has no requesting client. A client report cannot be submitted.'
+      );
     const id = this.db.generateId('rpt-evt');
     const report = {
       eventReportId: id,
@@ -64,24 +83,53 @@ export class ReportsService {
       createdAt: new Date(),
     });
 
-    return { success: true, message: 'Event report sent to the requesting client', data: this.mapEventReport(report) };
+    return {
+      success: true,
+      message: 'Event report sent to the requesting client',
+      data: this.mapEventReport(report),
+    };
   }
 
   private mapEventReport(report: DataStore['eventReports'][number]): any {
     const client = this.db.clients.find(item => item.clientId === report.clientId);
     const user = this.db.users.find(item => item.userId === client?.userId);
-    return { ...report, clientUserId: client?.userId, clientName: user?.name, clientEmail: user?.email,
-      organizerUserId: this.db.organizers.find(item => item.organizerId === report.organizerId)?.userId };
+    return {
+      ...report,
+      clientUserId: client?.userId,
+      clientName: user?.name,
+      clientEmail: user?.email,
+      organizerUserId: this.db.organizers.find(item => item.organizerId === report.organizerId)
+        ?.userId,
+    };
   }
 
-  uploadEventReport(eventId: string, file: Express.Multer.File, role: UserRole, userId?: string): any {
+  uploadEventReport(
+    eventId: string,
+    file: Express.Multer.File,
+    role: UserRole,
+    userId?: string
+  ): any {
     try {
       const signature = readFileSync(file.path).subarray(0, 5).toString('ascii');
-      if (path.extname(file.originalname).toLowerCase() === '.pdf' ? signature !== '%PDF-' : !signature.startsWith('PK')) {
+      if (
+        path.extname(file.originalname).toLowerCase() === '.pdf'
+          ? signature !== '%PDF-'
+          : !signature.startsWith('PK')
+      ) {
         throw new BadRequestException('The uploaded report does not match its file type');
       }
-      return this.createEventReport({ eventId, organizerId: '', reportTitle: path.basename(file.originalname),
-        reportDetails: 'Event report file submitted to the requesting client.', submissionDate: new Date().toISOString().slice(0, 10) }, role, userId, file);
+      return this.createEventReport(
+        {
+          eventId,
+          organizerId: '',
+          reportTitle: path.basename(file.originalname),
+          reportDetails: 'Event report file submitted to the requesting client.',
+          submissionDate: new Date().toISOString().slice(0, 10),
+        },
+        role,
+        userId,
+        file
+      );
     } catch (error) {
       if (existsSync(file.path)) unlinkSync(file.path);
       throw error;
@@ -93,26 +141,38 @@ export class ReportsService {
     if (!report) throw new NotFoundException('Event report not found');
     const client = this.db.clients.find(item => item.userId === userId);
     const organizer = this.db.organizers.find(item => item.userId === userId);
-    if (role !== UserRole.SUPER_ADMIN && !(role === UserRole.CLIENT && client && client.clientId === report.clientId) &&
-      !(role === UserRole.EVENT_ORGANIZER && organizer && organizer.organizerId === report.organizerId)) {
+    if (
+      role !== UserRole.SUPER_ADMIN &&
+      !(role === UserRole.CLIENT && client && client.clientId === report.clientId) &&
+      !(
+        role === UserRole.EVENT_ORGANIZER &&
+        organizer &&
+        organizer.organizerId === report.organizerId
+      )
+    ) {
       throw new ForbiddenException('You can only access reports for your own events');
     }
-    if (!report.documentFileName) throw new NotFoundException('No file was attached to this report');
+    if (!report.documentFileName)
+      throw new NotFoundException('No file was attached to this report');
     const filePath = path.join(EVENT_REPORT_UPLOAD_DIR, path.basename(report.documentFileName));
     if (!existsSync(filePath)) throw new NotFoundException('Report file is unavailable');
     await access(filePath, constants.R_OK);
-    return { stream: createReadStream(filePath), fileName: report.documentName || 'event-report', mimeType: report.documentMimeType || 'application/octet-stream' };
+    return {
+      stream: createReadStream(filePath),
+      fileName: report.documentName || 'event-report',
+      mimeType: report.documentMimeType || 'application/octet-stream',
+    };
   }
 
   findAllEventReports(role: UserRole, userId?: string): any[] {
     let reports = [...this.db.eventReports];
     if (role === UserRole.CLIENT) {
       const client = this.db.clients.find(c => c.userId === userId);
-      if (client) reports = reports.filter(r => r.clientId === client.clientId);
+      if (client) reports = reports.filter(report => report.clientId === client.clientId);
       else reports = [];
     } else if (role === UserRole.EVENT_ORGANIZER) {
-      const org = this.db.organizers.find(o => o.userId === userId);
-      if (org) reports = reports.filter(r => r.organizerId === org.organizerId);
+      const org = this.db.organizers.find(organizer => organizer.userId === userId);
+      if (org) reports = reports.filter(report => report.organizerId === org.organizerId);
       else reports = [];
     } else if (role !== UserRole.SUPER_ADMIN) {
       throw new ForbiddenException('Access denied');
@@ -125,14 +185,17 @@ export class ReportsService {
     dto: CreateEventCompletionReportDto,
     files: Express.Multer.File[],
     role: UserRole,
-    userId?: string,
+    userId?: string
   ): any {
-    const removeFiles = () => files.forEach(file => {
-      if (file.path && existsSync(file.path)) unlinkSync(file.path);
-    });
+    const removeFiles = () =>
+      files.forEach(file => {
+        if (file.path && existsSync(file.path)) unlinkSync(file.path);
+      });
     if (role !== UserRole.EVENT_ORGANIZER) {
       removeFiles();
-      throw new ForbiddenException('Only the assigned organizer can submit an event completion report');
+      throw new ForbiddenException(
+        'Only the assigned organizer can submit an event completion report'
+      );
     }
     const event = this.db.events.find(item => item.eventId === eventId);
     if (!event || !event.clientId) {
@@ -144,17 +207,28 @@ export class ReportsService {
       removeFiles();
       throw new ForbiddenException('You can only report on your own events');
     }
-    const request = this.db.eventRequests.find(item =>
-      item.eventId === eventId && item.organizerId === organizer.organizerId,
+    const request = this.db.eventRequests.find(
+      item => item.eventId === eventId && item.organizerId === organizer.organizerId
     );
-    const verifiedPayment = request && eventAmountPaid(this.db.eventWorkflowPayments, request) >= Number(request.budget);
-    if (event.status !== 'completed' || !request || request.status !== 'completed' || request.paymentStatus !== 'fully_paid' || !verifiedPayment) {
+    const verifiedPayment =
+      request && eventAmountPaid(this.db.eventWorkflowPayments, request) >= Number(request.budget);
+    if (
+      event.status !== 'completed' ||
+      !request ||
+      request.status !== 'completed' ||
+      request.paymentStatus !== 'fully_paid' ||
+      !verifiedPayment
+    ) {
       removeFiles();
-      throw new BadRequestException('A completion report can only be submitted for a completed, fully paid event');
+      throw new BadRequestException(
+        'A completion report can only be submitted for a completed, fully paid event'
+      );
     }
     if (this.db.eventCompletionReports.some(report => report.eventId === eventId)) {
       removeFiles();
-      throw new BadRequestException('A completion report has already been submitted for this event');
+      throw new BadRequestException(
+        'A completion report has already been submitted for this event'
+      );
     }
 
     const report: EventCompletionReport = {
@@ -204,11 +278,17 @@ export class ReportsService {
     if (role === UserRole.SUPER_ADMIN) return [...this.db.eventCompletionReports];
     if (role === UserRole.CLIENT) {
       const client = this.db.clients.find(item => item.userId === userId);
-      return client ? this.db.eventCompletionReports.filter(report => report.clientId === client.clientId) : [];
+      return client
+        ? this.db.eventCompletionReports.filter(report => report.clientId === client.clientId)
+        : [];
     }
     if (role === UserRole.EVENT_ORGANIZER) {
       const organizer = this.db.organizers.find(item => item.userId === userId);
-      return organizer ? this.db.eventCompletionReports.filter(report => report.organizerId === organizer.organizerId) : [];
+      return organizer
+        ? this.db.eventCompletionReports.filter(
+            report => report.organizerId === organizer.organizerId
+          )
+        : [];
     }
     throw new ForbiddenException('Access denied');
   }
@@ -217,7 +297,7 @@ export class ReportsService {
     eventId: string,
     fileName: string,
     role: UserRole,
-    userId?: string,
+    userId?: string
   ): Promise<{ stream: ReturnType<typeof createReadStream>; mimeType: string; fileName: string }> {
     const report = this.getCompletionReport(eventId, role, userId);
     const photo = report.photos.find(item => item.fileName === path.basename(fileName));
@@ -225,18 +305,28 @@ export class ReportsService {
     const filePath = path.join(EVENT_REPORT_UPLOAD_DIR, photo.fileName);
     if (!existsSync(filePath)) throw new NotFoundException('Report photo is unavailable');
     await access(filePath, constants.R_OK);
-    return { stream: createReadStream(filePath), mimeType: photo.mimeType, fileName: photo.originalName };
+    return {
+      stream: createReadStream(filePath),
+      mimeType: photo.mimeType,
+      fileName: photo.originalName,
+    };
   }
 
-  private getCompletionReport(eventId: string, role: UserRole, userId?: string): EventCompletionReport {
+  private getCompletionReport(
+    eventId: string,
+    role: UserRole,
+    userId?: string
+  ): EventCompletionReport {
     const report = this.db.eventCompletionReports.find(item => item.eventId === eventId);
     if (!report) throw new NotFoundException('Event completion report not found');
     if (role === UserRole.CLIENT) {
       const client = this.db.clients.find(item => item.userId === userId);
-      if (!client || client.clientId !== report.clientId) throw new ForbiddenException('You can only access reports for your own events');
+      if (!client || client.clientId !== report.clientId)
+        throw new ForbiddenException('You can only access reports for your own events');
     } else if (role === UserRole.EVENT_ORGANIZER) {
       const organizer = this.db.organizers.find(item => item.userId === userId);
-      if (!organizer || organizer.organizerId !== report.organizerId) throw new ForbiddenException('You can only access reports for your own events');
+      if (!organizer || organizer.organizerId !== report.organizerId)
+        throw new ForbiddenException('You can only access reports for your own events');
     } else if (role !== UserRole.SUPER_ADMIN) {
       throw new ForbiddenException('Access denied');
     }

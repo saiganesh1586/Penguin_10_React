@@ -4,7 +4,10 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-const regSource = fs.readFileSync(path.join(__dirname, '../src/apps/organizer/utils/organizer-registration.js'), 'utf8');
+const regSource = fs.readFileSync(
+  path.join(__dirname, '../src/apps/organizer/utils/organizer-registration.js'),
+  'utf8'
+);
 
 function setupHarness() {
   const elements = new Map();
@@ -16,7 +19,7 @@ function setupHarness() {
   const dom = {
     window: {},
     document: {
-      querySelectorAll: (sel) => {
+      querySelectorAll: sel => {
         if (sel.includes('.org-spec-checkbox')) {
           return elements.get('checkboxes') || [];
         }
@@ -25,13 +28,19 @@ function setupHarness() {
     },
     DB: {
       users: [
-        { id: 'usr-org-001', name: 'Existing Org', email: 'existing.org@example.com', role: 'organizer', status: 'active' },
+        {
+          id: 'usr-org-001',
+          name: 'Existing Org',
+          email: 'existing.org@example.com',
+          role: 'organizer',
+          status: 'active',
+        },
       ],
       organizerApplications: [],
       _nextId: { users: 100 },
     },
-    g: (id) => elements.get(id) || null,
-    v: (id) => {
+    g: id => elements.get(id) || null,
+    v: id => {
       const el = elements.get(id);
       return el ? (el.value != null ? el.value : '') : '';
     },
@@ -50,9 +59,10 @@ function setupHarness() {
     },
     today: () => '2026-10-17',
     EventFlowAccountPolicy: {
-      isEmailInUse: (users, email) => users.some(u => u.email.toLowerCase() === email.toLowerCase()),
+      isEmailInUse: (users, email) =>
+        users.some(u => u.email.toLowerCase() === email.toLowerCase()),
     },
-    fetch: async (url) => ({
+    fetch: async url => ({
       ok: true,
       json: async () => ({
         success: true,
@@ -61,7 +71,13 @@ function setupHarness() {
         fullName: 'Alex Chen',
         status: 'Pending Verification',
         submittedAt: '2026-10-17T12:00:00.000Z',
-        decisionHistory: [{ status: 'Pending Verification', comments: 'Application queued', createdAt: '2026-10-17T12:00:00.000Z' }],
+        decisionHistory: [
+          {
+            status: 'Pending Verification',
+            comments: 'Application queued',
+            createdAt: '2026-10-17T12:00:00.000Z',
+          },
+        ],
       }),
     }),
   };
@@ -75,9 +91,15 @@ function setupHarness() {
     reg,
     elements,
     toasts,
-    get modalTitle() { return modalTitle; },
-    get modalHtml() { return modalHtml; },
-    get modalActions() { return modalActions; },
+    get modalTitle() {
+      return modalTitle;
+    },
+    get modalHtml() {
+      return modalHtml;
+    },
+    get modalActions() {
+      return modalActions;
+    },
   };
 }
 
@@ -101,7 +123,7 @@ test('1. Role selection modal displays exactly Attendee, Client, and Organizer w
 
 test('2. Attendee and Client registration forms open with their respective required fields and back navigation', () => {
   const h = setupHarness();
-  
+
   // Attendee Form
   h.reg.openAttendeeRegisterForm();
   assert.equal(h.modalTitle, 'Attendee Registration');
@@ -231,8 +253,9 @@ test('5. Step 2 requires file uploads and validation before proceeding to Step 3
   state.independentDetails.pinCode = '560001';
   state.independentDetails.yearsOfExperience = 3;
   state.independentDetails.areasOfSpecialization = ['Corporate Events', 'Weddings'];
-  state.independentDetails.portfolioDetails = 'Organized 15 corporate conferences and 10 private weddings.';
-  
+  state.independentDetails.portfolioDetails =
+    'Organized 15 corporate conferences and 10 private weddings.';
+
   // Without supporting evidence upload, Step 2 should fail
   state.independentDetails.supportingEvidenceDoc = null;
   h.reg.nextOrganizerStep2();
@@ -240,7 +263,11 @@ test('5. Step 2 requires file uploads and validation before proceeding to Step 3
   assert.ok(state.errors.supportingEvidenceDoc);
 
   // Add document upload
-  state.independentDetails.supportingEvidenceDoc = { name: 'event-portfolio.pdf', size: 102400, type: 'application/pdf' };
+  state.independentDetails.supportingEvidenceDoc = {
+    name: 'event-portfolio.pdf',
+    size: 102400,
+    type: 'application/pdf',
+  };
   h.reg.nextOrganizerStep2();
   assert.equal(state.step, 3, 'Advances to Step 3 Review & Submit');
 
@@ -273,15 +300,25 @@ test('6. Post-submission displays the exact confirmation message with reference 
   state.independentDetails.yearsOfExperience = 2;
   state.independentDetails.areasOfSpecialization = ['Festivals', 'Concerts & Music'];
   state.independentDetails.portfolioDetails = 'Concert production experience';
-  state.independentDetails.supportingEvidenceDoc = { name: 'festivals.pdf', size: 204800, type: 'application/pdf' };
+  state.independentDetails.supportingEvidenceDoc = {
+    name: 'festivals.pdf',
+    size: 204800,
+    type: 'application/pdf',
+  };
   state.declarationAccepted = true;
 
   await h.reg.submitOrganizerApplication();
 
   // Verify the EXACT required confirmation text:
   assert.match(h.modalHtml, /Your Organizer Application Has Been Submitted Successfully!/);
-  assert.match(h.modalHtml, /Thank you for registering with EventFlow\. Your application and submitted documents will be reviewed by our verification team\. You will receive an email notification once the verification process is complete\./);
-  assert.match(h.modalHtml, /<strong>You will receive an approval email after your application has been successfully verified\.<\/strong>\s*Until approval, you can track your application status, but you cannot publish events or accept event bookings through EventFlow\./);
+  assert.match(
+    h.modalHtml,
+    /Thank you for registering with EventFlow\. Your application and submitted documents will be reviewed by our verification team\. You will receive an email notification once the verification process is complete\./
+  );
+  assert.match(
+    h.modalHtml,
+    /<strong>You will receive an approval email after your application has been successfully verified\.<\/strong>\s*Until approval, you can track your application status, but you cannot publish events or accept event bookings through EventFlow\./
+  );
   assert.match(h.modalHtml, /Application Status:\s*<span[^>]*>Pending Verification<\/span>/);
   assert.match(h.modalHtml, /Track Application Status/);
   assert.match(h.modalHtml, /ORG-APP-2026-9999/);
@@ -289,7 +326,7 @@ test('6. Post-submission displays the exact confirmation message with reference 
 
 test('7. Application tracking supports the six statuses and reviewer inspection', async () => {
   const h = setupHarness();
-  
+
   // Track status modal
   await h.reg.trackOrganizerApplicationStatus('ORG-APP-2026-9999');
   assert.equal(h.modalTitle, 'Application Status Tracking');

@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, Query, Param, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Query,
+  Param,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiHeader, ApiQuery } from '@nestjs/swagger';
 import { ReviewsService } from './reviews.service';
 import { CreateClientOrganizerReviewDto, CreateEventReviewDto } from '../reports/dto/report.dto';
@@ -32,21 +42,27 @@ export class ReviewsController {
 
   @Post('client-organizer')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Submit a client review for the public organizer profile after event completion (CLIENT only)' })
+  @ApiOperation({
+    summary:
+      'Submit a client review for the public organizer profile after event completion (CLIENT only)',
+  })
   createClientOrganizerReview(
     @Body() dto: CreateClientOrganizerReviewDto,
     @UserRoleDecorator() role: UserRole,
-    @UserId() userId: string,
+    @UserId() userId: string
   ) {
     return this.service.createClientOrganizerReview(dto, role, userId);
   }
 
   @Get('client-organizer')
-  @ApiOperation({ summary: 'List private organizer reviews for the client or authorized admin; organizers are denied' })
+  @ApiOperation({
+    summary:
+      'List private organizer reviews for the client or authorized admin; organizers are denied',
+  })
   findClientOrganizerReviews(
     @UserRoleDecorator() role: UserRole,
     @UserId() userId: string,
-    @Query('eventId') eventId?: string,
+    @Query('eventId') eventId?: string
   ) {
     return this.service.findClientOrganizerReviews(role, userId, eventId);
   }
@@ -55,7 +71,7 @@ export class ReviewsController {
   @ApiOperation({ summary: 'Get published organizer profile reviews (CLIENT or SUPER_ADMIN only)' })
   findPublicOrganizerReviews(
     @Param('organizerId') organizerId: string,
-    @UserRoleDecorator() role: UserRole,
+    @UserRoleDecorator() role: UserRole
   ) {
     return this.service.findPublicOrganizerReviews(organizerId, role);
   }

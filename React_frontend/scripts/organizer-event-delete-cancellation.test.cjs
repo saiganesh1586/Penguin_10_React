@@ -19,7 +19,7 @@ function setupTestEnvironment(initialEvents = [], initialRegistrations = [], ini
       users: [
         { id: 'usr-org-100', name: 'Alice Walker', email: 'alice@walker.com', role: 'organizer' },
         { id: 'usr-att-200', name: 'Bob Smith', email: 'bob@smith.com', role: 'attendee' },
-        { id: 'usr-att-300', name: 'Charlie Davis', email: 'charlie@davis.com', role: 'attendee' }
+        { id: 'usr-att-300', name: 'Charlie Davis', email: 'charlie@davis.com', role: 'attendee' },
       ],
       events: structuredClone(initialEvents),
       registrations: structuredClone(initialRegistrations),
@@ -27,44 +27,64 @@ function setupTestEnvironment(initialEvents = [], initialRegistrations = [], ini
       eventWorkflowPayments: [],
       refunds: [],
       eventRequests: [],
-      notifications: []
+      notifications: [],
     },
     workflowEventPolicy: {
       version: '1.0',
-      cancellation: { minimumNoticeDays: 14, feePercent: 10 }
+      cancellation: { minimumNoticeDays: 14, feePercent: 10 },
     },
     sessionStorage: {
       getItem: () => null,
       setItem: () => {},
-      removeItem: () => {}
+      removeItem: () => {},
     },
-    escapeHtml: str => String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'),
-    toast: (msg, type) => { toasts.push({ msg, type }); },
-    openModal: (title, html, buttons) => { modalState = { title, html, buttons }; },
-    closeModal: () => { modalState = null; },
+    escapeHtml: str =>
+      String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;'),
+    toast: (msg, type) => {
+      toasts.push({ msg, type });
+    },
+    openModal: (title, html, buttons) => {
+      modalState = { title, html, buttons };
+    },
+    closeModal: () => {
+      modalState = null;
+    },
     g: id => elements.get(id) || null,
     v: id => elements.get(id)?.value || '',
     setElement: (id, val) => elements.set(id, { value: val, style: {} }),
-    renderPage: page => { pageRendered = page; },
+    renderPage: page => {
+      pageRendered = page;
+    },
     refreshEvents: () => {},
     saveDB: () => {},
     today: () => '2026-10-30',
     apiDeleteEvent: async () => ({ message: 'Event deleted' }),
     apiCancelOrganizerEvent: async (eventId, reason) => {
-      const event = context.DB.events.find(item => String(item.eventId || item.id) === String(eventId));
+      const event = context.DB.events.find(
+        item => String(item.eventId || item.id) === String(eventId)
+      );
       if (!event) throw new Error('Event not found');
       if (event.status === 'cancelled') throw new Error('Event already cancelled');
       const cancelledEvent = {
         ...event,
         eventId: event.eventId || event.id,
         status: 'cancelled',
-        cancellation: { reason, cancelledAt: new Date().toISOString(), refundStatus: 'not_applicable' }
+        cancellation: {
+          reason,
+          cancelledAt: new Date().toISOString(),
+          refundStatus: 'not_applicable',
+        },
       };
       Object.assign(event, cancelledEvent);
       return cancelledEvent;
     },
     apiGetEvents: async () => context.DB.events,
-    apiRequest: async () => ({ success: true })
+    apiRequest: async () => ({ success: true }),
   });
 
   context.window = context;
@@ -72,8 +92,14 @@ function setupTestEnvironment(initialEvents = [], initialRegistrations = [], ini
   // Extract necessary parts of runtime
   const codeToRun = `
     let _currentPage = 'events';
-    ${orgRuntime.slice(orgRuntime.indexOf('function handleOrganizerDeleteEvent('), orgRuntime.indexOf('function openOrganizerEventWorkspace('))}
-    ${orgRuntime.slice(orgRuntime.indexOf('let _pendingOrganizerCancel = null;'), orgRuntime.indexOf('function openRejectModal('))}
+    ${orgRuntime.slice(
+      orgRuntime.indexOf('function handleOrganizerDeleteEvent('),
+      orgRuntime.indexOf('function openOrganizerEventWorkspace(')
+    )}
+    ${orgRuntime.slice(
+      orgRuntime.indexOf('let _pendingOrganizerCancel = null;'),
+      orgRuntime.indexOf('function openRejectModal(')
+    )}
   `;
 
   vm.runInContext(codeToRun, context);
@@ -91,7 +117,7 @@ test('1. Eligible Draft Event: Delete button opens confirmation modal with Keep 
     backendStatus: 'draft',
     registered: 0,
     capacity: 50,
-    price: 0
+    price: 0,
   };
 
   const { context, toasts, getModal, getRenderedPage } = setupTestEnvironment([draftEvent], [], []);
@@ -117,9 +143,14 @@ test('1. Eligible Draft Event: Delete button opens confirmation modal with Keep 
   await context.confirmDeleteDraftEvent('ev-draft-1');
 
   // Verify event removed and page refreshed
-  assert.equal(context.DB.events.some(e => e.id === 'ev-draft-1'), false);
+  assert.equal(
+    context.DB.events.some(e => e.id === 'ev-draft-1'),
+    false
+  );
   assert.equal(getModal(), null);
-  assert.ok(toasts.some(t => t.type === 'success' && t.msg.includes('Draft event deleted successfully')));
+  assert.ok(
+    toasts.some(t => t.type === 'success' && t.msg.includes('Draft event deleted successfully'))
+  );
   assert.equal(getRenderedPage(), 'events');
 });
 
@@ -135,7 +166,7 @@ test('2. Paid Public Event: Cancel Event displays attendee payment breakdown, no
     backendStatus: 'published',
     registered: 1,
     capacity: 100,
-    price: 1500
+    price: 1500,
   };
   const registrations = [
     {
@@ -146,8 +177,8 @@ test('2. Paid Public Event: Cancel Event displays attendee payment breakdown, no
       status: 'confirmed',
       backendStatus: 'registered',
       qrCode: 'QR_DATA_1',
-      verificationId: 'VERIF_1'
-    }
+      verificationId: 'VERIF_1',
+    },
   ];
   const payments = [
     {
@@ -155,8 +186,8 @@ test('2. Paid Public Event: Cancel Event displays attendee payment breakdown, no
       registrationId: 'reg-1',
       eventId: 'ev-pub-1',
       amount: 1500,
-      status: 'completed'
-    }
+      status: 'completed',
+    },
   ];
 
   const { context, getModal } = setupTestEnvironment([publishedEvent], registrations, payments);
@@ -181,18 +212,36 @@ test('2. Paid Public Event: Cancel Event displays attendee payment breakdown, no
   assert.match(modal.html, /Cancellation Consequences/);
   assert.match(modal.html, /All attendee registrations and QR tickets will be invalidated/);
   assert.match(modal.html, /1 registered attendee\(s\) will be notified immediately/);
-  assert.match(modal.html, /The organizer does not receive a refund for cancelling their own event/);
+  assert.match(
+    modal.html,
+    /The organizer does not receive a refund for cancelling their own event/
+  );
 
   // Shows payment and refund breakdown
   assert.match(modal.html, /Amount Actually Paid:<\/span>\s*<strong>(?:₹1,500|₹1500)<\/strong>/);
-  assert.match(modal.html, /Estimated Refund:<\/span>\s*<strong>(?:₹1,500|₹1500) \(Pending review\)<\/strong>/);
-  assert.match(modal.html, /Refunds are queued with status Pending and will not be claimed as processed until confirmed/);
+  assert.match(
+    modal.html,
+    /Estimated Refund:<\/span>\s*<strong>(?:₹1,500|₹1500) \(Pending review\)<\/strong>/
+  );
+  assert.match(
+    modal.html,
+    /Refunds are queued with status Pending and will not be claimed as processed until confirmed/
+  );
 
   // Shows mandatory dropdown reasons
   assert.match(modal.html, /<option value="Venue unavailable">Venue unavailable<\/option>/);
-  assert.match(modal.html, /<option value="Operational difficulties">Operational difficulties<\/option>/);
-  assert.match(modal.html, /<option value="Insufficient registrations">Insufficient registrations<\/option>/);
-  assert.match(modal.html, /<option value="Safety or regulatory concerns">Safety or regulatory concerns<\/option>/);
+  assert.match(
+    modal.html,
+    /<option value="Operational difficulties">Operational difficulties<\/option>/
+  );
+  assert.match(
+    modal.html,
+    /<option value="Insufficient registrations">Insufficient registrations<\/option>/
+  );
+  assert.match(
+    modal.html,
+    /<option value="Safety or regulatory concerns">Safety or regulatory concerns<\/option>/
+  );
   assert.match(modal.html, /<option value="Organizer emergency">Organizer emergency<\/option>/);
   assert.match(modal.html, /<option value="Other">Other<\/option>/);
 
@@ -215,7 +264,7 @@ test('3. Unpaid Public Event: Displays exact no refunds message and creates no r
     backendStatus: 'published',
     registered: 2,
     capacity: 50,
-    price: 0
+    price: 0,
   };
   const registrations = [
     {
@@ -226,7 +275,7 @@ test('3. Unpaid Public Event: Displays exact no refunds message and creates no r
       status: 'confirmed',
       backendStatus: 'registered',
       qrCode: 'QR_FREE_1',
-      verificationId: 'VERIF_FREE_1'
+      verificationId: 'VERIF_FREE_1',
     },
     {
       id: 'reg-free-2',
@@ -236,8 +285,8 @@ test('3. Unpaid Public Event: Displays exact no refunds message and creates no r
       status: 'confirmed',
       backendStatus: 'registered',
       qrCode: 'QR_FREE_2',
-      verificationId: 'VERIF_FREE_2'
-    }
+      verificationId: 'VERIF_FREE_2',
+    },
   ];
 
   const { context, getModal } = setupTestEnvironment([unpaidEvent], registrations, []);
@@ -258,7 +307,10 @@ test('3. Unpaid Public Event: Displays exact no refunds message and creates no r
 
   const confirmModal = getModal();
   assert.match(confirmModal.title, /Final Confirmation: Cancel Event/);
-  assert.match(confirmModal.html, /Total Eligible Attendee Refunds:<\/span>\s*<strong>(?:₹0 \(No refunds due\)|₹0)<\/strong>/);
+  assert.match(
+    confirmModal.html,
+    /Total Eligible Attendee Refunds:<\/span>\s*<strong>(?:₹0 \(No refunds due\)|₹0)<\/strong>/
+  );
 
   // Confirm cancellation
   await context.submitOrganizerEventCancellation('ev-unpaid-1', '');
@@ -284,7 +336,7 @@ test('4. Multiple Attendees: Paid attendee receives Pending refund, unpaid recei
     backendStatus: 'published',
     registered: 3,
     capacity: 100,
-    price: 2000
+    price: 2000,
   };
   const registrations = [
     {
@@ -295,7 +347,7 @@ test('4. Multiple Attendees: Paid attendee receives Pending refund, unpaid recei
       status: 'confirmed',
       backendStatus: 'registered',
       qrCode: 'QR_P1',
-      verificationId: 'V_P1'
+      verificationId: 'V_P1',
     },
     {
       id: 'reg-paid-2',
@@ -305,7 +357,7 @@ test('4. Multiple Attendees: Paid attendee receives Pending refund, unpaid recei
       status: 'confirmed',
       backendStatus: 'registered',
       qrCode: 'QR_P2',
-      verificationId: 'V_P2'
+      verificationId: 'V_P2',
     },
     {
       id: 'reg-unpaid-3',
@@ -315,12 +367,24 @@ test('4. Multiple Attendees: Paid attendee receives Pending refund, unpaid recei
       status: 'confirmed',
       backendStatus: 'registered',
       qrCode: 'QR_U3',
-      verificationId: 'V_U3'
-    }
+      verificationId: 'V_U3',
+    },
   ];
   const payments = [
-    { paymentId: 'p-1', registrationId: 'reg-paid-1', eventId: 'ev-mixed-1', amount: 2000, status: 'completed' },
-    { paymentId: 'p-2', registrationId: 'reg-paid-2', eventId: 'ev-mixed-1', amount: 2000, status: 'completed' }
+    {
+      paymentId: 'p-1',
+      registrationId: 'reg-paid-1',
+      eventId: 'ev-mixed-1',
+      amount: 2000,
+      status: 'completed',
+    },
+    {
+      paymentId: 'p-2',
+      registrationId: 'reg-paid-2',
+      eventId: 'ev-mixed-1',
+      amount: 2000,
+      status: 'completed',
+    },
   ];
 
   const { context, getModal } = setupTestEnvironment([mixedEvent], registrations, payments);
@@ -331,7 +395,10 @@ test('4. Multiple Attendees: Paid attendee receives Pending refund, unpaid recei
   assert.match(modal.html, /Registered Attendees:<\/strong>\s*3/);
   assert.match(modal.html, /Successfully Paid Attendees:<\/strong>\s*2/);
   assert.match(modal.html, /Amount Actually Paid:<\/span>\s*<strong>(?:₹4,000|₹4000)<\/strong>/);
-  assert.match(modal.html, /Estimated Refund:<\/span>\s*<strong>(?:₹4,000|₹4000) \(Pending review\)<\/strong>/);
+  assert.match(
+    modal.html,
+    /Estimated Refund:<\/span>\s*<strong>(?:₹4,000|₹4000) \(Pending review\)<\/strong>/
+  );
 
   context.setElement('org-cancel-reason-select', 'Insufficient registrations');
   context.setElement('org-cancel-reason', 'Insufficient registrations');
@@ -340,7 +407,10 @@ test('4. Multiple Attendees: Paid attendee receives Pending refund, unpaid recei
   const confirmModal = getModal();
   assert.match(confirmModal.html, /Attendees Affected:<\/strong>\s*3/);
   assert.match(confirmModal.html, /Tickets to Invalidate:<\/strong>\s*3/);
-  assert.match(confirmModal.html, /Total Eligible Attendee Refunds:<\/span>\s*<strong>(?:₹4,000|₹4000)<\/strong>/);
+  assert.match(
+    confirmModal.html,
+    /Total Eligible Attendee Refunds:<\/span>\s*<strong>(?:₹4,000|₹4000)<\/strong>/
+  );
   assert.match(confirmModal.html, /Pending/);
 
   await context.submitOrganizerEventCancellation('ev-mixed-1', '');
@@ -367,7 +437,7 @@ test('5. Reason Dropdown, "Other" Explanation, and Final Confirmation Modal Butt
     backendStatus: 'published',
     registered: 1,
     capacity: 50,
-    price: 500
+    price: 500,
   };
   const registrations = [
     {
@@ -378,14 +448,18 @@ test('5. Reason Dropdown, "Other" Explanation, and Final Confirmation Modal Butt
       status: 'confirmed',
       backendStatus: 'registered',
       qrCode: 'QR_2',
-      verificationId: 'VERIF_2'
-    }
+      verificationId: 'VERIF_2',
+    },
   ];
   const payments = [
-    { paymentId: 'pay-2', registrationId: 'reg-2', amount: 500, status: 'completed' }
+    { paymentId: 'pay-2', registrationId: 'reg-2', amount: 500, status: 'completed' },
   ];
 
-  const { context, getModal, getRenderedPage } = setupTestEnvironment([publishedEvent], registrations, payments);
+  const { context, getModal, getRenderedPage } = setupTestEnvironment(
+    [publishedEvent],
+    registrations,
+    payments
+  );
 
   context.setElement('org-cancel-reason-select', '');
   context.setElement('org-cancel-reason', '');
@@ -463,9 +537,9 @@ test('6. Policy Restrictions & Dynamic Terms: Enforces deadline restrictions whe
     policySnapshot: {
       cancellation: {
         minimumNoticeDays: 14,
-        restrictedAfterDeadline: true
-      }
-    }
+        restrictedAfterDeadline: true,
+      },
+    },
   };
 
   const { context, getModal } = setupTestEnvironment([restrictedEvent], [], []);
@@ -486,22 +560,22 @@ test('7. Prohibited States & Permission Failures: Completed, already cancelled, 
       organizer: 'usr-org-100',
       title: 'Past Completed Summit',
       status: 'completed',
-      backendStatus: 'completed'
+      backendStatus: 'completed',
     },
     {
       id: 'ev-already-cancelled',
       organizer: 'usr-org-100',
       title: 'Previous Cancelled Meetup',
       status: 'cancelled',
-      backendStatus: 'cancelled'
+      backendStatus: 'cancelled',
     },
     {
       id: 'ev-other-organizer',
       organizer: 'usr-other-999',
       title: 'Competitor Conference',
       status: 'published',
-      backendStatus: 'published'
-    }
+      backendStatus: 'published',
+    },
   ];
 
   const { context, toasts, getModal } = setupTestEnvironment(events, [], []);
@@ -521,7 +595,10 @@ test('7. Prohibited States & Permission Failures: Completed, already cancelled, 
   assert.equal(modal.title, 'Already Cancelled');
   assert.match(modal.html, /This event is already cancelled/);
   assert.ok(modal.buttons.some(b => b.lbl === 'Close'));
-  assert.equal(modal.buttons.some(b => ['Cancel Event', 'Edit Event', 'Delete Event'].includes(b.lbl)), false);
+  assert.equal(
+    modal.buttons.some(b => ['Cancel Event', 'Edit Event', 'Delete Event'].includes(b.lbl)),
+    false
+  );
 
   // C. Unauthorized organizer blocked
   toasts.length = 0;

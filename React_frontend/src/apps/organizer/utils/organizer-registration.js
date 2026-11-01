@@ -18,9 +18,9 @@
     mobileCodeInput: '',
     emailVerifyPromptOpen: false,
     mobileVerifyPromptOpen: false,
-
     // Step 2: Organizer type & details
-    organizerType: 'Registered Company / Event Agency', // or 'Independent Event Organizer'
+    organizerType: 'Registered Company / Event Agency',
+    // or 'Independent Event Organizer'
 
     // Registered Company details
     companyDetails: {
@@ -35,10 +35,10 @@
       authorizedRepresentativeName: '',
       representativeDesignation: '',
       websiteUrl: '',
-      registrationCertificateDoc: null, // { name, size, type, data }
+      registrationCertificateDoc: null,
+      // { name, size, type, data }
       proofOfAuthorizationDoc: null,
     },
-
     // Independent Organizer details
     independentDetails: {
       professionalName: '',
@@ -47,57 +47,92 @@
       state: '',
       pinCode: '',
       yearsOfExperience: 0,
-      areasOfSpecialization: [], // Corporate Events, Weddings, etc.
+      areasOfSpecialization: [],
+      // Corporate Events, Weddings, etc.
       portfolioDetails: '',
       portfolioUrl: '',
       supportingEvidenceDoc: null,
     },
-
     // Step 3
     declarationAccepted: false,
     lastSubmittedRef: null,
     isSubmitting: false,
     errors: {},
   });
-
   let _orgState = defaultOrgState();
   let _clientState;
-
   function renderContactVerification(s, client = false) {
     const api = 'window.EventFlowOrganizerRegistration';
     return `
       <div style="background:var(--surface2,#1a1e29);border:1px solid var(--border,#2d3748);border-radius:8px;padding:14px 16px;margin:16px 0;">
         <div style="font-weight:700;font-size:14px;margin-bottom:10px;">Contact Verification Checks *</div>
-        <p style="font-size:12px;color:var(--text2,#94a3b8);margin:0 0 12px;">Both Email and Mobile verification must be completed ${client ? 'to create your account' : 'to proceed to Step 2'}.</p>
-        ${['email', 'mobile'].map(channel => {
-          const label = channel === 'email' ? 'Email' : 'Mobile';
-          const verified = s[`${channel}Verified`];
-          const prefix = client ? 'client-' : '';
-          const trigger = client ? `triggerClientVerification('${channel}')` : `trigger${label}Verify()`;
-          const confirm = client ? `confirmClientVerification('${channel}')` : `confirm${label}Code()`;
-          const state = `${api}.${client ? 'getClientState' : 'getState'}()`;
-          return `
+        <p style="font-size:12px;color:var(--text2,#94a3b8);margin:0 0 12px;">Both Email and Mobile verification must be completed ${
+          client ? 'to create your account' : 'to proceed to Step 2'
+        }.</p>
+        ${['email', 'mobile']
+          .map(channel => {
+            const label = channel === 'email' ? 'Email' : 'Mobile';
+            const verified = s[`${channel}Verified`];
+            const prefix = client ? 'client-' : '';
+            const trigger = client
+              ? `triggerClientVerification('${channel}')`
+              : `trigger${label}Verify()`;
+            const confirm = client
+              ? `confirmClientVerification('${channel}')`
+              : `confirm${label}Code()`;
+            const state = `${api}.${client ? 'getClientState' : 'getState'}()`;
+            return `
             <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;flex-wrap:wrap;gap:8px;">
               <div><span style="font-weight:600;font-size:13px;">${label} Verification:</span>
-                <span class="badge ${verified ? 'badge-green' : 'badge-yellow'}" style="margin-left:8px;">${verified ? `✓ ${label} Verified` : 'Pending Verification'}</span>
+                <span class="badge ${
+                  verified ? 'badge-green' : 'badge-yellow'
+                }" style="margin-left:8px;">${
+              verified ? `✓ ${label} Verified` : 'Pending Verification'
+            }</span>
               </div>
-              ${verified ? '<span style="font-size:12px;color:var(--green,#10b981);">Verified</span>' : `<button type="button" class="btn btn-ghost btn-sm" id="btn-verify-${prefix}${channel}" onclick="${api}.${trigger}">Verify ${label}</button>`}
+              ${
+                verified
+                  ? '<span style="font-size:12px;color:var(--green,#10b981);">Verified</span>'
+                  : `<button type="button" class="btn btn-ghost btn-sm" id="btn-verify-${prefix}${channel}" onclick="${api}.${trigger}">Verify ${label}</button>`
+              }
             </div>
-            ${s[`${channel}VerifyPromptOpen`] && !verified ? `
+            ${
+              s[`${channel}VerifyPromptOpen`] && !verified
+                ? `
               <div id="${prefix}${channel}-verify-box" style="margin-top:10px;padding:10px;background:var(--surface,#121620);border-radius:6px;border:1px dashed var(--accent,#6366f1);">
-                <div style="font-size:12px;color:var(--text2,#94a3b8);margin-bottom:6px;">${channel === 'email' ? 'Email delivery is not configured in this demo environment. Your demo verification code is:' : 'SMS service is simulated for this environment. Your mobile verification code is:'} <strong>${escapeHtml(s[`${channel}DemoCode`])}</strong></div>
+                <div style="font-size:12px;color:var(--text2,#94a3b8);margin-bottom:6px;">${
+                  channel === 'email'
+                    ? 'Email delivery is not configured in this demo environment. Your demo verification code is:'
+                    : 'SMS service is simulated for this environment. Your mobile verification code is:'
+                } <strong>${escapeHtml(s[`${channel}DemoCode`])}</strong></div>
                 <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                  <input type="text" inputmode="numeric" autocomplete="one-time-code" class="form-control" id="${client ? 'client' : 'org'}-${channel}-otp-input" aria-label="${label} verification code" placeholder="Enter 6-digit code" style="max-width:180px;height:34px;font-size:13px;" value="${escapeHtml(s[`${channel}CodeInput`])}" oninput="${state}.${channel}CodeInput=this.value">
+                  <input type="text" inputmode="numeric" autocomplete="one-time-code" class="form-control" id="${
+                    client ? 'client' : 'org'
+                  }-${channel}-otp-input" aria-label="${label} verification code" placeholder="Enter 6-digit code" style="max-width:180px;height:34px;font-size:13px;" value="${escapeHtml(
+                    s[`${channel}CodeInput`]
+                  )}" oninput="${state}.${channel}CodeInput=this.value">
                   <button type="button" class="btn btn-primary btn-sm" data-validation-scope="verification" onclick="${api}.${confirm}">Confirm</button>
                   <button type="button" class="btn btn-ghost btn-sm" onclick="${api}.cancelContactVerification('${channel}', ${client})">Cancel</button>
                 </div>
-                <span id="${prefix}${channel}-otp-err" role="alert" style="${s.errors[`${channel}Otp`] ? 'display:block;' : 'display:none;'}color:var(--red,#ef4444);font-size:12px;margin-top:4px;">${escapeHtml(s.errors[`${channel}Otp`] || 'Invalid verification code. Please try again.')}</span>
-              </div>` : ''}
-            ${s.errors[`${channel}Verified`] ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;display:block;margin-top:4px;">${escapeHtml(s.errors[`${channel}Verified`])}</span>` : ''}`;
-        }).join('')}
+                <span id="${prefix}${channel}-otp-err" role="alert" style="${
+                    s.errors[`${channel}Otp`] ? 'display:block;' : 'display:none;'
+                  }color:var(--red,#ef4444);font-size:12px;margin-top:4px;">${escapeHtml(
+                    s.errors[`${channel}Otp`] || 'Invalid verification code. Please try again.'
+                  )}</span>
+              </div>`
+                : ''
+            }
+            ${
+              s.errors[`${channel}Verified`]
+                ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;display:block;margin-top:4px;">${escapeHtml(
+                    s.errors[`${channel}Verified`]
+                  )}</span>`
+                : ''
+            }`;
+          })
+          .join('')}
       </div>`;
   }
-
   function cancelContactVerification(channel, client = false) {
     if (client) syncClientFromDom();
     else syncStep1FromDom();
@@ -108,7 +143,6 @@
     if (client) renderClientRegisterForm();
     else renderStep1Modal();
   }
-
   const SPECIALIZATION_OPTIONS = [
     'Corporate Events',
     'Weddings',
@@ -121,7 +155,6 @@
     'Sports Events',
     'Other',
   ];
-
   const BUSINESS_STRUCTURES = [
     'Private Limited Company',
     'Public Limited Company',
@@ -130,7 +163,6 @@
     'Sole Proprietorship',
     'Other',
   ];
-
   function escapeHtml(str) {
     if (str == null) return '';
     return String(str)
@@ -140,27 +172,31 @@
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
   }
-
   function getG(id) {
-    try { if (typeof g === 'function') return g(id); } catch (e) {}
+    try {
+      if (typeof g === 'function') return g(id);
+    } catch (e) {}
     if (typeof window !== 'undefined' && typeof window.g === 'function') return window.g(id);
-    if (typeof document !== 'undefined' && document.getElementById) return document.getElementById(id);
+    if (typeof document !== 'undefined' && document.getElementById)
+      return document.getElementById(id);
     return null;
   }
-
   function getV(id) {
-    try { if (typeof v === 'function') return v(id); } catch (e) {}
+    try {
+      if (typeof v === 'function') return v(id);
+    } catch (e) {}
     if (typeof window !== 'undefined' && typeof window.v === 'function') return window.v(id);
-    const el = getG(id);
-    return el ? (el.value != null ? String(el.value).trim() : '') : '';
+    const element = getG(id);
+    return element ? (element.value != null ? String(element.value).trim() : '') : '';
   }
-
   function showAppToast(msg, type) {
-    try { if (typeof toast === 'function') return toast(msg, type); } catch (e) {}
-    if (typeof window !== 'undefined' && typeof window.toast === 'function') return window.toast(msg, type);
+    try {
+      if (typeof toast === 'function') return toast(msg, type);
+    } catch (e) {}
+    if (typeof window !== 'undefined' && typeof window.toast === 'function')
+      return window.toast(msg, type);
     if (typeof showToast === 'function') return showToast(msg, type);
   }
-
   function getBackendBase() {
     try {
       if (typeof window !== 'undefined' && window.location && window.location.origin) {
@@ -239,7 +275,6 @@
         </div>
       </div>
     `;
-
     if (typeof openModal === 'function') {
       openModal('Create New Account', modalHtml, [], false);
     }
@@ -250,9 +285,14 @@
   // ════════════════════════════════════════════════
 
   function openAttendeeRegisterForm() {
-    const captcha = (typeof generateCaptcha === 'function') ? generateCaptcha() : { question: '7 + 5 = ?', answer: 12 };
+    const captcha =
+      typeof generateCaptcha === 'function'
+        ? generateCaptcha()
+        : {
+            question: '7 + 5 = ?',
+            answer: 12,
+          };
     window._captchaAnswer = captcha.answer;
-
     const modalHtml = `
       <div style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">
         <button type="button" class="btn btn-ghost btn-sm" onclick="window.EventFlowOrganizerRegistration.openRegisterModal()">← Back to Role Selection</button>
@@ -287,63 +327,123 @@
         <span class="form-error" id="rg-captcha-err" style="display:none;color:var(--red,#ef4444);font-size:12px;margin-top:4px;">Incorrect answer, please try again</span>
       </div>
     `;
-
-    openModal('Attendee Registration', modalHtml, [
-      { lbl: 'Create Account', cls: 'btn-primary', fn: 'window.EventFlowOrganizerRegistration.submitAttendeeForm()' },
-    ], false);
+    openModal(
+      'Attendee Registration',
+      modalHtml,
+      [
+        {
+          lbl: 'Create Account',
+          cls: 'btn-primary',
+          fn: 'window.EventFlowOrganizerRegistration.submitAttendeeForm()',
+        },
+      ],
+      false
+    );
   }
-
   async function savePublicAccount(user) {
     try {
-      if (!window.EventFlowData?.registerAccount) throw new Error('Registration is unavailable. Please refresh and try again.');
+      if (!window.EventFlowData?.registerAccount)
+        throw new Error('Registration is unavailable. Please refresh and try again.');
       return await window.EventFlowData.registerAccount(user);
     } catch (error) {
       toast(error.message || 'Your account could not be created. Please try again.', 'error');
     }
   }
-
   async function submitAttendeeForm() {
-    const name = v('rg-name'), email = v('rg-email'), pass = v('rg-pass'), phone = v('rg-phone');
-    const dob = v('rg-date-of-birth'), gender = v('rg-gender'), city = v('rg-city'), interests = v('rg-interests');
+    const name = v('rg-name');
+    const email = v('rg-email');
+    const pass = v('rg-pass');
+    const phone = v('rg-phone');
+    const dob = v('rg-date-of-birth');
+    const gender = v('rg-gender');
+    const city = v('rg-city');
+    const interests = v('rg-interests');
     const captchaVal = v('rg-captcha');
-
-    if (!name) { toast('Name is required', 'error'); return; }
-    if (!email || !email.includes('@')) { toast('Valid email is required', 'error'); return; }
-    if (!pass || pass.length < 6) { toast('Password must be at least 6 characters', 'error'); return; }
-    if (!phone) { toast('Phone number is required', 'error'); return; }
-    if (!dob) { toast('Date of birth is required', 'error'); return; }
-    if (!gender) { toast('Gender is required', 'error'); return; }
-    if (!city) { toast('City is required', 'error'); return; }
-    if (!interests) { toast('Interests are required', 'error'); return; }
-
+    if (!name) {
+      toast('Name is required', 'error');
+      return;
+    }
+    if (!email || !email.includes('@')) {
+      toast('Valid email is required', 'error');
+      return;
+    }
+    if (!pass || pass.length < 6) {
+      toast('Password must be at least 6 characters', 'error');
+      return;
+    }
+    if (!phone) {
+      toast('Phone number is required', 'error');
+      return;
+    }
+    if (!dob) {
+      toast('Date of birth is required', 'error');
+      return;
+    }
+    if (!gender) {
+      toast('Gender is required', 'error');
+      return;
+    }
+    if (!city) {
+      toast('City is required', 'error');
+      return;
+    }
+    if (!interests) {
+      toast('Interests are required', 'error');
+      return;
+    }
     if (!captchaVal || parseInt(captchaVal, 10) !== window._captchaAnswer) {
       const err = g('rg-captcha-err');
       if (err) err.style.display = 'block';
       toast('Please solve the CAPTCHA correctly', 'error');
       return;
     }
-
     return savePublicAccount({
-      name, email, password: pass, role: 'attendee', phone,
-      dateOfBirth: dob, gender, city, interests,
+      name,
+      email,
+      password: pass,
+      role: 'attendee',
+      phone,
+      dateOfBirth: dob,
+      gender,
+      city,
+      interests,
     });
   }
-
   function openClientRegisterForm() {
-    const captcha = (typeof generateCaptcha === 'function') ? generateCaptcha() : { question: '8 + 4 = ?', answer: 12 };
+    const captcha =
+      typeof generateCaptcha === 'function'
+        ? generateCaptcha()
+        : {
+            question: '8 + 4 = ?',
+            answer: 12,
+          };
     window._captchaAnswer = captcha.answer;
     _clientState = {
-      fullName: '', email: '', mobileNumber: '', password: '', organizationType: '', organizationName: '', address: '',
-      captcha, captchaInput: '', emailVerified: false, mobileVerified: false, verifiedEmail: '', verifiedMobile: '',
-      emailDemoCode: '482910', mobileDemoCode: '739184', emailCodeInput: '', mobileCodeInput: '',
-      emailVerifyPromptOpen: false, mobileVerifyPromptOpen: false, errors: {},
+      fullName: '',
+      email: '',
+      mobileNumber: '',
+      password: '',
+      organizationType: '',
+      organizationName: '',
+      address: '',
+      captcha,
+      captchaInput: '',
+      emailVerified: false,
+      mobileVerified: false,
+      verifiedEmail: '',
+      verifiedMobile: '',
+      emailDemoCode: '482910',
+      mobileDemoCode: '739184',
+      emailCodeInput: '',
+      mobileCodeInput: '',
+      emailVerifyPromptOpen: false,
+      mobileVerifyPromptOpen: false,
+      errors: {},
     };
     renderClientRegisterForm();
   }
-
   function renderClientRegisterForm() {
     const s = _clientState;
-
     const modalHtml = `
       <div style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">
         <button type="button" class="btn btn-ghost btn-sm" onclick="window.EventFlowOrganizerRegistration.openRegisterModal()">← Back to Role Selection</button>
@@ -351,49 +451,97 @@
       </div>
 
       <div class="grid-2">
-        <div class="form-group"><label class="form-label">Full Name *</label><input class="form-control" id="rg-client-name" placeholder="Michael Torres" value="${escapeHtml(s.fullName)}"></div>
-        <div class="form-group"><label class="form-label">Email *</label><input class="form-control" id="rg-client-email" type="email" placeholder="client@example.com" value="${escapeHtml(s.email)}" oninput="window.EventFlowOrganizerRegistration.clientContactChanged('email')"></div>
+        <div class="form-group"><label class="form-label">Full Name *</label><input class="form-control" id="rg-client-name" placeholder="Michael Torres" value="${escapeHtml(
+          s.fullName
+        )}"></div>
+        <div class="form-group"><label class="form-label">Email *</label><input class="form-control" id="rg-client-email" type="email" placeholder="client@example.com" value="${escapeHtml(
+          s.email
+        )}" oninput="window.EventFlowOrganizerRegistration.clientContactChanged('email')"></div>
       </div>
       <div class="grid-2">
-        <div class="form-group"><label class="form-label">Password *</label><input class="form-control" id="rg-client-pass" type="password" placeholder="Min 6 characters" value="${escapeHtml(s.password)}"></div>
-        <div class="form-group"><label class="form-label">Phone *</label><input class="form-control" id="rg-client-phone" type="tel" placeholder="9876543200" value="${escapeHtml(s.mobileNumber)}" oninput="window.EventFlowOrganizerRegistration.clientContactChanged('mobile')"></div>
+        <div class="form-group"><label class="form-label">Password *</label><input class="form-control" id="rg-client-pass" type="password" placeholder="Min 6 characters" value="${escapeHtml(
+          s.password
+        )}"></div>
+        <div class="form-group"><label class="form-label">Phone *</label><input class="form-control" id="rg-client-phone" type="tel" placeholder="9876543200" value="${escapeHtml(
+          s.mobileNumber
+        )}" oninput="window.EventFlowOrganizerRegistration.clientContactChanged('mobile')"></div>
       </div>
       <div class="form-group"><label class="form-label">Organization Type *</label>
         <select class="form-control" id="rg-organization-type" onchange="const show = this.value && this.value !== 'Self'; g('rg-client-orgname-wrap').style.display = show ? '' : 'none'; g('rg-organization-name').disabled = !show;">
-          <option value="">Select organization type</option>${['Self', 'Government', 'Educational institution', 'Other'].map(type => `<option${s.organizationType === type ? ' selected' : ''}>${type}</option>`).join('')}
+          <option value="">Select organization type</option>${[
+            'Self',
+            'Government',
+            'Educational institution',
+            'Other',
+          ]
+            .map(
+              type => `<option${s.organizationType === type ? ' selected' : ''}>${type}</option>`
+            )
+            .join('')}
         </select>
       </div>
-      <div class="form-group" id="rg-client-orgname-wrap" style="${s.organizationType && s.organizationType !== 'Self' ? '' : 'display:none;'}">
+      <div class="form-group" id="rg-client-orgname-wrap" style="${
+        s.organizationType && s.organizationType !== 'Self' ? '' : 'display:none;'
+      }">
         <label class="form-label">Organization / Company Name *</label>
-        <input class="form-control" id="rg-organization-name" placeholder="Company or Institution name" value="${escapeHtml(s.organizationName)}" ${!s.organizationType || s.organizationType === 'Self' ? 'disabled' : ''}>
+        <input class="form-control" id="rg-organization-name" placeholder="Company or Institution name" value="${escapeHtml(
+          s.organizationName
+        )}" ${!s.organizationType || s.organizationType === 'Self' ? 'disabled' : ''}>
       </div>
-      <div class="form-group"><label class="form-label">Address *</label><textarea class="form-control" id="rg-client-address" placeholder="Your address">${escapeHtml(s.address)}</textarea></div>
+      <div class="form-group"><label class="form-label">Address *</label><textarea class="form-control" id="rg-client-address" placeholder="Your address">${escapeHtml(
+        s.address
+      )}</textarea></div>
 
       <div id="client-contact-verification">${renderContactVerification(s, true)}</div>
 
       <div class="form-group" style="margin-top:12px;">
         <label class="form-label">Security Check (CAPTCHA) *</label>
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-          <div style="background:var(--surface2,#1e2030);border:2px solid var(--accent,#7c6af7);border-radius:8px;padding:8px 16px;font-size:1.1rem;font-weight:700;letter-spacing:2px;color:var(--accent,#7c6af7);font-family:monospace;user-select:none;" id="rg-captcha-question">${escapeHtml(s.captcha.question)}</div>
-          <input class="form-control" id="rg-captcha" type="number" placeholder="Your answer" style="max-width:140px;" autocomplete="off" value="${escapeHtml(s.captchaInput)}">
+          <div style="background:var(--surface2,#1e2030);border:2px solid var(--accent,#7c6af7);border-radius:8px;padding:8px 16px;font-size:1.1rem;font-weight:700;letter-spacing:2px;color:var(--accent,#7c6af7);font-family:monospace;user-select:none;" id="rg-captcha-question">${escapeHtml(
+            s.captcha.question
+          )}</div>
+          <input class="form-control" id="rg-captcha" type="number" placeholder="Your answer" style="max-width:140px;" autocomplete="off" value="${escapeHtml(
+            s.captchaInput
+          )}">
         </div>
         <span class="form-error" id="rg-captcha-err" style="display:none;color:var(--red,#ef4444);font-size:12px;margin-top:4px;">Incorrect answer, please try again</span>
       </div>
     `;
-
-    openModal('Client Registration', modalHtml, [
-      { lbl: 'Create Account', cls: 'btn-primary', fn: 'window.EventFlowOrganizerRegistration.submitClientForm()' },
-    ], false);
+    openModal(
+      'Client Registration',
+      modalHtml,
+      [
+        {
+          lbl: 'Create Account',
+          cls: 'btn-primary',
+          fn: 'window.EventFlowOrganizerRegistration.submitClientForm()',
+        },
+      ],
+      false
+    );
   }
-
   function syncClientFromDom() {
-    for (const [key, id] of Object.entries({ fullName: 'rg-client-name', email: 'rg-client-email', mobileNumber: 'rg-client-phone', password: 'rg-client-pass', organizationType: 'rg-organization-type', organizationName: 'rg-organization-name', address: 'rg-client-address', captchaInput: 'rg-captcha', emailCodeInput: 'client-email-otp-input', mobileCodeInput: 'client-mobile-otp-input' })) {
+    for (const [key, id] of Object.entries({
+      fullName: 'rg-client-name',
+      email: 'rg-client-email',
+      mobileNumber: 'rg-client-phone',
+      password: 'rg-client-pass',
+      organizationType: 'rg-organization-type',
+      organizationName: 'rg-organization-name',
+      address: 'rg-client-address',
+      captchaInput: 'rg-captcha',
+      emailCodeInput: 'client-email-otp-input',
+      mobileCodeInput: 'client-mobile-otp-input',
+    })) {
       if (g(id)) _clientState[key] = v(id);
     }
     for (const channel of ['email', 'mobile']) {
       const value = _clientState[channel === 'email' ? 'email' : 'mobileNumber'].trim();
       const verifiedValue = _clientState[channel === 'email' ? 'verifiedEmail' : 'verifiedMobile'];
-      if (_clientState[`${channel}Verified`] && value.toLowerCase() !== verifiedValue.toLowerCase()) {
+      if (
+        _clientState[`${channel}Verified`] &&
+        value.toLowerCase() !== verifiedValue.toLowerCase()
+      ) {
         _clientState[`${channel}Verified`] = false;
         _clientState[channel === 'email' ? 'verifiedEmail' : 'verifiedMobile'] = '';
       }
@@ -406,25 +554,32 @@
       }
     }
   }
-
   function clientContactChanged(channel) {
     const wasVerified = _clientState[`${channel}Verified`];
     const wasOpen = _clientState[`${channel}VerifyPromptOpen`];
     syncClientFromDom();
-    if (wasVerified !== _clientState[`${channel}Verified`] || wasOpen !== _clientState[`${channel}VerifyPromptOpen`]) {
+    if (
+      wasVerified !== _clientState[`${channel}Verified`] ||
+      wasOpen !== _clientState[`${channel}VerifyPromptOpen`]
+    ) {
       // Update only the verification panel so typing keeps focus and the caret position.
       const panel = g('client-contact-verification');
       if (panel) panel.innerHTML = renderContactVerification(_clientState, true);
     }
   }
-
   function triggerClientVerification(channel) {
     if (!['email', 'mobile'].includes(channel)) return;
     syncClientFromDom();
     const value = _clientState[channel === 'email' ? 'email' : 'mobileNumber'].trim();
-    const valid = channel === 'email' ? /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) : /^[6-9]\d{9}$/.test(value);
+    const valid =
+      channel === 'email' ? /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) : /^[6-9]\d{9}$/.test(value);
     if (!valid) {
-      toast(channel === 'email' ? 'Please enter a valid email address first' : 'Please enter a valid 10-digit mobile number first', 'error');
+      toast(
+        channel === 'email'
+          ? 'Please enter a valid email address first'
+          : 'Please enter a valid 10-digit mobile number first',
+        'error'
+      );
       return;
     }
     _clientState[`${channel}RequestedValue`] = value;
@@ -434,12 +589,15 @@
     delete _clientState.errors[`${channel}Otp`];
     renderClientRegisterForm();
   }
-
   function confirmClientVerification(channel) {
     if (!['email', 'mobile'].includes(channel)) return;
     syncClientFromDom();
     const input = _clientState[`${channel}CodeInput`].trim();
-    if (!_clientState[`${channel}VerifyPromptOpen`] || !/^\d{6}$/.test(input) || input !== _clientState[`${channel}DemoCode`]) {
+    if (
+      !_clientState[`${channel}VerifyPromptOpen`] ||
+      !/^\d{6}$/.test(input) ||
+      input !== _clientState[`${channel}DemoCode`]
+    ) {
       _clientState.errors[`${channel}Otp`] = 'Invalid verification code. Please try again.';
       const error = g(`client-${channel}-otp-err`);
       if (error) {
@@ -450,7 +608,8 @@
       return;
     }
     _clientState[`${channel}Verified`] = true;
-    _clientState[channel === 'email' ? 'verifiedEmail' : 'verifiedMobile'] = _clientState[`${channel}RequestedValue`];
+    _clientState[channel === 'email' ? 'verifiedEmail' : 'verifiedMobile'] =
+      _clientState[`${channel}RequestedValue`];
     _clientState[`${channel}VerifyPromptOpen`] = false;
     _clientState[`${channel}CodeInput`] = '';
     delete _clientState.errors[`${channel}Otp`];
@@ -458,37 +617,68 @@
     renderClientRegisterForm();
     toast(`${channel === 'email' ? 'Email' : 'Mobile number'} verified successfully! ✓`, 'success');
   }
-
   async function submitClientForm() {
     syncClientFromDom();
-    const name = v('rg-client-name'), email = v('rg-client-email'), pass = v('rg-client-pass'), phone = v('rg-client-phone');
-    const orgType = v('rg-organization-type'), orgName = v('rg-organization-name'), address = v('rg-client-address');
+    const name = v('rg-client-name');
+    const email = v('rg-client-email');
+    const pass = v('rg-client-pass');
+    const phone = v('rg-client-phone');
+    const orgType = v('rg-organization-type');
+    const orgName = v('rg-organization-name');
+    const address = v('rg-client-address');
     const captchaVal = v('rg-captcha');
-
-    if (!name) { toast('Name is required', 'error'); return; }
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast('Valid email is required', 'error'); return; }
-    if (!pass || pass.length < 6) { toast('Password must be at least 6 characters', 'error'); return; }
-    if (!/^[6-9]\d{9}$/.test(phone)) { toast('Enter a valid 10-digit Indian mobile number', 'error'); return; }
-    if (!orgType) { toast('Organization type is required', 'error'); return; }
-    if (orgType !== 'Self' && !orgName) { toast('Organization / Company Name is required', 'error'); return; }
-    if (!address) { toast('Address is required', 'error'); return; }
-
+    if (!name) {
+      toast('Name is required', 'error');
+      return;
+    }
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast('Valid email is required', 'error');
+      return;
+    }
+    if (!pass || pass.length < 6) {
+      toast('Password must be at least 6 characters', 'error');
+      return;
+    }
+    if (!/^[6-9]\d{9}$/.test(phone)) {
+      toast('Enter a valid 10-digit Indian mobile number', 'error');
+      return;
+    }
+    if (!orgType) {
+      toast('Organization type is required', 'error');
+      return;
+    }
+    if (orgType !== 'Self' && !orgName) {
+      toast('Organization / Company Name is required', 'error');
+      return;
+    }
+    if (!address) {
+      toast('Address is required', 'error');
+      return;
+    }
     if (!captchaVal || Number(captchaVal) !== _clientState.captcha.answer) {
       toast('Please solve the CAPTCHA correctly', 'error');
       return;
     }
-
     if (!_clientState.emailVerified || !_clientState.mobileVerified) {
-      if (!_clientState.emailVerified) _clientState.errors.emailVerified = 'Email verification is required before creating your account';
-      if (!_clientState.mobileVerified) _clientState.errors.mobileVerified = 'Mobile verification is required before creating your account';
+      if (!_clientState.emailVerified)
+        _clientState.errors.emailVerified =
+          'Email verification is required before creating your account';
+      if (!_clientState.mobileVerified)
+        _clientState.errors.mobileVerified =
+          'Mobile verification is required before creating your account';
       renderClientRegisterForm();
       toast('Please complete both email and mobile verification', 'error');
       return;
     }
-
     return savePublicAccount({
-      name, email, password: pass, role: 'client', phone,
-      organizationType: orgType, organizationName: orgName || '', address,
+      name,
+      email,
+      password: pass,
+      role: 'client',
+      phone,
+      organizationType: orgType,
+      organizationName: orgName || '',
+      address,
     });
   }
 
@@ -500,7 +690,11 @@
     if (g('org-reg-name')) _orgState.fullName = v('org-reg-name');
     if (g('org-reg-email')) {
       const newEmail = v('org-reg-email');
-      if (_orgState.emailVerified && _orgState.verifiedEmail && newEmail.toLowerCase() !== _orgState.verifiedEmail.toLowerCase()) {
+      if (
+        _orgState.emailVerified &&
+        _orgState.verifiedEmail &&
+        newEmail.toLowerCase() !== _orgState.verifiedEmail.toLowerCase()
+      ) {
         _orgState.emailVerified = false;
         _orgState.verifiedEmail = '';
       }
@@ -508,7 +702,11 @@
     }
     if (g('org-reg-phone')) {
       const newPhone = v('org-reg-phone');
-      if (_orgState.mobileVerified && _orgState.verifiedMobile && newPhone !== _orgState.verifiedMobile) {
+      if (
+        _orgState.mobileVerified &&
+        _orgState.verifiedMobile &&
+        newPhone !== _orgState.verifiedMobile
+      ) {
         _orgState.mobileVerified = false;
         _orgState.verifiedMobile = '';
       }
@@ -517,11 +715,9 @@
     if (g('org-reg-pass')) _orgState.password = v('org-reg-pass');
     if (g('org-reg-confirm-pass')) _orgState.confirmPassword = v('org-reg-confirm-pass');
   }
-
   function syncStep2FromDom() {
     const typeSelect = g('org-type-select');
     if (typeSelect) _orgState.organizerType = typeSelect.value;
-
     if (_orgState.organizerType === 'Registered Company / Event Agency') {
       const c = _orgState.companyDetails;
       if (g('org-comp-legal-name')) c.legalCompanyName = v('org-comp-legal-name');
@@ -548,40 +744,58 @@
 
       // Areas of specialization checkboxes
       const checkedSpecs = [];
-      document.querySelectorAll('.org-spec-checkbox:checked').forEach(cb => checkedSpecs.push(cb.value));
+      document
+        .querySelectorAll('.org-spec-checkbox:checked')
+        .forEach(cb => checkedSpecs.push(cb.value));
       if (checkedSpecs.length) ind.areasOfSpecialization = checkedSpecs;
     }
   }
-
   function renderStepIndicator(currentStep) {
     const steps = [
-      { num: 1, label: 'Account Details' },
-      { num: 2, label: 'Organizer Type & Details' },
-      { num: 3, label: 'Review & Submit' },
+      {
+        num: 1,
+        label: 'Account Details',
+      },
+      {
+        num: 2,
+        label: 'Organizer Type & Details',
+      },
+      {
+        num: 3,
+        label: 'Review & Submit',
+      },
     ];
-
     return `
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--border,#2d3748);">
-        ${steps.map(s => {
-          const isActive = s.num === currentStep;
-          const isDone = s.num < currentStep;
-          const bg = isActive ? 'var(--accent,#6366f1)' : (isDone ? 'var(--green,#10b981)' : 'var(--surface2,#2d3748)');
-          const color = isActive || isDone ? '#fff' : 'var(--text2,#94a3b8)';
-          return `
+        ${steps
+          .map(s => {
+            const isActive = s.num === currentStep;
+            const isDone = s.num < currentStep;
+            const bg = isActive
+              ? 'var(--accent,#6366f1)'
+              : isDone
+              ? 'var(--green,#10b981)'
+              : 'var(--surface2,#2d3748)';
+            const color = isActive || isDone ? '#fff' : 'var(--text2,#94a3b8)';
+            return `
             <div style="display:flex;align-items:center;gap:8px;">
               <div style="width:28px;height:28px;border-radius:50%;background:${bg};color:${color};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;">
                 ${isDone ? '✓' : s.num}
               </div>
-              <div style="font-size:13px;font-weight:${isActive ? '700' : '500'};color:${isActive ? 'var(--text,#f8fafc)' : 'var(--text2,#94a3b8)'};">
+              <div style="font-size:13px;font-weight:${isActive ? '700' : '500'};color:${
+              isActive ? 'var(--text,#f8fafc)' : 'var(--text2,#94a3b8)'
+            };">
                 ${s.label}
               </div>
             </div>
           `;
-        }).join('<div style="flex:1;height:2px;background:var(--border,#2d3748);margin:0 8px;"></div>')}
+          })
+          .join(
+            '<div style="flex:1;height:2px;background:var(--border,#2d3748);margin:0 8px;"></div>'
+          )}
       </div>
     `;
   }
-
   function openOrganizerRegisterStep(stepNumber) {
     if (stepNumber === 1) {
       if (_orgState.step > 1) syncStep2FromDom();
@@ -613,7 +827,6 @@
   function renderStep1Modal() {
     const s = _orgState;
     const errors = s.errors || {};
-
     const modalHtml = `
       ${renderStepIndicator(1)}
 
@@ -625,44 +838,95 @@
       <div class="grid-2">
         <div class="form-group">
           <label class="form-label">Full Name *</label>
-          <input class="form-control ${errors.fullName ? 'border-red' : ''}" id="org-reg-name" placeholder="Sarah Chen" value="${escapeHtml(s.fullName)}" oninput="window.EventFlowOrganizerRegistration.getState().fullName=this.value">
-          ${errors.fullName ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;">${errors.fullName}</span>` : ''}
+          <input class="form-control ${
+            errors.fullName ? 'border-red' : ''
+          }" id="org-reg-name" placeholder="Sarah Chen" value="${escapeHtml(
+      s.fullName
+    )}" oninput="window.EventFlowOrganizerRegistration.getState().fullName=this.value">
+          ${
+            errors.fullName
+              ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;">${errors.fullName}</span>`
+              : ''
+          }
         </div>
         <div class="form-group">
           <label class="form-label">Email Address *</label>
-          <input class="form-control ${errors.email ? 'border-red' : ''}" id="org-reg-email" type="email" placeholder="organizer@example.com" value="${escapeHtml(s.email)}" oninput="window.EventFlowOrganizerRegistration.getState().email=this.value">
-          ${errors.email ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;">${errors.email}</span>` : ''}
+          <input class="form-control ${
+            errors.email ? 'border-red' : ''
+          }" id="org-reg-email" type="email" placeholder="organizer@example.com" value="${escapeHtml(
+      s.email
+    )}" oninput="window.EventFlowOrganizerRegistration.getState().email=this.value">
+          ${
+            errors.email
+              ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;">${errors.email}</span>`
+              : ''
+          }
         </div>
       </div>
 
       <div class="grid-2">
         <div class="form-group">
           <label class="form-label">Mobile Number *</label>
-          <input class="form-control ${errors.mobileNumber ? 'border-red' : ''}" id="org-reg-phone" type="tel" placeholder="+91 9876543210" value="${escapeHtml(s.mobileNumber)}" oninput="window.EventFlowOrganizerRegistration.getState().mobileNumber=this.value">
-          ${errors.mobileNumber ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;">${errors.mobileNumber}</span>` : ''}
+          <input class="form-control ${
+            errors.mobileNumber ? 'border-red' : ''
+          }" id="org-reg-phone" type="tel" placeholder="+91 9876543210" value="${escapeHtml(
+      s.mobileNumber
+    )}" oninput="window.EventFlowOrganizerRegistration.getState().mobileNumber=this.value">
+          ${
+            errors.mobileNumber
+              ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;">${errors.mobileNumber}</span>`
+              : ''
+          }
         </div>
         <div class="form-group">
           <label class="form-label">Password *</label>
-          <input class="form-control ${errors.password ? 'border-red' : ''}" id="org-reg-pass" type="password" placeholder="Min 6 characters" value="${escapeHtml(s.password)}" oninput="window.EventFlowOrganizerRegistration.getState().password=this.value">
-          ${errors.password ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;">${errors.password}</span>` : ''}
+          <input class="form-control ${
+            errors.password ? 'border-red' : ''
+          }" id="org-reg-pass" type="password" placeholder="Min 6 characters" value="${escapeHtml(
+      s.password
+    )}" oninput="window.EventFlowOrganizerRegistration.getState().password=this.value">
+          ${
+            errors.password
+              ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;">${errors.password}</span>`
+              : ''
+          }
         </div>
       </div>
 
       <div class="form-group">
         <label class="form-label">Confirm Password *</label>
-        <input class="form-control ${errors.confirmPassword ? 'border-red' : ''}" id="org-reg-confirm-pass" type="password" placeholder="Re-enter password" value="${escapeHtml(s.confirmPassword)}" oninput="window.EventFlowOrganizerRegistration.getState().confirmPassword=this.value">
-        ${errors.confirmPassword ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;">${errors.confirmPassword}</span>` : ''}
+        <input class="form-control ${
+          errors.confirmPassword ? 'border-red' : ''
+        }" id="org-reg-confirm-pass" type="password" placeholder="Re-enter password" value="${escapeHtml(
+      s.confirmPassword
+    )}" oninput="window.EventFlowOrganizerRegistration.getState().confirmPassword=this.value">
+        ${
+          errors.confirmPassword
+            ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;">${errors.confirmPassword}</span>`
+            : ''
+        }
       </div>
 
       ${renderContactVerification(s)}
     `;
-
-    openModal('Organizer Registration — Step 1: Account Details', modalHtml, [
-      { lbl: '← Back to Role Selection', cls: 'btn-ghost', fn: 'window.EventFlowOrganizerRegistration.openRegisterModal()' },
-      { lbl: 'Next: Organizer Details →', cls: 'btn-primary', fn: 'window.EventFlowOrganizerRegistration.nextOrganizerStep1()' },
-    ], false);
+    openModal(
+      'Organizer Registration — Step 1: Account Details',
+      modalHtml,
+      [
+        {
+          lbl: '← Back to Role Selection',
+          cls: 'btn-ghost',
+          fn: 'window.EventFlowOrganizerRegistration.openRegisterModal()',
+        },
+        {
+          lbl: 'Next: Organizer Details →',
+          cls: 'btn-primary',
+          fn: 'window.EventFlowOrganizerRegistration.nextOrganizerStep1()',
+        },
+      ],
+      false
+    );
   }
-
   function triggerEmailVerify() {
     syncStep1FromDom();
     if (!_orgState.email || !_orgState.email.includes('@')) {
@@ -678,13 +942,11 @@
     delete _orgState.errors.emailOtp;
     renderStep1Modal();
   }
-
   function confirmEmailCode() {
     syncStep1FromDom();
     const rawInput = v('org-email-otp-input') || _orgState.emailCodeInput || '';
     const input = String(rawInput).trim();
     const targetCode = String(_orgState.emailDemoCode || '').trim();
-
     if (input && targetCode && (input === targetCode || input === '123456')) {
       _orgState.emailVerified = true;
       _orgState.verifiedEmail = _orgState.email;
@@ -704,7 +966,6 @@
       toast('Invalid verification code. Please try again.', 'error');
     }
   }
-
   function triggerMobileVerify() {
     syncStep1FromDom();
     if (!_orgState.mobileNumber || _orgState.mobileNumber.length < 10) {
@@ -720,13 +981,11 @@
     delete _orgState.errors.mobileOtp;
     renderStep1Modal();
   }
-
   function confirmMobileCode() {
     syncStep1FromDom();
     const rawInput = v('org-mobile-otp-input') || _orgState.mobileCodeInput || '';
     const input = String(rawInput).trim();
     const targetCode = String(_orgState.mobileDemoCode || '').trim();
-
     if (input && targetCode && (input === targetCode || input === '123456')) {
       _orgState.mobileVerified = true;
       _orgState.verifiedMobile = _orgState.mobileNumber;
@@ -746,25 +1005,29 @@
       toast('Invalid verification code. Please try again.', 'error');
     }
   }
-
   function validateStep1(showToasts = true) {
     syncStep1FromDom();
     const s = _orgState;
     s.errors = {};
-
     if (!s.fullName || !s.fullName.trim()) s.errors.fullName = 'Full Name is required';
-    if (!s.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.email.trim())) s.errors.email = 'Valid email address is required';
+    if (!s.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.email.trim()))
+      s.errors.email = 'Valid email address is required';
     const mobileDigits = (s.mobileNumber || '').replace(/[\s+-]/g, '').slice(-10);
-    if (!s.mobileNumber || !/^[6-9]\d{9}$/.test(mobileDigits)) s.errors.mobileNumber = 'Enter a valid 10-digit Indian mobile number';
-    if (!s.password || s.password.length < 6) s.errors.password = 'Password must be at least 6 characters';
+    if (!s.mobileNumber || !/^[6-9]\d{9}$/.test(mobileDigits))
+      s.errors.mobileNumber = 'Enter a valid 10-digit Indian mobile number';
+    if (!s.password || s.password.length < 6)
+      s.errors.password = 'Password must be at least 6 characters';
     if (s.password !== s.confirmPassword) s.errors.confirmPassword = 'Passwords do not match';
-    if (!s.emailVerified) s.errors.emailVerified = 'Email verification is required before proceeding';
-    if (!s.mobileVerified) s.errors.mobileVerified = 'Mobile verification is required before proceeding';
-
-    if (window.EventFlowAccountPolicy && window.EventFlowAccountPolicy.isEmailInUse(DB.users, s.email)) {
+    if (!s.emailVerified)
+      s.errors.emailVerified = 'Email verification is required before proceeding';
+    if (!s.mobileVerified)
+      s.errors.mobileVerified = 'Mobile verification is required before proceeding';
+    if (
+      window.EventFlowAccountPolicy &&
+      window.EventFlowAccountPolicy.isEmailInUse(DB.users, s.email)
+    ) {
       s.errors.email = 'This email is already registered';
     }
-
     const hasErrors = Object.keys(s.errors).length > 0;
     if (hasErrors && showToasts) {
       const firstErr = Object.values(s.errors)[0];
@@ -772,7 +1035,6 @@
     }
     return !hasErrors;
   }
-
   function nextOrganizerStep1() {
     if (validateStep1(true)) {
       _orgState.step = 2;
@@ -795,7 +1057,6 @@
 
     // Prefill Independent Organizer details from Step 1
     if (!ind.professionalName && s.fullName) ind.professionalName = s.fullName;
-
     const modalHtml = `
       ${renderStepIndicator(2)}
 
@@ -808,85 +1069,170 @@
       <div class="form-group" style="background:var(--surface2,#1a1e29);border:1px solid var(--accent,#6366f1);border-radius:8px;padding:12px 16px;margin-bottom:18px;">
         <label class="form-label" style="font-weight:700;color:var(--text,#f8fafc);font-size:14px;">Organizer Type *</label>
         <select class="form-control" id="org-type-select" style="font-size:14px;font-weight:600;" onchange="window.EventFlowOrganizerRegistration.handleTypeChange(this.value)">
-          <option value="Registered Company / Event Agency" ${isCompany ? 'selected' : ''}>Registered Company / Event Agency</option>
-          <option value="Independent Event Organizer" ${!isCompany ? 'selected' : ''}>Independent Event Organizer</option>
+          <option value="Registered Company / Event Agency" ${
+            isCompany ? 'selected' : ''
+          }>Registered Company / Event Agency</option>
+          <option value="Independent Event Organizer" ${
+            !isCompany ? 'selected' : ''
+          }>Independent Event Organizer</option>
         </select>
         <div style="font-size:12px;color:var(--text2,#94a3b8);margin-top:6px;">
-          ${isCompany ? 'For established event management agencies, private/public companies, LLPs, or registered sole proprietorships.' : 'For freelance organizers, independent event planners, and sole creative professionals.'}
+          ${
+            isCompany
+              ? 'For established event management agencies, private/public companies, LLPs, or registered sole proprietorships.'
+              : 'For freelance organizers, independent event planners, and sole creative professionals.'
+          }
         </div>
       </div>
 
       <!-- TYPE A: REGISTERED COMPANY / EVENT AGENCY -->
-      ${isCompany ? `
+      ${
+        isCompany
+          ? `
         <div id="company-fields-container">
           <div class="grid-2">
             <div class="form-group">
               <label class="form-label">Legal Company / Agency Name *</label>
-              <input class="form-control ${errors.legalCompanyName ? 'border-red' : ''}" id="org-comp-legal-name" placeholder="Acme Events Pvt Ltd" value="${escapeHtml(c.legalCompanyName)}">
-              ${errors.legalCompanyName ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;">${errors.legalCompanyName}</span>` : ''}
+              <input class="form-control ${
+                errors.legalCompanyName ? 'border-red' : ''
+              }" id="org-comp-legal-name" placeholder="Acme Events Pvt Ltd" value="${escapeHtml(
+              c.legalCompanyName
+            )}">
+              ${
+                errors.legalCompanyName
+                  ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;">${errors.legalCompanyName}</span>`
+                  : ''
+              }
             </div>
             <div class="form-group">
               <label class="form-label">Business Structure *</label>
-              <select class="form-control ${errors.businessStructure ? 'border-red' : ''}" id="org-comp-structure">
-                ${BUSINESS_STRUCTURES.map(st => `<option value="${st}" ${c.businessStructure === st ? 'selected' : ''}>${st}</option>`).join('')}
+              <select class="form-control ${
+                errors.businessStructure ? 'border-red' : ''
+              }" id="org-comp-structure">
+                ${BUSINESS_STRUCTURES.map(
+                  st =>
+                    `<option value="${st}" ${
+                      c.businessStructure === st ? 'selected' : ''
+                    }>${st}</option>`
+                ).join('')}
               </select>
-              ${errors.businessStructure ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;">${errors.businessStructure}</span>` : ''}
+              ${
+                errors.businessStructure
+                  ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;">${errors.businessStructure}</span>`
+                  : ''
+              }
             </div>
           </div>
 
           <div class="grid-2">
             <div class="form-group">
               <label class="form-label">Company Registration Number * (where applicable)</label>
-              <input class="form-control ${errors.registrationNumber ? 'border-red' : ''}" id="org-comp-reg-number" placeholder="CIN / LLPIN / Registration No" value="${escapeHtml(c.registrationNumber)}">
+              <input class="form-control ${
+                errors.registrationNumber ? 'border-red' : ''
+              }" id="org-comp-reg-number" placeholder="CIN / LLPIN / Registration No" value="${escapeHtml(
+              c.registrationNumber
+            )}">
               <span style="font-size:11px;color:var(--text2,#888);">Required for Pvt Ltd, Public Ltd, LLP &amp; Partnership.</span>
-              ${errors.registrationNumber ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;display:block;">${errors.registrationNumber}</span>` : ''}
+              ${
+                errors.registrationNumber
+                  ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;display:block;">${errors.registrationNumber}</span>`
+                  : ''
+              }
             </div>
             <div class="form-group">
               <label class="form-label">GSTIN (Optional)</label>
-              <input class="form-control" id="org-comp-gstin" placeholder="e.g. 29AAAAA0000A1Z5" value="${escapeHtml(c.gstin)}">
+              <input class="form-control" id="org-comp-gstin" placeholder="e.g. 29AAAAA0000A1Z5" value="${escapeHtml(
+                c.gstin
+              )}">
             </div>
           </div>
 
           <div class="form-group">
             <label class="form-label">Registered Business Address *</label>
-            <textarea class="form-control ${errors.address ? 'border-red' : ''}" id="org-comp-address" placeholder="Complete registered office address">${escapeHtml(c.address)}</textarea>
-            ${errors.address ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;">${errors.address}</span>` : ''}
+            <textarea class="form-control ${
+              errors.address ? 'border-red' : ''
+            }" id="org-comp-address" placeholder="Complete registered office address">${escapeHtml(
+              c.address
+            )}</textarea>
+            ${
+              errors.address
+                ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;">${errors.address}</span>`
+                : ''
+            }
           </div>
 
           <div class="grid-3" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
             <div class="form-group">
               <label class="form-label">City *</label>
-              <input class="form-control ${errors.city ? 'border-red' : ''}" id="org-comp-city" placeholder="Mumbai" value="${escapeHtml(c.city)}">
-              ${errors.city ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;">${errors.city}</span>` : ''}
+              <input class="form-control ${
+                errors.city ? 'border-red' : ''
+              }" id="org-comp-city" placeholder="Mumbai" value="${escapeHtml(c.city)}">
+              ${
+                errors.city
+                  ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;">${errors.city}</span>`
+                  : ''
+              }
             </div>
             <div class="form-group">
               <label class="form-label">State *</label>
-              <input class="form-control ${errors.state ? 'border-red' : ''}" id="org-comp-state" placeholder="Maharashtra" value="${escapeHtml(c.state)}">
-              ${errors.state ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;">${errors.state}</span>` : ''}
+              <input class="form-control ${
+                errors.state ? 'border-red' : ''
+              }" id="org-comp-state" placeholder="Maharashtra" value="${escapeHtml(c.state)}">
+              ${
+                errors.state
+                  ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;">${errors.state}</span>`
+                  : ''
+              }
             </div>
             <div class="form-group">
               <label class="form-label">PIN Code *</label>
-              <input class="form-control ${errors.pinCode ? 'border-red' : ''}" id="org-comp-pincode" placeholder="400001" maxlength="6" value="${escapeHtml(c.pinCode)}">
-              ${errors.pinCode ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;">${errors.pinCode}</span>` : ''}
+              <input class="form-control ${
+                errors.pinCode ? 'border-red' : ''
+              }" id="org-comp-pincode" placeholder="400001" maxlength="6" value="${escapeHtml(
+              c.pinCode
+            )}">
+              ${
+                errors.pinCode
+                  ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;">${errors.pinCode}</span>`
+                  : ''
+              }
             </div>
           </div>
 
           <div class="grid-2">
             <div class="form-group">
               <label class="form-label">Authorized Representative Name *</label>
-              <input class="form-control ${errors.authorizedRepresentativeName ? 'border-red' : ''}" id="org-comp-rep-name" placeholder="Director / Signatory Name" value="${escapeHtml(c.authorizedRepresentativeName || s.fullName)}">
-              ${errors.authorizedRepresentativeName ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;">${errors.authorizedRepresentativeName}</span>` : ''}
+              <input class="form-control ${
+                errors.authorizedRepresentativeName ? 'border-red' : ''
+              }" id="org-comp-rep-name" placeholder="Director / Signatory Name" value="${escapeHtml(
+              c.authorizedRepresentativeName || s.fullName
+            )}">
+              ${
+                errors.authorizedRepresentativeName
+                  ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;">${errors.authorizedRepresentativeName}</span>`
+                  : ''
+              }
             </div>
             <div class="form-group">
               <label class="form-label">Representative's Designation *</label>
-              <input class="form-control ${errors.representativeDesignation ? 'border-red' : ''}" id="org-comp-rep-desig" placeholder="e.g. Managing Director / Partner" value="${escapeHtml(c.representativeDesignation)}">
-              ${errors.representativeDesignation ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;">${errors.representativeDesignation}</span>` : ''}
+              <input class="form-control ${
+                errors.representativeDesignation ? 'border-red' : ''
+              }" id="org-comp-rep-desig" placeholder="e.g. Managing Director / Partner" value="${escapeHtml(
+              c.representativeDesignation
+            )}">
+              ${
+                errors.representativeDesignation
+                  ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;">${errors.representativeDesignation}</span>`
+                  : ''
+              }
             </div>
           </div>
 
           <div class="form-group">
             <label class="form-label">Portfolio / Official Website URL (Optional)</label>
-            <input class="form-control" id="org-comp-website" placeholder="https://www.example.com" value="${escapeHtml(c.websiteUrl)}">
+            <input class="form-control" id="org-comp-website" placeholder="https://www.example.com" value="${escapeHtml(
+              c.websiteUrl
+            )}">
           </div>
 
           <!-- Document Uploads -->
@@ -898,77 +1244,148 @@
               <label class="form-label">Company Registration Certificate (where applicable)</label>
               <input class="form-control" type="file" id="org-comp-reg-cert" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onchange="window.EventFlowOrganizerRegistration.handleFileUpload(event, 'regCert')">
               <div style="font-size:11px;color:var(--text2,#888);margin-top:2px;">Upload Certificate of Incorporation, LLP Agreement, or business registration proof.</div>
-              ${c.registrationCertificateDoc ? `<div style="color:var(--green,#10b981);font-size:12px;margin-top:4px;">📎 Attached: <strong>${escapeHtml(c.registrationCertificateDoc.name)}</strong> (${(c.registrationCertificateDoc.size/1024).toFixed(1)} KB)</div>` : ''}
-              ${errors.registrationCertificateDoc ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;display:block;">${errors.registrationCertificateDoc}</span>` : ''}
+              ${
+                c.registrationCertificateDoc
+                  ? `<div style="color:var(--green,#10b981);font-size:12px;margin-top:4px;">📎 Attached: <strong>${escapeHtml(
+                      c.registrationCertificateDoc.name
+                    )}</strong> (${(c.registrationCertificateDoc.size / 1024).toFixed(1)} KB)</div>`
+                  : ''
+              }
+              ${
+                errors.registrationCertificateDoc
+                  ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;display:block;">${errors.registrationCertificateDoc}</span>`
+                  : ''
+              }
             </div>
 
             <div class="form-group" style="margin-top:12px;">
               <label class="form-label">Proof of Authorization *</label>
               <input class="form-control" type="file" id="org-comp-proof-auth" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onchange="window.EventFlowOrganizerRegistration.handleFileUpload(event, 'proofAuth')">
               <div style="font-size:11px;color:var(--text2,#888);margin-top:2px;">Upload Board Resolution, Power of Attorney, or Official Letter of Authorization.</div>
-              ${c.proofOfAuthorizationDoc ? `<div style="color:var(--green,#10b981);font-size:12px;margin-top:4px;">📎 Attached: <strong>${escapeHtml(c.proofOfAuthorizationDoc.name)}</strong> (${(c.proofOfAuthorizationDoc.size/1024).toFixed(1)} KB)</div>` : ''}
-              ${errors.proofOfAuthorizationDoc ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;display:block;">${errors.proofOfAuthorizationDoc}</span>` : ''}
+              ${
+                c.proofOfAuthorizationDoc
+                  ? `<div style="color:var(--green,#10b981);font-size:12px;margin-top:4px;">📎 Attached: <strong>${escapeHtml(
+                      c.proofOfAuthorizationDoc.name
+                    )}</strong> (${(c.proofOfAuthorizationDoc.size / 1024).toFixed(1)} KB)</div>`
+                  : ''
+              }
+              ${
+                errors.proofOfAuthorizationDoc
+                  ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;display:block;">${errors.proofOfAuthorizationDoc}</span>`
+                  : ''
+              }
             </div>
           </div>
         </div>
-      ` : `
+      `
+          : `
         <!-- TYPE B: INDEPENDENT EVENT ORGANIZER -->
         <div id="independent-fields-container">
           <div class="grid-2">
             <div class="form-group">
               <label class="form-label">Full Name</label>
-              <input class="form-control" disabled value="${escapeHtml(s.fullName)}" style="opacity:0.8;cursor:not-allowed;">
+              <input class="form-control" disabled value="${escapeHtml(
+                s.fullName
+              )}" style="opacity:0.8;cursor:not-allowed;">
               <span style="font-size:11px;color:var(--text2,#888);">Prefilled from Step 1</span>
             </div>
             <div class="form-group">
               <label class="form-label">Professional / Organizer Name *</label>
-              <input class="form-control ${errors.professionalName ? 'border-red' : ''}" id="org-indep-prof-name" placeholder="e.g. Sarah Chen Events / SC Productions" value="${escapeHtml(ind.professionalName)}">
-              ${errors.professionalName ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;">${errors.professionalName}</span>` : ''}
+              <input class="form-control ${
+                errors.professionalName ? 'border-red' : ''
+              }" id="org-indep-prof-name" placeholder="e.g. Sarah Chen Events / SC Productions" value="${escapeHtml(
+              ind.professionalName
+            )}">
+              ${
+                errors.professionalName
+                  ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;">${errors.professionalName}</span>`
+                  : ''
+              }
             </div>
           </div>
 
           <div class="grid-2">
             <div class="form-group">
               <label class="form-label">Primary Contact Email</label>
-              <input class="form-control" disabled value="${escapeHtml(s.email)}" style="opacity:0.8;cursor:not-allowed;">
+              <input class="form-control" disabled value="${escapeHtml(
+                s.email
+              )}" style="opacity:0.8;cursor:not-allowed;">
               <span style="font-size:11px;color:var(--text2,#888);">Prefilled from Step 1</span>
             </div>
             <div class="form-group">
               <label class="form-label">Mobile Number</label>
-              <input class="form-control" disabled value="${escapeHtml(s.mobileNumber)}" style="opacity:0.8;cursor:not-allowed;">
+              <input class="form-control" disabled value="${escapeHtml(
+                s.mobileNumber
+              )}" style="opacity:0.8;cursor:not-allowed;">
               <span style="font-size:11px;color:var(--text2,#888);">Prefilled from Step 1</span>
             </div>
           </div>
 
           <div class="form-group">
             <label class="form-label">Residential / Business Address *</label>
-            <textarea class="form-control ${errors.address ? 'border-red' : ''}" id="org-indep-address" placeholder="Address for correspondence">${escapeHtml(ind.address)}</textarea>
-            ${errors.address ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;">${errors.address}</span>` : ''}
+            <textarea class="form-control ${
+              errors.address ? 'border-red' : ''
+            }" id="org-indep-address" placeholder="Address for correspondence">${escapeHtml(
+              ind.address
+            )}</textarea>
+            ${
+              errors.address
+                ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;">${errors.address}</span>`
+                : ''
+            }
           </div>
 
           <div class="grid-3" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
             <div class="form-group">
               <label class="form-label">City *</label>
-              <input class="form-control ${errors.city ? 'border-red' : ''}" id="org-indep-city" placeholder="Bangalore" value="${escapeHtml(ind.city)}">
-              ${errors.city ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;">${errors.city}</span>` : ''}
+              <input class="form-control ${
+                errors.city ? 'border-red' : ''
+              }" id="org-indep-city" placeholder="Bangalore" value="${escapeHtml(ind.city)}">
+              ${
+                errors.city
+                  ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;">${errors.city}</span>`
+                  : ''
+              }
             </div>
             <div class="form-group">
               <label class="form-label">State *</label>
-              <input class="form-control ${errors.state ? 'border-red' : ''}" id="org-indep-state" placeholder="Karnataka" value="${escapeHtml(ind.state)}">
-              ${errors.state ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;">${errors.state}</span>` : ''}
+              <input class="form-control ${
+                errors.state ? 'border-red' : ''
+              }" id="org-indep-state" placeholder="Karnataka" value="${escapeHtml(ind.state)}">
+              ${
+                errors.state
+                  ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;">${errors.state}</span>`
+                  : ''
+              }
             </div>
             <div class="form-group">
               <label class="form-label">PIN Code *</label>
-              <input class="form-control ${errors.pinCode ? 'border-red' : ''}" id="org-indep-pincode" placeholder="560001" maxlength="6" value="${escapeHtml(ind.pinCode)}">
-              ${errors.pinCode ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;">${errors.pinCode}</span>` : ''}
+              <input class="form-control ${
+                errors.pinCode ? 'border-red' : ''
+              }" id="org-indep-pincode" placeholder="560001" maxlength="6" value="${escapeHtml(
+              ind.pinCode
+            )}">
+              ${
+                errors.pinCode
+                  ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;">${errors.pinCode}</span>`
+                  : ''
+              }
             </div>
           </div>
 
           <div class="form-group">
             <label class="form-label">Years of Event Organizing Experience *</label>
-            <input class="form-control ${errors.yearsOfExperience ? 'border-red' : ''}" id="org-indep-years" type="number" min="0" step="1" placeholder="0" value="${ind.yearsOfExperience}">
+            <input class="form-control ${
+              errors.yearsOfExperience ? 'border-red' : ''
+            }" id="org-indep-years" type="number" min="0" step="1" placeholder="0" value="${
+              ind.yearsOfExperience
+            }">
             <span style="font-size:11px;color:var(--text2,#888);">Enter 0 if you are just starting as an independent organizer.</span>
-            ${errors.yearsOfExperience ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;display:block;">${errors.yearsOfExperience}</span>` : ''}
+            ${
+              errors.yearsOfExperience
+                ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;display:block;">${errors.yearsOfExperience}</span>`
+                : ''
+            }
           </div>
 
           <div class="form-group">
@@ -978,24 +1395,40 @@
                 const checked = (ind.areasOfSpecialization || []).includes(opt);
                 return `
                   <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;color:var(--text,#f8fafc);">
-                    <input type="checkbox" class="org-spec-checkbox" value="${opt}" ${checked ? 'checked' : ''}>
+                    <input type="checkbox" class="org-spec-checkbox" value="${opt}" ${
+                  checked ? 'checked' : ''
+                }>
                     <span>${opt}</span>
                   </label>
                 `;
               }).join('')}
             </div>
-            ${errors.areasOfSpecialization ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;display:block;margin-top:4px;">${errors.areasOfSpecialization}</span>` : ''}
+            ${
+              errors.areasOfSpecialization
+                ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;display:block;margin-top:4px;">${errors.areasOfSpecialization}</span>`
+                : ''
+            }
           </div>
 
           <div class="form-group">
             <label class="form-label">Portfolio / Previous Event Details *</label>
-            <textarea class="form-control ${errors.portfolioDetails ? 'border-red' : ''}" id="org-indep-portfolio-desc" rows="3" placeholder="Describe recent events you have organized, your role, typical audience size, and client highlights">${escapeHtml(ind.portfolioDetails)}</textarea>
-            ${errors.portfolioDetails ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;">${errors.portfolioDetails}</span>` : ''}
+            <textarea class="form-control ${
+              errors.portfolioDetails ? 'border-red' : ''
+            }" id="org-indep-portfolio-desc" rows="3" placeholder="Describe recent events you have organized, your role, typical audience size, and client highlights">${escapeHtml(
+              ind.portfolioDetails
+            )}</textarea>
+            ${
+              errors.portfolioDetails
+                ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;">${errors.portfolioDetails}</span>`
+                : ''
+            }
           </div>
 
           <div class="form-group">
             <label class="form-label">Portfolio URL / Social Media Profile (Optional)</label>
-            <input class="form-control" id="org-indep-social-url" placeholder="https://instagram.com/myevents or https://linkedin.com/in/myprofile" value="${escapeHtml(ind.portfolioUrl)}">
+            <input class="form-control" id="org-indep-social-url" placeholder="https://instagram.com/myevents or https://linkedin.com/in/myprofile" value="${escapeHtml(
+              ind.portfolioUrl
+            )}">
           </div>
 
           <div style="background:var(--surface2,#1a1e29);border:1px solid var(--border,#2d3748);border-radius:8px;padding:14px;margin-top:12px;">
@@ -1005,30 +1438,50 @@
               Accepted formats: PDF, DOC, DOCX, JPG, PNG &nbsp;|&nbsp; Max size: 5 MB.
             </div>
             <input class="form-control" type="file" id="org-indep-evidence-file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onchange="window.EventFlowOrganizerRegistration.handleFileUpload(event, 'indepEvidence')">
-            ${ind.supportingEvidenceDoc ? `<div style="color:var(--green,#10b981);font-size:12px;margin-top:4px;">📎 Attached: <strong>${escapeHtml(ind.supportingEvidenceDoc.name)}</strong> (${(ind.supportingEvidenceDoc.size/1024).toFixed(1)} KB)</div>` : ''}
-            ${errors.supportingEvidenceDoc ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;display:block;">${errors.supportingEvidenceDoc}</span>` : ''}
+            ${
+              ind.supportingEvidenceDoc
+                ? `<div style="color:var(--green,#10b981);font-size:12px;margin-top:4px;">📎 Attached: <strong>${escapeHtml(
+                    ind.supportingEvidenceDoc.name
+                  )}</strong> (${(ind.supportingEvidenceDoc.size / 1024).toFixed(1)} KB)</div>`
+                : ''
+            }
+            ${
+              errors.supportingEvidenceDoc
+                ? `<span class="form-error" style="color:var(--red,#ef4444);font-size:12px;display:block;">${errors.supportingEvidenceDoc}</span>`
+                : ''
+            }
           </div>
         </div>
-      `}
+      `
+      }
     `;
-
-    openModal('Organizer Registration — Step 2: Organizer Details', modalHtml, [
-      { lbl: '← Back to Step 1', cls: 'btn-ghost', fn: 'window.EventFlowOrganizerRegistration.openOrganizerRegisterStep(1)' },
-      { lbl: 'Next: Review & Submit →', cls: 'btn-primary', fn: 'window.EventFlowOrganizerRegistration.nextOrganizerStep2()' },
-    ], false);
+    openModal(
+      'Organizer Registration — Step 2: Organizer Details',
+      modalHtml,
+      [
+        {
+          lbl: '← Back to Step 1',
+          cls: 'btn-ghost',
+          fn: 'window.EventFlowOrganizerRegistration.openOrganizerRegisterStep(1)',
+        },
+        {
+          lbl: 'Next: Review & Submit →',
+          cls: 'btn-primary',
+          fn: 'window.EventFlowOrganizerRegistration.nextOrganizerStep2()',
+        },
+      ],
+      false
+    );
   }
-
   function handleTypeChange(newType) {
     syncStep2FromDom();
     _orgState.organizerType = newType;
     _orgState.errors = {};
     renderStep2Modal();
   }
-
   function handleFileUpload(event, docType) {
     const file = event.target.files && event.target.files[0];
     if (!file) return;
-
     const allowed = [
       'application/pdf',
       'application/msword',
@@ -1037,21 +1490,21 @@
       'image/png',
       'image/jpg',
     ];
-
     if (!allowed.includes(file.type) && !/\.(pdf|doc|docx|jpg|jpeg|png)$/i.test(file.name)) {
       toast('Invalid file format. Please upload PDF, DOC, DOCX, JPG, or PNG.', 'error');
       event.target.value = '';
       return;
     }
-
     if (file.size > 5 * 1024 * 1024) {
       toast('File is too large. Maximum allowed size is 5 MB.', 'error');
       event.target.value = '';
       return;
     }
-
-    const docObj = { name: file.name, size: file.size, type: file.type };
-
+    const docObj = {
+      name: file.name,
+      size: file.size,
+      type: file.type,
+    };
     if (docType === 'regCert') {
       _orgState.companyDetails.registrationCertificateDoc = docObj;
       delete _orgState.errors.registrationCertificateDoc;
@@ -1062,31 +1515,36 @@
       _orgState.independentDetails.supportingEvidenceDoc = docObj;
       delete _orgState.errors.supportingEvidenceDoc;
     }
-
     toast(`File attached: ${file.name} ✓`, 'success');
   }
-
   function validateStep2(showToasts = true) {
     syncStep2FromDom();
     const s = _orgState;
     s.errors = {};
     const isCompany = s.organizerType === 'Registered Company / Event Agency';
-
     if (isCompany) {
       const c = s.companyDetails;
-      if (!c.legalCompanyName?.trim()) s.errors.legalCompanyName = 'Legal Company / Agency Name is required';
+      if (!c.legalCompanyName?.trim())
+        s.errors.legalCompanyName = 'Legal Company / Agency Name is required';
       if (!c.businessStructure) s.errors.businessStructure = 'Business Structure is required';
-      const requiresCert = ['Private Limited Company', 'Public Limited Company', 'LLP', 'Partnership Firm'].includes(c.businessStructure);
+      const requiresCert = [
+        'Private Limited Company',
+        'Public Limited Company',
+        'LLP',
+        'Partnership Firm',
+      ].includes(c.businessStructure);
       if (requiresCert && !c.registrationNumber?.trim()) {
         s.errors.registrationNumber = 'Registration Number is required for this business structure';
       }
       if (!c.address?.trim()) s.errors.address = 'Registered Business Address is required';
       if (!c.city?.trim()) s.errors.city = 'City is required';
       if (!c.state?.trim()) s.errors.state = 'State is required';
-      if (!c.pinCode?.trim() || !/^\d{6}$/.test(c.pinCode.trim())) s.errors.pinCode = 'Enter a valid 6-digit Indian PIN code';
-      if (!c.authorizedRepresentativeName?.trim()) s.errors.authorizedRepresentativeName = 'Authorized Representative Name is required';
-      if (!c.representativeDesignation?.trim()) s.errors.representativeDesignation = 'Representative Designation is required';
-
+      if (!c.pinCode?.trim() || !/^\d{6}$/.test(c.pinCode.trim()))
+        s.errors.pinCode = 'Enter a valid 6-digit Indian PIN code';
+      if (!c.authorizedRepresentativeName?.trim())
+        s.errors.authorizedRepresentativeName = 'Authorized Representative Name is required';
+      if (!c.representativeDesignation?.trim())
+        s.errors.representativeDesignation = 'Representative Designation is required';
       if (requiresCert && !c.registrationCertificateDoc) {
         s.errors.registrationCertificateDoc = 'Registration Certificate upload is required';
       }
@@ -1095,24 +1553,34 @@
       }
     } else {
       const ind = s.independentDetails;
-      if (!ind.professionalName?.trim()) s.errors.professionalName = 'Professional / Organizer Name is required';
+      if (!ind.professionalName?.trim())
+        s.errors.professionalName = 'Professional / Organizer Name is required';
       if (!ind.address?.trim()) s.errors.address = 'Residential / Business Address is required';
       if (!ind.city?.trim()) s.errors.city = 'City is required';
       if (!ind.state?.trim()) s.errors.state = 'State is required';
-      if (!ind.pinCode?.trim() || !/^\d{6}$/.test(ind.pinCode.trim())) s.errors.pinCode = 'Enter a valid 6-digit Indian PIN code';
+      if (!ind.pinCode?.trim() || !/^\d{6}$/.test(ind.pinCode.trim()))
+        s.errors.pinCode = 'Enter a valid 6-digit Indian PIN code';
       const expNum = Number(ind.yearsOfExperience);
-      if (ind.yearsOfExperience === undefined || ind.yearsOfExperience === null || ind.yearsOfExperience === '' || isNaN(expNum) || !Number.isInteger(expNum) || expNum < 0 || expNum > 60) {
+      if (
+        ind.yearsOfExperience === undefined ||
+        ind.yearsOfExperience === null ||
+        ind.yearsOfExperience === '' ||
+        isNaN(expNum) ||
+        !Number.isInteger(expNum) ||
+        expNum < 0 ||
+        expNum > 60
+      ) {
         s.errors.yearsOfExperience = 'Years of experience must be a whole number between 0 and 60';
       }
       if (!ind.areasOfSpecialization || ind.areasOfSpecialization.length === 0) {
         s.errors.areasOfSpecialization = 'Select at least one Area of Specialization';
       }
-      if (!ind.portfolioDetails?.trim()) s.errors.portfolioDetails = 'Portfolio / Previous Event Details are required';
+      if (!ind.portfolioDetails?.trim())
+        s.errors.portfolioDetails = 'Portfolio / Previous Event Details are required';
       if (!ind.supportingEvidenceDoc) {
         s.errors.supportingEvidenceDoc = 'Supporting Evidence document upload is required';
       }
     }
-
     const hasErrors = Object.keys(s.errors).length > 0;
     if (hasErrors && showToasts) {
       const firstErr = Object.values(s.errors)[0];
@@ -1120,7 +1588,6 @@
     }
     return !hasErrors;
   }
-
   function nextOrganizerStep2() {
     if (validateStep2(true)) {
       _orgState.step = 3;
@@ -1139,7 +1606,6 @@
     const isCompany = s.organizerType === 'Registered Company / Event Agency';
     const c = s.companyDetails;
     const ind = s.independentDetails;
-
     const modalHtml = `
       ${renderStepIndicator(3)}
 
@@ -1154,9 +1620,15 @@
           <button type="button" class="btn btn-ghost btn-xs" onclick="window.EventFlowOrganizerRegistration.openOrganizerRegisterStep(1)" style="color:var(--accent,#6366f1);">✏️ Edit Details</button>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;">
-          <div><span style="color:var(--text2,#888);">Full Name:</span> <strong style="color:var(--text,#f8fafc);">${escapeHtml(s.fullName)}</strong></div>
-          <div><span style="color:var(--text2,#888);">Email:</span> <strong style="color:var(--text,#f8fafc);">${escapeHtml(s.email)}</strong> <span class="badge badge-green" style="font-size:10px;padding:1px 6px;">✓ Verified</span></div>
-          <div><span style="color:var(--text2,#888);">Mobile:</span> <strong style="color:var(--text,#f8fafc);">${escapeHtml(s.mobileNumber)}</strong> <span class="badge badge-green" style="font-size:10px;padding:1px 6px;">✓ Verified</span></div>
+          <div><span style="color:var(--text2,#888);">Full Name:</span> <strong style="color:var(--text,#f8fafc);">${escapeHtml(
+            s.fullName
+          )}</strong></div>
+          <div><span style="color:var(--text2,#888);">Email:</span> <strong style="color:var(--text,#f8fafc);">${escapeHtml(
+            s.email
+          )}</strong> <span class="badge badge-green" style="font-size:10px;padding:1px 6px;">✓ Verified</span></div>
+          <div><span style="color:var(--text2,#888);">Mobile:</span> <strong style="color:var(--text,#f8fafc);">${escapeHtml(
+            s.mobileNumber
+          )}</strong> <span class="badge badge-green" style="font-size:10px;padding:1px 6px;">✓ Verified</span></div>
           <div><span style="color:var(--text2,#888);">Role:</span> <span class="badge badge-purple" style="font-size:11px;">Organizer</span></div>
         </div>
       </div>
@@ -1170,57 +1642,136 @@
 
         <div style="margin-bottom:8px;font-size:13px;">
           <span style="color:var(--text2,#888);">Organizer Type:</span>
-          <span class="badge badge-blue" style="margin-left:6px;font-size:12px;">${s.organizerType}</span>
+          <span class="badge badge-blue" style="margin-left:6px;font-size:12px;">${
+            s.organizerType
+          }</span>
         </div>
 
-        ${isCompany ? `
+        ${
+          isCompany
+            ? `
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;">
-            <div><span style="color:var(--text2,#888);">Company Name:</span> <strong style="color:var(--text,#f8fafc);">${escapeHtml(c.legalCompanyName)}</strong></div>
-            <div><span style="color:var(--text2,#888);">Business Structure:</span> <strong style="color:var(--text,#f8fafc);">${escapeHtml(c.businessStructure)}</strong></div>
-            <div><span style="color:var(--text2,#888);">Registration No:</span> <strong style="color:var(--text,#f8fafc);">${escapeHtml(c.registrationNumber || 'N/A')}</strong></div>
-            <div><span style="color:var(--text2,#888);">GSTIN:</span> <strong style="color:var(--text,#f8fafc);">${escapeHtml(c.gstin || 'None')}</strong></div>
-            <div style="grid-column:span 2;"><span style="color:var(--text2,#888);">Address:</span> <span style="color:var(--text,#f8fafc);">${escapeHtml(c.address)}, ${escapeHtml(c.city)}, ${escapeHtml(c.state)} - ${escapeHtml(c.pinCode)}</span></div>
-            <div><span style="color:var(--text2,#888);">Authorized Representative:</span> <strong style="color:var(--text,#f8fafc);">${escapeHtml(c.authorizedRepresentativeName)}</strong></div>
-            <div><span style="color:var(--text2,#888);">Designation:</span> <strong style="color:var(--text,#f8fafc);">${escapeHtml(c.representativeDesignation)}</strong></div>
-            ${c.websiteUrl ? `<div style="grid-column:span 2;"><span style="color:var(--text2,#888);">Website:</span> <a href="${escapeHtml(c.websiteUrl)}" target="_blank" style="color:var(--accent,#6366f1);">${escapeHtml(c.websiteUrl)}</a></div>` : ''}
+            <div><span style="color:var(--text2,#888);">Company Name:</span> <strong style="color:var(--text,#f8fafc);">${escapeHtml(
+              c.legalCompanyName
+            )}</strong></div>
+            <div><span style="color:var(--text2,#888);">Business Structure:</span> <strong style="color:var(--text,#f8fafc);">${escapeHtml(
+              c.businessStructure
+            )}</strong></div>
+            <div><span style="color:var(--text2,#888);">Registration No:</span> <strong style="color:var(--text,#f8fafc);">${escapeHtml(
+              c.registrationNumber || 'N/A'
+            )}</strong></div>
+            <div><span style="color:var(--text2,#888);">GSTIN:</span> <strong style="color:var(--text,#f8fafc);">${escapeHtml(
+              c.gstin || 'None'
+            )}</strong></div>
+            <div style="grid-column:span 2;"><span style="color:var(--text2,#888);">Address:</span> <span style="color:var(--text,#f8fafc);">${escapeHtml(
+              c.address
+            )}, ${escapeHtml(c.city)}, ${escapeHtml(c.state)} - ${escapeHtml(
+                c.pinCode
+              )}</span></div>
+            <div><span style="color:var(--text2,#888);">Authorized Representative:</span> <strong style="color:var(--text,#f8fafc);">${escapeHtml(
+              c.authorizedRepresentativeName
+            )}</strong></div>
+            <div><span style="color:var(--text2,#888);">Designation:</span> <strong style="color:var(--text,#f8fafc);">${escapeHtml(
+              c.representativeDesignation
+            )}</strong></div>
+            ${
+              c.websiteUrl
+                ? `<div style="grid-column:span 2;"><span style="color:var(--text2,#888);">Website:</span> <a href="${escapeHtml(
+                    c.websiteUrl
+                  )}" target="_blank" style="color:var(--accent,#6366f1);">${escapeHtml(
+                    c.websiteUrl
+                  )}</a></div>`
+                : ''
+            }
           </div>
-        ` : `
+        `
+            : `
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;">
-            <div><span style="color:var(--text2,#888);">Professional Name:</span> <strong style="color:var(--text,#f8fafc);">${escapeHtml(ind.professionalName)}</strong></div>
-            <div><span style="color:var(--text2,#888);">Experience:</span> <strong style="color:var(--text,#f8fafc);">${ind.yearsOfExperience} years</strong></div>
-            <div style="grid-column:span 2;"><span style="color:var(--text2,#888);">Address:</span> <span style="color:var(--text,#f8fafc);">${escapeHtml(ind.address)}, ${escapeHtml(ind.city)}, ${escapeHtml(ind.state)} - ${escapeHtml(ind.pinCode)}</span></div>
+            <div><span style="color:var(--text2,#888);">Professional Name:</span> <strong style="color:var(--text,#f8fafc);">${escapeHtml(
+              ind.professionalName
+            )}</strong></div>
+            <div><span style="color:var(--text2,#888);">Experience:</span> <strong style="color:var(--text,#f8fafc);">${
+              ind.yearsOfExperience
+            } years</strong></div>
+            <div style="grid-column:span 2;"><span style="color:var(--text2,#888);">Address:</span> <span style="color:var(--text,#f8fafc);">${escapeHtml(
+              ind.address
+            )}, ${escapeHtml(ind.city)}, ${escapeHtml(ind.state)} - ${escapeHtml(
+                ind.pinCode
+              )}</span></div>
             <div style="grid-column:span 2;">
               <span style="color:var(--text2,#888);">Specializations:</span>
               <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;">
-                ${(ind.areasOfSpecialization || []).map(sp => `<span class="badge badge-purple" style="font-size:11px;">${escapeHtml(sp)}</span>`).join('')}
+                ${(ind.areasOfSpecialization || [])
+                  .map(
+                    sp =>
+                      `<span class="badge badge-purple" style="font-size:11px;">${escapeHtml(
+                        sp
+                      )}</span>`
+                  )
+                  .join('')}
               </div>
             </div>
             <div style="grid-column:span 2;margin-top:4px;">
               <span style="color:var(--text2,#888);">Portfolio Highlights:</span>
-              <p style="margin:4px 0 0;color:var(--text,#f8fafc);font-size:12px;white-space:pre-wrap;">${escapeHtml(ind.portfolioDetails)}</p>
+              <p style="margin:4px 0 0;color:var(--text,#f8fafc);font-size:12px;white-space:pre-wrap;">${escapeHtml(
+                ind.portfolioDetails
+              )}</p>
             </div>
-            ${ind.portfolioUrl ? `<div style="grid-column:span 2;"><span style="color:var(--text2,#888);">Portfolio URL:</span> <a href="${escapeHtml(ind.portfolioUrl)}" target="_blank" style="color:var(--accent,#6366f1);">${escapeHtml(ind.portfolioUrl)}</a></div>` : ''}
+            ${
+              ind.portfolioUrl
+                ? `<div style="grid-column:span 2;"><span style="color:var(--text2,#888);">Portfolio URL:</span> <a href="${escapeHtml(
+                    ind.portfolioUrl
+                  )}" target="_blank" style="color:var(--accent,#6366f1);">${escapeHtml(
+                    ind.portfolioUrl
+                  )}</a></div>`
+                : ''
+            }
           </div>
-        `}
+        `
+        }
       </div>
 
       <!-- Uploaded Documents Card -->
       <div style="background:var(--surface2,#1a1e29);border:1px solid var(--border,#2d3748);border-radius:8px;padding:14px;margin-bottom:16px;">
         <span style="font-weight:700;font-size:14px;color:var(--text,#f8fafc);">3. Uploaded Verification Documents</span>
         <div style="margin-top:8px;display:flex;flex-direction:column;gap:6px;font-size:13px;">
-          ${isCompany ? `
-            ${c.registrationCertificateDoc ? `<div>📄 <strong>Registration Certificate:</strong> ${escapeHtml(c.registrationCertificateDoc.name)} (${(c.registrationCertificateDoc.size/1024).toFixed(1)} KB)</div>` : '<div style="color:var(--text2,#888);">📄 Registration Certificate: Not attached</div>'}
-            ${c.proofOfAuthorizationDoc ? `<div>📄 <strong>Proof of Authorization:</strong> ${escapeHtml(c.proofOfAuthorizationDoc.name)} (${(c.proofOfAuthorizationDoc.size/1024).toFixed(1)} KB)</div>` : '<div style="color:var(--red,#ef4444);">⚠️ Proof of Authorization: Not attached</div>'}
-          ` : `
-            ${ind.supportingEvidenceDoc ? `<div>📄 <strong>Supporting Event Evidence:</strong> ${escapeHtml(ind.supportingEvidenceDoc.name)} (${(ind.supportingEvidenceDoc.size/1024).toFixed(1)} KB)</div>` : '<div style="color:var(--red,#ef4444);">⚠️ Supporting Evidence: Not attached</div>'}
-          `}
+          ${
+            isCompany
+              ? `
+            ${
+              c.registrationCertificateDoc
+                ? `<div>📄 <strong>Registration Certificate:</strong> ${escapeHtml(
+                    c.registrationCertificateDoc.name
+                  )} (${(c.registrationCertificateDoc.size / 1024).toFixed(1)} KB)</div>`
+                : '<div style="color:var(--text2,#888);">📄 Registration Certificate: Not attached</div>'
+            }
+            ${
+              c.proofOfAuthorizationDoc
+                ? `<div>📄 <strong>Proof of Authorization:</strong> ${escapeHtml(
+                    c.proofOfAuthorizationDoc.name
+                  )} (${(c.proofOfAuthorizationDoc.size / 1024).toFixed(1)} KB)</div>`
+                : '<div style="color:var(--red,#ef4444);">⚠️ Proof of Authorization: Not attached</div>'
+            }
+          `
+              : `
+            ${
+              ind.supportingEvidenceDoc
+                ? `<div>📄 <strong>Supporting Event Evidence:</strong> ${escapeHtml(
+                    ind.supportingEvidenceDoc.name
+                  )} (${(ind.supportingEvidenceDoc.size / 1024).toFixed(1)} KB)</div>`
+                : '<div style="color:var(--red,#ef4444);">⚠️ Supporting Evidence: Not attached</div>'
+            }
+          `
+          }
         </div>
       </div>
 
       <!-- Declaration Checkbox -->
       <div style="background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.3);border-radius:8px;padding:14px;margin-bottom:18px;">
         <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;">
-          <input type="checkbox" id="org-declaration-checkbox" style="margin-top:3px;cursor:pointer;" ${s.declarationAccepted ? 'checked' : ''} onchange="window.EventFlowOrganizerRegistration.handleDeclarationChange(this.checked)">
+          <input type="checkbox" id="org-declaration-checkbox" style="margin-top:3px;cursor:pointer;" ${
+            s.declarationAccepted ? 'checked' : ''
+          } onchange="window.EventFlowOrganizerRegistration.handleDeclarationChange(this.checked)">
           <span style="font-size:13px;line-height:1.4;color:var(--text,#f8fafc);">
             <strong>Verification Declaration:</strong> I hereby declare that all the information and documents provided in this application are true, accurate, and complete to the best of my knowledge. I understand that providing false or misleading representations will result in rejection or termination of my organizer account.
           </span>
@@ -1228,17 +1779,29 @@
         <span id="org-decl-error" style="display:none;color:var(--red,#ef4444);font-size:12px;margin-top:6px;margin-left:24px;">Please accept the verification declaration to submit your application.</span>
       </div>
     `;
-
-    openModal('Organizer Registration — Step 3: Review & Submit', modalHtml, [
-      { lbl: '← Back to Step 2', cls: 'btn-ghost', fn: 'window.EventFlowOrganizerRegistration.openOrganizerRegisterStep(2)' },
-      { lbl: 'Submit for Verification', cls: 'btn-primary', id: 'btn-submit-org-app', fn: 'window.EventFlowOrganizerRegistration.submitOrganizerApplication()' },
-    ], false);
+    openModal(
+      'Organizer Registration — Step 3: Review & Submit',
+      modalHtml,
+      [
+        {
+          lbl: '← Back to Step 2',
+          cls: 'btn-ghost',
+          fn: 'window.EventFlowOrganizerRegistration.openOrganizerRegisterStep(2)',
+        },
+        {
+          lbl: 'Submit for Verification',
+          cls: 'btn-primary',
+          id: 'btn-submit-org-app',
+          fn: 'window.EventFlowOrganizerRegistration.submitOrganizerApplication()',
+        },
+      ],
+      false
+    );
   }
-
   function handleDeclarationChange(checked) {
     _orgState.declarationAccepted = checked;
-    const err = g('org-decl-error');
-    if (err && checked) err.style.display = 'none';
+    const error = g('org-decl-error');
+    if (error && checked) error.style.display = 'none';
   }
 
   // ──────────────────────────────────────────────
@@ -1248,23 +1811,19 @@
   async function submitOrganizerApplication() {
     const declCheck = g('org-declaration-checkbox');
     if (declCheck) _orgState.declarationAccepted = declCheck.checked;
-
     if (!_orgState.declarationAccepted) {
       const err = g('org-decl-error');
       if (err) err.style.display = 'block';
       toast('Please accept the verification declaration before submitting', 'error');
       return;
     }
-
     if (_orgState.isSubmitting) return;
     _orgState.isSubmitting = true;
-
     const submitBtn = g('btn-submit-org-app');
     if (submitBtn) {
       submitBtn.disabled = true;
       submitBtn.textContent = 'Submitting...';
     }
-
     const payload = {
       fullName: _orgState.fullName,
       email: _orgState.email,
@@ -1273,16 +1832,23 @@
       emailVerified: true,
       mobileVerified: true,
       organizerType: _orgState.organizerType,
-      companyDetails: _orgState.organizerType === 'Registered Company / Event Agency' ? _orgState.companyDetails : undefined,
-      independentDetails: _orgState.organizerType === 'Independent Event Organizer' ? _orgState.independentDetails : undefined,
+      companyDetails:
+        _orgState.organizerType === 'Registered Company / Event Agency'
+          ? _orgState.companyDetails
+          : undefined,
+      independentDetails:
+        _orgState.organizerType === 'Independent Event Organizer'
+          ? _orgState.independentDetails
+          : undefined,
       declarationAccepted: true,
     };
-
     let result = null;
     try {
       const res = await fetch(`${getBackendBase()}/api/auth/organizer-application`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(payload),
       });
       const data = await res.json();
@@ -1305,7 +1871,12 @@
     }
 
     // Save in local DB as well for local mock sync
-    const initials = (_orgState.fullName.split(' ').map(n => n[0]).join('')).toUpperCase().slice(0, 2);
+    const initials = _orgState.fullName
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
     const localUser = {
       id: DB._nextId ? DB._nextId.users++ : 'usr-org-' + Date.now(),
       name: _orgState.fullName,
@@ -1314,16 +1885,18 @@
       role: 'organizer',
       phone: _orgState.mobileNumber,
       avatar: initials,
-      status: 'pending', // unapproved!
+      status: 'pending',
+      // unapproved!
       joined: typeof today === 'function' ? today() : new Date().toISOString().slice(0, 10),
       organizerType: _orgState.organizerType,
       applicationRefNumber: result.referenceNumber,
     };
     if (window.DB && window.DB.users) {
-      const existingIdx = DB.users.findIndex(u => u.email.toLowerCase() === localUser.email.toLowerCase());
+      const existingIdx = DB.users.findIndex(
+        user => user.email.toLowerCase() === localUser.email.toLowerCase()
+      );
       if (existingIdx >= 0) DB.users[existingIdx] = localUser;
       else DB.users.push(localUser);
-
       DB.organizerApplications = DB.organizerApplications || [];
       DB.organizerApplications.push({
         referenceNumber: result.referenceNumber,
@@ -1334,11 +1907,16 @@
         email: _orgState.email,
         mobileNumber: _orgState.mobileNumber,
         submittedAt: result.submittedAt,
-        decisionHistory: [{ status: 'Pending Verification', comments: 'Application submitted', createdAt: result.submittedAt }],
+        decisionHistory: [
+          {
+            status: 'Pending Verification',
+            comments: 'Application submitted',
+            createdAt: result.submittedAt,
+          },
+        ],
       });
       if (typeof saveDB === 'function') saveDB();
     }
-
     _orgState.lastSubmittedRef = result.referenceNumber;
 
     // Render the exact required confirmation screen!
@@ -1355,7 +1933,6 @@
       month: 'short',
       year: 'numeric',
     });
-
     const modalHtml = `
       <div style="padding:10px 0;line-height:1.6;">
         <div style="text-align:center;margin-bottom:18px;">
@@ -1381,7 +1958,9 @@
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px;">
             <div>
               <span style="color:var(--text2,#888);display:block;">Application Reference Number:</span>
-              <strong style="font-family:monospace;font-size:14px;color:var(--text,#f8fafc);" id="app-ref-display">${escapeHtml(refNumber)}</strong>
+              <strong style="font-family:monospace;font-size:14px;color:var(--text,#f8fafc);" id="app-ref-display">${escapeHtml(
+                refNumber
+              )}</strong>
             </div>
             <div>
               <span style="color:var(--text2,#888);display:block;">Submission Date:</span>
@@ -1391,7 +1970,9 @@
         </div>
 
         <div style="display:flex;justify-content:center;gap:12px;margin-top:24px;">
-          <button type="button" class="btn btn-primary" id="btn-track-status" onclick="window.EventFlowOrganizerRegistration.trackOrganizerApplicationStatus('${escapeHtml(refNumber)}')">
+          <button type="button" class="btn btn-primary" id="btn-track-status" onclick="window.EventFlowOrganizerRegistration.trackOrganizerApplicationStatus('${escapeHtml(
+            refNumber
+          )}')">
             🔍 Track Application Status
           </button>
           <button type="button" class="btn btn-ghost" onclick="closeModal();if(typeof showPage==='function'){showPage('landing');}">
@@ -1400,30 +1981,32 @@
         </div>
       </div>
     `;
-
     openModal('Application Submitted', modalHtml, [], false);
   }
-
   async function trackOrganizerApplicationStatus(referenceOrEmail) {
-    const term = referenceOrEmail || _orgState.lastSubmittedRef || prompt('Enter Application Reference Number or Email:');
+    const term =
+      referenceOrEmail ||
+      _orgState.lastSubmittedRef ||
+      prompt('Enter Application Reference Number or Email:');
     if (!term) return;
-
     let appData = null;
     try {
-      const res = await fetch(`${getBackendBase()}/api/auth/organizer-application/${encodeURIComponent(term)}`);
+      const res = await fetch(
+        `${getBackendBase()}/api/auth/organizer-application/${encodeURIComponent(term)}`
+      );
       if (res.ok) {
         appData = await res.json();
       }
     } catch (e) {
       console.warn('API status lookup failed:', e);
     }
-
     if (!appData && window.DB && window.DB.organizerApplications) {
-      appData = DB.organizerApplications.find(a =>
-        a.referenceNumber.toLowerCase() === term.toLowerCase() || a.email.toLowerCase() === term.toLowerCase(),
+      appData = DB.organizerApplications.find(
+        a =>
+          a.referenceNumber.toLowerCase() === term.toLowerCase() ||
+          a.email.toLowerCase() === term.toLowerCase()
       );
     }
-
     if (!appData) {
       appData = {
         referenceNumber: term,
@@ -1431,69 +2014,132 @@
         organizerType: _orgState.organizerType || 'Registered Company / Event Agency',
         fullName: _orgState.fullName || 'Organizer Applicant',
         submittedAt: new Date().toISOString(),
-        decisionHistory: [{ status: 'Pending Verification', comments: 'Application queued for review', createdAt: new Date().toISOString() }],
+        decisionHistory: [
+          {
+            status: 'Pending Verification',
+            comments: 'Application queued for review',
+            createdAt: new Date().toISOString(),
+          },
+        ],
       };
     }
-
-    const statusBadgeClass = {
-      'Pending Verification': 'badge-yellow',
-      'Under Review': 'badge-blue',
-      'Additional Information Required': 'badge-yellow',
-      'Approved': 'badge-green',
-      'Rejected': 'badge-red',
-      'Suspended': 'badge-red',
-    }[appData.status] || 'badge-blue';
-
+    const statusBadgeClass =
+      {
+        'Pending Verification': 'badge-yellow',
+        'Under Review': 'badge-blue',
+        'Additional Information Required': 'badge-yellow',
+        Approved: 'badge-green',
+        Rejected: 'badge-red',
+        Suspended: 'badge-red',
+      }[appData.status] || 'badge-blue';
     const modalHtml = `
       <div style="padding:10px 0;">
         <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--border,#2d3748);margin-bottom:16px;">
           <div>
             <div style="font-size:12px;color:var(--text2,#888);">Application Reference</div>
-            <strong style="font-size:16px;font-family:monospace;color:var(--text,#f8fafc);">${escapeHtml(appData.referenceNumber)}</strong>
+            <strong style="font-size:16px;font-family:monospace;color:var(--text,#f8fafc);">${escapeHtml(
+              appData.referenceNumber
+            )}</strong>
           </div>
           <div>
-            <span class="badge ${statusBadgeClass}" style="font-size:13px;padding:4px 12px;">${appData.status}</span>
+            <span class="badge ${statusBadgeClass}" style="font-size:13px;padding:4px 12px;">${
+      appData.status
+    }</span>
           </div>
         </div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px;background:var(--surface2,#1a1e29);padding:14px;border-radius:8px;margin-bottom:18px;">
-          <div><span style="color:var(--text2,#888);">Applicant Name:</span> <strong style="color:var(--text,#f8fafc);">${escapeHtml(appData.fullName)}</strong></div>
-          <div><span style="color:var(--text2,#888);">Organizer Type:</span> <strong style="color:var(--text,#f8fafc);">${escapeHtml(appData.organizerType)}</strong></div>
-          <div><span style="color:var(--text2,#888);">Submitted Date:</span> <strong style="color:var(--text,#f8fafc);">${new Date(appData.submittedAt || Date.now()).toLocaleDateString()}</strong></div>
-          <div><span style="color:var(--text2,#888);">Publishing &amp; Booking Access:</span> <strong style="color:${appData.status === 'Approved' ? 'var(--green,#10b981)' : 'var(--yellow,#eab308)'};">${appData.status === 'Approved' ? 'Enabled ✓' : 'Blocked (Requires Approval)'}</strong></div>
+          <div><span style="color:var(--text2,#888);">Applicant Name:</span> <strong style="color:var(--text,#f8fafc);">${escapeHtml(
+            appData.fullName
+          )}</strong></div>
+          <div><span style="color:var(--text2,#888);">Organizer Type:</span> <strong style="color:var(--text,#f8fafc);">${escapeHtml(
+            appData.organizerType
+          )}</strong></div>
+          <div><span style="color:var(--text2,#888);">Submitted Date:</span> <strong style="color:var(--text,#f8fafc);">${new Date(
+            appData.submittedAt || Date.now()
+          ).toLocaleDateString()}</strong></div>
+          <div><span style="color:var(--text2,#888);">Publishing &amp; Booking Access:</span> <strong style="color:${
+            appData.status === 'Approved' ? 'var(--green,#10b981)' : 'var(--yellow,#eab308)'
+          };">${
+      appData.status === 'Approved' ? 'Enabled ✓' : 'Blocked (Requires Approval)'
+    }</strong></div>
         </div>
 
-        ${appData.additionalInfoRequest ? `
+        ${
+          appData.additionalInfoRequest
+            ? `
           <div style="background:rgba(234,179,8,0.1);border:1px solid var(--yellow,#eab308);border-radius:8px;padding:12px 14px;margin-bottom:16px;">
             <strong style="color:var(--yellow,#eab308);display:block;margin-bottom:4px;">⚠️ Action Required: Additional Information Requested</strong>
-            <p style="font-size:13px;margin:0;color:var(--text,#f8fafc);">${escapeHtml(appData.additionalInfoRequest)}</p>
+            <p style="font-size:13px;margin:0;color:var(--text,#f8fafc);">${escapeHtml(
+              appData.additionalInfoRequest
+            )}</p>
           </div>
-        ` : ''}
+        `
+            : ''
+        }
 
-        ${appData.status === 'Rejected' && appData.rejectionReason ? `
+        ${
+          appData.status === 'Rejected' && appData.rejectionReason
+            ? `
           <div style="background:rgba(239,68,68,0.1);border:1px solid var(--red,#ef4444);border-radius:8px;padding:12px 14px;margin-bottom:16px;">
             <strong style="color:var(--red,#ef4444);display:block;margin-bottom:4px;">Application Not Approved</strong>
-            <p style="font-size:13px;margin:0;color:var(--text,#f8fafc);">Reason: ${escapeHtml(appData.rejectionReason)}</p>
+            <p style="font-size:13px;margin:0;color:var(--text,#f8fafc);">Reason: ${escapeHtml(
+              appData.rejectionReason
+            )}</p>
           </div>
-        ` : ''}
+        `
+            : ''
+        }
 
         <div style="margin-bottom:18px;">
           <div style="font-weight:700;font-size:13px;color:var(--text,#f8fafc);margin-bottom:10px;">Verification Timeline &amp; Decision History</div>
           <div style="display:flex;flex-direction:column;gap:10px;">
-            ${(appData.decisionHistory || [{ status: appData.status, comments: 'Application processed', createdAt: appData.submittedAt }]).map((h, i) => `
+            ${(
+              appData.decisionHistory || [
+                {
+                  status: appData.status,
+                  comments: 'Application processed',
+                  createdAt: appData.submittedAt,
+                },
+              ]
+            )
+              .map(
+                (h, i) => `
               <div style="display:flex;align-items:flex-start;gap:10px;font-size:13px;">
                 <div style="width:18px;height:18px;border-radius:50%;background:var(--accent,#6366f1);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;margin-top:2px;">•</div>
                 <div style="flex:1;">
                   <div style="display:flex;justify-content:space-between;">
                     <strong style="color:var(--text,#f8fafc);">${h.status}</strong>
-                    <span style="color:var(--text2,#888);font-size:11px;">${new Date(h.createdAt || Date.now()).toLocaleDateString()}</span>
+                    <span style="color:var(--text2,#888);font-size:11px;">${new Date(
+                      h.createdAt || Date.now()
+                    ).toLocaleDateString()}</span>
                   </div>
-                  ${h.reason ? `<div style="color:var(--red,#ef4444);font-size:12px;">Reason: ${escapeHtml(h.reason)}</div>` : ''}
-                  ${h.additionalInfoRequest ? `<div style="color:var(--yellow,#eab308);font-size:12px;">Requested: ${escapeHtml(h.additionalInfoRequest)}</div>` : ''}
-                  ${h.comments ? `<div style="color:var(--text2,#888);font-size:12px;">${escapeHtml(h.comments)}</div>` : ''}
+                  ${
+                    h.reason
+                      ? `<div style="color:var(--red,#ef4444);font-size:12px;">Reason: ${escapeHtml(
+                          h.reason
+                        )}</div>`
+                      : ''
+                  }
+                  ${
+                    h.additionalInfoRequest
+                      ? `<div style="color:var(--yellow,#eab308);font-size:12px;">Requested: ${escapeHtml(
+                          h.additionalInfoRequest
+                        )}</div>`
+                      : ''
+                  }
+                  ${
+                    h.comments
+                      ? `<div style="color:var(--text2,#888);font-size:12px;">${escapeHtml(
+                          h.comments
+                        )}</div>`
+                      : ''
+                  }
                 </div>
               </div>
-            `).join('')}
+            `
+              )
+              .join('')}
           </div>
         </div>
 
@@ -1502,10 +2148,18 @@
         </div>
       </div>
     `;
-
-    openModal('Application Status Tracking', modalHtml, [
-      { lbl: 'Close', cls: 'btn-ghost', fn: 'closeModal()' },
-    ], false);
+    openModal(
+      'Application Status Tracking',
+      modalHtml,
+      [
+        {
+          lbl: 'Close',
+          cls: 'btn-ghost',
+          fn: 'closeModal()',
+        },
+      ],
+      false
+    );
   }
 
   // ════════════════════════════════════════════════
@@ -1516,27 +2170,37 @@
     let app = null;
     try {
       const token = (window.CU && window.CU.token) || '';
-      const res = await fetch(`${getBackendBase()}/api/auth/organizer-application/${encodeURIComponent(referenceNumber)}`, {
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-      });
+      const res = await fetch(
+        `${getBackendBase()}/api/auth/organizer-application/${encodeURIComponent(referenceNumber)}`,
+        {
+          headers: token
+            ? {
+                Authorization: `Bearer ${token}`,
+              }
+            : {},
+        }
+      );
       if (res.ok) app = await res.json();
     } catch (e) {}
-
     if (!app && window.DB && window.DB.organizerApplications) {
-      app = DB.organizerApplications.find(a => a.referenceNumber.toLowerCase() === referenceNumber.toLowerCase());
+      app = DB.organizerApplications.find(
+        a => a.referenceNumber.toLowerCase() === referenceNumber.toLowerCase()
+      );
     }
-
     if (!app) {
       toast('Application record not found', 'error');
       return;
     }
-
     const modalHtml = `
       <div style="padding:10px 0;">
         <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--border,#2d3748);margin-bottom:14px;">
           <div>
-            <div style="font-size:12px;color:var(--text2,#888);">Application Ref: <strong>${escapeHtml(app.referenceNumber)}</strong></div>
-            <div style="font-size:16px;font-weight:700;color:var(--text,#f8fafc);">${escapeHtml(app.fullName)} (${escapeHtml(app.organizerType)})</div>
+            <div style="font-size:12px;color:var(--text2,#888);">Application Ref: <strong>${escapeHtml(
+              app.referenceNumber
+            )}</strong></div>
+            <div style="font-size:16px;font-weight:700;color:var(--text,#f8fafc);">${escapeHtml(
+              app.fullName
+            )} (${escapeHtml(app.organizerType)})</div>
           </div>
           <div>
             <span class="badge badge-purple">${app.status}</span>
@@ -1550,20 +2214,34 @@
             g('review-reason-wrap').style.display = (s === 'Rejected' || s === 'Suspended') ? '' : 'none';
             g('review-addinfo-wrap').style.display = (s === 'Additional Information Required') ? '' : 'none';
           ">
-            <option value="Under Review" ${app.status === 'Under Review' ? 'selected' : ''}>Under Review</option>
-            <option value="Additional Information Required" ${app.status === 'Additional Information Required' ? 'selected' : ''}>Additional Information Required</option>
-            <option value="Approved" ${app.status === 'Approved' ? 'selected' : ''}>Approved (Activate Account)</option>
-            <option value="Rejected" ${app.status === 'Rejected' ? 'selected' : ''}>Rejected</option>
-            <option value="Suspended" ${app.status === 'Suspended' ? 'selected' : ''}>Suspended</option>
+            <option value="Under Review" ${
+              app.status === 'Under Review' ? 'selected' : ''
+            }>Under Review</option>
+            <option value="Additional Information Required" ${
+              app.status === 'Additional Information Required' ? 'selected' : ''
+            }>Additional Information Required</option>
+            <option value="Approved" ${
+              app.status === 'Approved' ? 'selected' : ''
+            }>Approved (Activate Account)</option>
+            <option value="Rejected" ${
+              app.status === 'Rejected' ? 'selected' : ''
+            }>Rejected</option>
+            <option value="Suspended" ${
+              app.status === 'Suspended' ? 'selected' : ''
+            }>Suspended</option>
           </select>
         </div>
 
-        <div class="form-group" id="review-reason-wrap" style="display:${app.status === 'Rejected' || app.status === 'Suspended' ? '' : 'none'};">
+        <div class="form-group" id="review-reason-wrap" style="display:${
+          app.status === 'Rejected' || app.status === 'Suspended' ? '' : 'none'
+        };">
           <label class="form-label">Reason * (Mandatory for Reject / Suspend)</label>
           <textarea class="form-control" id="review-reason" placeholder="Provide clear reason for decision..."></textarea>
         </div>
 
-        <div class="form-group" id="review-addinfo-wrap" style="display:${app.status === 'Additional Information Required' ? '' : 'none'};">
+        <div class="form-group" id="review-addinfo-wrap" style="display:${
+          app.status === 'Additional Information Required' ? '' : 'none'
+        };">
           <label class="form-label">Additional Information Requested *</label>
           <textarea class="form-control" id="review-addinfo" placeholder="Specify which documents or clarifications are required..."></textarea>
         </div>
@@ -1578,19 +2256,31 @@
         </div>
       </div>
     `;
-
-    openModal('Review Organizer Application', modalHtml, [
-      { lbl: 'Cancel', cls: 'btn-ghost', fn: 'closeModal()' },
-      { lbl: 'Save Decision', cls: 'btn-primary', fn: `window.EventFlowOrganizerRegistration.submitReviewDecision('${escapeHtml(app.referenceNumber)}')` },
-    ], false);
+    openModal(
+      'Review Organizer Application',
+      modalHtml,
+      [
+        {
+          lbl: 'Cancel',
+          cls: 'btn-ghost',
+          fn: 'closeModal()',
+        },
+        {
+          lbl: 'Save Decision',
+          cls: 'btn-primary',
+          fn: `window.EventFlowOrganizerRegistration.submitReviewDecision('${escapeHtml(
+            app.referenceNumber
+          )}')`,
+        },
+      ],
+      false
+    );
   }
-
   async function submitReviewDecision(refNumber) {
     const status = v('review-decision-status');
     const reason = v('review-reason');
     const additionalInfoRequest = v('review-addinfo');
     const comments = v('review-comments');
-
     if ((status === 'Rejected' || status === 'Suspended') && !reason.trim()) {
       toast(`A reason is required when setting status to ${status}`, 'error');
       return;
@@ -1599,17 +2289,30 @@
       toast('Please specify what additional information is requested', 'error');
       return;
     }
-
     try {
       const token = (window.CU && window.CU.token) || '';
-      const res = await fetch(`${getBackendBase()}/api/auth/organizer-application/${encodeURIComponent(refNumber)}/review`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ status, reason, additionalInfoRequest, comments }),
-      });
+      const res = await fetch(
+        `${getBackendBase()}/api/auth/organizer-application/${encodeURIComponent(
+          refNumber
+        )}/review`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token
+              ? {
+                  Authorization: `Bearer ${token}`,
+                }
+              : {}),
+          },
+          body: JSON.stringify({
+            status,
+            reason,
+            additionalInfoRequest,
+            comments,
+          }),
+        }
+      );
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Review failed');
     } catch (e) {
@@ -1618,19 +2321,31 @@
 
     // Update local DB
     if (window.DB && window.DB.organizerApplications) {
-      const app = DB.organizerApplications.find(a => a.referenceNumber.toLowerCase() === refNumber.toLowerCase());
+      const app = DB.organizerApplications.find(
+        a => a.referenceNumber.toLowerCase() === refNumber.toLowerCase()
+      );
       if (app) {
         app.status = status;
         app.decisionHistory = app.decisionHistory || [];
-        app.decisionHistory.push({ status, reason, additionalInfoRequest, comments, createdAt: new Date().toISOString() });
+        app.decisionHistory.push({
+          status,
+          reason,
+          additionalInfoRequest,
+          comments,
+          createdAt: new Date().toISOString(),
+        });
         const user = DB.users.find(u => u.id === app.userId || u.email === app.email);
         if (user) {
-          user.status = status === 'Approved' ? 'active' : (status === 'Rejected' || status === 'Suspended' ? 'suspended' : 'pending');
+          user.status =
+            status === 'Approved'
+              ? 'active'
+              : status === 'Rejected' || status === 'Suspended'
+              ? 'suspended'
+              : 'pending';
         }
         if (typeof saveDB === 'function') saveDB();
       }
     }
-
     closeModal();
     toast(`Application ${status} successfully. Email delivery status: logged.`, 'success');
     if (typeof refreshUserManagement === 'function') refreshUserManagement();
@@ -1671,7 +2386,9 @@
     openReviewerModal,
     submitReviewDecision,
     getState: () => _orgState,
-    resetState: () => { _orgState = defaultOrgState(); },
+    resetState: () => {
+      _orgState = defaultOrgState();
+    },
   };
 
   // Wire global openRegisterModal so clicking "Create New Account" anywhere triggers the 3-role selector!

@@ -21,110 +21,200 @@ import rawProfilePage from '../pages/ProfilePage.jsx?raw';
 import rawSettingsPage from '../pages/SettingsPage.jsx?raw';
 import financeSource from './finance-workspace.js?raw';
 import '../styles/finance-executive.css';
-
-function pageRuntime(raw) {
-  const start = '/* PORTAL_RUNTIME_START */';
-  const end = '/* PORTAL_RUNTIME_END */';
-  const from = raw.indexOf(start), to = raw.indexOf(end);
-  if (from < 0 || to < from) throw new Error('Portal page source is incomplete');
-  return raw.slice(from + start.length, to);
+// Page components retain their existing HTML renderers inside these markers.
+// Extract only that block so imports and the React wrapper stay out of the browser script.
+function pageRuntime(pageSource) {
+  const startMarker = '/* PORTAL_RUNTIME_START */';
+  const endMarker = '/* PORTAL_RUNTIME_END */';
+  const startIndex = pageSource.indexOf(startMarker);
+  const endIndex = pageSource.indexOf(endMarker);
+  if (startIndex < 0 || endIndex < startIndex) {
+    throw new Error('Portal page source is incomplete');
+  }
+  return pageSource.slice(startIndex + startMarker.length, endIndex);
 }
-
-const source = Object.entries({ api: portalApi, state: portalState,
+const source = Object.entries({
+  api: portalApi,
+  state: portalState,
   dashSupportFinance: pageRuntime(rawDashboardPage),
   pageFinanceCenter: pageRuntime(rawFinancePage),
   pageOperationalReports: pageRuntime(rawReportsPage),
   pageNotifications: pageRuntime(rawNotificationsPage),
   pageProfile: pageRuntime(rawProfilePage),
-  pageSettings: pageRuntime(rawSettingsPage) })
-  .reduce((code, [name, section]) => {
-    const marker = `/* PORTAL_SECTION_${name} */`;
-    if (!code.includes(marker)) throw new Error(`Missing portal section: ${name}`);
-    return code.replace(marker, section);
-  }, runtime);
-
+  pageSettings: pageRuntime(rawSettingsPage),
+}).reduce((code, [name, section]) => {
+  const marker = `/* PORTAL_SECTION_${name} */`;
+  if (!code.includes(marker)) throw new Error(`Missing portal section: ${name}`);
+  return code.replace(marker, section);
+}, runtime);
 export default function FinanceExecutiveWorkspace() {
-  return <>
+  return (
+    <>
+      <PublicHomePage />
 
-<PublicHomePage />
+      <LoginPage workspace="finance-executive" />
 
-<LoginPage workspace="finance-executive" />
+      <FindEventsPage />
 
-<FindEventsPage />
+      <GalleryPage />
 
-<GalleryPage />
+      <AboutPage />
 
-<AboutPage />
+      <ContactPage />
 
-<ContactPage />
+      <DashboardLayout
+        sidebar={
+          <Sidebar>
+            <div className="sb-logo">
+              <div className="sb-logo-mark">
+                <span className="brand-logo">
+                  <span className="brand-logo-art">
+                    <img
+                      src="/assets/images/eventflow-logo.png"
+                      alt="EventFlow"
+                      width="2172"
+                      height="724"
+                      decoding="async"
+                    />
+                  </span>
+                </span>
+              </div>
+            </div>
+            <nav className="sb-nav" id="sb-nav"></nav>
+            <div className="sb-bottom">
+              <div className="sb-user">
+                <div className="av" id="sb-av">
+                  ?
+                </div>
+                <div className="sb-user-info">
+                  <div className="sb-user-name" id="sb-name">
+                    User
+                  </div>
+                  <div className="sb-user-role" id="sb-role-lbl">
+                    Role
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Sidebar>
+        }
+        navbar={
+          <Navbar>
+            <div className="topbar-title" id="topbar-title">
+              User
+            </div>
+            <div className="topbar-right">
+              <button
+                className="notif-trigger"
+                onClick={event => legacyEvent("goNav('notifications')", event)}
+              >
+                🔔<span className="notif-badge" id="notif-count-dot"></span>
+              </button>
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={event => legacyEvent('doLogout()', event)}
+              >
+                Sign Out
+              </button>
+            </div>
+          </Navbar>
+        }
+      />
 
-<DashboardLayout sidebar={<Sidebar>
-<div className="sb-logo">
-<div className="sb-logo-mark"><span className="brand-logo"><span className="brand-logo-art"><img src="/assets/images/eventflow-logo.png" alt="EventFlow" width="2172" height="724" decoding="async" /></span></span></div>
-</div>
-<nav className="sb-nav" id="sb-nav"></nav>
-<div className="sb-bottom">
-<div className="sb-user">
-<div className="av" id="sb-av">?</div>
-<div className="sb-user-info">
-<div className="sb-user-name" id="sb-name">User</div>
-<div className="sb-user-role" id="sb-role-lbl">Role</div>
-</div>
-</div>
-</div>
-</Sidebar>} navbar={<Navbar>
-<div className="topbar-title" id="topbar-title">User</div>
-<div className="topbar-right">
-<button className="notif-trigger" onClick={event => legacyEvent("goNav('notifications')", event)}>🔔<span className="notif-badge" id="notif-count-dot"></span></button>
-<button className="btn btn-ghost btn-sm" onClick={event => legacyEvent("doLogout()", event)}>Sign Out</button>
-</div>
-</Navbar>} />
+      <div
+        className="overlay"
+        id="modal-overlay"
+        onClick={event => legacyEvent('closeModalOnBg(event)', event)}
+      >
+        <div className="modal-box" id="modal-box">
+          <div className="modal-head">
+            <span className="modal-title" id="modal-title"></span>
+            <button
+              className="modal-close-btn"
+              onClick={event => legacyEvent('closeModal()', event)}
+            >
+              ✕
+            </button>
+          </div>
+          <div className="modal-body" id="modal-body"></div>
+          <div className="modal-foot" id="modal-foot"></div>
+        </div>
+      </div>
 
-<div className="overlay" id="modal-overlay" onClick={event => legacyEvent("closeModalOnBg(event)", event)}>
-<div className="modal-box" id="modal-box">
-<div className="modal-head">
-<span className="modal-title" id="modal-title"></span>
-<button className="modal-close-btn" onClick={event => legacyEvent("closeModal()", event)}>✕</button>
-</div>
-<div className="modal-body" id="modal-body"></div>
-<div className="modal-foot" id="modal-foot"></div>
-</div>
-</div>
+      <div
+        className="overlay"
+        id="confirm-overlay"
+        onClick={event => legacyEvent('closeConfirmOnBg(event)', event)}
+      >
+        <div
+          className="modal-box"
+          style={{
+            maxWidth: '360px',
+          }}
+        >
+          <div className="modal-head">
+            <span className="modal-title" id="confirm-title">
+              Confirm Action
+            </span>
+            <button
+              className="modal-close-btn"
+              onClick={event => legacyEvent('closeConfirm()', event)}
+            >
+              ✕
+            </button>
+          </div>
+          <div className="modal-body">
+            <p
+              id="confirm-msg"
+              style={{
+                color: 'var(--text2)',
+                fontSize: '13.5px',
+                lineHeight: '1.6',
+              }}
+            ></p>
+          </div>
+          <div className="modal-foot">
+            <button
+              className="btn btn-ghost"
+              onClick={event => legacyEvent('closeConfirm()', event)}
+            >
+              Cancel
+            </button>
+            <button
+              className="btn btn-danger"
+              id="confirm-ok"
+              onClick={event => legacyEvent('runConfirm()', event)}
+            >
+              Confirm
+            </button>
+          </div>
+        </div>
+      </div>
 
-<div className="overlay" id="confirm-overlay" onClick={event => legacyEvent("closeConfirmOnBg(event)", event)}>
-<div className="modal-box" style={{"maxWidth": "360px"}}>
-<div className="modal-head">
-<span className="modal-title" id="confirm-title">Confirm Action</span>
-<button className="modal-close-btn" onClick={event => legacyEvent("closeConfirm()", event)}>✕</button>
-</div>
-<div className="modal-body">
-<p id="confirm-msg" style={{"color": "var(--text2)", "fontSize": "13.5px", "lineHeight": "1.6"}}></p>
-</div>
-<div className="modal-foot">
-<button className="btn btn-ghost" onClick={event => legacyEvent("closeConfirm()", event)}>Cancel</button>
-<button className="btn btn-danger" id="confirm-ok" onClick={event => legacyEvent("runConfirm()", event)}>Confirm</button>
-</div>
-</div>
-</div>
+      <div
+        className="drawer-overlay"
+        id="drawer-overlay"
+        onClick={event => legacyEvent('closeDrawer()', event)}
+      ></div>
 
-<div className="drawer-overlay" id="drawer-overlay" onClick={event => legacyEvent("closeDrawer()", event)}></div>
+      <div className="drawer" id="drawer">
+        <div className="drawer-head">
+          <span className="h4" id="drawer-title">
+            Details
+          </span>
+          <button
+            className="modal-close-btn"
+            onClick={event => legacyEvent('closeDrawer()', event)}
+          >
+            ✕
+          </button>
+        </div>
+        <div className="drawer-body" id="drawer-body"></div>
+      </div>
 
-<div className="drawer" id="drawer">
-<div className="drawer-head">
-<span className="h4" id="drawer-title">Details</span>
-<button className="modal-close-btn" onClick={event => legacyEvent("closeDrawer()", event)}>✕</button>
-</div>
-<div className="drawer-body" id="drawer-body"></div>
-</div>
+      <div id="toasts"></div>
 
-<div id="toasts"></div>
-
-  
-  
-  
-  
-  
-
-<LegacyRuntime source={source + '\n' + financeSource} role="employee2" />
-</>;
+      <LegacyRuntime source={source + '\n' + financeSource} role="employee2" />
+    </>
+  );
 }

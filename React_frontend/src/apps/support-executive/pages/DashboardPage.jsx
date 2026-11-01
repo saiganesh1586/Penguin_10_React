@@ -1,106 +1,138 @@
 import React from 'react';
 import LegacyPageMarkup from '../../../app/LegacyPageMarkup.jsx';
 
+// App.jsx extracts the marked functions into the browser runtime.
+// The React component below mounts the HTML returned by those functions.
 function portalRuntimeDefinitions() {
-/* PORTAL_RUNTIME_START */function dashSupportExecutive() {
-      const users = window.EventFlowAccountPolicy.visibleAccounts(CU, DB.users || []);
-      const events = DB.events || [];
-      const regs = DB.registrations || [];
-      const tasks = DB.eventOperationsTasks || [];
-      const queries = DB.userQueries || [];
-      const supportReqs = DB.supportRequests || [];
+  /* PORTAL_RUNTIME_START */
+  function dashSupportExecutive() {
+    const users = window.EventFlowAccountPolicy.visibleAccounts(CU, DB.users || []);
+    const events = DB.events || [];
+    const regs = DB.registrations || [];
+    const tasks = DB.eventOperationsTasks || [];
+    const queries = DB.userQueries || [];
+    const supportReqs = DB.supportRequests || [];
+    const totalUsers = users.length;
+    const totalEvents = events.length;
+    const pendingRegs = regs.filter(registration => {
+      const st = (registration.status || '').toLowerCase();
+      const vst = (registration.verificationStatus || '').toLowerCase();
+      return (
+        !registration.reviewStatus &&
+        !registration.verified &&
+        !['rejected', 'cancelled', 'attended', 'no-show'].includes(st) &&
+        (st === 'pending' || st === 'registered' || vst === 'pending review' || vst === 'pending')
+      );
+    }).length;
+    const openTickets =
+      supportReqs.filter(request => request.status !== 'Resolved' && request.status !== 'Closed')
+        .length + queries.filter(q => q.status !== 'Resolved').length;
+    const operationalIssues = tasks.filter(task => task.status !== 'Resolved').length;
+    const activeEventsCount = events.filter(event =>
+      ['published', 'active', 'ongoing', 'upcoming'].includes((event.status || '').toLowerCase())
+    ).length;
 
-      const totalUsers = users.length;
-      const totalEvents = events.length;
-
-      const pendingRegs = regs.filter(r => {
-        const st = (r.status || '').toLowerCase();
-        const vst = (r.verificationStatus || '').toLowerCase();
-        return !r.reviewStatus && !r.verified && !['rejected', 'cancelled', 'attended', 'no-show'].includes(st)
-          && (st === 'pending' || st === 'registered' || vst === 'pending review' || vst === 'pending');
-      }).length;
-
-      const openTickets = supportReqs.filter(s => s.status !== 'Resolved' && s.status !== 'Closed').length +
-        queries.filter(q => q.status !== 'Resolved').length;
-
-      const operationalIssues = tasks.filter(t => t.status !== 'Resolved').length;
-      const activeEventsCount = events.filter(e => ['published', 'active', 'ongoing', 'upcoming'].includes((e.status || '').toLowerCase())).length;
-
-      // Pending actions list
-      const pendingActionsList = [];
-      regs.filter(r => {
-        const st = (r.status || '').toLowerCase();
-        const vst = (r.verificationStatus || '').toLowerCase();
-        return !r.reviewStatus && !r.verified && !['rejected', 'cancelled', 'attended', 'no-show'].includes(st)
-          && (st === 'pending' || st === 'registered' || vst === 'pending review' || vst === 'pending');
-      }).slice(0, 3).forEach(r => {
-        const u = users.find(user => String(user.id) === String(r.attendeeId)) || { name: 'Attendee' };
-        const e = events.find(ev => String(ev.id) === String(r.eventId)) || { title: 'Event' };
+    // Pending actions list
+    const pendingActionsList = [];
+    regs
+      .filter(registration => {
+        const st = (registration.status || '').toLowerCase();
+        const vst = (registration.verificationStatus || '').toLowerCase();
+        return (
+          !registration.reviewStatus &&
+          !registration.verified &&
+          !['rejected', 'cancelled', 'attended', 'no-show'].includes(st) &&
+          (st === 'pending' || st === 'registered' || vst === 'pending review' || vst === 'pending')
+        );
+      })
+      .slice(0, 3)
+      .forEach(registration => {
+        const eventRegistration = users.find(
+          user => String(user.id) === String(registration.attendeeId)
+        ) || {
+          name: 'Attendee',
+        };
+        const e = events.find(event => String(event.id) === String(registration.eventId)) || {
+          title: 'Event',
+        };
         pendingActionsList.push({
           type: 'Registration Review',
-          title: `${u.name} · ${e.title}`,
+          title: `${eventRegistration.name} · ${e.title}`,
           badge: 'Pending Review',
           badgeCls: 'yellow',
           actionLbl: 'Review',
-          actionFn: `openReviewRegistrationModal('${r.id}')`,
-          icon: '📝'
+          actionFn: `openReviewRegistrationModal('${registration.id}')`,
+          icon: '📝',
         });
       });
-
-      supportReqs.filter(s => s.status !== 'Resolved' && s.status !== 'Closed').slice(0, 2).forEach(s => {
+    supportReqs
+      .filter(request => request.status !== 'Resolved' && request.status !== 'Closed')
+      .slice(0, 2)
+      .forEach(request => {
         pendingActionsList.push({
           type: 'Customer Support',
-          title: `${s.subject}`,
-          badge: s.status || 'Pending',
-          badgeCls: s.status === 'In Progress' ? 'purple' : 'yellow',
+          title: `${request.subject}`,
+          badge: request.status || 'Pending',
+          badgeCls: request.status === 'In Progress' ? 'purple' : 'yellow',
           actionLbl: 'Manage',
-          actionFn: `openSupportTicketModal('${s.id}')`,
-          icon: '🎧'
+          actionFn: `openSupportTicketModal('${request.id}')`,
+          icon: '🎧',
         });
       });
-
-      tasks.filter(t => t.status !== 'Resolved').slice(0, 2).forEach(t => {
+    tasks
+      .filter(task => task.status !== 'Resolved')
+      .slice(0, 2)
+      .forEach(task => {
         pendingActionsList.push({
           type: 'Operational Issue',
-          title: `${t.eventTitle} · ${t.type}`,
-          badge: t.status || 'Pending',
-          badgeCls: t.status === 'In Progress' ? 'purple' : 'yellow',
+          title: `${task.eventTitle} · ${task.type}`,
+          badge: task.status || 'Pending',
+          badgeCls: task.status === 'In Progress' ? 'purple' : 'yellow',
           actionLbl: 'Update',
-          actionFn: `openSupportExecutiveRequest('${t.id}')`,
-          icon: '⚙️'
+          actionFn: `openSupportExecutiveRequest('${task.id}')`,
+          icon: '⚙️',
         });
       });
 
-      // Recent Activity
-      const recentActivities = [
-        ...regs.slice(0, 2).map(r => {
-          const u = users.find(user => String(user.id) === String(r.attendeeId)) || { name: 'Attendee' };
-          const e = events.find(ev => String(ev.id) === String(r.eventId)) || { title: 'Event' };
-          return {
-            icon: '📝',
-            title: `Registration: ${u.name}`,
-            detail: `${e.title} · Status: ${r.verificationStatus || r.status || 'Verified'}`,
-            time: r.date || 'Today'
-          };
-        }),
-        ...tasks.slice(0, 2).map(t => ({
-          icon: '⚙️',
-          title: `Operational Task: ${t.type}`,
-          detail: `${t.eventTitle} · Status: ${t.status}`,
-          time: t.updated || 'Recently'
-        })),
-        ...queries.slice(0, 2).map(q => ({
-          icon: '🎧',
-          title: `Support Ticket: ${q.subject}`,
-          detail: `${q.userName} · Status: ${q.status}`,
-          time: q.date || 'Recently'
-        }))
-      ];
+    // Recent Activity
+    const recentActivities = [
+      ...regs.slice(0, 2).map(registration => {
+        const eventRegistration = users.find(
+          user => String(user.id) === String(registration.attendeeId)
+        ) || {
+          name: 'Attendee',
+        };
+        const e = events.find(event => String(event.id) === String(registration.eventId)) || {
+          title: 'Event',
+        };
+        return {
+          icon: '📝',
+          title: `Registration: ${eventRegistration.name}`,
+          detail: `${e.title} · Status: ${
+            registration.verificationStatus || registration.status || 'Verified'
+          }`,
+          time: registration.date || 'Today',
+        };
+      }),
+      ...tasks.slice(0, 2).map(task => ({
+        icon: '⚙️',
+        title: `Operational Task: ${task.type}`,
+        detail: `${task.eventTitle} · Status: ${task.status}`,
+        time: task.updated || 'Recently',
+      })),
+      ...queries.slice(0, 2).map(q => ({
+        icon: '🎧',
+        title: `Support Ticket: ${q.subject}`,
+        detail: `${q.userName} · Status: ${q.status}`,
+        time: q.date || 'Recently',
+      })),
+    ];
 
-      // Async backend stats sync
-      if (typeof apiGetEmployeeDashboard === 'function') {
-        apiGetEmployeeDashboard().then(res => {
-          const d = (res && res.data) ? res.data : res;
+    // Async backend stats sync
+    if (typeof apiGetEmployeeDashboard === 'function') {
+      apiGetEmployeeDashboard()
+        .then(res => {
+          const d = res && res.data ? res.data : res;
           if (d) {
             if (d.totalUsers !== undefined) {
               const el = document.getElementById('se-stat-users');
@@ -123,14 +155,16 @@ function portalRuntimeDefinitions() {
               if (el) el.textContent = d.operationalIssues;
             }
           }
-        }).catch(() => {});
-      }
-
-      return `
+        })
+        .catch(() => {});
+    }
+    return `
         <div class="page-hd">
           <div class="page-hd-left">
             <div class="page-title">Support Executive Dashboard</div>
-            <div class="page-sub">Welcome back, ${CU.name}. Overview of users, events, registrations awaiting review, customer support, and operational issues.</div>
+            <div class="page-sub">Welcome back, ${
+              CU.name
+            }. Overview of users, events, registrations awaiting review, customer support, and operational issues.</div>
           </div>
         </div>
 
@@ -171,7 +205,10 @@ function portalRuntimeDefinitions() {
           <div class="card">
             <div class="h4 mb-14">Pending Actions &amp; Urgent Items</div>
             <div style="display:flex;flex-direction:column;gap:10px;max-height:380px;overflow-y:auto;padding-right:4px">
-              ${pendingActionsList.map(item => `
+              ${
+                pendingActionsList
+                  .map(
+                    item => `
                 <div style="padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface2)" class="flex justify-between items-center gap-10">
                   <div class="flex items-center gap-10" style="flex:1;min-width:0">
                     <span style="font-size:18px">${item.icon}</span>
@@ -185,7 +222,11 @@ function portalRuntimeDefinitions() {
                   </div>
                   <button class="btn btn-ghost btn-xs" onclick="${item.actionFn}">${item.actionLbl}</button>
                 </div>
-              `).join('') || '<div class="empty">✓ No pending actions requiring immediate attention!</div>'}
+              `
+                  )
+                  .join('') ||
+                '<div class="empty">✓ No pending actions requiring immediate attention!</div>'
+              }
             </div>
           </div>
         </div>
@@ -193,7 +234,10 @@ function portalRuntimeDefinitions() {
         <div class="card">
           <div class="h4 mb-14">Recent Platform Activity</div>
           <div style="display:flex;flex-direction:column;gap:10px">
-            ${recentActivities.map(act => `
+            ${
+              recentActivities
+                .map(
+                  act => `
               <div class="flex items-center gap-10" style="padding:8px 0;border-bottom:1px solid var(--border)">
                 <span style="font-size:20px">${act.icon}</span>
                 <div style="flex:1">
@@ -202,13 +246,16 @@ function portalRuntimeDefinitions() {
                 </div>
                 <span class="small muted" style="white-space:nowrap">${act.time}</span>
               </div>
-            `).join('') || '<div class="empty">No recent activity recorded</div>'}
+            `
+                )
+                .join('') || '<div class="empty">No recent activity recorded</div>'
+            }
           </div>
         </div>
       `;
-    }/* PORTAL_RUNTIME_END */
+  }
+  /* PORTAL_RUNTIME_END */
 }
-
 export default function DashboardPage({ html }) {
   return <LegacyPageMarkup html={html} />;
 }

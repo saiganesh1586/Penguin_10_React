@@ -1,71 +1,101 @@
 import {
-  Injectable, NotFoundException, ConflictException, ForbiddenException, UnauthorizedException,
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  ForbiddenException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { DataStore } from '../../common/data-store';
 import { UserRole } from '../../common/constants';
 import { ChangePasswordDto, CreateUserDto, UpdateUserDto } from './dto/user.dto';
 import { hashPassword, verifyPassword } from '../../common/password';
-
 @Injectable()
 export class UsersService {
   private db: DataStore;
-  constructor() { this.db = DataStore.getInstance(); }
-
-  findAll(role: UserRole): any[] {
-    if (role !== UserRole.SUPER_ADMIN) throw new ForbiddenException('Only SUPER_ADMIN can view all users');
-    return this.db.users.map(({ password, ...u }) => u);
+  constructor() {
+    this.db = DataStore.getInstance();
   }
-
+  findAll(role: UserRole): any[] {
+    if (role !== UserRole.SUPER_ADMIN)
+      throw new ForbiddenException('Only SUPER_ADMIN can view all users');
+    return this.db.users.map(({ password, ...user }) => user);
+  }
   findOne(userId: string, role: UserRole): any {
-    if (role !== UserRole.SUPER_ADMIN) throw new ForbiddenException('Only SUPER_ADMIN can view user details');
+    if (role !== UserRole.SUPER_ADMIN)
+      throw new ForbiddenException('Only SUPER_ADMIN can view user details');
     const user = this.db.findUserById(userId);
     if (!user) throw new NotFoundException(`User ${userId} not found`);
     const { password, ...safe } = user;
     return safe;
   }
-
   create(dto: CreateUserDto, role: UserRole): any {
-    if (role !== UserRole.SUPER_ADMIN) throw new ForbiddenException('Only SUPER_ADMIN can create users');
+    if (role !== UserRole.SUPER_ADMIN)
+      throw new ForbiddenException('Only SUPER_ADMIN can create users');
     if (dto.userRole === UserRole.EMPLOYEE) {
       throw new ForbiddenException('Employee accounts are managed separately.');
     }
     const existing = this.db.findUserByEmail(dto.email);
     if (existing) throw new ConflictException('Email already registered');
-
     const userId = this.db.generateId('usr');
     const user = {
-      userId, name: dto.name, email: dto.email.trim().toLowerCase(), password: hashPassword(dto.password),
-      userRole: dto.userRole, status: 'active' as const,
-      address: dto.address, phoneNo: dto.phoneNo,
-      createdAt: new Date(), updatedAt: new Date(),
+      userId,
+      name: dto.name,
+      email: dto.email.trim().toLowerCase(),
+      password: hashPassword(dto.password),
+      userRole: dto.userRole,
+      status: 'active' as const,
+      address: dto.address,
+      phoneNo: dto.phoneNo,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
     this.db.users.push(user);
 
     // Create role-specific profile
     if (dto.userRole === UserRole.CLIENT) {
-      this.db.clients.push({ clientId: this.db.generateId('cli'), userId, createdAt: new Date() });
+      this.db.clients.push({
+        clientId: this.db.generateId('cli'),
+        userId,
+        createdAt: new Date(),
+      });
     } else if (dto.userRole === UserRole.EVENT_ORGANIZER) {
-      this.db.organizers.push({ organizerId: this.db.generateId('org'), userId, rating: 0, createdAt: new Date() });
+      this.db.organizers.push({
+        organizerId: this.db.generateId('org'),
+        userId,
+        rating: 0,
+        createdAt: new Date(),
+      });
     } else if (dto.userRole === UserRole.ATTENDEE) {
-      this.db.attendees.push({ attendeeId: this.db.generateId('att'), userId, createdAt: new Date() });
+      this.db.attendees.push({
+        attendeeId: this.db.generateId('att'),
+        userId,
+        createdAt: new Date(),
+      });
     } else if (dto.userRole === UserRole.SUPER_ADMIN) {
-      this.db.superAdmins.push({ superAdminId: this.db.generateId('sa'), userId, email: user.email, createdAt: new Date() });
+      this.db.superAdmins.push({
+        superAdminId: this.db.generateId('sa'),
+        userId,
+        email: user.email,
+        createdAt: new Date(),
+      });
     }
-
     const { password, ...safe } = user;
-    return { success: true, message: 'User created', data: safe };
+    return {
+      success: true,
+      message: 'User created',
+      data: safe,
+    };
   }
-
   update(userId: string, dto: UpdateUserDto, role: UserRole, requesterId: string): any {
     if (role !== UserRole.SUPER_ADMIN && userId !== requesterId) {
       throw new ForbiddenException('You can only update your own profile');
     }
     const user = this.db.findUserById(userId);
     if (!user) throw new NotFoundException(`User ${userId} not found`);
-
     if (dto.email) {
       const existing = this.db.findUserByEmail(dto.email);
-      if (existing && existing.userId !== userId) throw new ConflictException('Email already registered');
+      if (existing && existing.userId !== userId)
+        throw new ConflictException('Email already registered');
     }
     if (dto.name) user.name = dto.name;
     if (dto.email) {
@@ -78,11 +108,13 @@ export class UsersService {
     if (dto.bio !== undefined) user.bio = dto.bio;
     if (dto.status && role === UserRole.SUPER_ADMIN) user.status = dto.status;
     user.updatedAt = new Date();
-
     const { password, ...safe } = user;
-    return { success: true, message: 'User updated', data: safe };
+    return {
+      success: true,
+      message: 'User updated',
+      data: safe,
+    };
   }
-
   changePassword(userId: string, dto: ChangePasswordDto): any {
     const user = this.db.findUserById(userId);
     if (!user) throw new NotFoundException(`User ${userId} not found`);
@@ -91,30 +123,38 @@ export class UsersService {
     }
     user.password = hashPassword(dto.newPassword);
     user.updatedAt = new Date();
-    return { success: true, message: 'Password changed' };
+    return {
+      success: true,
+      message: 'Password changed',
+    };
   }
-
   remove(userId: string, role: UserRole): any {
-    if (role !== UserRole.SUPER_ADMIN) throw new ForbiddenException('Only SUPER_ADMIN can delete users');
-    const idx = this.db.users.findIndex(u => u.userId === userId);
-    if (idx === -1) throw new NotFoundException(`User ${userId} not found`);
-    this.db.users.splice(idx, 1);
-
-    this.db.clients = this.db.clients.filter(c => c.userId !== userId);
-    this.db.organizers = this.db.organizers.filter(o => o.userId !== userId);
-    this.db.attendees = this.db.attendees.filter(a => a.userId !== userId);
+    if (role !== UserRole.SUPER_ADMIN)
+      throw new ForbiddenException('Only SUPER_ADMIN can delete users');
+    const index = this.db.users.findIndex(user => user.userId === userId);
+    if (index === -1) throw new NotFoundException(`User ${userId} not found`);
+    this.db.users.splice(index, 1);
+    this.db.clients = this.db.clients.filter(client => client.userId !== userId);
+    this.db.organizers = this.db.organizers.filter(organizer => organizer.userId !== userId);
+    this.db.attendees = this.db.attendees.filter(attendee => attendee.userId !== userId);
     this.db.superAdmins = this.db.superAdmins.filter(s => s.userId !== userId);
-
-    return { success: true, message: `User ${userId} deleted` };
+    return {
+      success: true,
+      message: `User ${userId} deleted`,
+    };
   }
-
   updateStatus(userId: string, status: 'active' | 'inactive' | 'suspended', role: UserRole): any {
-    if (role !== UserRole.SUPER_ADMIN) throw new ForbiddenException('Only SUPER_ADMIN can update user status');
+    if (role !== UserRole.SUPER_ADMIN)
+      throw new ForbiddenException('Only SUPER_ADMIN can update user status');
     const user = this.db.findUserById(userId);
     if (!user) throw new NotFoundException(`User ${userId} not found`);
     user.status = status;
     user.updatedAt = new Date();
     const { password, ...safe } = user;
-    return { success: true, message: `Status updated to ${status}`, data: safe };
+    return {
+      success: true,
+      message: `Status updated to ${status}`,
+      data: safe,
+    };
   }
 }

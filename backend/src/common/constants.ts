@@ -10,22 +10,22 @@ export enum UserRole {
 // Normalized role names from frontend (support lowercase/underscore variants)
 export const ROLE_ALIASES: Record<string, UserRole> = {
   // Super Admin variants
-  'super_admin': UserRole.SUPER_ADMIN,
-  'superadmin': UserRole.SUPER_ADMIN,
+  super_admin: UserRole.SUPER_ADMIN,
+  superadmin: UserRole.SUPER_ADMIN,
   'super-admin': UserRole.SUPER_ADMIN,
-  
+
   // Client variants
-  'client': UserRole.CLIENT,
-  
+  client: UserRole.CLIENT,
+
   // Event Organizer variants
-  'event_organizer': UserRole.EVENT_ORGANIZER,
-  'organizer': UserRole.EVENT_ORGANIZER,
+  event_organizer: UserRole.EVENT_ORGANIZER,
+  organizer: UserRole.EVENT_ORGANIZER,
   'event-organizer': UserRole.EVENT_ORGANIZER,
-  
-  'employee': UserRole.EMPLOYEE,
-  
+
+  employee: UserRole.EMPLOYEE,
+
   // Attendee variants
-  'attendee': UserRole.ATTENDEE,
+  attendee: UserRole.ATTENDEE,
 };
 
 // Normalize role string to canonical value

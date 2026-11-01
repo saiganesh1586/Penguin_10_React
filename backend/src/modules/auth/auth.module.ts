@@ -10,9 +10,9 @@ import { jwtConfig } from '../../config/jwt.config';
   imports: [
     PassportModule,
     JwtModule.register({
-  secret: jwtConfig.secret,
-  signOptions: { expiresIn: jwtConfig.expiresIn as any }, // ✅ quick fix
-}),
+      secret: jwtConfig.secret,
+      signOptions: { expiresIn: jwtConfig.expiresIn as any }, // ✅ quick fix
+    }),
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy],

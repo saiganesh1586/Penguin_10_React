@@ -11,15 +11,15 @@ const SESSION_KEY = 'ef_cu';
 // ─── Role Normalisation ─────────────────────────────────────────
 // Maps frontend role strings → backend x-role header values
 const ROLE_MAP = {
-  superuser:       'super_admin',
-  super_admin:     'super_admin',
-  'super-user':    'super_admin',
-  admin:           'super_admin',
-  organizer:       'event_organizer',
+  superuser: 'super_admin',
+  super_admin: 'super_admin',
+  'super-user': 'super_admin',
+  admin: 'super_admin',
+  organizer: 'event_organizer',
   event_organizer: 'event_organizer',
   'event-organizer': 'event_organizer',
-  client:          'client',
-  attendee:        'attendee',
+  client: 'client',
+  attendee: 'attendee',
 };
 
 function normalizeRole(role) {
@@ -31,15 +31,21 @@ function getCurrentUser() {
   try {
     const s = sessionStorage.getItem(SESSION_KEY);
     return s ? JSON.parse(s) : null;
-  } catch (e) { return null; }
+  } catch (e) {
+    return null;
+  }
 }
 
 function setCurrentUser(user) {
-  try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(user)); } catch (e) {}
+  try {
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
+  } catch (e) {}
 }
 
 function clearCurrentUser() {
-  try { sessionStorage.removeItem(SESSION_KEY); } catch (e) {}
+  try {
+    sessionStorage.removeItem(SESSION_KEY);
+  } catch (e) {}
 }
 
 // ─── Header Helpers ──────────────────────────────────────────────
@@ -50,7 +56,7 @@ function getRoleHeader() {
 
 function getUserIdHeader() {
   const u = getCurrentUser();
-  return u ? (u.userId || u.id || '') : '';
+  return u ? u.userId || u.id || '' : '';
 }
 
 function getAuthHeader() {
@@ -87,17 +93,26 @@ async function apiRequest(endpoint, options = {}) {
     if (!res.ok) {
       const msg = Array.isArray(data?.message)
         ? data.message.join(', ')
-        : (data?.message || `HTTP ${res.status}`);
+        : data?.message || `HTTP ${res.status}`;
       throw new ApiError(msg, res.status, data);
     }
 
-    if (options.method && options.method.toUpperCase() !== 'GET') window.EventFlowData?.invalidate();
+    if (options.method && options.method.toUpperCase() !== 'GET')
+      window.EventFlowData?.invalidate();
     return data;
   } catch (e) {
     if (e instanceof ApiError) throw e;
     // Network error (backend offline)
-    if (e.message && (e.message.toLowerCase().includes('fetch') || e.message.toLowerCase().includes('network') || e.name === 'TypeError')) {
-      throw new ApiError('Backend server is offline. Please start the NestJS server on port 3001.', 0);
+    if (
+      e.message &&
+      (e.message.toLowerCase().includes('fetch') ||
+        e.message.toLowerCase().includes('network') ||
+        e.name === 'TypeError')
+    ) {
+      throw new ApiError(
+        'Backend server is offline. Please start the NestJS server on port 3001.',
+        0
+      );
     }
     throw new ApiError(e.message || 'Unknown error', 0);
   }
@@ -217,7 +232,10 @@ async function apiGetEventPolicy() {
 }
 
 async function apiAcceptEventRequest(requestId, acknowledgement) {
-  return apiRequest(`/event-requests/${requestId}/accept`, { method: 'POST', body: JSON.stringify(acknowledgement) });
+  return apiRequest(`/event-requests/${requestId}/accept`, {
+    method: 'POST',
+    body: JSON.stringify(acknowledgement),
+  });
 }
 
 async function apiRejectEventRequest(requestId, request) {
@@ -235,7 +253,10 @@ async function apiRespondToEventRequest(requestId, response) {
 }
 
 async function apiAcceptCounteroffer(requestId, acknowledgement) {
-  return apiRequest(`/event-requests/${requestId}/accept-counteroffer`, { method: 'POST', body: JSON.stringify(acknowledgement) });
+  return apiRequest(`/event-requests/${requestId}/accept-counteroffer`, {
+    method: 'POST',
+    body: JSON.stringify(acknowledgement),
+  });
 }
 
 async function apiUpdateRequestStatus(requestId, status) {
@@ -284,11 +305,14 @@ async function apiCreateEventPlan(planData) {
 async function apiUploadEventPlanDocument(requestId, file) {
   const formData = new FormData();
   formData.append('file', file);
-  const response = await fetch(`${API_BASE_URL}/event-plans/${encodeURIComponent(requestId)}/document`, {
-    method: 'POST',
-    headers: getAuthHeader() ? { Authorization: getAuthHeader() } : {},
-    body: formData,
-  });
+  const response = await fetch(
+    `${API_BASE_URL}/event-plans/${encodeURIComponent(requestId)}/document`,
+    {
+      method: 'POST',
+      headers: getAuthHeader() ? { Authorization: getAuthHeader() } : {},
+      body: formData,
+    }
+  );
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     const message = Array.isArray(data.message) ? data.message.join(', ') : data.message;
@@ -299,13 +323,19 @@ async function apiUploadEventPlanDocument(requestId, file) {
 
 async function apiDownloadEventPlanDocument(planId, version) {
   const vParam = version ? `?version=${encodeURIComponent(version)}` : '';
-  let response = await fetch(`${API_BASE_URL}/event-plans/${encodeURIComponent(planId)}/document${vParam}`, {
-    headers: getAuthHeader() ? { Authorization: getAuthHeader() } : {},
-  });
-  if (response.status === 404) {
-    response = await fetch(`${API_BASE_URL}/event-requests/${encodeURIComponent(planId)}/document${vParam}`, {
+  let response = await fetch(
+    `${API_BASE_URL}/event-plans/${encodeURIComponent(planId)}/document${vParam}`,
+    {
       headers: getAuthHeader() ? { Authorization: getAuthHeader() } : {},
-    });
+    }
+  );
+  if (response.status === 404) {
+    response = await fetch(
+      `${API_BASE_URL}/event-requests/${encodeURIComponent(planId)}/document${vParam}`,
+      {
+        headers: getAuthHeader() ? { Authorization: getAuthHeader() } : {},
+      }
+    );
   }
   if (response.status === 403) {
     throw new ApiError('You are not authorized to view or download this document.', 403);
@@ -316,7 +346,11 @@ async function apiDownloadEventPlanDocument(planId, version) {
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
     const message = Array.isArray(data.message) ? data.message.join(', ') : data.message;
-    throw new ApiError(message || `PDF download failed (${response.status})`, response.status, data);
+    throw new ApiError(
+      message || `PDF download failed (${response.status})`,
+      response.status,
+      data
+    );
   }
   return response.blob();
 }
@@ -375,27 +409,25 @@ async function apiGetCompletionReports() {
 }
 
 async function apiSubmitCompletionReport(eventId, formData) {
-  const response = await fetch(`${API_BASE_URL}/reports/events/${encodeURIComponent(eventId)}/completion`, {
-    method: 'POST',
-    headers: getAuthHeader() ? { Authorization: getAuthHeader() } : {},
-    body: formData,
-  });
+  const response = await fetch(
+    `${API_BASE_URL}/reports/events/${encodeURIComponent(eventId)}/completion`,
+    {
+      method: 'POST',
+      headers: getAuthHeader() ? { Authorization: getAuthHeader() } : {},
+      body: formData,
+    }
+  );
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     const message = Array.isArray(data.message) ? data.message.join(', ') : data.message;
-    throw new ApiError(message || `Report submission failed (${response.status})`, response.status, data);
+    throw new ApiError(
+      message || `Report submission failed (${response.status})`,
+      response.status,
+      data
+    );
   }
   return data;
 }
-
-
-
-
-
-
-
-
-
 
 // ─── ATTENDANCE ──────────────────────────────────────────────────
 async function apiVerifyAttendance(verifyData) {
@@ -418,18 +450,23 @@ async function apiMarkAllNotificationsRead() {
 
 // ─── REPORTS ─────────────────────────────────────────────────────
 
-
 async function apiGetEventReports() {
   return apiRequest('/reports/events');
 }
 async function apiUploadEventReport(eventId, file) {
   const form = new FormData();
   form.set('file', file);
-  const response = await fetch(`${API_BASE_URL}/reports/events/${encodeURIComponent(eventId)}/file`, {
-    method: 'POST', headers: getAuthHeader() ? { Authorization: getAuthHeader() } : {}, body: form,
-  });
+  const response = await fetch(
+    `${API_BASE_URL}/reports/events/${encodeURIComponent(eventId)}/file`,
+    {
+      method: 'POST',
+      headers: getAuthHeader() ? { Authorization: getAuthHeader() } : {},
+      body: form,
+    }
+  );
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new ApiError(data.message || 'Unable to submit the event report', response.status, data);
+  if (!response.ok)
+    throw new ApiError(data.message || 'Unable to submit the event report', response.status, data);
   return data;
 }
 
@@ -507,9 +544,6 @@ window.apiGetAttendeeRegistrations = apiGetAttendeeRegistrations;
 window.apiRegisterForEvent = apiRegisterForEvent;
 window.apiMakePayment = apiMakePayment;
 
-
-
-
 window.apiVerifyAttendance = apiVerifyAttendance;
 window.apiGetNotifications = apiGetNotifications;
 window.apiMarkAllNotificationsRead = apiMarkAllNotificationsRead;
@@ -518,5 +552,3 @@ window.apiCreateEventReport = apiCreateEventReport;
 window.apiSubmitEventReview = apiSubmitEventReview;
 window.showApiError = showApiError;
 window.showApiSuccess = showApiSuccess;
-
-

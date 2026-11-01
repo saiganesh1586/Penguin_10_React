@@ -12,6 +12,8 @@ The application uses a React frontend and a NestJS REST API. Role-specific works
 
 This README describes the current implementation. Development limitations and possible extensions are listed separately at the end.
 
+Code formatting is configured in [`.prettierrc.json`](.prettierrc.json). For the portal rendering flow and the existing browser helper names, see [the frontend application guide](React_frontend/src/app/README.md). Backend controllers handle HTTP requests, DTO files validate inputs, services implement workflows, and `common/data-store.ts` handles persistence and development fixtures.
+
 ## 2. Problem Definition
 
 Managing an event often involves separate conversations, spreadsheets, registration lists, payment records, and attendance sheets. This can cause inconsistent event information, missed requests, overbooking, delayed responses, and difficulty tracking responsibilities.

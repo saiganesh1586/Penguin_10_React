@@ -57,7 +57,10 @@ test('1. Eligible Draft Event Deletion: Organizer deletes draft without registra
   // Organizer can delete their draft event
   const result = service.delete(eventId, UserRole.EVENT_ORGANIZER, userId);
   assert.match(result.message, new RegExp(`Event ${eventId} deleted successfully`));
-  assert.equal(store.events.some(e => e.eventId === eventId), false);
+  assert.equal(
+    store.events.some(e => e.eventId === eventId),
+    false
+  );
 });
 
 test('2. Permission Failures: Other organizers and unauthorized roles cannot delete event', () => {
@@ -299,7 +302,13 @@ test('4. Active Event Cancellation: Organizer cancels published event with regis
 
   // Short reason (< 10 chars) is rejected
   assert.throws(
-    () => service.update(eventId, { status: 'cancelled', changeReason: 'Too short' }, UserRole.EVENT_ORGANIZER, userId),
+    () =>
+      service.update(
+        eventId,
+        { status: 'cancelled', changeReason: 'Too short' },
+        UserRole.EVENT_ORGANIZER,
+        userId
+      ),
     /A cancellation reason of at least 10 characters is required/
   );
 
@@ -331,7 +340,9 @@ test('4. Active Event Cancellation: Organizer cancels published event with regis
   assert.equal(refund.amount, 500);
 
   // Verify notifications sent to attendee
-  const attendeeNotifs = store.notifications.filter(n => n.userId === attendeeUserId && n.eventId === eventId);
+  const attendeeNotifs = store.notifications.filter(
+    n => n.userId === attendeeUserId && n.eventId === eventId
+  );
   assert.ok(attendeeNotifs.some(n => n.type === 'event_cancelled'));
   assert.ok(attendeeNotifs.some(n => n.type === 'refund_pending'));
 });
@@ -446,14 +457,58 @@ test('6. Multiple Attendees: Only paid attendees receive Pending refunds, unpaid
   const regUnpaid = 'reg-u3-' + Date.now();
 
   store.registrations.push(
-    { registrationId: regPaid1, eventId, attendeeId: 'att-1', status: 'registered', qrCode: 'QR_1', verificationId: 'V_1', registrationDate: new Date(), createdAt: new Date(), updatedAt: new Date() },
-    { registrationId: regPaid2, eventId, attendeeId: 'att-2', status: 'registered', qrCode: 'QR_2', verificationId: 'V_2', registrationDate: new Date(), createdAt: new Date(), updatedAt: new Date() },
-    { registrationId: regUnpaid, eventId, attendeeId: 'att-3', status: 'registered', qrCode: 'QR_3', verificationId: 'V_3', registrationDate: new Date(), createdAt: new Date(), updatedAt: new Date() }
+    {
+      registrationId: regPaid1,
+      eventId,
+      attendeeId: 'att-1',
+      status: 'registered',
+      qrCode: 'QR_1',
+      verificationId: 'V_1',
+      registrationDate: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+    {
+      registrationId: regPaid2,
+      eventId,
+      attendeeId: 'att-2',
+      status: 'registered',
+      qrCode: 'QR_2',
+      verificationId: 'V_2',
+      registrationDate: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+    {
+      registrationId: regUnpaid,
+      eventId,
+      attendeeId: 'att-3',
+      status: 'registered',
+      qrCode: 'QR_3',
+      verificationId: 'V_3',
+      registrationDate: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }
   );
 
   store.payments.push(
-    { paymentId: 'pay-m1', registrationId: regPaid1, amount: 1000, status: 'completed', createdAt: new Date(), updatedAt: new Date() },
-    { paymentId: 'pay-m2', registrationId: regPaid2, amount: 1000, status: 'completed', createdAt: new Date(), updatedAt: new Date() }
+    {
+      paymentId: 'pay-m1',
+      registrationId: regPaid1,
+      amount: 1000,
+      status: 'completed',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+    {
+      paymentId: 'pay-m2',
+      registrationId: regPaid2,
+      amount: 1000,
+      status: 'completed',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }
   );
 
   service.update(
@@ -472,10 +527,18 @@ test('6. Multiple Attendees: Only paid attendees receive Pending refunds, unpaid
   });
 
   // Exactly 2 refunds created with status 'pending'
-  const eventRefunds = store.refunds.filter(r => r.registrationId === regPaid1 || r.registrationId === regPaid2 || r.registrationId === regUnpaid);
+  const eventRefunds = store.refunds.filter(
+    r =>
+      r.registrationId === regPaid1 ||
+      r.registrationId === regPaid2 ||
+      r.registrationId === regUnpaid
+  );
   assert.equal(eventRefunds.length, 2);
   assert.ok(eventRefunds.every(r => r.status === 'pending' && r.amount === 1000));
-  assert.equal(store.refunds.some(r => r.registrationId === regUnpaid), false);
+  assert.equal(
+    store.refunds.some(r => r.registrationId === regUnpaid),
+    false
+  );
 });
 
 test('7. Duplicate Cancellation Blocked: Attempting to cancel already cancelled event fails', () => {
@@ -510,7 +573,13 @@ test('7. Duplicate Cancellation Blocked: Attempting to cancel already cancelled 
   });
 
   assert.throws(
-    () => service.update(eventId, { status: 'cancelled', changeReason: 'Duplicate attempt to cancel' }, UserRole.EVENT_ORGANIZER, userId),
+    () =>
+      service.update(
+        eventId,
+        { status: 'cancelled', changeReason: 'Duplicate attempt to cancel' },
+        UserRole.EVENT_ORGANIZER,
+        userId
+      ),
     /already been cancelled|Duplicate cancellations are blocked/
   );
 });
@@ -546,8 +615,13 @@ test('8. Completed Event Cancellation Blocked: Completed events cannot be cancel
   });
 
   assert.throws(
-    () => service.update(eventId, { status: 'cancelled', changeReason: 'Attempt to cancel completed event' }, UserRole.EVENT_ORGANIZER, userId),
+    () =>
+      service.update(
+        eventId,
+        { status: 'cancelled', changeReason: 'Attempt to cancel completed event' },
+        UserRole.EVENT_ORGANIZER,
+        userId
+      ),
     /Cannot change an event from completed to cancelled/
   );
 });
-

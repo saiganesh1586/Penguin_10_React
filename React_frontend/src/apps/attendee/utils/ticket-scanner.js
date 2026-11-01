@@ -54,16 +54,18 @@
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: false,
-        video: { facingMode: { ideal: 'environment' } }
+        video: { facingMode: { ideal: 'environment' } },
       });
       if (session !== current || !video.isConnected) {
         stream.getTracks().forEach(track => track.stop());
         return;
       }
       current.stream = stream;
-      stream.getVideoTracks().forEach(track => track.addEventListener('ended', () => {
-        if (session === current) stopTicketScan('Camera stopped.');
-      }));
+      stream.getVideoTracks().forEach(track =>
+        track.addEventListener('ended', () => {
+          if (session === current) stopTicketScan('Camera stopped.');
+        })
+      );
       video.srcObject = stream;
       await video.play();
       if (session !== current) return;
@@ -82,7 +84,7 @@
         if (video.readyState >= 2 && video.videoWidth && timestamp - current.lastScan >= 150) {
           current.lastScan = timestamp;
           canvas.width = Math.min(video.videoWidth, 640);
-          canvas.height = Math.round(video.videoHeight * canvas.width / video.videoWidth);
+          canvas.height = Math.round((video.videoHeight * canvas.width) / video.videoWidth);
           try {
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
             const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
@@ -104,9 +106,10 @@
       current.frame = requestAnimationFrame(scanFrame);
     } catch (error) {
       if (session !== current) return;
-      const message = error.name === 'NotAllowedError'
-        ? 'Camera access denied. Allow access or enter a ticket ID.'
-        : error.name === 'NotFoundError'
+      const message =
+        error.name === 'NotAllowedError'
+          ? 'Camera access denied. Allow access or enter a ticket ID.'
+          : error.name === 'NotFoundError'
           ? 'No camera found. Enter the ticket ID below.'
           : 'Camera unavailable. Enter the ticket ID below.';
       stopTicketScan(message);
@@ -132,12 +135,14 @@
   window.renderTicketQRCode = renderTicketQRCode;
 
   new MutationObserver(() => {
-    if (session && (!session.video.isConnected || get('qr-input') !== session.input)) stopTicketScan();
+    if (session && (!session.video.isConnected || get('qr-input') !== session.input))
+      stopTicketScan();
   }).observe(document.body, { childList: true, subtree: true });
   const app = get('app');
-  if (app) new MutationObserver(() => {
-    if (session && app.style.display === 'none') stopTicketScan();
-  }).observe(app, { attributes: true, attributeFilter: ['style'] });
+  if (app)
+    new MutationObserver(() => {
+      if (session && app.style.display === 'none') stopTicketScan();
+    }).observe(app, { attributes: true, attributeFilter: ['style'] });
   document.addEventListener('visibilitychange', () => {
     if (document.hidden && session) stopTicketScan();
   });

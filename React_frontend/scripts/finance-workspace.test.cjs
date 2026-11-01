@@ -5,12 +5,15 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 function workspace() {
-  const source = fs.readFileSync(path.join(__dirname, '../src/apps/finance-executive/app/finance-workspace.js'), 'utf8');
+  const source = fs.readFileSync(
+    path.join(__dirname, '../src/apps/finance-executive/app/finance-workspace.js'),
+    'utf8'
+  );
   const nav = { innerHTML: '' };
   const ui = vm.createContext({
     window: { addEventListener() {} },
     document: { querySelectorAll: () => [] },
-    g: id => id === 'sb-nav' ? nav : null,
+    g: id => (id === 'sb-nav' ? nav : null),
     _currentPage: 'dashboard',
   });
   vm.runInContext(source, ui);
@@ -35,8 +38,23 @@ test('commission page labels all sample figures as demo data', () => {
 
 test('dashboard charts render supplied financial values and empty states', () => {
   const { ui } = workspace();
-  assert.match(ui.financeAreaChart([{ date: '2026-10-01', revenue: 100 }, { date: '2026-10-02', revenue: 200 }]), /<svg/);
-  assert.match(ui.financeStatusDonut([{ status: 'completed', count: 3 }, { status: 'failed', count: 1 }]), /conic-gradient/);
-  assert.match(ui.financeRefundTrend([{ date: '2026-10-02', requested: 100, completed: 50 }]), /Requested/);
+  assert.match(
+    ui.financeAreaChart([
+      { date: '2026-10-01', revenue: 100 },
+      { date: '2026-10-02', revenue: 200 },
+    ]),
+    /<svg/
+  );
+  assert.match(
+    ui.financeStatusDonut([
+      { status: 'completed', count: 3 },
+      { status: 'failed', count: 1 },
+    ]),
+    /conic-gradient/
+  );
+  assert.match(
+    ui.financeRefundTrend([{ date: '2026-10-02', requested: 100, completed: 50 }]),
+    /Requested/
+  );
   assert.match(ui.financeAreaChart([]), /No revenue/);
 });

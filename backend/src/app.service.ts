@@ -25,7 +25,8 @@ export class AppService {
       },
       docs: 'Visit http://localhost:3001/api for Swagger documentation',
       roles: ['super_admin', 'client', 'event_organizer', 'employee', 'attendee'],
-      'pass-role-header': 'Add header: x-role: super_admin|client|event_organizer|employee|attendee',
+      'pass-role-header':
+        'Add header: x-role: super_admin|client|event_organizer|employee|attendee',
     };
   }
 

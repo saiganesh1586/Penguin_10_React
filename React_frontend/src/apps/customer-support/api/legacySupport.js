@@ -109,17 +109,23 @@
   ];
 
   function escapeHtml(value) {
-    return String(value ?? '').replace(/[&<>"']/g, character => ({
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;',
-    })[character]);
+    return String(value ?? '').replace(
+      /[&<>"']/g,
+      character =>
+        ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#39;',
+        }[character])
+    );
   }
 
   function allowedCategories(user) {
-    const role = String(user?.role || user?.userRole || '').toLowerCase().replace(/-/g, '_');
+    const role = String(user?.role || user?.userRole || '')
+      .toLowerCase()
+      .replace(/-/g, '_');
     if (['superuser', 'super_admin', 'admin'].includes(role)) {
       return Object.keys(SUPPORT_CONCERNS);
     }
@@ -136,7 +142,8 @@
       ...(options.headers || {}),
     };
     const response = await fetch(`${API_BASE_URL}${endpoint}`, { ...options, headers });
-    if (response.ok && options.method && options.method !== 'GET') window.EventFlowData?.invalidate();
+    if (response.ok && options.method && options.method !== 'GET')
+      window.EventFlowData?.invalidate();
 
     const contentType = response.headers.get('content-type') || '';
     const data = contentType.includes('application/json')
@@ -145,49 +152,83 @@
     if (!response.ok) {
       const message = Array.isArray(data?.message)
         ? data.message.join(', ')
-        : (data?.message || `Request failed (${response.status})`);
+        : data?.message || `Request failed (${response.status})`;
       throw new Error(message);
     }
     return data;
   }
 
   function canManageSupport(user) {
-    const normalize = value => String(value || '').trim().toLowerCase().replace(/[\s-]+/g, '_');
+    const normalize = value =>
+      String(value || '')
+        .trim()
+        .toLowerCase()
+        .replace(/[\s-]+/g, '_');
     const role = normalize(user?.role || user?.userRole);
     const type = normalize(user?.employeeType);
-    return ['superuser', 'super_admin', 'admin'].includes(role) ||
-      (role === 'employee' && ['support_executive', 'registration_verification', 'event_operations'].includes(type));
+    return (
+      ['superuser', 'super_admin', 'admin'].includes(role) ||
+      (role === 'employee' &&
+        ['support_executive', 'registration_verification', 'event_operations'].includes(type))
+    );
   }
 
   function statusLabel(status) {
-    return ({
-      open: 'Open',
-      in_progress: 'In progress',
-      resolved: 'Resolved',
-    })[status] || status;
+    return (
+      {
+        open: 'Open',
+        in_progress: 'In progress',
+        resolved: 'Resolved',
+      }[status] || status
+    );
   }
 
   function ticketDate(value, includeTime = false) {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return '—';
-    return date.toLocaleString(undefined, includeTime
-      ? { dateStyle: 'medium', timeStyle: 'short' }
-      : { dateStyle: 'medium' });
+    return date.toLocaleString(
+      undefined,
+      includeTime ? { dateStyle: 'medium', timeStyle: 'short' } : { dateStyle: 'medium' }
+    );
   }
 
   function ticketTable(title, tickets, isSupportAgent) {
-    const rows = tickets.length ? tickets.map(ticket => `
+    const rows = tickets.length
+      ? tickets
+          .map(
+            ticket => `
       <tr>
-        <td><strong>${escapeHtml(ticket.concern)}</strong><small>${escapeHtml(ticket.ticketId)}</small>${ticket.eventTitle ? `<small>Event: ${escapeHtml(ticket.eventTitle)}</small>` : ''}${isSupportAgent ? `<small>${escapeHtml(ticket.requesterName)} · ${escapeHtml(ticket.requesterEmail || '')}</small>` : ''}</td>
+        <td><strong>${escapeHtml(ticket.concern)}</strong><small>${escapeHtml(
+              ticket.ticketId
+            )}</small>${
+              ticket.eventTitle ? `<small>Event: ${escapeHtml(ticket.eventTitle)}</small>` : ''
+            }${
+              isSupportAgent
+                ? `<small>${escapeHtml(ticket.requesterName)} · ${escapeHtml(
+                    ticket.requesterEmail || ''
+                  )}</small>`
+                : ''
+            }</td>
         <td>${escapeHtml(ticket.requestType)}</td>
-        <td><span class="support-status support-status-${escapeHtml(ticket.status)}">${escapeHtml(statusLabel(ticket.status))}</span></td>
-        <td>${escapeHtml(ticket.updatedLabel || ticketDate(ticket.updatedAt || ticket.createdAt, true))}</td>
-        <td><button class="btn btn-ghost btn-sm" type="button" data-ticket-view="${escapeHtml(ticket.ticketId)}">${isSupportAgent ? 'Review &amp; Respond' : 'View'}</button></td>
-      </tr>`).join('') : '<tr><td class="support-table-empty" colspan="5">No support requests yet.</td></tr>';
+        <td><span class="support-status support-status-${escapeHtml(ticket.status)}">${escapeHtml(
+              statusLabel(ticket.status)
+            )}</span></td>
+        <td>${escapeHtml(
+          ticket.updatedLabel || ticketDate(ticket.updatedAt || ticket.createdAt, true)
+        )}</td>
+        <td><button class="btn btn-ghost btn-sm" type="button" data-ticket-view="${escapeHtml(
+          ticket.ticketId
+        )}">${isSupportAgent ? 'Review &amp; Respond' : 'View'}</button></td>
+      </tr>`
+          )
+          .join('')
+      : '<tr><td class="support-table-empty" colspan="5">No support requests yet.</td></tr>';
 
     return `
       <section class="card support-ticket-section">
-        <div class="support-section-heading"><h2>${escapeHtml(title)}</h2><span>${tickets.length}</span></div>
+        <div class="support-section-heading"><h2>${escapeHtml(title)}</h2><span>${
+      tickets.length
+    }</span></div>
         <div class="support-table-wrap"><table class="support-ticket-table">
           <thead><tr><th>Request</th><th>Category</th><th>Status</th><th>Updated</th><th></th></tr></thead>
           <tbody>${rows}</tbody>
@@ -196,37 +237,79 @@
   }
 
   function ticketDialog(ticket, user, isSupportAgent) {
-    const attachments = (ticket.attachments || []).map(attachment => `
-      <button class="support-file-link" type="button" data-support-download="${escapeHtml(attachment.attachmentId)}">
+    const attachments = (ticket.attachments || [])
+      .map(
+        attachment => `
+      <button class="support-file-link" type="button" data-support-download="${escapeHtml(
+        attachment.attachmentId
+      )}">
         ${escapeHtml(attachment.originalName)}
-      </button>`).join('');
+      </button>`
+      )
+      .join('');
     const messages = [
       { sender: 'requester', message: ticket.description, createdAt: ticket.createdAt },
       ...((ticket.messages || []).length
         ? ticket.messages
-        : (ticket.response ? [{ sender: 'support', message: ticket.response, createdAt: ticket.updatedAt || ticket.createdAt }] : [])),
+        : ticket.response
+        ? [
+            {
+              sender: 'support',
+              message: ticket.response,
+              createdAt: ticket.updatedAt || ticket.createdAt,
+            },
+          ]
+        : []),
     ];
-    const conversation = messages.map(message => {
-      const fromSupport = message.sender === 'support';
-      const name = fromSupport ? (message.senderName ? 'Support - ' + message.senderName : 'Support') : (isSupportAgent ? (ticket.requesterName || 'Requester') : (user?.name || 'You'));
-      return `
-        <article class="support-message ${fromSupport ? 'support-message-agent' : 'support-message-requester'}">
-          <div class="support-message-meta"><span class="support-message-avatar">${escapeHtml(name.slice(0, 1).toUpperCase())}</span><strong>${escapeHtml(name)}</strong><time>${escapeHtml(ticketDate(message.createdAt, true))}</time></div>
+    const conversation = messages
+      .map(message => {
+        const fromSupport = message.sender === 'support';
+        const name = fromSupport
+          ? message.senderName
+            ? 'Support - ' + message.senderName
+            : 'Support'
+          : isSupportAgent
+          ? ticket.requesterName || 'Requester'
+          : user?.name || 'You';
+        return `
+        <article class="support-message ${
+          fromSupport ? 'support-message-agent' : 'support-message-requester'
+        }">
+          <div class="support-message-meta"><span class="support-message-avatar">${escapeHtml(
+            name.slice(0, 1).toUpperCase()
+          )}</span><strong>${escapeHtml(name)}</strong><time>${escapeHtml(
+          ticketDate(message.createdAt, true)
+        )}</time></div>
           <p>${escapeHtml(message.message)}</p>
-          ${!fromSupport && message.message === ticket.description && attachments ? `<div class="support-attachments">${attachments}</div>` : ''}
+          ${
+            !fromSupport && message.message === ticket.description && attachments
+              ? `<div class="support-attachments">${attachments}</div>`
+              : ''
+          }
         </article>`;
-    }).join('');
-    const actions = isSupportAgent ? `
-      <label class="support-reply-editor"><span>Reply to requester</span><textarea class="form-control" rows="3" maxlength="2000" data-support-response="${escapeHtml(ticket.ticketId)}" placeholder="e.g. Your issue has been resolved. Please try again and let us know if you still need help."></textarea></label>
+      })
+      .join('');
+    const actions = isSupportAgent
+      ? `
+      <label class="support-reply-editor"><span>Reply to requester</span><textarea class="form-control" rows="3" maxlength="2000" data-support-response="${escapeHtml(
+        ticket.ticketId
+      )}" placeholder="e.g. Your issue has been resolved. Please try again and let us know if you still need help."></textarea></label>
       <label class="support-status-editor" for="support-ticket-status"><span>Update status</span>
         <select class="form-control" id="support-ticket-status" data-support-status-select>
           <option value="open" ${ticket.status === 'open' ? 'selected' : ''}>Open</option>
-          <option value="in_progress" ${ticket.status === 'in_progress' ? 'selected' : ''}>In progress</option>
-          <option value="resolved" ${ticket.status === 'resolved' ? 'selected' : ''}>Resolved</option>
+          <option value="in_progress" ${
+            ticket.status === 'in_progress' ? 'selected' : ''
+          }>In progress</option>
+          <option value="resolved" ${
+            ticket.status === 'resolved' ? 'selected' : ''
+          }>Resolved</option>
         </select>
       </label>
       <p class="support-feedback" data-status-feedback role="status" aria-live="polite"></p>
-      <div class="support-ticket-actions"><button class="btn btn-primary" type="button" data-support-status-update data-ticket-id="${escapeHtml(ticket.ticketId)}">Send Reply &amp; Update Status</button></div>` : `
+      <div class="support-ticket-actions"><button class="btn btn-primary" type="button" data-support-status-update data-ticket-id="${escapeHtml(
+        ticket.ticketId
+      )}">Send Reply &amp; Update Status</button></div>`
+      : `
       <form class="support-follow-up" data-follow-up-form="${escapeHtml(ticket.ticketId)}">
         <label for="support-follow-up-message">Follow-up message</label>
         <textarea class="form-control" id="support-follow-up-message" name="message" rows="4" maxlength="2000" required></textarea>
@@ -235,12 +318,32 @@
       </form>`;
 
     return `
-      <div class="support-modal-heading"><h2 id="support-modal-title">Support Request ${escapeHtml(ticket.ticketId)}</h2><button class="support-modal-x" type="button" aria-label="Close" data-modal-close>×</button></div>
+      <div class="support-modal-heading"><h2 id="support-modal-title">Support Request ${escapeHtml(
+        ticket.ticketId
+      )}</h2><button class="support-modal-x" type="button" aria-label="Close" data-modal-close>×</button></div>
       <div class="support-modal-body">
-        ${isSupportAgent ? `<div class="support-modal-summary"><span>Requested by</span><strong>${escapeHtml(ticket.requesterName || 'Requester')}<small style="display:block;font-weight:400">${escapeHtml(ticket.requesterEmail || '')}</small></strong></div>` : ''}
-        <div class="support-modal-summary"><span>Subject</span><strong>${escapeHtml(ticket.concern)}</strong></div>
-        ${ticket.eventTitle ? `<div class="support-modal-summary"><span>Event</span><strong>${escapeHtml(ticket.eventTitle)}</strong></div>` : ''}
-        <div class="support-modal-summary"><span>Status</span><strong><span class="support-status support-status-${escapeHtml(ticket.status)}">${escapeHtml(statusLabel(ticket.status))}</span></strong></div>
+        ${
+          isSupportAgent
+            ? `<div class="support-modal-summary"><span>Requested by</span><strong>${escapeHtml(
+                ticket.requesterName || 'Requester'
+              )}<small style="display:block;font-weight:400">${escapeHtml(
+                ticket.requesterEmail || ''
+              )}</small></strong></div>`
+            : ''
+        }
+        <div class="support-modal-summary"><span>Subject</span><strong>${escapeHtml(
+          ticket.concern
+        )}</strong></div>
+        ${
+          ticket.eventTitle
+            ? `<div class="support-modal-summary"><span>Event</span><strong>${escapeHtml(
+                ticket.eventTitle
+              )}</strong></div>`
+            : ''
+        }
+        <div class="support-modal-summary"><span>Status</span><strong><span class="support-status support-status-${escapeHtml(
+          ticket.status
+        )}">${escapeHtml(statusLabel(ticket.status))}</span></strong></div>
         <div class="support-conversation">${conversation}</div>
         ${actions}
       </div>`;
@@ -259,24 +362,53 @@
     }
     if (isSupportAgent && options.getAdditionalTickets) {
       const existingIds = new Set(tickets.map(ticket => String(ticket.ticketId)));
-      tickets = [...tickets, ...options.getAdditionalTickets().filter(ticket => !existingIds.has(String(ticket.ticketId)))];
+      tickets = [
+        ...tickets,
+        ...options
+          .getAdditionalTickets()
+          .filter(ticket => !existingIds.has(String(ticket.ticketId))),
+      ];
     }
 
     return `
       <div class="page-hd support-page-heading">
         <div class="page-hd-left">
-          <div class="page-title">${isSupportAgent ? 'Support &amp; Issue Management' : 'Customer Support'}</div>
-          <div class="page-sub">${isSupportAgent ? 'Review requester tickets, update their status, and send replies visible in My Tickets.' : 'Tell us what you need help with. Your ticket number, status, and support replies will be available here.'}</div>
+          <div class="page-title">${
+            isSupportAgent ? 'Support &amp; Issue Management' : 'Customer Support'
+          }</div>
+          <div class="page-sub">${
+            isSupportAgent
+              ? 'Review requester tickets, update their status, and send replies visible in My Tickets.'
+              : 'Tell us what you need help with. Your ticket number, status, and support replies will be available here.'
+          }</div>
         </div>
       </div>
-      ${isSupportAgent ? `<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px">
+      ${
+        isSupportAgent
+          ? `<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px">
         <button type="button" class="btn btn-ghost" data-support-refresh>Refresh Requests</button>
-        <span class="support-status support-status-open">Open: ${tickets.filter(ticket => ticket.status === 'open').length}</span>
-        <span class="support-status support-status-in_progress">In progress: ${tickets.filter(ticket => ticket.status === 'in_progress').length}</span>
-        <span class="support-status support-status-resolved">Resolved: ${tickets.filter(ticket => ticket.status === 'resolved').length}</span>
-      </div>` : ''}
-      <div class="support-layout" style="${isSupportAgent ? 'grid-template-columns:minmax(0,1fr)' : ''}">
-        ${ticketLoadError ? `<p class="support-feedback support-feedback-error" role="alert">Could not load support tickets: ${escapeHtml(ticketLoadError)}</p>` : ''}
+        <span class="support-status support-status-open">Open: ${
+          tickets.filter(ticket => ticket.status === 'open').length
+        }</span>
+        <span class="support-status support-status-in_progress">In progress: ${
+          tickets.filter(ticket => ticket.status === 'in_progress').length
+        }</span>
+        <span class="support-status support-status-resolved">Resolved: ${
+          tickets.filter(ticket => ticket.status === 'resolved').length
+        }</span>
+      </div>`
+          : ''
+      }
+      <div class="support-layout" style="${
+        isSupportAgent ? 'grid-template-columns:minmax(0,1fr)' : ''
+      }">
+        ${
+          ticketLoadError
+            ? `<p class="support-feedback support-feedback-error" role="alert">Could not load support tickets: ${escapeHtml(
+                ticketLoadError
+              )}</p>`
+            : ''
+        }
         <section class="card card-lg" style="${isSupportAgent ? 'display:none' : ''}">
           <h2 class="support-card-title">Submit a support request</h2>
           <form id="support-request-form" novalidate>
@@ -284,7 +416,12 @@
               <label class="form-label" for="support-request-type">Request Type <span aria-hidden="true">*</span></label>
               <select class="form-control" id="support-request-type" name="requestType" required>
                 <option value="">Select a request type</option>
-                ${categories.map(category => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`).join('')}
+                ${categories
+                  .map(
+                    category =>
+                      `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`
+                  )
+                  .join('')}
               </select>
             </div>
             <div class="form-group" id="support-concern-group" hidden>
@@ -307,7 +444,13 @@
             <button class="btn btn-primary" id="support-submit" type="submit">Submit Request</button>
           </form>
         </section>
-        <div class="support-history" data-support-tickets="${escapeHtml(JSON.stringify(tickets))}">${ticketTable(isSupportAgent ? (options.queueTitle || 'Received Support Requests') : 'My Support Requests', tickets, isSupportAgent)}</div>
+        <div class="support-history" data-support-tickets="${escapeHtml(
+          JSON.stringify(tickets)
+        )}">${ticketTable(
+      isSupportAgent ? options.queueTitle || 'Received Support Requests' : 'My Support Requests',
+      tickets,
+      isSupportAgent
+    )}</div>
       </div>
       <div class="support-modal-overlay" id="support-ticket-modal" hidden>
         <section class="support-modal" role="dialog" aria-modal="true" aria-labelledby="support-modal-title">
@@ -322,13 +465,17 @@
     const modal = container.querySelector('#support-ticket-modal');
     const modalContent = container.querySelector('#support-modal-content');
     const isSupportAgent = options.management === true || canManageSupport(user);
-    const closeModal = () => { if (modal) modal.hidden = true; };
+    const closeModal = () => {
+      if (modal) modal.hidden = true;
+    };
     const openTicket = ticket => {
       if (!modal || !ticket) return;
       modalContent.innerHTML = ticketDialog(ticket, user, isSupportAgent);
       modal.hidden = false;
       bindAttachmentDownloads(modal, user);
-      modalContent.querySelectorAll('[data-modal-close]').forEach(button => button.addEventListener('click', closeModal));
+      modalContent
+        .querySelectorAll('[data-modal-close]')
+        .forEach(button => button.addEventListener('click', closeModal));
       const followUpForm = modalContent.querySelector('[data-follow-up-form]');
       followUpForm?.addEventListener('submit', async event => {
         event.preventDefault();
@@ -342,9 +489,14 @@
         }
         submit.disabled = true;
         try {
-          await request(`/support/tickets/${encodeURIComponent(ticket.ticketId)}/follow-ups`, user, {
-            method: 'POST', body: JSON.stringify({ message }),
-          });
+          await request(
+            `/support/tickets/${encodeURIComponent(ticket.ticketId)}/follow-ups`,
+            user,
+            {
+              method: 'POST',
+              body: JSON.stringify({ message }),
+            }
+          );
           await refreshTicketView(ticket.ticketId);
         } catch (error) {
           submit.disabled = false;
@@ -354,7 +506,9 @@
       });
       modalContent.querySelectorAll('[data-support-status-update]').forEach(button => {
         button.addEventListener('click', async () => {
-          const responseField = modalContent.querySelector(`[data-support-response="${ticket.ticketId}"]`);
+          const responseField = modalContent.querySelector(
+            `[data-support-response="${ticket.ticketId}"]`
+          );
           const response = responseField?.value.trim() || '';
           const status = modalContent.querySelector('[data-support-status-select]')?.value;
           const feedback = modalContent.querySelector('[data-status-feedback]');
@@ -368,13 +522,20 @@
           try {
             const updated = ticket.localEventRequest
               ? await options.updateAdditionalTicket(ticket.ticketId, { status, response })
-              : await request(`/support/tickets/${encodeURIComponent(ticket.ticketId)}/status`, user, {
-                  method: 'PATCH', body: JSON.stringify({ status, response }),
-                });
+              : await request(
+                  `/support/tickets/${encodeURIComponent(ticket.ticketId)}/status`,
+                  user,
+                  {
+                    method: 'PATCH',
+                    body: JSON.stringify({ status, response }),
+                  }
+                );
             const notice = response
-              ? (ticket.localEventRequest
+              ? ticket.localEventRequest
                 ? `Reply saved. Status: ${statusLabel(status)}.`
-                : `Reply sent to the requester. Status: ${statusLabel(status)}.${updated.emailNotificationSent ? ' An email notification was also sent.' : ''}`)
+                : `Reply sent to the requester. Status: ${statusLabel(status)}.${
+                    updated.emailNotificationSent ? ' An email notification was also sent.' : ''
+                  }`
               : `Ticket status updated to ${statusLabel(status)}.`;
             await refreshTicketView(ticket.ticketId, notice);
           } catch (error) {
@@ -386,17 +547,24 @@
       });
     };
     container.querySelectorAll('[data-ticket-view]').forEach(button => {
-      button.addEventListener('click', () => openTicket(tickets.find(ticket => ticket.ticketId === button.dataset.ticketView)));
+      button.addEventListener('click', () =>
+        openTicket(tickets.find(ticket => ticket.ticketId === button.dataset.ticketView))
+      );
     });
-    modal?.addEventListener('click', event => { if (event.target === modal) closeModal(); });
-    modal?.addEventListener('keydown', event => { if (event.key === 'Escape') closeModal(); });
+    modal?.addEventListener('click', event => {
+      if (event.target === modal) closeModal();
+    });
+    modal?.addEventListener('keydown', event => {
+      if (event.key === 'Escape') closeModal();
+    });
 
     const refreshTicketView = async (ticketId, notice = '') => {
       const page = container.querySelector('#page-content') || container;
       page.innerHTML = await render(user, backLabel, options);
       bind(page, user, onBack, backLabel, options);
-      const refreshedButton = Array.from(page.querySelectorAll('[data-ticket-view]'))
-        .find(button => button.dataset.ticketView === ticketId);
+      const refreshedButton = Array.from(page.querySelectorAll('[data-ticket-view]')).find(
+        button => button.dataset.ticketView === ticketId
+      );
       refreshedButton?.click();
       if (notice) {
         const feedback = page.querySelector('[data-status-feedback]');
@@ -410,8 +578,11 @@
     container.querySelector('[data-support-refresh]')?.addEventListener('click', async event => {
       const button = event.currentTarget;
       button.disabled = true;
-      try { await refreshTicketView(null); }
-      finally { button.disabled = false; }
+      try {
+        await refreshTicketView(null);
+      } finally {
+        button.disabled = false;
+      }
     });
 
     const category = container.querySelector('#support-request-type');
@@ -431,7 +602,9 @@
     const files = container.querySelector('#support-attachments');
     files?.addEventListener('change', () => {
       const list = container.querySelector('#support-selected-files');
-      list.textContent = Array.from(files.files || []).map(file => file.name).join(', ');
+      list.textContent = Array.from(files.files || [])
+        .map(file => file.name)
+        .join(', ');
     });
 
     const form = container.querySelector('#support-request-form');
@@ -449,14 +622,20 @@
 
       const selectedFiles = Array.from(files.files || []);
       const allowedTypes = new Set([
-        'image/jpeg', 'image/png', 'image/webp', 'application/pdf', 'text/plain',
+        'image/jpeg',
+        'image/png',
+        'image/webp',
+        'application/pdf',
+        'text/plain',
       ]);
       const maxFileSize = 5 * 1024 * 1024;
-      if (selectedFiles.length > 5 || selectedFiles.some(file =>
-        !allowedTypes.has(file.type) || file.size > maxFileSize,
-      )) {
+      if (
+        selectedFiles.length > 5 ||
+        selectedFiles.some(file => !allowedTypes.has(file.type) || file.size > maxFileSize)
+      ) {
         feedback.classList.add('is-error');
-        feedback.textContent = 'Choose up to 5 JPG, PNG, WEBP, PDF, or TXT files, each no larger than 5 MB.';
+        feedback.textContent =
+          'Choose up to 5 JPG, PNG, WEBP, PDF, or TXT files, each no larger than 5 MB.';
         return;
       }
 
@@ -520,8 +699,10 @@
         button.disabled = true;
         try {
           const response = await fetch(
-            `${API_BASE_URL}/support/attachments/${encodeURIComponent(button.dataset.supportDownload)}`,
-            { headers: user?.token ? { Authorization: `Bearer ${user.token}` } : {} },
+            `${API_BASE_URL}/support/attachments/${encodeURIComponent(
+              button.dataset.supportDownload
+            )}`,
+            { headers: user?.token ? { Authorization: `Bearer ${user.token}` } : {} }
           );
           if (!response.ok) {
             const data = await response.json().catch(() => ({}));
@@ -551,7 +732,11 @@
 
   function canRequestSupport(user) {
     if (!user) return false;
-    const normalize = value => String(value || '').trim().toUpperCase().replace(/[\s-]+/g, '_');
+    const normalize = value =>
+      String(value || '')
+        .trim()
+        .toUpperCase()
+        .replace(/[\s-]+/g, '_');
     const role = normalize(user.role || user.userRole);
     return ['ATTENDEE', 'CLIENT', 'ORGANIZER', 'EVENT_ORGANIZER'].includes(role);
   }

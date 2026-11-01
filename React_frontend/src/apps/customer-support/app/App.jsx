@@ -9,5 +9,9 @@ export default function CustomerSupportWorkspace() {
   const { user, signOut } = useStoredSession();
   if (!user?.token) return <Navigate to="/landing" replace />;
   if (!canRequestSupport(user)) return <Navigate to={workspaceFor(user)} replace />;
-  return <main className="support-standalone" id="page-content"><CustomerSupportPage user={user} onSignOut={signOut} /></main>;
+  return (
+    <main className="support-standalone" id="page-content">
+      <CustomerSupportPage user={user} onSignOut={signOut} />
+    </main>
+  );
 }

@@ -11,15 +11,15 @@ const SESSION_KEY = 'ef_cu';
 // ─── Role Normalisation ─────────────────────────────────────────
 // Maps frontend role strings → backend x-role header values
 const ROLE_MAP = {
-  superuser:       'super_admin',
-  super_admin:     'super_admin',
-  'super-user':    'super_admin',
-  admin:           'super_admin',
-  organizer:       'event_organizer',
+  superuser: 'super_admin',
+  super_admin: 'super_admin',
+  'super-user': 'super_admin',
+  admin: 'super_admin',
+  organizer: 'event_organizer',
   event_organizer: 'event_organizer',
   'event-organizer': 'event_organizer',
-  client:          'client',
-  attendee:        'attendee',
+  client: 'client',
+  attendee: 'attendee',
 };
 
 function normalizeRole(role) {
@@ -31,15 +31,21 @@ function getCurrentUser() {
   try {
     const s = sessionStorage.getItem(SESSION_KEY);
     return s ? JSON.parse(s) : null;
-  } catch (e) { return null; }
+  } catch (e) {
+    return null;
+  }
 }
 
 function setCurrentUser(user) {
-  try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(user)); } catch (e) {}
+  try {
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
+  } catch (e) {}
 }
 
 function clearCurrentUser() {
-  try { sessionStorage.removeItem(SESSION_KEY); } catch (e) {}
+  try {
+    sessionStorage.removeItem(SESSION_KEY);
+  } catch (e) {}
 }
 
 // ─── Header Helpers ──────────────────────────────────────────────
@@ -50,7 +56,7 @@ function getRoleHeader() {
 
 function getUserIdHeader() {
   const u = getCurrentUser();
-  return u ? (u.userId || u.id || '') : '';
+  return u ? u.userId || u.id || '' : '';
 }
 
 function getAuthHeader() {
@@ -87,17 +93,26 @@ async function apiRequest(endpoint, options = {}) {
     if (!res.ok) {
       const msg = Array.isArray(data?.message)
         ? data.message.join(', ')
-        : (data?.message || `HTTP ${res.status}`);
+        : data?.message || `HTTP ${res.status}`;
       throw new ApiError(msg, res.status, data);
     }
 
-    if (options.method && options.method.toUpperCase() !== 'GET') window.EventFlowData?.invalidate();
+    if (options.method && options.method.toUpperCase() !== 'GET')
+      window.EventFlowData?.invalidate();
     return data;
   } catch (e) {
     if (e instanceof ApiError) throw e;
     // Network error (backend offline)
-    if (e.message && (e.message.toLowerCase().includes('fetch') || e.message.toLowerCase().includes('network') || e.name === 'TypeError')) {
-      throw new ApiError('Backend server is offline. Please start the NestJS server on port 3001.', 0);
+    if (
+      e.message &&
+      (e.message.toLowerCase().includes('fetch') ||
+        e.message.toLowerCase().includes('network') ||
+        e.name === 'TypeError')
+    ) {
+      throw new ApiError(
+        'Backend server is offline. Please start the NestJS server on port 3001.',
+        0
+      );
     }
     throw new ApiError(e.message || 'Unknown error', 0);
   }
@@ -261,7 +276,10 @@ async function apiCancelRegistration(registrationId, reason) {
 }
 
 async function apiMarkDeclineViewed(registrationId) {
-  const response = await apiRequest(`/registrations/${encodeURIComponent(registrationId)}/decline-viewed`, { method: 'PATCH' });
+  const response = await apiRequest(
+    `/registrations/${encodeURIComponent(registrationId)}/decline-viewed`,
+    { method: 'PATCH' }
+  );
   return response.data || response;
 }
 
@@ -269,15 +287,6 @@ async function apiGetRegistration(registrationId) {
   const response = await apiRequest(`/registrations/${encodeURIComponent(registrationId)}`);
   return response.data || response;
 }
-
-
-
-
-
-
-
-
-
 
 // ─── ATTENDANCE ──────────────────────────────────────────────────
 async function apiVerifyAttendance(verifyData) {
@@ -303,7 +312,6 @@ async function apiMarkNotificationRead(notificationId) {
 }
 
 // ─── REPORTS ─────────────────────────────────────────────────────
-
 
 async function apiCreateEventReport(reportData) {
   return apiRequest('/reports/event', {
@@ -372,9 +380,6 @@ window.apiRegisterForEvent = apiRegisterForEvent;
 window.apiMakePayment = apiMakePayment;
 window.apiCancelRegistration = apiCancelRegistration;
 
-
-
-
 window.apiVerifyAttendance = apiVerifyAttendance;
 window.apiGetNotifications = apiGetNotifications;
 window.apiMarkAllNotificationsRead = apiMarkAllNotificationsRead;
@@ -384,5 +389,3 @@ window.apiCreateEventReport = apiCreateEventReport;
 window.apiSubmitEventReview = apiSubmitEventReview;
 window.showApiError = showApiError;
 window.showApiSuccess = showApiSuccess;
-
-

@@ -32,7 +32,11 @@ import { RoleGuard } from '../../common/guards/role.guard';
 import { UserId } from '../../common/decorators/user-id.decorator';
 import { UserRoleDecorator } from '../../common/decorators/user-role.decorator';
 import { UserRole } from '../../common/constants';
-import { CreateSupportFollowUpDto, CreateSupportTicketDto, UpdateSupportTicketStatusDto } from './dto/support-ticket.dto';
+import {
+  CreateSupportFollowUpDto,
+  CreateSupportTicketDto,
+  UpdateSupportTicketStatusDto,
+} from './dto/support-ticket.dto';
 import { SupportService } from './support.service';
 
 const SUPPORT_UPLOAD_DIR = path.join(process.cwd(), 'uploads', 'support');
@@ -51,7 +55,10 @@ function ensureUploadDir(): void {
 }
 
 function supportFileName(originalName: string): string {
-  const extension = path.extname(originalName).toLowerCase().replace(/[^a-z0-9.]/g, '');
+  const extension = path
+    .extname(originalName)
+    .toLowerCase()
+    .replace(/[^a-z0-9.]/g, '');
   return `${randomUUID()}${extension}`;
 }
 
@@ -63,20 +70,24 @@ export class SupportController {
   constructor(private readonly service: SupportService) {}
 
   @Get('tickets')
-  @ApiOperation({ summary: 'List the authenticated user’s support tickets; administrators can view all tickets' })
+  @ApiOperation({
+    summary: 'List the authenticated user’s support tickets; administrators can view all tickets',
+  })
   listTickets(@UserId() userId: string, @UserRoleDecorator() role: UserRole) {
     return this.service.listTickets(userId, role);
   }
 
   @Post('tickets')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Create a support ticket using a role-authorized request type and concern' })
+  @ApiOperation({
+    summary: 'Create a support ticket using a role-authorized request type and concern',
+  })
   @ApiResponse({ status: 201, description: 'Support ticket created' })
   @ApiResponse({ status: 403, description: 'Request type is not available to this role' })
   createTicket(
     @UserId() userId: string,
     @UserRoleDecorator() role: UserRole,
-    @Body() dto: CreateSupportTicketDto,
+    @Body() dto: CreateSupportTicketDto
   ) {
     return this.service.createTicket(userId, role, dto);
   }
@@ -87,13 +98,15 @@ export class SupportController {
   addRequesterFollowUp(
     @Param('ticketId') ticketId: string,
     @UserId() userId: string,
-    @Body() dto: CreateSupportFollowUpDto,
+    @Body() dto: CreateSupportFollowUpDto
   ) {
     return this.service.addRequesterFollowUp(ticketId, userId, dto);
   }
 
   @Post('attachments')
-  @ApiOperation({ summary: 'Upload a support attachment (JPG, PNG, WEBP, PDF, or TXT; up to 5 MB)' })
+  @ApiOperation({
+    summary: 'Upload a support attachment (JPG, PNG, WEBP, PDF, or TXT; up to 5 MB)',
+  })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -116,29 +129,28 @@ export class SupportController {
         if (!ALLOWED_MIME_TYPES.has(file.mimetype)) {
           callback(
             new BadRequestException('Invalid file type. Allowed: JPG, PNG, WEBP, PDF, TXT.'),
-            false,
+            false
           );
           return;
         }
         callback(null, true);
       },
-    }),
+    })
   )
-  uploadAttachment(
-    @UserId() userId: string,
-    @UploadedFile() file?: Express.Multer.File,
-  ) {
+  uploadAttachment(@UserId() userId: string, @UploadedFile() file?: Express.Multer.File) {
     if (!file) throw new BadRequestException('File is required');
     return this.service.registerAttachment(userId, file);
   }
 
   @Get('attachments/:attachmentId')
-  @ApiOperation({ summary: 'Download a support attachment owned by the requester or viewable by an administrator' })
+  @ApiOperation({
+    summary: 'Download a support attachment owned by the requester or viewable by an administrator',
+  })
   async downloadAttachment(
     @Param('attachmentId') attachmentId: string,
     @UserId() userId: string,
     @UserRoleDecorator() role: UserRole,
-    @Res({ passthrough: true }) response: Response,
+    @Res({ passthrough: true }) response: Response
   ): Promise<StreamableFile> {
     const result = await this.service.getAttachment(attachmentId, userId, role);
     const downloadName = result.fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
@@ -155,7 +167,7 @@ export class SupportController {
     @Param('ticketId') ticketId: string,
     @UserId() userId: string,
     @UserRoleDecorator() role: UserRole,
-    @Body() dto: UpdateSupportTicketStatusDto,
+    @Body() dto: UpdateSupportTicketStatusDto
   ) {
     return this.service.updateStatus(ticketId, userId, role, dto);
   }

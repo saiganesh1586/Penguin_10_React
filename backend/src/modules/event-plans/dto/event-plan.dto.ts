@@ -1,5 +1,14 @@
 import {
-  IsString, IsNotEmpty, IsOptional, IsNumber, IsPositive, IsEnum, IsInt, Min, Max, IsBoolean,
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsNumber,
+  IsPositive,
+  IsEnum,
+  IsInt,
+  Min,
+  Max,
+  IsBoolean,
 } from 'class-validator';
 import { EVENTFLOW_NUMERIC_LIMITS } from '../../../common/validation-rules';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -15,12 +24,18 @@ export class CreateEventPlanDto {
   @IsOptional()
   eventId?: string;
 
-  @ApiPropertyOptional({ description: 'Client ID (derived from the event request)', example: 'cli-001' })
+  @ApiPropertyOptional({
+    description: 'Client ID (derived from the event request)',
+    example: 'cli-001',
+  })
   @IsString()
   @IsOptional()
   clientId?: string;
 
-  @ApiPropertyOptional({ description: 'Organizer ID (derived from the event request)', example: 'org-001' })
+  @ApiPropertyOptional({
+    description: 'Organizer ID (derived from the event request)',
+    example: 'org-001',
+  })
   @IsString()
   @IsOptional()
   organizerId?: string;
@@ -30,7 +45,10 @@ export class CreateEventPlanDto {
   @IsNotEmpty()
   title!: string;
 
-  @ApiProperty({ description: 'Plan description', example: 'Complete event plan including speakers and schedule' })
+  @ApiProperty({
+    description: 'Plan description',
+    example: 'Complete event plan including speakers and schedule',
+  })
   @IsString()
   @IsNotEmpty()
   description!: string;

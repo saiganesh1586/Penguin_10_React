@@ -9,25 +9,60 @@ const clientRuntime = portalSource('client');
 
 test('Accept Changes refreshes the saved request and opens Ongoing Events as planning from either client entry', async () => {
   for (const entry of ['review-modal', 'workflow-details']) {
-    const request = { id: 'req-changes', requestId: 'req-changes', clientId: 'usr-client-001', organizerId: 'org-001',
-      eventName: 'Changed Conference', eventDate: '2099-11-20', budget: 50000, status: 'changes_requested',
-      agreementStatus: 'not_sent', paymentStatus: 'unpaid', negotiations: [{ action: 'changes_requested', budget: 65000, eventDate: '2099-11-22', reason: 'Venue availability.' }] };
-    const h = setupClientHarness([request]), navigation = [];
+    const request = {
+      id: 'req-changes',
+      requestId: 'req-changes',
+      clientId: 'usr-client-001',
+      organizerId: 'org-001',
+      eventName: 'Changed Conference',
+      eventDate: '2099-11-20',
+      budget: 50000,
+      status: 'changes_requested',
+      agreementStatus: 'not_sent',
+      paymentStatus: 'unpaid',
+      negotiations: [
+        {
+          action: 'changes_requested',
+          budget: 65000,
+          eventDate: '2099-11-22',
+          reason: 'Venue availability.',
+        },
+      ],
+    };
+    const h = setupClientHarness([request]),
+      navigation = [];
     const server = structuredClone(request);
     h.context.goNav = page => navigation.push(page);
     h.context.apiRespondToEventProposal = async (id, decision) => {
-      assert.equal(id, request.id); assert.equal(decision, 'accept_changes');
-      Object.assign(server, { status: 'planning', budget: 65000, eventDate: '2099-11-22',
-        auditHistory: [{ action: 'Client Accepted Requested Changes' }] });
+      assert.equal(id, request.id);
+      assert.equal(decision, 'accept_changes');
+      Object.assign(server, {
+        status: 'planning',
+        budget: 65000,
+        eventDate: '2099-11-22',
+        auditHistory: [{ action: 'Client Accepted Requested Changes' }],
+      });
       return { success: true, data: structuredClone(server) };
     };
     h.context.apiGetClientRequests = async () => ({ data: [structuredClone(server)] });
-    const syncStart = clientRuntime.indexOf('    async function syncClientEventRequests(');
-    const responseStart = clientRuntime.indexOf('    function respondToWorkflowChanges(');
-    const events = clientRuntime.match(/function getClientWorkflowEvents\(\)[\s\S]*?window\.pageWorkflowEvents = pageWorkflowEvents;/)[0];
-    vm.runInContext("let _workflowEventTab = 'upcoming';" + events
-      + clientRuntime.slice(syncStart, clientRuntime.indexOf('    function pageRequestStatus(', syncStart))
-      + clientRuntime.slice(responseStart, clientRuntime.indexOf('    function openWorkflowCounterofferModal(', responseStart)), h.context);
+    const syncStart = clientRuntime.indexOf('async function syncClientEventRequests(');
+    const responseStart = clientRuntime.indexOf('function respondToWorkflowChanges(');
+    const events = clientRuntime.match(
+      /function getClientWorkflowEvents\(\)[\s\S]*?window\.pageWorkflowEvents = pageWorkflowEvents;/
+    )[0];
+    vm.runInContext(
+      "let _workflowEventTab = 'upcoming';" +
+        events +
+        clientRuntime.slice(
+          syncStart,
+          clientRuntime.indexOf('function pageRequestStatus(', syncStart)
+        ) +
+        clientRuntime.slice(
+          responseStart,
+          clientRuntime.indexOf('function openWorkflowCounterofferModal(', responseStart)
+        ),
+      h.context
+    );
     if (entry === 'review-modal') {
       h.context.openClientPlanReview(request.id);
       const action = h.getModal().buttons.find(button => button.lbl === 'Accept Changes');
@@ -42,26 +77,45 @@ test('Accept Changes refreshes the saved request and opens Ongoing Events as pla
     assert.equal(data.ongoing[0].bookingStatus, 'planning', entry);
     assert.equal(data.ongoing[0].paymentStatus, 'unpaid', entry);
     assert.equal(h.context.DB.events.length, 0, entry);
-    assert.ok(h.toasts.some(item => item.type === 'success' && /Changes accepted/.test(item.msg)), entry);
-    assert.equal(h.toasts.some(item => /revision request was sent/.test(item.msg)), false, entry);
+    assert.ok(
+      h.toasts.some(item => item.type === 'success' && /Changes accepted/.test(item.msg)),
+      entry
+    );
+    assert.equal(
+      h.toasts.some(item => /revision request was sent/.test(item.msg)),
+      false,
+      entry
+    );
   }
 });
 
 test('a failed Accept Changes save keeps the review open and does not navigate or claim acceptance', async () => {
-  const request = { id: 'req-changes', clientId: 'usr-client-001', eventName: 'Changed Conference', status: 'changes_requested' };
-  const h = setupClientHarness([request]), navigation = [];
+  const request = {
+    id: 'req-changes',
+    clientId: 'usr-client-001',
+    eventName: 'Changed Conference',
+    status: 'changes_requested',
+  };
+  const h = setupClientHarness([request]),
+    navigation = [];
   h.context.setWorkflowEventTab = tab => navigation.push(tab);
-  h.context.apiRespondToEventProposal = async () => { throw new Error('Server unavailable'); };
+  h.context.apiRespondToEventProposal = async () => {
+    throw new Error('Server unavailable');
+  };
   const previousGetElement = h.context.g;
-  h.context.g = id => id === 'client-reproposal-error' ? null : previousGetElement(id);
+  h.context.g = id => (id === 'client-reproposal-error' ? null : previousGetElement(id));
   h.context.openClientPlanReview(request.id);
-  const modal = h.getModal(), action = modal.buttons.find(button => button.lbl === 'Accept Changes');
+  const modal = h.getModal(),
+    action = modal.buttons.find(button => button.lbl === 'Accept Changes');
   await vm.runInContext(action.fn, h.context);
   assert.equal(h.getModal(), modal);
   assert.deepEqual(navigation, []);
   assert.equal(h.context.DB.eventRequests[0].status, 'changes_requested');
   assert.ok(h.toasts.some(item => item.type === 'error' && item.msg === 'Server unavailable'));
-  assert.equal(h.toasts.some(item => item.type === 'success'), false);
+  assert.equal(
+    h.toasts.some(item => item.type === 'success'),
+    false
+  );
 });
 
 function setupClientHarness(initialRequests = [], initialEvents = [], initialPayments = []) {
@@ -97,19 +151,48 @@ function setupClientHarness(initialRequests = [], initialEvents = [], initialPay
       eventWorkflowPayments: structuredClone(initialPayments),
       eventPlans: [],
     },
-    toast: (msg, type) => { toasts.push({ msg, type }); },
-    openModal: (title, html, buttons, closable) => { modalState = { title, html, buttons, closable }; },
-    closeModal: () => { modalState = null; },
+    toast: (msg, type) => {
+      toasts.push({ msg, type });
+    },
+    openModal: (title, html, buttons, closable) => {
+      modalState = { title, html, buttons, closable };
+    },
+    closeModal: () => {
+      modalState = null;
+    },
     closeDrawer: () => {},
-    escapeHtml: str => String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'),
-    workflowHtml: str => String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'),
+    escapeHtml: str =>
+      String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;'),
+    workflowHtml: str =>
+      String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;'),
     workflowPolicyDate: d => String(d),
     workflowPayload: res => res?.data || res,
     reqBadge: s => s || 'gray',
     clientStatusReadable: s => (s || '').toUpperCase(),
-    g: id => elements.get(id) || { id, value: 'Change of Plans', checked: true, textContent: '', style: {}, querySelectorAll: () => [] },
-    v: id => elements.get(id)?.value || (id === 'mock-pay-method' ? 'UPI' : id === 'client-withdraw-reason' ? 'Change of Plans' : ''),
-    setElement: (id, val, checked = true) => elements.set(id, { value: val, checked, textContent: '', style: {} }),
+    g: id =>
+      elements.get(id) || {
+        id,
+        value: 'Change of Plans',
+        checked: true,
+        textContent: '',
+        style: {},
+        querySelectorAll: () => [],
+      },
+    v: id =>
+      elements.get(id)?.value ||
+      (id === 'mock-pay-method' ? 'UPI' : id === 'client-withdraw-reason' ? 'Change of Plans' : ''),
+    setElement: (id, val, checked = true) =>
+      elements.set(id, { value: val, checked, textContent: '', style: {} }),
     document: {
       querySelector: () => ({ value: 'deposit', checked: true }),
     },
@@ -118,7 +201,7 @@ function setupClientHarness(initialRequests = [], initialEvents = [], initialPay
     loadClientRecentActivity: () => {},
     renderPage: () => {},
     renderWorkflowRequestDetails: () => {},
-    apiPreviewClientRequestCancellation: async (id) => ({
+    apiPreviewClientRequestCancellation: async id => ({
       success: true,
       data: {
         requestId: id,
@@ -152,18 +235,33 @@ function setupClientHarness(initialRequests = [], initialEvents = [], initialPay
       apiCalls.push({ endpoint: 'pay-deposit', id, payload });
       return { success: true, data: { bookingStatus: 'confirmed' } };
     },
-    apiPayForWorkflowEvent: async (eventId) => {
+    apiPayForWorkflowEvent: async eventId => {
       apiCalls.push({ endpoint: 'pay-event', eventId });
       return { success: true };
     },
   });
 
   const codeToRun = `
-    ${clientRuntime.slice(clientRuntime.indexOf('function getClientBookingAmounts('), clientRuntime.indexOf('async function openEventPlanPdf('))}
-    ${clientRuntime.slice(clientRuntime.indexOf('function openClientPlanReview('), clientRuntime.indexOf('function confirmWithdrawRequest('))}
-    ${clientRuntime.slice(clientRuntime.indexOf('async function submitClientPlanDecision('), clientRuntime.indexOf('function switchReqStatTab('))}
-    ${clientRuntime.slice(clientRuntime.indexOf('function openClientPaymentModal('), clientRuntime.indexOf('function openUpdateConfirmedEventModal('))}
-    ${clientRuntime.slice(clientRuntime.indexOf('let _clientCancelPreview = null;'), clientRuntime.indexOf('function cancelReq('))}
+    ${clientRuntime.slice(
+      clientRuntime.indexOf('function getClientAcceptedProposal('),
+      clientRuntime.indexOf('async function openEventPlanPdf(')
+    )}
+    ${clientRuntime.slice(
+      clientRuntime.indexOf('function openClientPlanReview('),
+      clientRuntime.indexOf('function confirmWithdrawRequest(')
+    )}
+    ${clientRuntime.slice(
+      clientRuntime.indexOf('async function submitClientPlanDecision('),
+      clientRuntime.indexOf('function switchReqStatTab(')
+    )}
+    ${clientRuntime.slice(
+      clientRuntime.indexOf('function openClientPaymentModal('),
+      clientRuntime.indexOf('function openUpdateConfirmedEventModal(')
+    )}
+    ${clientRuntime.slice(
+      clientRuntime.indexOf('let _clientCancelPreview = null;'),
+      clientRuntime.indexOf('function cancelReq(')
+    )}
   `;
 
   vm.runInContext(codeToRun, context);
@@ -197,7 +295,8 @@ test('1. Proposal Review Modal: displays full details, pricing, advance deposit,
         includedServices: 'Venue coordination, staffing, catering',
         excludedServices: 'Alcoholic beverages',
         paymentSchedule: '30% Advance Deposit on Approval, 70% Final Balance upon Completion',
-        cancellationTerms: '14+ days notice: 10% fee, 90% net refund. Less than 14 days: Non-refundable.',
+        cancellationTerms:
+          '14+ days notice: 10% fee, 90% net refund. Less than 14 days: Non-refundable.',
       },
     ],
     agreementStatus: 'not_sent',
@@ -262,7 +361,10 @@ test('2. Expired Proposal: shows expired banner and restricts actions to revisio
 
   assert.match(m.html, /Proposal Expired/);
   const btnLabels = m.buttons.map(b => b.lbl);
-  assert.ok(!btnLabels.includes('Accept & Proceed to Payment'), 'Expired proposal cannot be accepted');
+  assert.ok(
+    !btnLabels.includes('Accept & Proceed to Payment'),
+    'Expired proposal cannot be accepted'
+  );
   assert.ok(btnLabels.includes('Request Revision'));
   assert.ok(btnLabels.includes('Withdraw Request'));
 });
@@ -288,9 +390,18 @@ test('3. Pre-booking Request Withdrawal: opens clean withdrawal modal WITHOUT bo
   assert.equal(m.title, 'Withdraw Event Request');
   assert.match(m.html, /Pre-Booking Withdrawal/);
   assert.match(m.html, /No cancellation fees apply and no payments have been charged/);
-  assert.ok(!m.html.includes('ESTIMATED REFUND'), 'Unpaid unconfirmed requests must not show estimated refund');
-  assert.ok(!m.html.includes('CANCELLATION FEE (10%)'), 'Unpaid unconfirmed requests must not show cancellation fees');
-  assert.ok(!m.html.includes('REFUND TIMELINE'), 'Unpaid unconfirmed requests must not show refund timeline');
+  assert.ok(
+    !m.html.includes('ESTIMATED REFUND'),
+    'Unpaid unconfirmed requests must not show estimated refund'
+  );
+  assert.ok(
+    !m.html.includes('CANCELLATION FEE (10%)'),
+    'Unpaid unconfirmed requests must not show cancellation fees'
+  );
+  assert.ok(
+    !m.html.includes('REFUND TIMELINE'),
+    'Unpaid unconfirmed requests must not show refund timeline'
+  );
 
   const btnLabels = m.buttons.map(b => b.lbl);
   assert.ok(btnLabels.includes('Keep Request'));
@@ -314,7 +425,13 @@ test('4. Confirmed Booking Cancellation: opens 2-step modal with policy, deadlin
   };
 
   const payments = [
-    { paymentId: 'pay-003', requestId: 'req-confirmed-003', eventId: 'evt-conf-003', amount: 30000, status: 'completed' },
+    {
+      paymentId: 'pay-003',
+      requestId: 'req-confirmed-003',
+      eventId: 'evt-conf-003',
+      amount: 30000,
+      status: 'completed',
+    },
   ];
 
   const { context, getModal } = setupClientHarness([req], [], payments);
@@ -345,9 +462,7 @@ test('5. Payment & Booking Confirmation: presents demo provider, terms agreement
     status: 'awaiting_client',
     budget: 60000,
     guests: 150,
-    proposals: [
-      { version: 1, amount: 60000, depositRequired: 18000, status: 'accepted' },
-    ],
+    proposals: [{ version: 1, amount: 60000, depositRequired: 18000, status: 'accepted' }],
     agreementStatus: 'pending_signature',
     paymentStatus: 'deposit_pending',
   };
@@ -367,6 +482,12 @@ test('5. Payment & Booking Confirmation: presents demo provider, terms agreement
 
   // Submit payment
   await context.processClientDepositPayment('req-active-001', undefined, 'UPI');
-  assert.ok(apiCalls.some(c => c.endpoint === 'agreement' && c.agreementStatus === 'agreed'), 'Agreement acknowledged before payment');
-  assert.ok(apiCalls.some(c => c.endpoint === 'pay-deposit'), 'Deposit payment submitted via demo provider');
+  assert.ok(
+    apiCalls.some(c => c.endpoint === 'agreement' && c.agreementStatus === 'agreed'),
+    'Agreement acknowledged before payment'
+  );
+  assert.ok(
+    apiCalls.some(c => c.endpoint === 'pay-deposit'),
+    'Deposit payment submitted via demo provider'
+  );
 });

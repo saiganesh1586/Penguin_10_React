@@ -9,8 +9,8 @@ const clientRuntime = portalSource('client');
 const orgRuntime = portalSource('organizer');
 
 test('1. Discover Organizers: includes category, city/location, ratings, and published pricing filters without availability calendar', () => {
-  const start = clientRuntime.indexOf('    function pageFindOrganizers()');
-  const end = clientRuntime.indexOf('    async function viewOrganizerProfile', start);
+  const start = clientRuntime.indexOf('function pageFindOrganizers()');
+  const end = clientRuntime.indexOf('async function viewOrganizerProfile', start);
   const source = clientRuntime.slice(start, end);
 
   // Filter dropdown IDs
@@ -23,8 +23,8 @@ test('1. Discover Organizers: includes category, city/location, ratings, and pub
   assert.match(source, /Starts at ₹/);
 
   // Verify availability calendar is completely removed from viewOrganizerProfile
-  const profileStart = clientRuntime.indexOf('    async function viewOrganizerProfile(');
-  const profileEnd = clientRuntime.indexOf('    function contactOrganizer(', profileStart);
+  const profileStart = clientRuntime.indexOf('async function viewOrganizerProfile(');
+  const profileEnd = clientRuntime.indexOf('function contactOrganizer(', profileStart);
   const profileSource = clientRuntime.slice(profileStart, profileEnd);
   assert.doesNotMatch(profileSource, /availability-calendar/i);
   assert.doesNotMatch(profileSource, /calendar-grid/i);
@@ -34,8 +34,8 @@ test('1. Discover Organizers: includes category, city/location, ratings, and pub
 });
 
 test('2. Submit Event Request: excludes startTime, endTime, and budgetFlexibility and submits SUBMITTED', () => {
-  const formStart = clientRuntime.indexOf('    async function openRequestModal(');
-  const formEnd = clientRuntime.indexOf('    function reviewEventRequest(', formStart);
+  const formStart = clientRuntime.indexOf('async function openRequestModal(');
+  const formEnd = clientRuntime.indexOf('function reviewEventRequest(', formStart);
   const formSource = clientRuntime.slice(formStart, formEnd);
 
   assert.doesNotMatch(formSource, /id="req-start-time"/);
@@ -50,8 +50,8 @@ test('2. Submit Event Request: excludes startTime, endTime, and budgetFlexibilit
 });
 
 test('3. Organizer Proposal: structured fields include plan, timeline, fee, taxes, total, deposit, capacity, constraints, payment schedule, and cancellation terms', () => {
-  const start = orgRuntime.indexOf('    function openSendProposalModal(');
-  const end = orgRuntime.indexOf('    function simulateClientDecision(', start);
+  const start = orgRuntime.indexOf('function openSendProposalModal(');
+  const end = orgRuntime.indexOf('function simulateClientDecision(', start);
   const source = orgRuntime.slice(start, end);
 
   assert.match(source, /id="prop-amount"/);
@@ -72,15 +72,18 @@ test('3. Organizer Proposal: structured fields include plan, timeline, fee, taxe
   assert.match(source, /id="prop-conditions"/);
 
   // Rejection requires mandatory reason
-  const rejectStart = orgRuntime.indexOf('    function openRejectModal(');
-  const rejectEnd = orgRuntime.indexOf('    function openOrganizerRejectModal', rejectStart);
-  const rejectSource = orgRuntime.slice(rejectStart, rejectEnd !== -1 ? rejectEnd : rejectStart + 600);
+  const rejectStart = orgRuntime.indexOf('function openRejectModal(');
+  const rejectEnd = orgRuntime.indexOf('function openOrganizerRejectModal', rejectStart);
+  const rejectSource = orgRuntime.slice(
+    rejectStart,
+    rejectEnd !== -1 ? rejectEnd : rejectStart + 600
+  );
   assert.match(rejectSource, /Reason for Declining \(Mandatory\)/);
 });
 
 test('4. Client Proposal Review: displays complete breakdown, version history, accept, revision, decline, and withdraw actions', () => {
-  const start = clientRuntime.indexOf('    function openClientPlanReview(');
-  const end = clientRuntime.indexOf('    function switchReqStatTab(', start);
+  const start = clientRuntime.indexOf('function openClientPlanReview(');
+  const end = clientRuntime.indexOf('function switchReqStatTab(', start);
   const source = clientRuntime.slice(start, end);
 
   assert.match(source, /TOTAL PROPOSAL PRICE/);
@@ -100,22 +103,22 @@ test('4. Client Proposal Review: displays complete breakdown, version history, a
 });
 
 test('5. Payment and Booking Confirmation: mock demo provider, booking ID, receipt, and balance display', () => {
-  const start = clientRuntime.indexOf('    function openClientPaymentModal(');
-  const end = clientRuntime.indexOf('    function openUpdateConfirmedEventModal(', start);
+  const start = clientRuntime.indexOf('function openClientPaymentModal(');
+  const end = clientRuntime.indexOf('function openUpdateConfirmedEventModal(', start);
   const source = clientRuntime.slice(start, end);
 
   assert.match(source, /DEMO PAYMENT PROVIDER · SIMULATED TRANSACTION/);
   assert.match(source, /BOOKING ID/);
   assert.match(source, /OUTSTANDING BALANCE/);
-  assert.match(source, /Advance Deposit/);
+  assert.match(source, /ADVANCE DEPOSIT REQUIRED/);
   assert.match(source, /Pay Remaining Amount|Pay Full Amount/);
   assert.match(source, /Transaction History & Receipts/);
   assert.match(source, /apiPayDeposit/);
 });
 
 test('6. Cancellation and Refunds: displays policy terms, fees, refunds, and organizer cancellation with reason', () => {
-  const orgCancelStart = orgRuntime.indexOf('    function openOrganizerEventCancellationModal(');
-  const orgCancelEnd = orgRuntime.indexOf('    function openRejectModal(', orgCancelStart);
+  const orgCancelStart = orgRuntime.indexOf('function openOrganizerEventCancellationModal(');
+  const orgCancelEnd = orgRuntime.indexOf('function openRejectModal(', orgCancelStart);
   const orgCancelSource = orgRuntime.slice(orgCancelStart, orgCancelEnd);
 
   assert.match(orgCancelSource, /Organizer Initiated Cancellation/);
@@ -144,7 +147,10 @@ test('7. Status Tracking: displays 8-stage workflow stepper across client and or
 
   // Client stepper
   const clientDetailsStart = clientRuntime.indexOf('function renderWorkflowRequestDetails(id) {');
-  const clientDetailsEnd = clientRuntime.indexOf('let workflowResponsePolicy = null;', clientDetailsStart);
+  const clientDetailsEnd = clientRuntime.indexOf(
+    'let workflowResponsePolicy = null;',
+    clientDetailsStart
+  );
   const clientDetailsSource = clientRuntime.slice(clientDetailsStart, clientDetailsEnd);
 
   for (const step of [

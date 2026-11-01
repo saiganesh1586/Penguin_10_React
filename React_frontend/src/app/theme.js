@@ -95,47 +95,77 @@
   }
 
   function prepareFormField(field) {
-    if (!(field instanceof HTMLInputElement || field instanceof HTMLSelectElement || field instanceof HTMLTextAreaElement)) return;
     if (
-      field instanceof HTMLInputElement
-      && (field.type === 'search' || /^([a-z0-9]+-)?q$/i.test(field.id) || /search/i.test(`${field.id} ${field.placeholder}`))
-    ) return;
+      !(
+        field instanceof HTMLInputElement ||
+        field instanceof HTMLSelectElement ||
+        field instanceof HTMLTextAreaElement
+      )
+    )
+      return;
+    if (
+      field instanceof HTMLInputElement &&
+      (field.type === 'search' ||
+        /^([a-z0-9]+-)?q$/i.test(field.id) ||
+        /search/i.test(`${field.id} ${field.placeholder}`))
+    )
+      return;
 
-    const label = field.closest('.form-group')?.querySelector('label')?.textContent?.trim()
-      || field.labels?.[0]?.textContent?.trim()
-      || '';
+    const label =
+      field.closest('.form-group')?.querySelector('label')?.textContent?.trim() ||
+      field.labels?.[0]?.textContent?.trim() ||
+      '';
     const details = `${label} ${field.id} ${field.name} ${field.placeholder}`.toLowerCase();
 
     if (
-      label.includes('*')
-      || field.hasAttribute('required')
-      || ['l-email', 'l-pass'].includes(field.id)
-    ) field.required = true;
+      label.includes('*') ||
+      field.hasAttribute('required') ||
+      ['l-email', 'l-pass'].includes(field.id)
+    )
+      field.required = true;
 
     if (field instanceof HTMLSelectElement && field.options.length) {
       const first = field.options[0];
-      if (!first.hasAttribute('value') && /^select\b/i.test(first.textContent.trim())) first.value = '';
+      if (!first.hasAttribute('value') && /^select\b/i.test(first.textContent.trim()))
+        first.value = '';
     }
 
     if (field instanceof HTMLInputElement) {
-      const isOtp = /\botp\b/i.test(details) || /otp/i.test(field.id) || /verification code/i.test(details);
-      if (!isOtp && field.type === 'text' && /\b(email|e-mail)\b/.test(details)) field.type = 'email';
-      if (!isOtp && field.type === 'text' && /\b(url|website|web site)\b/.test(details)) field.type = 'url';
-      if (!isOtp && field.type === 'text' && /\b(phone|mobile|telephone|emergency contact)\b/.test(details)) field.type = 'tel';
+      const isOtp =
+        /\botp\b/i.test(details) || /otp/i.test(field.id) || /verification code/i.test(details);
+      if (!isOtp && field.type === 'text' && /\b(email|e-mail)\b/.test(details))
+        field.type = 'email';
+      if (!isOtp && field.type === 'text' && /\b(url|website|web site)\b/.test(details))
+        field.type = 'url';
+      if (
+        !isOtp &&
+        field.type === 'text' &&
+        /\b(phone|mobile|telephone|emergency contact)\b/.test(details)
+      )
+        field.type = 'tel';
       if (field.type === 'tel') {
         field.maxLength = 10;
         field.pattern = '[6-9]\\d{9}';
         field.inputMode = 'numeric';
       }
-      if (field.type === 'text' && /\b(price|budget|amount|fee|cost|capacity|quantity|guests?|age|years? of experience|discount)\b/.test(label.toLowerCase())) {
+      if (
+        field.type === 'text' &&
+        /\b(price|budget|amount|fee|cost|capacity|quantity|guests?|age|years? of experience|discount)\b/.test(
+          label.toLowerCase()
+        )
+      ) {
         field.type = 'number';
       }
-      if (field.type === 'text' && /\b(date|date of birth)\b/.test(label.toLowerCase())) field.type = 'date';
+      if (field.type === 'text' && /\b(date|date of birth)\b/.test(label.toLowerCase()))
+        field.type = 'date';
       if (field.type === 'password' && field.minLength < 6) {
         field.minLength = 6;
       }
 
-      if (field instanceof HTMLInputElement && /\b(pin\s*code|pincode|postal\s*code)\b/i.test(details)) {
+      if (
+        field instanceof HTMLInputElement &&
+        /\b(pin\s*code|pincode|postal\s*code)\b/i.test(details)
+      ) {
         field.maxLength = 6;
         field.pattern = '\\d{6}';
         field.inputMode = 'numeric';
@@ -148,7 +178,10 @@
             field.min = '1000';
             field.max = '10000000';
             field.step = 'any';
-          } else if (/\b(ticket\s*price|price)\b/i.test(details) && !/\b(budget|taxes|fee)\b/i.test(details)) {
+          } else if (
+            /\b(ticket\s*price|price)\b/i.test(details) &&
+            !/\b(budget|taxes|fee)\b/i.test(details)
+          ) {
             field.min = '0';
             field.max = '100000';
             field.step = 'any';
@@ -171,15 +204,18 @@
           } else {
             const positiveCount = /\b(capacity|quantity|guests?)\b/.test(details);
             if (field.min === '' || Number(field.min) < 0) field.min = positiveCount ? '1' : '0';
-            if (field.step === '') field.step = /\b(years? of experience|age|capacity|quantity|guests?)\b/.test(details) ? '1' : 'any';
+            if (field.step === '')
+              field.step = /\b(years? of experience|age|capacity|quantity|guests?)\b/.test(details)
+                ? '1'
+                : 'any';
           }
         }
       }
-
     }
 
     const validate = () => {
-      const isOtp = /\botp\b/i.test(details) || /otp/i.test(field.id) || /verification code/i.test(details);
+      const isOtp =
+        /\botp\b/i.test(details) || /otp/i.test(field.id) || /verification code/i.test(details);
       if (isOtp) {
         field.setCustomValidity('');
         return;
@@ -192,28 +228,51 @@
         if (!/^[6-9]\d{9}$/.test(value.trim())) {
           message = 'Enter a valid 10-digit Indian mobile number.';
         }
-      } else if (field instanceof HTMLInputElement && /\b(pin\s*code|pincode|postal\s*code)\b/i.test(details) && value) {
+      } else if (
+        field instanceof HTMLInputElement &&
+        /\b(pin\s*code|pincode|postal\s*code)\b/i.test(details) &&
+        value
+      ) {
         if (!/^\d{6}$/.test(value.trim())) {
           message = 'Enter a valid 6-digit Indian PIN code.';
         }
-      } else if (field instanceof HTMLInputElement && field.type === 'date' && value && Number.isNaN(Date.parse(value))) {
+      } else if (
+        field instanceof HTMLInputElement &&
+        field.type === 'date' &&
+        value &&
+        Number.isNaN(Date.parse(value))
+      ) {
         message = 'Enter a valid date.';
-      } else if (field instanceof HTMLInputElement && field.type === 'password' && value.length < field.minLength) {
+      } else if (
+        field instanceof HTMLInputElement &&
+        field.type === 'password' &&
+        value.length < field.minLength
+      ) {
         message = `Password must be at least ${field.minLength} characters.`;
       } else if (
-        field instanceof HTMLInputElement
-        && /^(full name|your name|name|first name|last name|city|city\s*\/\s*location)$/i.test(label.replace(/\*/g, '').trim())
-        && value
+        field instanceof HTMLInputElement &&
+        /^(full name|your name|name|first name|last name|city|city\s*\/\s*location)$/i.test(
+          label.replace(/\*/g, '').trim()
+        ) &&
+        value
       ) {
         if (!/^[\p{L}\p{M} .,'’()-]+$/u.test(value.trim())) {
           message = 'Use letters and normal name or city characters only.';
         }
-      } else if (field instanceof HTMLInputElement && field.type === 'email' && value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+      } else if (
+        field instanceof HTMLInputElement &&
+        field.type === 'email' &&
+        value &&
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+      ) {
         message = 'Enter a valid email address.';
       } else if (field instanceof HTMLInputElement && field.type === 'url' && value) {
         try {
           const parsedUrl = new URL(value);
-          if (!['http:', 'https:'].includes(parsedUrl.protocol) || !parsedUrl.hostname.includes('.')) {
+          if (
+            !['http:', 'https:'].includes(parsedUrl.protocol) ||
+            !parsedUrl.hostname.includes('.')
+          ) {
             message = 'Enter a valid URL.';
           }
         } catch (error) {
@@ -235,7 +294,12 @@
           currentMonth.setHours(0, 0, 0, 0);
           if (expiry <= currentMonth) message = 'Card expiry date must be in the future.';
         }
-      } else if (field instanceof HTMLInputElement && /\botp\b/.test(details) && value && !/^\d{6}$/.test(value)) {
+      } else if (
+        field instanceof HTMLInputElement &&
+        /\botp\b/.test(details) &&
+        value &&
+        !/^\d{6}$/.test(value)
+      ) {
         message = 'Enter the 6-digit verification code.';
       } else if (field instanceof HTMLInputElement && field.type === 'number' && value) {
         const isCaptcha = /\bcaptcha\b/i.test(details);
@@ -246,11 +310,16 @@
           } else if (/\bbudget\b/i.test(details)) {
             if (num < 1000) message = 'Event budget must be at least ₹1,000.';
             else if (num > 10000000) message = 'Event budget cannot exceed ₹1,00,00,000.';
-            else if (Math.abs(num * 100 - Math.round(num * 100)) > 0.000001) message = 'Event budget can have at most 2 decimal places.';
-          } else if (/\b(ticket\s*price|price)\b/i.test(details) && !/\b(budget|taxes|fee)\b/i.test(details)) {
+            else if (Math.abs(num * 100 - Math.round(num * 100)) > 0.000001)
+              message = 'Event budget can have at most 2 decimal places.';
+          } else if (
+            /\b(ticket\s*price|price)\b/i.test(details) &&
+            !/\b(budget|taxes|fee)\b/i.test(details)
+          ) {
             if (num < 0) message = 'Ticket price cannot be negative.';
             else if (num > 100000) message = 'Ticket price cannot exceed ₹1,00,000.';
-            else if (Math.abs(num * 100 - Math.round(num * 100)) > 0.000001) message = 'Ticket price can have at most 2 decimal places.';
+            else if (Math.abs(num * 100 - Math.round(num * 100)) > 0.000001)
+              message = 'Ticket price can have at most 2 decimal places.';
           } else if (/\b(capacity|guests?)\b/i.test(details)) {
             if (!Number.isInteger(num)) message = 'Event capacity must be a whole number.';
             else if (num < 1) message = 'Event capacity must be at least 1 guest.';
@@ -266,11 +335,14 @@
           } else if (/\bdiscount\b/i.test(details)) {
             if (num < 0) message = 'Discount cannot be negative.';
             else if (num > 100) message = 'Discount cannot exceed 100%.';
-            else if (Math.abs(num * 100 - Math.round(num * 100)) > 0.000001) message = 'Discount can have at most 2 decimal places.';
+            else if (Math.abs(num * 100 - Math.round(num * 100)) > 0.000001)
+              message = 'Discount can have at most 2 decimal places.';
           } else {
             const positiveCount = /\b(capacity|quantity|guests?)\b/.test(details);
             if (num < (positiveCount ? 1 : 0)) {
-              message = positiveCount ? 'Enter a number greater than 0.' : 'Enter a non-negative number.';
+              message = positiveCount
+                ? 'Enter a number greater than 0.'
+                : 'Enter a non-negative number.';
             }
           }
         }
@@ -289,94 +361,117 @@
   }
 
   function initializeFormValidation() {
-    const prepareTree = (node) => {
+    const prepareTree = node => {
       if (!(node instanceof Element)) return;
       if (node.matches('input, select, textarea')) prepareFormField(node);
       node.querySelectorAll('input, select, textarea').forEach(prepareFormField);
     };
 
     prepareTree(document.body);
-    const observer = new MutationObserver((records) => {
-      records.forEach((record) => record.addedNodes.forEach(prepareTree));
+    const observer = new MutationObserver(records => {
+      records.forEach(record => record.addedNodes.forEach(prepareTree));
     });
     observer.observe(document.body, { childList: true, subtree: true });
 
-    document.addEventListener('click', (event) => {
-      const button = event.target instanceof Element ? event.target.closest('button') : null;
-      if (!button) return;
+    document.addEventListener(
+      'click',
+      event => {
+        const button = event.target instanceof Element ? event.target.closest('button') : null;
+        if (!button) return;
 
-      let fields;
-      if (button.closest('#modal-foot')) {
-        const handler = (button.getAttribute('onclick') || '').trim();
-        if (button.textContent.trim().toLowerCase() === 'cancel' || /^(?:window\.)?closeModal\s*\(\s*\)\s*;?$/.test(handler)) return;
-        fields = [...document.querySelectorAll('#modal-body input, #modal-body select, #modal-body textarea')];
-      } else if (button.matches('[onclick*="doLogin"]')) {
-        fields = [
+        let fields;
+        if (button.closest('#modal-foot')) {
+          const handler = (button.getAttribute('onclick') || '').trim();
+          if (
+            button.textContent.trim().toLowerCase() === 'cancel' ||
+            /^(?:window\.)?closeModal\s*\(\s*\)\s*;?$/.test(handler)
+          )
+            return;
+          fields = [
+            ...document.querySelectorAll(
+              '#modal-body input, #modal-body select, #modal-body textarea'
+            ),
+          ];
+        } else if (button.matches('[onclick*="doLogin"]')) {
+          fields = [document.getElementById('l-email'), document.getElementById('l-pass')].filter(
+            Boolean
+          );
+        } else {
+          return;
+        }
+
+        fields.forEach(prepareFormField);
+        const invalid = fields.find(field => !field.checkValidity());
+        if (invalid) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          invalid.reportValidity();
+        }
+      },
+      true
+    );
+
+    document.addEventListener(
+      'submit',
+      event => {
+        const fields = [...event.target.querySelectorAll('input, select, textarea')];
+        fields.forEach(prepareFormField);
+        const invalid = fields.find(field => !field.checkValidity());
+        if (invalid) {
+          event.preventDefault();
+          invalid.reportValidity();
+        }
+      },
+      true
+    );
+
+    document.addEventListener(
+      'keydown',
+      event => {
+        if (event.key !== 'Enter' || !(event.target instanceof HTMLInputElement)) return;
+        const id = event.target.id;
+        if (!['l-email', 'l-pass'].includes(id)) return;
+
+        const fields = [
           document.getElementById('l-email'),
           document.getElementById('l-pass'),
         ].filter(Boolean);
-      } else {
-        return;
-      }
-
-      fields.forEach(prepareFormField);
-      const invalid = fields.find((field) => !field.checkValidity());
-      if (invalid) {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        invalid.reportValidity();
-      }
-    }, true);
-
-    document.addEventListener('submit', (event) => {
-      const fields = [...event.target.querySelectorAll('input, select, textarea')];
-      fields.forEach(prepareFormField);
-      const invalid = fields.find((field) => !field.checkValidity());
-      if (invalid) {
-        event.preventDefault();
-        invalid.reportValidity();
-      }
-    }, true);
-
-    document.addEventListener('keydown', (event) => {
-      if (event.key !== 'Enter' || !(event.target instanceof HTMLInputElement)) return;
-      const id = event.target.id;
-      if (!['l-email', 'l-pass'].includes(id)) return;
-
-      const fields = [
-        document.getElementById('l-email'),
-        document.getElementById('l-pass'),
-      ].filter(Boolean);
-      fields.forEach(prepareFormField);
-      const invalid = fields.find((field) => !field.checkValidity());
-      if (invalid) {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        invalid.reportValidity();
-      }
-    }, true);
+        fields.forEach(prepareFormField);
+        const invalid = fields.find(field => !field.checkValidity());
+        if (invalid) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          invalid.reportValidity();
+        }
+      },
+      true
+    );
   }
 
   function initializePasswordToggles() {
-    const prepareTree = (node) => {
+    const prepareTree = node => {
       if (!(node instanceof Element)) return;
       if (node.matches('input[type="password"]')) addPasswordToggle(node);
       node.querySelectorAll('input[type="password"]').forEach(addPasswordToggle);
     };
     prepareTree(document.body);
 
-    const observer = new MutationObserver((records) => {
-      records.forEach((record) => record.addedNodes.forEach(prepareTree));
+    const observer = new MutationObserver(records => {
+      records.forEach(record => record.addedNodes.forEach(prepareTree));
     });
     observer.observe(document.body, { childList: true, subtree: true });
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-      addThemeToggle();
-      initializePasswordToggles();
-      initializeFormValidation();
-    }, { once: true });
+    document.addEventListener(
+      'DOMContentLoaded',
+      () => {
+        addThemeToggle();
+        initializePasswordToggles();
+        initializeFormValidation();
+      },
+      { once: true }
+    );
   } else {
     addThemeToggle();
     initializePasswordToggles();

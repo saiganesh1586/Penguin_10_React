@@ -51,7 +51,13 @@ export class SubmitOrganizerApplicationDto {
 }
 
 export class ReviewOrganizerApplicationDto {
-  status!: 'Pending Verification' | 'Under Review' | 'Additional Information Required' | 'Approved' | 'Rejected' | 'Suspended';
+  status!:
+    | 'Pending Verification'
+    | 'Under Review'
+    | 'Additional Information Required'
+    | 'Approved'
+    | 'Rejected'
+    | 'Suspended';
   reason?: string;
   additionalInfoRequest?: string;
   comments?: string;

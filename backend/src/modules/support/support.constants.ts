@@ -108,10 +108,7 @@ const GENERAL_CATEGORIES = [
   'Other Issues',
 ];
 
-export function canSubmitSupportCategory(
-  role: UserRole,
-  requestType: string,
-): boolean {
+export function canSubmitSupportCategory(role: UserRole, requestType: string): boolean {
   if (![UserRole.ATTENDEE, UserRole.CLIENT, UserRole.EVENT_ORGANIZER].includes(role)) return false;
   if (!SUPPORT_CONCERNS[requestType]) return false;
   if (requestType === 'Organizer & Client Support') {

@@ -1,5 +1,16 @@
 import {
-  IsString, IsNotEmpty, IsOptional, IsNumber, IsPositive, IsEnum, IsInt, Min, Max, IsBoolean, IsIn, IsDateString,
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsNumber,
+  IsPositive,
+  IsEnum,
+  IsInt,
+  Min,
+  Max,
+  IsBoolean,
+  IsIn,
+  IsDateString,
 } from 'class-validator';
 import { EVENTFLOW_NUMERIC_LIMITS } from '../../../common/validation-rules';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -43,21 +54,34 @@ export class CreateEventRequestDto extends EventPolicyAcknowledgementDto {
   @Max(EVENTFLOW_NUMERIC_LIMITS.BUDGET.MAX, { message: 'Event budget cannot exceed ₹1,00,00,000' })
   budget!: number;
 
-  @ApiPropertyOptional({ description: 'Ticket price per attendee in INR; 0 means free admission', example: 499.5, default: 0 })
+  @ApiPropertyOptional({
+    description: 'Ticket price per attendee in INR; 0 means free admission',
+    example: 499.5,
+    default: 0,
+  })
   @IsNumber({ maxDecimalPlaces: 2 }, { message: 'Ticket price can have at most 2 decimal places' })
   @Min(EVENTFLOW_NUMERIC_LIMITS.TICKET_PRICE.MIN, { message: 'Ticket price cannot be negative' })
-  @Max(EVENTFLOW_NUMERIC_LIMITS.TICKET_PRICE.MAX, { message: 'Ticket price cannot exceed ₹1,00,000' })
+  @Max(EVENTFLOW_NUMERIC_LIMITS.TICKET_PRICE.MAX, {
+    message: 'Ticket price cannot exceed ₹1,00,000',
+  })
   @IsOptional()
   ticketPrice?: number;
 
-  @ApiPropertyOptional({ description: 'Public events allow direct registration; private events require organizer approval before payment', enum: ['public', 'private'], default: 'public' })
+  @ApiPropertyOptional({
+    description:
+      'Public events allow direct registration; private events require organizer approval before payment',
+    enum: ['public', 'private'],
+    default: 'public',
+  })
   @IsIn(['public', 'private'])
   @IsOptional()
   visibility?: 'public' | 'private';
 
   @ApiProperty({ description: 'Expected capacity', example: 200 })
   @IsInt({ message: 'Event capacity must be a whole number' })
-  @Min(EVENTFLOW_NUMERIC_LIMITS.CAPACITY.MIN, { message: 'Event capacity must be at least 1 guest' })
+  @Min(EVENTFLOW_NUMERIC_LIMITS.CAPACITY.MIN, {
+    message: 'Event capacity must be at least 1 guest',
+  })
   @Max(EVENTFLOW_NUMERIC_LIMITS.CAPACITY.MAX, { message: 'Maximum event capacity is 50,000' })
   capacity!: number;
 
@@ -66,13 +90,19 @@ export class CreateEventRequestDto extends EventPolicyAcknowledgementDto {
   @IsOptional()
   city?: string;
 
-  @ApiPropertyOptional({ description: 'Whether the requested date is flexible', enum: ['exact', 'flexible'] })
+  @ApiPropertyOptional({
+    description: 'Whether the requested date is flexible',
+    enum: ['exact', 'flexible'],
+  })
   @IsString()
   @IsIn(['exact', 'flexible'])
   @IsOptional()
   dateFlexibility?: 'exact' | 'flexible';
 
-  @ApiPropertyOptional({ description: 'Special requirements', example: 'Need catering and live band' })
+  @ApiPropertyOptional({
+    description: 'Special requirements',
+    example: 'Need catering and live band',
+  })
   @IsString()
   @IsOptional()
   requirements?: string;
@@ -90,7 +120,8 @@ export class CreateEventRequestDto extends EventPolicyAcknowledgementDto {
 
 export class UpdateEventRequestStatusDto {
   @ApiProperty({
-    description: 'The only generic status transition supported; use dedicated workflow actions for all others',
+    description:
+      'The only generic status transition supported; use dedicated workflow actions for all others',
     enum: ['under_review'],
     example: 'under_review',
   })
@@ -100,14 +131,20 @@ export class UpdateEventRequestStatusDto {
 }
 
 export class RequestMissingInfoDto {
-  @ApiProperty({ description: 'Query / question requesting missing information from the client', example: 'Could you specify the preferred AV equipment and catering dietary preferences?' })
+  @ApiProperty({
+    description: 'Query / question requesting missing information from the client',
+    example: 'Could you specify the preferred AV equipment and catering dietary preferences?',
+  })
   @IsString()
   @IsNotEmpty()
   message!: string;
 }
 
 export class ProvideMissingInfoDto {
-  @ApiProperty({ description: 'Client response to the missing info request', example: 'We require 3 wireless microphones, 4K projector, and 20% vegetarian meals.' })
+  @ApiProperty({
+    description: 'Client response to the missing info request',
+    example: 'We require 3 wireless microphones, 4K projector, and 20% vegetarian meals.',
+  })
   @IsString()
   @IsNotEmpty()
   response!: string;
@@ -117,31 +154,47 @@ export class SendProposalDto {
   @ApiProperty({ description: 'Total proposed amount in INR', example: 60000 })
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(EVENTFLOW_NUMERIC_LIMITS.BUDGET.MIN, { message: 'Proposed amount must be at least ₹1,000' })
-  @Max(EVENTFLOW_NUMERIC_LIMITS.BUDGET.MAX, { message: 'Proposed amount cannot exceed ₹1,00,00,000' })
+  @Max(EVENTFLOW_NUMERIC_LIMITS.BUDGET.MAX, {
+    message: 'Proposed amount cannot exceed ₹1,00,00,000',
+  })
   amount!: number;
 
   @ApiProperty({ description: 'Required deposit amount in INR', example: 15000 })
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0, { message: 'Deposit required cannot be negative' })
-  @Max(EVENTFLOW_NUMERIC_LIMITS.BUDGET.MAX, { message: 'Deposit required cannot exceed ₹1,00,00,000' })
+  @Max(EVENTFLOW_NUMERIC_LIMITS.BUDGET.MAX, {
+    message: 'Deposit required cannot exceed ₹1,00,00,000',
+  })
   depositRequired!: number;
 
-  @ApiPropertyOptional({ description: 'Proposed event date if different (YYYY-MM-DD)', example: '2026-09-05' })
+  @ApiPropertyOptional({
+    description: 'Proposed event date if different (YYYY-MM-DD)',
+    example: '2026-09-05',
+  })
   @IsString()
   @IsOptional()
   proposedDate?: string;
 
-  @ApiProperty({ description: 'Proposal validity expiration date (YYYY-MM-DD)', example: '2026-08-01' })
+  @ApiProperty({
+    description: 'Proposal validity expiration date (YYYY-MM-DD)',
+    example: '2026-08-01',
+  })
   @IsString()
   @IsNotEmpty()
   validUntil!: string;
 
-  @ApiPropertyOptional({ description: 'Terms and conditions / deliverables', example: 'Includes full day hall rental, standard audio setup, and buffet catering.' })
+  @ApiPropertyOptional({
+    description: 'Terms and conditions / deliverables',
+    example: 'Includes full day hall rental, standard audio setup, and buffet catering.',
+  })
   @IsString()
   @IsOptional()
   terms?: string;
 
-  @ApiPropertyOptional({ description: 'Additional notes for the client', example: 'Deposit required within 7 days of agreement to lock the venue.' })
+  @ApiPropertyOptional({
+    description: 'Additional notes for the client',
+    example: 'Deposit required within 7 days of agreement to lock the venue.',
+  })
   @IsString()
   @IsOptional()
   notes?: string;
@@ -187,7 +240,9 @@ export class SendProposalDto {
 
   @ApiPropertyOptional({ description: 'Attendee capacity limit' })
   @IsInt({ message: 'Attendee capacity must be a whole number' })
-  @Min(EVENTFLOW_NUMERIC_LIMITS.CAPACITY.MIN, { message: 'Attendee capacity must be at least 1 guest' })
+  @Min(EVENTFLOW_NUMERIC_LIMITS.CAPACITY.MIN, {
+    message: 'Attendee capacity must be at least 1 guest',
+  })
   @Max(EVENTFLOW_NUMERIC_LIMITS.CAPACITY.MAX, { message: 'Maximum event capacity is 50,000' })
   @IsOptional()
   attendeeCapacity?: number;
@@ -207,31 +262,47 @@ export class SendProposalDto {
   @IsOptional()
   cancellationTerms?: string;
 
-  @ApiPropertyOptional({ description: 'Required client notice in whole days before the event', minimum: 0, maximum: 3650 })
+  @ApiPropertyOptional({
+    description: 'Required client notice in whole days before the event',
+    minimum: 0,
+    maximum: 3650,
+  })
   @IsInt()
   @Min(0)
   @Max(3650)
   @IsOptional()
   cancellationNoticeDays?: number;
 
-  @ApiPropertyOptional({ description: 'Cancellation fee as a percentage of successful payments', minimum: 0, maximum: 100 })
+  @ApiPropertyOptional({
+    description: 'Cancellation fee as a percentage of successful payments',
+    minimum: 0,
+    maximum: 100,
+  })
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
   @Max(100)
   @IsOptional()
   cancellationFeePercent?: number;
 
-  @ApiPropertyOptional({ description: 'Whether a refund can be issued when cancellation is within the notice window' })
+  @ApiPropertyOptional({
+    description: 'Whether a refund can be issued when cancellation is within the notice window',
+  })
   @IsBoolean()
   @IsOptional()
   cancellationRefundEligible?: boolean;
 
-  @ApiPropertyOptional({ enum: ['automatic', 'manual'], description: 'Whether eligible demo refunds are created automatically or require organizer review' })
+  @ApiPropertyOptional({
+    enum: ['automatic', 'manual'],
+    description:
+      'Whether eligible demo refunds are created automatically or require organizer review',
+  })
   @IsEnum(['automatic', 'manual'])
   @IsOptional()
   cancellationApprovalMode?: 'automatic' | 'manual';
 
-  @ApiPropertyOptional({ description: 'Additional cancellation conditions shown to and accepted by the client' })
+  @ApiPropertyOptional({
+    description: 'Additional cancellation conditions shown to and accepted by the client',
+  })
   @IsString()
   @IsOptional()
   cancellationAdditionalTerms?: string;
@@ -263,7 +334,10 @@ export class SendProposalDto {
 }
 
 export class ReviseProposalDto extends SendProposalDto {
-  @ApiPropertyOptional({ description: 'Reason for proposal revision', example: 'Adjusted catering options and reduced deposit per client request.' })
+  @ApiPropertyOptional({
+    description: 'Reason for proposal revision',
+    example: 'Adjusted catering options and reduced deposit per client request.',
+  })
   @IsString()
   @IsOptional()
   revisionReason?: string;
@@ -278,7 +352,10 @@ export class RejectRequestDto {
   @IsOptional()
   acceptedPolicyVersion?: string;
 
-  @ApiProperty({ description: 'Reason for a permanent rejection or requested change', example: 'The requested date is unavailable.' })
+  @ApiProperty({
+    description: 'Reason for a permanent rejection or requested change',
+    example: 'The requested date is unavailable.',
+  })
   @IsString()
   @IsNotEmpty()
   reason!: string;
@@ -291,7 +368,9 @@ export class RejectRequestDto {
   @ApiPropertyOptional({ description: 'Proposed budget when requesting a budget change' })
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(EVENTFLOW_NUMERIC_LIMITS.BUDGET.MIN, { message: 'Proposed budget must be at least ₹1,000' })
-  @Max(EVENTFLOW_NUMERIC_LIMITS.BUDGET.MAX, { message: 'Proposed budget cannot exceed ₹1,00,00,000' })
+  @Max(EVENTFLOW_NUMERIC_LIMITS.BUDGET.MAX, {
+    message: 'Proposed budget cannot exceed ₹1,00,00,000',
+  })
   @IsOptional()
   proposedBudget?: number;
 
@@ -317,22 +396,52 @@ export class ClientResponseDto {
   acceptedPolicyVersion?: string;
   @ApiProperty({
     description: 'Client decision on the proposal or request',
-    enum: ['accept', 'request_revision', 'reject', 'withdraw', 'accept_changes', 'reject_changes', 'counteroffer'],
+    enum: [
+      'accept',
+      'request_revision',
+      'reject',
+      'withdraw',
+      'accept_changes',
+      'reject_changes',
+      'counteroffer',
+    ],
     example: 'accept',
   })
-  @IsEnum(['accept', 'request_revision', 'reject', 'withdraw', 'accept_changes', 'reject_changes', 'counteroffer'])
+  @IsEnum([
+    'accept',
+    'request_revision',
+    'reject',
+    'withdraw',
+    'accept_changes',
+    'reject_changes',
+    'counteroffer',
+  ])
   @IsNotEmpty()
-  decision!: 'accept' | 'request_revision' | 'reject' | 'withdraw' | 'accept_changes' | 'reject_changes' | 'counteroffer';
+  decision!:
+    | 'accept'
+    | 'request_revision'
+    | 'reject'
+    | 'withdraw'
+    | 'accept_changes'
+    | 'reject_changes'
+    | 'counteroffer';
 
-  @ApiPropertyOptional({ description: 'Feedback or notes from the client', example: 'We accept the proposal terms and are ready to sign agreement.' })
+  @ApiPropertyOptional({
+    description: 'Feedback or notes from the client',
+    example: 'We accept the proposal terms and are ready to sign agreement.',
+  })
   @IsString()
   @IsOptional()
   notes?: string;
 
   @ApiPropertyOptional({ description: 'Client counteroffer budget' })
   @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(EVENTFLOW_NUMERIC_LIMITS.BUDGET.MIN, { message: 'Counteroffer budget must be at least ₹1,000' })
-  @Max(EVENTFLOW_NUMERIC_LIMITS.BUDGET.MAX, { message: 'Counteroffer budget cannot exceed ₹1,00,00,000' })
+  @Min(EVENTFLOW_NUMERIC_LIMITS.BUDGET.MIN, {
+    message: 'Counteroffer budget must be at least ₹1,000',
+  })
+  @Max(EVENTFLOW_NUMERIC_LIMITS.BUDGET.MAX, {
+    message: 'Counteroffer budget cannot exceed ₹1,00,00,000',
+  })
   @IsOptional()
   counterofferBudget?: number;
 
@@ -356,7 +465,9 @@ export class ClientResponseDto {
 
   @ApiPropertyOptional({ description: 'Counteroffer guest capacity' })
   @IsInt({ message: 'Event capacity must be a whole number' })
-  @Min(EVENTFLOW_NUMERIC_LIMITS.CAPACITY.MIN, { message: 'Event capacity must be at least 1 guest' })
+  @Min(EVENTFLOW_NUMERIC_LIMITS.CAPACITY.MIN, {
+    message: 'Event capacity must be at least 1 guest',
+  })
   @Max(EVENTFLOW_NUMERIC_LIMITS.CAPACITY.MAX, { message: 'Maximum event capacity is 50,000' })
   @IsOptional()
   counterofferCapacity?: number;
@@ -435,8 +546,7 @@ export class UpdatePaymentStatusDto {
   paymentStatus!: 'unpaid' | 'deposit_pending' | 'deposit_paid' | 'fully_paid' | 'refunded';
 }
 
-export class ConfirmBookingDto {
-}
+export class ConfirmBookingDto {}
 
 export class PayDepositDto {
   @ApiPropertyOptional({ description: 'Payment method', example: 'DEMO_PROVIDER' })
@@ -473,7 +583,9 @@ export class RequestEventModificationDto {
 
   @ApiPropertyOptional({ description: 'New expected attendee count' })
   @IsInt({ message: 'Event capacity must be a whole number' })
-  @Min(EVENTFLOW_NUMERIC_LIMITS.CAPACITY.MIN, { message: 'Event capacity must be at least 1 guest' })
+  @Min(EVENTFLOW_NUMERIC_LIMITS.CAPACITY.MIN, {
+    message: 'Event capacity must be at least 1 guest',
+  })
   @Max(EVENTFLOW_NUMERIC_LIMITS.CAPACITY.MAX, { message: 'Maximum event capacity is 50,000' })
   @IsOptional()
   capacity?: number;

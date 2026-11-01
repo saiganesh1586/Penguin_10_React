@@ -33,22 +33,22 @@ export class QrCodeService {
    * @returns SVG string
    */
   static async generateQRCodeSVG(data: string): Promise<string> {
-  try {
-    const qrCode = await QRCode.toString(data, {
-      type: 'svg', // ✅ FIXED
-      width: 300,
-      margin: 2,
-      color: {
-        dark: '#000000',
-        light: '#FFFFFF',
-      },
-    });
-    return qrCode;
-  } catch (error) {
-    console.error('QR Code SVG generation error:', error);
-    throw new Error('Failed to generate QR code SVG');
+    try {
+      const qrCode = await QRCode.toString(data, {
+        type: 'svg', // ✅ FIXED
+        width: 300,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF',
+        },
+      });
+      return qrCode;
+    } catch (error) {
+      console.error('QR Code SVG generation error:', error);
+      throw new Error('Failed to generate QR code SVG');
+    }
   }
-}
 
   /**
    * Generate verification ID

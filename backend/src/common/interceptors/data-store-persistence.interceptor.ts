@@ -9,6 +9,7 @@ export class DataStorePersistenceInterceptor implements NestInterceptor {
     const request = context.switchToHttp().getRequest<Request>();
     if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)) return next.handle();
 
+    // Save after a successful write response; failed handlers must not trigger this hook.
     return next.handle().pipe(tap(() => DataStore.getInstance().persist()));
   }
 }

@@ -6,44 +6,82 @@ const { JSDOM, VirtualConsole } = require('jsdom');
 const portalSource = require('./portal-source.cjs');
 
 const read = file => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
-const portals = ['landing/app/runtime.js', ...['admin', 'attendee', 'client', 'organizer', 'finance-executive', 'support-executive'].map(role => `${role}/app/runtime.js`)];
+const portals = [
+  'landing/app/runtime.js',
+  ...['admin', 'attendee', 'client', 'organizer', 'finance-executive', 'support-executive'].map(
+    role => `${role}/app/runtime.js`
+  ),
+];
 const flush = () => new Promise(resolve => setImmediate(resolve));
 
 async function fixture(t, portal = portals[0]) {
-  const errors = [], virtualConsole = new VirtualConsole();
+  const errors = [],
+    virtualConsole = new VirtualConsole();
   virtualConsole.on('jsdomError', error => errors.push(error));
-  const dom = new JSDOM('<div id="modal-overlay"><div id="modal-box" class="modal-box"><h2 id="modal-title"></h2><div id="modal-body"></div><div id="modal-foot"></div></div></div>',
-    { url: 'http://localhost:5173/landing', runScripts: 'dangerously', virtualConsole });
-  t.after(() => { dom.window.close(); assert.deepEqual(errors, []); });
-  const w = dom.window, d = w.document, toasts = [], requests = [], routes = [];
+  const dom = new JSDOM(
+    '<div id="modal-overlay"><div id="modal-box" class="modal-box"><h2 id="modal-title"></h2><div id="modal-body"></div><div id="modal-foot"></div></div></div>',
+    { url: 'http://localhost:5173/landing', runScripts: 'dangerously', virtualConsole }
+  );
+  t.after(() => {
+    dom.window.close();
+    assert.deepEqual(errors, []);
+  });
+  const w = dom.window,
+    d = w.document,
+    toasts = [],
+    requests = [],
+    routes = [];
   await new Promise(resolve => w.addEventListener('load', resolve, { once: true }));
   w.g = id => d.getElementById(id);
   w.v = id => w.g(id)?.value.trim() || '';
   w.toast = (message, type) => toasts.push({ message, type });
   w.DB = { users: [], _nextId: { users: 100 } };
-  w.EventFlowAccountPolicy = { isEmailInUse: (users, email) => users.some(user => user.email.toLowerCase() === email.toLowerCase()) };
+  w.EventFlowAccountPolicy = {
+    isEmailInUse: (users, email) =>
+      users.some(user => user.email.toLowerCase() === email.toLowerCase()),
+  };
   w.requestAnimationFrame = fn => fn();
   w.generateCaptcha = () => ({ question: '8 + 4 = ?', answer: 12 });
   const sessionScript = d.createElement('script');
   sessionScript.textContent = 'let CU = null;';
   d.head.appendChild(sessionScript);
-  w.routeToRoleWorkspace = user => { routes.push({ user, stored: JSON.parse(w.sessionStorage.getItem('ef_cu')) }); return true; };
+  w.routeToRoleWorkspace = user => {
+    routes.push({ user, stored: JSON.parse(w.sessionStorage.getItem('ef_cu')) });
+    return true;
+  };
   const server = { error: null, hold: null };
   w.fetch = async (url, options) => {
     const body = JSON.parse(options.body);
     requests.push({ url, body });
     if (server.hold) await server.hold;
     if (server.error) return { ok: false, json: async () => ({ message: server.error }) };
-    return { ok: true, json: async () => ({ success: true, data: {
-      userId: 'usr-server-101', name: body.name, email: body.email, userRole: body.userRole, profile: body.profile,
-      phoneNo: body.phoneNo, address: body.address,
-      ...(body.userRole === 'attendee' ? { status: 'active', token: 'server-issued-token' } : { status: 'pending' }),
-    } }) };
+    return {
+      ok: true,
+      json: async () => ({
+        success: true,
+        data: {
+          userId: 'usr-server-101',
+          name: body.name,
+          email: body.email,
+          userRole: body.userRole,
+          profile: body.profile,
+          phoneNo: body.phoneNo,
+          address: body.address,
+          ...(body.userRole === 'attendee'
+            ? { status: 'active', token: 'server-issued-token' }
+            : { status: 'pending' }),
+        },
+      }),
+    };
   };
   // Give the global validator the same visible-field condition it sees in a browser.
-  w.HTMLElement.prototype.getClientRects = function () { return this.closest('[style*="display:none"]') ? [] : [{}]; };
+  w.HTMLElement.prototype.getClientRects = function () {
+    return this.closest('[style*="display:none"]') ? [] : [{}];
+  };
   const source = portalSource(portal.split('/')[0]);
-  w.eval(source.slice(source.indexOf('function openModal('), source.indexOf('function closeModalOnBg(')));
+  w.eval(
+    source.slice(source.indexOf('function openModal('), source.indexOf('function closeModalOnBg('))
+  );
   w.eval(read('src/app/theme.js'));
   w.eval(read('src/apps/organizer/utils/organizer-registration.js'));
   w.eval(read('src/app/data-sync.js'));
@@ -56,7 +94,9 @@ async function fixture(t, portal = portals[0]) {
     field.dispatchEvent(new w.Event('input', { bubbles: true }));
   };
   const click = handler => {
-    const button = [...d.querySelectorAll('button')].find(button => button.getAttribute('onclick')?.includes(handler));
+    const button = [...d.querySelectorAll('button')].find(button =>
+      button.getAttribute('onclick')?.includes(handler)
+    );
     assert.ok(button, handler);
     button.click();
   };
@@ -64,7 +104,15 @@ async function fixture(t, portal = portals[0]) {
   const fillClient = async (type = 'Self') => {
     reg.openClientRegisterForm();
     await flush();
-    for (const [id, value] of Object.entries({ 'rg-client-name': 'Jane Doe', 'rg-client-email': 'jane@example.com', 'rg-client-pass': 'Secret@123', 'rg-client-phone': '9876543210', 'rg-client-address': 'Example address', 'rg-captcha': '12' })) input(id, value);
+    for (const [id, value] of Object.entries({
+      'rg-client-name': 'Jane Doe',
+      'rg-client-email': 'jane@example.com',
+      'rg-client-pass': 'Secret@123',
+      'rg-client-phone': '9876543210',
+      'rg-client-address': 'Example address',
+      'rg-captcha': '12',
+    }))
+      input(id, value);
     w.g('rg-organization-type').value = type;
     w.g('rg-organization-type').dispatchEvent(new w.Event('change', { bubbles: true }));
     if (type !== 'Self') input('rg-organization-name', 'Example company');
@@ -96,7 +144,10 @@ for (const portal of portals) {
     click('confirmEmailCode()');
     assert.equal(reg.getState().emailVerified, true);
     assert.equal(reg.getState().mobileVerified, false);
-    assert.equal(toasts.some(toast => /fix the errors|valid email format/.test(toast.message)), false);
+    assert.equal(
+      toasts.some(toast => /fix the errors|valid email format/.test(toast.message)),
+      false
+    );
   });
 }
 
@@ -198,12 +249,29 @@ test('attendee signup persists the server session before routing to its workspac
   const { w, reg, input, click, requests, routes } = await fixture(t);
   reg.openAttendeeRegisterForm();
   await flush();
-  assert.deepEqual([...w.g('modal-foot').querySelectorAll('button')].map(button => button.textContent), ['Create Account']);
+  assert.deepEqual(
+    [...w.g('modal-foot').querySelectorAll('button')].map(button => button.textContent),
+    ['Create Account']
+  );
   assert.match(w.g('modal-body').textContent, /Back to Role Selection/);
-  for (const [id, value] of Object.entries({ 'rg-name': 'Jane Doe', 'rg-email': 'jane@example.com', 'rg-pass': 'Secret@123', 'rg-phone': '9876543210',
-    'rg-date-of-birth': '2000-01-01', 'rg-city': 'Hyderabad', 'rg-interests': 'Music', 'rg-captcha': '12' })) input(id, value);
+  for (const [id, value] of Object.entries({
+    'rg-name': 'Jane Doe',
+    'rg-email': 'jane@example.com',
+    'rg-pass': 'Secret@123',
+    'rg-phone': '9876543210',
+    'rg-date-of-birth': '2000-01-01',
+    'rg-city': 'Hyderabad',
+    'rg-interests': 'Music',
+    'rg-captcha': '12',
+  }))
+    input(id, value);
   w.g('rg-gender').value = 'Female';
-  w.DB.users.push({ id: 'browser-only', name: 'Old browser account', email: 'jane@example.com', role: 'attendee' });
+  w.DB.users.push({
+    id: 'browser-only',
+    name: 'Old browser account',
+    email: 'jane@example.com',
+    role: 'attendee',
+  });
   click('submitAttendeeForm()');
   await flush();
   assert.equal(requests.length, 1);
@@ -216,15 +284,27 @@ test('attendee signup persists the server session before routing to its workspac
   assert.equal(session.userId, 'usr-server-101');
   assert.equal(session.role, 'attendee');
   assert.equal(w.eval('CU').token, session.token, 'The runtime lexical CU must be updated');
-  assert.deepEqual(routes.map(route => route.user.role), ['attendee']);
+  assert.deepEqual(
+    routes.map(route => route.user.role),
+    ['attendee']
+  );
   assert.equal(routes[0].stored.token, session.token, 'Session must be stored before navigation');
-  assert.equal(w.DB.users.length, 1, 'A stale browser record must not prevent server registration or be duplicated');
+  assert.equal(
+    w.DB.users.length,
+    1,
+    'A stale browser record must not prevent server registration or be duplicated'
+  );
 });
 
 test('a client account left by the old browser-only signup can be registered with the server', async t => {
   const { w, reg, fillClient, verifyClient, requests } = await fixture(t);
   await fillClient();
-  w.DB.users.push({ id: 'browser-only', name: 'Old browser account', email: 'jane@example.com', role: 'client' });
+  w.DB.users.push({
+    id: 'browser-only',
+    name: 'Old browser account',
+    email: 'jane@example.com',
+    role: 'client',
+  });
   await verifyClient('email');
   await verifyClient('mobile');
   await reg.submitClientForm();
@@ -235,9 +315,13 @@ test('a client account left by the old browser-only signup can be registered wit
 });
 
 test('client signup has no bottom Back button and an API failure preserves the verified form for retry', async t => {
-  const { w, reg, input, click, fillClient, verifyClient, server, requests, routes, toasts } = await fixture(t);
+  const { w, reg, input, click, fillClient, verifyClient, server, requests, routes, toasts } =
+    await fixture(t);
   await fillClient();
-  assert.deepEqual([...w.g('modal-foot').querySelectorAll('button')].map(button => button.textContent), ['Create Account']);
+  assert.deepEqual(
+    [...w.g('modal-foot').querySelectorAll('button')].map(button => button.textContent),
+    ['Create Account']
+  );
   await verifyClient('email');
   await verifyClient('mobile');
   server.error = 'Email already registered';
@@ -267,7 +351,9 @@ test('repeated Create Account clicks send only one registration request while it
   await verifyClient('email');
   await verifyClient('mobile');
   let release;
-  server.hold = new Promise(resolve => { release = resolve; });
+  server.hold = new Promise(resolve => {
+    release = resolve;
+  });
   const first = reg.submitClientForm();
   const second = reg.submitClientForm();
   assert.equal(requests.length, 1);

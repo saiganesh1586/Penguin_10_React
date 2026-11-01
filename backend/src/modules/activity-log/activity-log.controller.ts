@@ -43,13 +43,10 @@ export class ActivityLogController {
     status: 200,
     description: 'Activity logs',
   })
-  findAll(
-    @Query('limit') limit?: number,
-    @Query('offset') offset?: number,
-  ) {
+  findAll(@Query('limit') limit?: number, @Query('offset') offset?: number) {
     return this.activityLogService.findAll(
       limit ? parseInt(limit as any) : 100,
-      offset ? parseInt(offset as any) : 0,
+      offset ? parseInt(offset as any) : 0
     );
   }
 
@@ -65,13 +62,9 @@ export class ActivityLogController {
   findMine(
     @UserId() userId: string,
     @UserRoleDecorator() role: UserRole,
-    @Query('limit') limit?: number,
+    @Query('limit') limit?: number
   ) {
-    return this.activityLogService.findForClient(
-      userId,
-      role,
-      limit ? parseInt(limit as any) : 5,
-    );
+    return this.activityLogService.findForClient(userId, role, limit ? parseInt(limit as any) : 5);
   }
 
   @Get('by-role/:role')

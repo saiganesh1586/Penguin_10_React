@@ -1,0 +1,11 @@
+**/node_modules/**
+**/build/**
+**/dist/**
+**/data/**
+**/logs/**
+**/uploads/**
+**/public/assets/vendor/**
+**/package-lock.json
+backend/docs/swagger.json
+.code-cleanup*
+*.log

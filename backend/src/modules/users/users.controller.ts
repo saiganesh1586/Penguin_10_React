@@ -1,5 +1,14 @@
 import {
-  Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, HttpCode, HttpStatus,
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiHeader, ApiParam } from '@nestjs/swagger';
 import { UsersService } from './users.service';
@@ -53,7 +62,7 @@ export class UsersController {
     @Param('id') id: string,
     @Body() dto: UpdateUserDto,
     @UserRoleDecorator() role: UserRole,
-    @UserId() userId: string,
+    @UserId() userId: string
   ) {
     return this.usersService.update(id, dto, role, userId);
   }
@@ -79,7 +88,7 @@ export class UsersController {
   updateStatus(
     @Param('id') id: string,
     @Body() body: { status: 'active' | 'inactive' | 'suspended' },
-    @UserRoleDecorator() role: UserRole,
+    @UserRoleDecorator() role: UserRole
   ) {
     return this.usersService.updateStatus(id, body.status, role);
   }

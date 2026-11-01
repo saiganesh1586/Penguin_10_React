@@ -10,7 +10,11 @@ import { UserRole } from '../../common/constants';
 @Controller('api/notifications')
 @UseGuards(RoleGuard)
 @ApiHeader({ name: 'x-role', description: 'User role', required: true })
-@ApiHeader({ name: 'x-user-id', description: 'User ID (required for all notification endpoints)', required: true })
+@ApiHeader({
+  name: 'x-user-id',
+  description: 'User ID (required for all notification endpoints)',
+  required: true,
+})
 export class NotificationsController {
   constructor(private readonly service: NotificationsService) {}
 

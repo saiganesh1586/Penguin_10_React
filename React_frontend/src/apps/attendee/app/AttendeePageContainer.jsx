@@ -27,7 +27,11 @@ const dataForPage = {
 export const attendeeActions = {
   onNavigate: page => window.goNav(page),
   onRegister: eventId => window.regForEvent(String(eventId)),
-  onViewEvent: (eventId, registrationId) => window.openViewEventDrawer(String(eventId), registrationId == null ? null : String(registrationId)),
+  onViewEvent: (eventId, registrationId) =>
+    window.openViewEventDrawer(
+      String(eventId),
+      registrationId == null ? null : String(registrationId)
+    ),
   onViewTicket: id => window.openViewTicketModal(String(id)),
   onPay: id => window.completeDemoPayment(String(id)),
   onCancel: id => window.cancelTicket(String(id)),

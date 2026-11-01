@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, Param, Query, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiHeader, ApiQuery } from '@nestjs/swagger';
 import { AttendanceService } from './attendance.service';
 import { VerifyAttendanceDto } from './dto/attendance.dto';
@@ -16,18 +26,31 @@ export class AttendanceController {
 
   @Post('verify')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Verify attendee check-in using QR code or verification ID (EMPLOYEE only)' })
+  @ApiOperation({
+    summary: 'Verify attendee check-in using QR code or verification ID (EMPLOYEE only)',
+  })
   @ApiResponse({ status: 200, description: 'Attendee checked in successfully' })
   @ApiResponse({ status: 403, description: 'Only EMPLOYEE can verify attendance' })
-  @ApiResponse({ status: 404, description: 'No registration found for provided QR/verification ID' })
+  @ApiResponse({
+    status: 404,
+    description: 'No registration found for provided QR/verification ID',
+  })
   @ApiResponse({ status: 409, description: 'Attendee already checked in' })
-  verify(@Body() dto: VerifyAttendanceDto, @UserRoleDecorator() role: UserRole, @UserId() userId: string) {
+  verify(
+    @Body() dto: VerifyAttendanceDto,
+    @UserRoleDecorator() role: UserRole,
+    @UserId() userId: string
+  ) {
     return this.service.verify(dto, role, userId);
   }
 
   @Post('reconcile/:eventId')
   @ApiOperation({ summary: 'Mark confirmed non-attendees as no-shows after an event concludes' })
-  reconcile(@Param('eventId') eventId: string, @UserRoleDecorator() role: UserRole, @UserId() userId: string) {
+  reconcile(
+    @Param('eventId') eventId: string,
+    @UserRoleDecorator() role: UserRole,
+    @UserId() userId: string
+  ) {
     return this.service.reconcileNoShows(eventId, role, userId);
   }
 
@@ -37,7 +60,7 @@ export class AttendanceController {
   findAll(
     @UserRoleDecorator() role: UserRole,
     @Query('eventId') eventId?: string,
-    @UserId() userId?: string,
+    @UserId() userId?: string
   ) {
     return this.service.findAll(role, eventId, userId);
   }

@@ -3,13 +3,17 @@ import * as nodemailer from 'nodemailer';
 import { SupportTicket, User } from '../../common/data-store';
 
 function escapeHtml(value: string): string {
-  return value.replace(/[&<>"']/g, character => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;',
-  })[character] as string);
+  return value.replace(
+    /[&<>"']/g,
+    character =>
+      ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+      }[character] as string)
+  );
 }
 
 @Injectable()
@@ -49,9 +53,15 @@ export class SupportMailService {
           'EventFlow Customer Support',
         ].join('\n'),
         html: `<p>Hello ${escapeHtml(requester.name)},</p>
-          <p>Your EventFlow support request <strong>${escapeHtml(ticket.ticketId)}</strong> has been resolved.</p>
+          <p>Your EventFlow support request <strong>${escapeHtml(
+            ticket.ticketId
+          )}</strong> has been resolved.</p>
           <p><strong>Concern:</strong> ${escapeHtml(ticket.concern)}</p>
-          ${ticket.response ? `<p><strong>Support reply:</strong> ${escapeHtml(ticket.response)}</p>` : ''}
+          ${
+            ticket.response
+              ? `<p><strong>Support reply:</strong> ${escapeHtml(ticket.response)}</p>`
+              : ''
+          }
           <p>If you still need assistance, please submit a new support request.</p>
           <p>EventFlow Customer Support</p>`,
       });

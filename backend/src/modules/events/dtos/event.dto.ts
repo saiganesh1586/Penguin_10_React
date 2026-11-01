@@ -1,4 +1,19 @@
-import { ArrayMaxSize, IsArray, IsBoolean, IsString, IsNotEmpty, IsOptional, IsNumber, IsInt, IsIn, Min, Max, MinLength, MaxLength, ValidateNested } from 'class-validator';
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsBoolean,
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsNumber,
+  IsInt,
+  IsIn,
+  Min,
+  Max,
+  MinLength,
+  MaxLength,
+  ValidateNested,
+} from 'class-validator';
 import { EVENTFLOW_NUMERIC_LIMITS } from '../../../common/validation-rules';
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
@@ -6,20 +21,28 @@ import { EventPolicyAcknowledgementDto } from '../../../common/event-policy';
 
 export class CancelClientEventDto extends EventPolicyAcknowledgementDto {
   @ApiProperty({ description: 'Reason for cancelling the event (10–1000 characters)' })
-  @Transform(({ value }) => typeof value === 'string' ? value.trim() : value)
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsString()
   @MinLength(10)
   @MaxLength(1000)
   reason!: string;
 
-  @ApiProperty({ description: 'Amount paid shown in the cancellation preview; prevents accepting a stale fee quote' })
+  @ApiProperty({
+    description:
+      'Amount paid shown in the cancellation preview; prevents accepting a stale fee quote',
+  })
   @IsNumber()
   @Min(0)
   expectedPaidAmount!: number;
 }
 
 export class CreateEventDto {
-  @ApiProperty({ description: 'Private events require attendee approval before payment', enum: ['public', 'private'], required: false, default: 'public' })
+  @ApiProperty({
+    description: 'Private events require attendee approval before payment',
+    enum: ['public', 'private'],
+    required: false,
+    default: 'public',
+  })
   @IsIn(['public', 'private'])
   @IsOptional()
   visibility?: 'public' | 'private';
@@ -76,7 +99,9 @@ export class CreateEventDto {
     example: 500,
   })
   @IsInt({ message: 'Event capacity must be a whole number' })
-  @Min(EVENTFLOW_NUMERIC_LIMITS.CAPACITY.MIN, { message: 'Event capacity must be at least 1 guest' })
+  @Min(EVENTFLOW_NUMERIC_LIMITS.CAPACITY.MIN, {
+    message: 'Event capacity must be at least 1 guest',
+  })
   @Max(EVENTFLOW_NUMERIC_LIMITS.CAPACITY.MAX, { message: 'Maximum event capacity is 50,000' })
   @IsNotEmpty()
   capacity!: number;
@@ -87,7 +112,9 @@ export class CreateEventDto {
   })
   @IsNumber({ maxDecimalPlaces: 2 }, { message: 'Ticket price can have at most 2 decimal places' })
   @Min(EVENTFLOW_NUMERIC_LIMITS.TICKET_PRICE.MIN, { message: 'Ticket price cannot be negative' })
-  @Max(EVENTFLOW_NUMERIC_LIMITS.TICKET_PRICE.MAX, { message: 'Ticket price cannot exceed ₹1,00,000' })
+  @Max(EVENTFLOW_NUMERIC_LIMITS.TICKET_PRICE.MAX, {
+    message: 'Ticket price cannot exceed ₹1,00,000',
+  })
   @IsNotEmpty()
   ticketPrice!: number;
 
@@ -176,7 +203,9 @@ export class UpdateEventDto {
     required: false,
   })
   @IsInt({ message: 'Event capacity must be a whole number' })
-  @Min(EVENTFLOW_NUMERIC_LIMITS.CAPACITY.MIN, { message: 'Event capacity must be at least 1 guest' })
+  @Min(EVENTFLOW_NUMERIC_LIMITS.CAPACITY.MIN, {
+    message: 'Event capacity must be at least 1 guest',
+  })
   @Max(EVENTFLOW_NUMERIC_LIMITS.CAPACITY.MAX, { message: 'Maximum event capacity is 50,000' })
   @IsOptional()
   capacity?: number;
@@ -187,7 +216,9 @@ export class UpdateEventDto {
   })
   @IsNumber({ maxDecimalPlaces: 2 }, { message: 'Ticket price can have at most 2 decimal places' })
   @Min(EVENTFLOW_NUMERIC_LIMITS.TICKET_PRICE.MIN, { message: 'Ticket price cannot be negative' })
-  @Max(EVENTFLOW_NUMERIC_LIMITS.TICKET_PRICE.MAX, { message: 'Ticket price cannot exceed ₹1,00,000' })
+  @Max(EVENTFLOW_NUMERIC_LIMITS.TICKET_PRICE.MAX, {
+    message: 'Ticket price cannot exceed ₹1,00,000',
+  })
   @IsOptional()
   ticketPrice?: number;
 
@@ -208,7 +239,10 @@ export class UpdateEventDto {
 
   @IsString() @IsOptional() @MinLength(10) @MaxLength(1000) changeReason?: string;
 
-  @IsArray() @ArrayMaxSize(50) @ValidateNested({ each: true }) @Type(() => EventPreparationTaskDto)
+  @IsArray()
+  @ArrayMaxSize(50)
+  @ValidateNested({ each: true })
+  @Type(() => EventPreparationTaskDto)
   @IsOptional()
   preparationTasks?: EventPreparationTaskDto[];
 }

@@ -92,7 +92,8 @@ export function validateEventBudget(value: unknown, required = true): string | n
   if (!Number.isFinite(num)) return 'Enter a valid numeric budget';
   if (num < EVENTFLOW_NUMERIC_LIMITS.BUDGET.MIN) return EVENTFLOW_NUMERIC_LIMITS.BUDGET.ERROR_MIN;
   if (num > EVENTFLOW_NUMERIC_LIMITS.BUDGET.MAX) return EVENTFLOW_NUMERIC_LIMITS.BUDGET.ERROR_MAX;
-  if (Math.abs(num * 100 - Math.round(num * 100)) > 0.000001) return EVENTFLOW_NUMERIC_LIMITS.BUDGET.ERROR_DECIMAL;
+  if (Math.abs(num * 100 - Math.round(num * 100)) > 0.000001)
+    return EVENTFLOW_NUMERIC_LIMITS.BUDGET.ERROR_DECIMAL;
   return null;
 }
 
@@ -108,9 +109,12 @@ export function validateTicketPrice(value: unknown, required = false): string | 
   }
   const num = Number(value);
   if (!Number.isFinite(num)) return 'Enter a valid numeric ticket price';
-  if (num < EVENTFLOW_NUMERIC_LIMITS.TICKET_PRICE.MIN) return EVENTFLOW_NUMERIC_LIMITS.TICKET_PRICE.ERROR_MIN;
-  if (num > EVENTFLOW_NUMERIC_LIMITS.TICKET_PRICE.MAX) return EVENTFLOW_NUMERIC_LIMITS.TICKET_PRICE.ERROR_MAX;
-  if (Math.abs(num * 100 - Math.round(num * 100)) > 0.000001) return EVENTFLOW_NUMERIC_LIMITS.TICKET_PRICE.ERROR_DECIMAL;
+  if (num < EVENTFLOW_NUMERIC_LIMITS.TICKET_PRICE.MIN)
+    return EVENTFLOW_NUMERIC_LIMITS.TICKET_PRICE.ERROR_MIN;
+  if (num > EVENTFLOW_NUMERIC_LIMITS.TICKET_PRICE.MAX)
+    return EVENTFLOW_NUMERIC_LIMITS.TICKET_PRICE.ERROR_MAX;
+  if (Math.abs(num * 100 - Math.round(num * 100)) > 0.000001)
+    return EVENTFLOW_NUMERIC_LIMITS.TICKET_PRICE.ERROR_DECIMAL;
   return null;
 }
 
@@ -127,8 +131,10 @@ export function validateCapacity(value: unknown, required = true): string | null
   const num = Number(value);
   if (!Number.isFinite(num)) return 'Enter a valid numeric capacity';
   if (!Number.isInteger(num)) return EVENTFLOW_NUMERIC_LIMITS.CAPACITY.ERROR_INTEGER;
-  if (num < EVENTFLOW_NUMERIC_LIMITS.CAPACITY.MIN) return EVENTFLOW_NUMERIC_LIMITS.CAPACITY.ERROR_MIN;
-  if (num > EVENTFLOW_NUMERIC_LIMITS.CAPACITY.MAX) return EVENTFLOW_NUMERIC_LIMITS.CAPACITY.ERROR_MAX;
+  if (num < EVENTFLOW_NUMERIC_LIMITS.CAPACITY.MIN)
+    return EVENTFLOW_NUMERIC_LIMITS.CAPACITY.ERROR_MIN;
+  if (num > EVENTFLOW_NUMERIC_LIMITS.CAPACITY.MAX)
+    return EVENTFLOW_NUMERIC_LIMITS.CAPACITY.ERROR_MAX;
   return null;
 }
 
@@ -145,10 +151,12 @@ export function validateTicketQuantity(value: unknown, availableCapacity?: numbe
   const num = Number(value);
   if (!Number.isFinite(num)) return 'Enter a valid ticket quantity';
   if (!Number.isInteger(num)) return EVENTFLOW_NUMERIC_LIMITS.TICKET_QUANTITY.ERROR_INTEGER;
-  if (num < EVENTFLOW_NUMERIC_LIMITS.TICKET_QUANTITY.MIN) return EVENTFLOW_NUMERIC_LIMITS.TICKET_QUANTITY.ERROR_MIN;
-  const max = typeof availableCapacity === 'number' && availableCapacity > 0
-    ? Math.min(availableCapacity, EVENTFLOW_NUMERIC_LIMITS.TICKET_QUANTITY.MAX)
-    : EVENTFLOW_NUMERIC_LIMITS.TICKET_QUANTITY.MAX;
+  if (num < EVENTFLOW_NUMERIC_LIMITS.TICKET_QUANTITY.MIN)
+    return EVENTFLOW_NUMERIC_LIMITS.TICKET_QUANTITY.ERROR_MIN;
+  const max =
+    typeof availableCapacity === 'number' && availableCapacity > 0
+      ? Math.min(availableCapacity, EVENTFLOW_NUMERIC_LIMITS.TICKET_QUANTITY.MAX)
+      : EVENTFLOW_NUMERIC_LIMITS.TICKET_QUANTITY.MAX;
   if (num > max) return EVENTFLOW_NUMERIC_LIMITS.TICKET_QUANTITY.ERROR_MAX;
   return null;
 }
@@ -166,8 +174,10 @@ export function validateYearsOfExperience(value: unknown, required = true): stri
   const num = Number(value);
   if (!Number.isFinite(num)) return 'Enter a valid number for years of experience';
   if (!Number.isInteger(num)) return EVENTFLOW_NUMERIC_LIMITS.YEARS_EXPERIENCE.ERROR_INTEGER;
-  if (num < EVENTFLOW_NUMERIC_LIMITS.YEARS_EXPERIENCE.MIN) return EVENTFLOW_NUMERIC_LIMITS.YEARS_EXPERIENCE.ERROR_MIN;
-  if (num > EVENTFLOW_NUMERIC_LIMITS.YEARS_EXPERIENCE.MAX) return EVENTFLOW_NUMERIC_LIMITS.YEARS_EXPERIENCE.ERROR_MAX;
+  if (num < EVENTFLOW_NUMERIC_LIMITS.YEARS_EXPERIENCE.MIN)
+    return EVENTFLOW_NUMERIC_LIMITS.YEARS_EXPERIENCE.ERROR_MIN;
+  if (num > EVENTFLOW_NUMERIC_LIMITS.YEARS_EXPERIENCE.MAX)
+    return EVENTFLOW_NUMERIC_LIMITS.YEARS_EXPERIENCE.ERROR_MAX;
   return null;
 }
 
@@ -180,9 +190,12 @@ export function validateDiscount(value: unknown): string | null {
   if (value === undefined || value === null || value === '') return null;
   const num = Number(value);
   if (!Number.isFinite(num)) return 'Enter a valid numeric discount';
-  if (num < EVENTFLOW_NUMERIC_LIMITS.DISCOUNT.MIN) return EVENTFLOW_NUMERIC_LIMITS.DISCOUNT.ERROR_MIN;
-  if (num > EVENTFLOW_NUMERIC_LIMITS.DISCOUNT.MAX) return EVENTFLOW_NUMERIC_LIMITS.DISCOUNT.ERROR_MAX;
-  if (Math.abs(num * 100 - Math.round(num * 100)) > 0.000001) return EVENTFLOW_NUMERIC_LIMITS.DISCOUNT.ERROR_DECIMAL;
+  if (num < EVENTFLOW_NUMERIC_LIMITS.DISCOUNT.MIN)
+    return EVENTFLOW_NUMERIC_LIMITS.DISCOUNT.ERROR_MIN;
+  if (num > EVENTFLOW_NUMERIC_LIMITS.DISCOUNT.MAX)
+    return EVENTFLOW_NUMERIC_LIMITS.DISCOUNT.ERROR_MAX;
+  if (Math.abs(num * 100 - Math.round(num * 100)) > 0.000001)
+    return EVENTFLOW_NUMERIC_LIMITS.DISCOUNT.ERROR_DECIMAL;
   return null;
 }
 
@@ -192,7 +205,8 @@ export function validateDiscount(value: unknown): string | null {
  * @returns Error message string if invalid, or null if valid
  */
 export function validatePinCode(value: unknown): string | null {
-  if (typeof value !== 'string' && typeof value !== 'number') return EVENTFLOW_NUMERIC_LIMITS.PIN_CODE.ERROR;
+  if (typeof value !== 'string' && typeof value !== 'number')
+    return EVENTFLOW_NUMERIC_LIMITS.PIN_CODE.ERROR;
   const str = String(value).trim();
   if (!EVENTFLOW_NUMERIC_LIMITS.PIN_CODE.REGEX.test(str)) {
     return EVENTFLOW_NUMERIC_LIMITS.PIN_CODE.ERROR;
@@ -206,7 +220,8 @@ export function validatePinCode(value: unknown): string | null {
  * @returns Error message string if invalid, or null if valid
  */
 export function validateIndianMobile(value: unknown): string | null {
-  if (typeof value !== 'string' && typeof value !== 'number') return EVENTFLOW_NUMERIC_LIMITS.MOBILE_NUMBER.ERROR;
+  if (typeof value !== 'string' && typeof value !== 'number')
+    return EVENTFLOW_NUMERIC_LIMITS.MOBILE_NUMBER.ERROR;
   const digits = String(value).replace(/\D/g, '');
   if (digits.length === 10 && /^[6-9]\d{9}$/.test(digits)) {
     return null;

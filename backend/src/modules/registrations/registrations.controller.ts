@@ -1,7 +1,22 @@
-import { Controller, Get, Post, Patch, Body, Param, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Body,
+  Param,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiHeader } from '@nestjs/swagger';
 import { RegistrationsService } from './registrations.service';
-import { CancelRegistrationDto, CreateRegistrationDto, ReviewRegistrationDto, UpdateRegistrationDetailsDto } from './dto/registration.dto';
+import {
+  CancelRegistrationDto,
+  CreateRegistrationDto,
+  ReviewRegistrationDto,
+  UpdateRegistrationDetailsDto,
+} from './dto/registration.dto';
 import { RoleGuard } from '../../common/guards/role.guard';
 import { UserRoleDecorator } from '../../common/decorators/user-role.decorator';
 import { UserId } from '../../common/decorators/user-id.decorator';
@@ -17,16 +32,27 @@ export class RegistrationsController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Register for an event (ATTENDEE only). Blocks duplicate registration.' })
-  @ApiResponse({ status: 201, description: 'Registered successfully. Returns qrCode and verificationId.' })
+  @ApiOperation({
+    summary: 'Register for an event (ATTENDEE only). Blocks duplicate registration.',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Registered successfully. Returns qrCode and verificationId.',
+  })
   @ApiResponse({ status: 403, description: 'Only ATTENDEE can register' })
   @ApiResponse({ status: 409, description: 'Already registered for this event' })
-  create(@Body() dto: CreateRegistrationDto, @UserRoleDecorator() role: UserRole, @UserId() userId: string) {
+  create(
+    @Body() dto: CreateRegistrationDto,
+    @UserRoleDecorator() role: UserRole,
+    @UserId() userId: string
+  ) {
     return this.service.create(dto, role, userId);
   }
 
   @Get()
-  @ApiOperation({ summary: 'List registrations (ATTENDEE sees own, SUPER_ADMIN/ORGANIZER sees all)' })
+  @ApiOperation({
+    summary: 'List registrations (ATTENDEE sees own, SUPER_ADMIN/ORGANIZER sees all)',
+  })
   findAll(@UserRoleDecorator() role: UserRole, @UserId() userId: string) {
     return this.service.findAll(role, userId);
   }
@@ -40,29 +66,57 @@ export class RegistrationsController {
   }
 
   @Patch(':id/details')
-  updateDetails(@Param('id') id: string, @Body() dto: UpdateRegistrationDetailsDto, @UserRoleDecorator() role: UserRole, @UserId() userId: string) {
+  updateDetails(
+    @Param('id') id: string,
+    @Body() dto: UpdateRegistrationDetailsDto,
+    @UserRoleDecorator() role: UserRole,
+    @UserId() userId: string
+  ) {
     return this.service.updateDetails(id, dto, role, userId);
   }
 
   @Patch(':id/review')
-  @ApiOperation({ summary: 'Approve or decline a registration for your event; declines require an attendee-visible reason' })
-  review(@Param('id') id: string, @Body() dto: ReviewRegistrationDto, @UserRoleDecorator() role: UserRole, @UserId() userId: string) {
+  @ApiOperation({
+    summary:
+      'Approve or decline a registration for your event; declines require an attendee-visible reason',
+  })
+  review(
+    @Param('id') id: string,
+    @Body() dto: ReviewRegistrationDto,
+    @UserRoleDecorator() role: UserRole,
+    @UserId() userId: string
+  ) {
     return this.service.review(id, dto, role, userId);
   }
 
   @Patch(':id/decline-viewed')
-  @ApiOperation({ summary: 'Mark your declined registration as viewed so it moves to Other Tickets' })
-  markDeclineViewed(@Param('id') id: string, @UserRoleDecorator() role: UserRole, @UserId() userId: string) {
+  @ApiOperation({
+    summary: 'Mark your declined registration as viewed so it moves to Other Tickets',
+  })
+  markDeclineViewed(
+    @Param('id') id: string,
+    @UserRoleDecorator() role: UserRole,
+    @UserId() userId: string
+  ) {
     return this.service.markDeclineViewed(id, role, userId);
   }
 
   @Post(':id/waitlist/confirm')
-  confirmWaitlist(@Param('id') id: string, @UserRoleDecorator() role: UserRole, @UserId() userId: string) {
+  confirmWaitlist(
+    @Param('id') id: string,
+    @UserRoleDecorator() role: UserRole,
+    @UserId() userId: string
+  ) {
     return this.service.confirmWaitlist(id, role, userId);
   }
 
   @Patch(':id/cancel')
-  cancel(@Param('id') id: string, @Body() dto: CancelRegistrationDto, @UserRoleDecorator() role: UserRole, @UserId() userId: string) {
+  cancel(
+    @Param('id') id: string,
+    @Body() dto: CancelRegistrationDto,
+    @UserRoleDecorator() role: UserRole,
+    @UserId() userId: string
+  ) {
     return this.service.cancel(id, dto.reason, role, userId);
   }
 }

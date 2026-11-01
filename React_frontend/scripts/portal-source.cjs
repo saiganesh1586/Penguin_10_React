@@ -7,12 +7,14 @@ module.exports = function portalSource(actor) {
   if (actor === 'landing') return fs.readFileSync(path.join(root, 'app/runtime.js'), 'utf8');
   const read = file => fs.readFileSync(path.join(root, file), 'utf8');
   let source = read('app/runtime.js');
-  source = source.replace('/* PORTAL_SECTION_api */', read('api/portal-api.js'))
+  source = source
+    .replace('/* PORTAL_SECTION_api */', read('api/portal-api.js'))
     .replace('/* PORTAL_SECTION_state */', read('context/portal-state.js'));
   const app = read('app/App.jsx');
   for (const [, name, page] of app.matchAll(/([A-Za-z]+): pageRuntime\(raw([A-Za-z]+)\)/g)) {
     const raw = read(`pages/${page}.jsx`);
-    const start = '/* PORTAL_RUNTIME_START */', end = '/* PORTAL_RUNTIME_END */';
+    const start = '/* PORTAL_RUNTIME_START */',
+      end = '/* PORTAL_RUNTIME_END */';
     const body = raw.slice(raw.indexOf(start) + start.length, raw.indexOf(end));
     source = source.replace(`/* PORTAL_SECTION_${name} */`, body);
   }

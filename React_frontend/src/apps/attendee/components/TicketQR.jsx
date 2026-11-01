@@ -13,9 +13,18 @@ export default function TicketQR({ value }) {
     return { path, size: modules.size + 8 };
   }, [value]);
 
-  return code && <svg xmlns="http://www.w3.org/2000/svg"
-    viewBox={`0 0 ${code.size} ${code.size}`} role="img" aria-label="Ticket QR code" shapeRendering="crispEdges">
-    <rect width={code.size} height={code.size} fill="#fff" />
-    <path d={code.path} fill="#000" />
-  </svg>;
+  return (
+    code && (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox={`0 0 ${code.size} ${code.size}`}
+        role="img"
+        aria-label="Ticket QR code"
+        shapeRendering="crispEdges"
+      >
+        <rect width={code.size} height={code.size} fill="#fff" />
+        <path d={code.path} fill="#000" />
+      </svg>
+    )
+  );
 }

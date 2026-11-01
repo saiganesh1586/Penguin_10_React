@@ -40,13 +40,20 @@ import { EventPolicyAcknowledgementDto, getEventPolicy } from '../../common/even
 @ApiTags('event-requests')
 @Controller('api/event-requests')
 @UseGuards(RoleGuard)
-@ApiHeader({ name: 'x-role', description: 'User role (client, event_organizer, super_admin)', required: true })
+@ApiHeader({
+  name: 'x-role',
+  description: 'User role (client, event_organizer, super_admin)',
+  required: true,
+})
 @ApiHeader({ name: 'x-user-id', description: 'User ID for ownership checks', required: false })
 export class EventRequestsController {
   constructor(private readonly service: EventRequestsService) {}
 
   @Get('policies')
-  @ApiOperation({ summary: 'Read the event rules, cancellation policy, and terms acknowledged by clients and organizers' })
+  @ApiOperation({
+    summary:
+      'Read the event rules, cancellation policy, and terms acknowledged by clients and organizers',
+  })
   policies() {
     return { success: true, data: getEventPolicy() };
   }
@@ -55,12 +62,16 @@ export class EventRequestsController {
   @ApiOperation({ summary: 'Check date availability for an organizer' })
   @ApiQuery({ name: 'organizerId', required: true, example: 'org-001' })
   @ApiQuery({ name: 'date', required: true, example: '2026-09-05' })
-  @ApiQuery({ name: 'excludeRequestId', required: false, description: 'Exclude the request currently being reviewed' })
+  @ApiQuery({
+    name: 'excludeRequestId',
+    required: false,
+    description: 'Exclude the request currently being reviewed',
+  })
   @ApiResponse({ status: 200, description: 'Date availability check results' })
   checkAvailability(
     @Query('organizerId') organizerId: string,
     @Query('date') date: string,
-    @Query('excludeRequestId') excludeRequestId?: string,
+    @Query('excludeRequestId') excludeRequestId?: string
   ) {
     return this.service.checkDateAvailability(organizerId, date, excludeRequestId);
   }
@@ -81,7 +92,7 @@ export class EventRequestsController {
   create(
     @Body() dto: CreateEventRequestDto,
     @UserRoleDecorator() role: UserRole,
-    @UserId() userId: string,
+    @UserId() userId: string
   ) {
     return this.service.create(dto, role, userId);
   }
@@ -111,7 +122,7 @@ export class EventRequestsController {
     @Query('version') version: string | undefined,
     @UserRoleDecorator() role: UserRole,
     @UserId() userId: string,
-    @Res({ passthrough: true }) response: Response,
+    @Res({ passthrough: true }) response: Response
   ): Promise<StreamableFile> {
     const parsedVersion = version !== undefined ? Number(version) : undefined;
     const result = await this.service.getDocument(id, role, userId, parsedVersion);
@@ -126,19 +137,33 @@ export class EventRequestsController {
   @Post(':id/review')
   @ApiOperation({ summary: 'Organizer starts review (ORGANIZER only)' })
   @ApiResponse({ status: 200, description: 'Status moved to under_review' })
-  startReview(@Param('id') id: string, @UserRoleDecorator() role: UserRole, @UserId() userId: string) {
+  startReview(
+    @Param('id') id: string,
+    @UserRoleDecorator() role: UserRole,
+    @UserId() userId: string
+  ) {
     return this.service.startReview(id, role, userId);
   }
 
   @Post(':id/accept')
   @ApiOperation({ summary: 'Organizer accepts an event request and starts planning' })
-  acceptRequest(@Param('id') id: string, @Body() acknowledgement: EventPolicyAcknowledgementDto, @UserRoleDecorator() role: UserRole, @UserId() userId: string) {
+  acceptRequest(
+    @Param('id') id: string,
+    @Body() acknowledgement: EventPolicyAcknowledgementDto,
+    @UserRoleDecorator() role: UserRole,
+    @UserId() userId: string
+  ) {
     return this.service.acceptRequest(id, role, userId, acknowledgement);
   }
 
   @Post(':id/accept-counteroffer')
   @ApiOperation({ summary: 'Organizer accepts the client counteroffer and starts planning' })
-  acceptCounteroffer(@Param('id') id: string, @Body() acknowledgement: EventPolicyAcknowledgementDto, @UserRoleDecorator() role: UserRole, @UserId() userId: string) {
+  acceptCounteroffer(
+    @Param('id') id: string,
+    @Body() acknowledgement: EventPolicyAcknowledgementDto,
+    @UserRoleDecorator() role: UserRole,
+    @UserId() userId: string
+  ) {
     return this.service.acceptCounteroffer(id, role, userId, acknowledgement);
   }
 
@@ -149,7 +174,7 @@ export class EventRequestsController {
     @Param('id') id: string,
     @Body() dto: RequestMissingInfoDto,
     @UserRoleDecorator() role: UserRole,
-    @UserId() userId: string,
+    @UserId() userId: string
   ) {
     return this.service.requestMissingInfo(id, dto, role, userId);
   }
@@ -161,7 +186,7 @@ export class EventRequestsController {
     @Param('id') id: string,
     @Body() dto: ProvideMissingInfoDto,
     @UserRoleDecorator() role: UserRole,
-    @UserId() userId: string,
+    @UserId() userId: string
   ) {
     return this.service.provideMissingInfo(id, dto, role, userId);
   }
@@ -173,7 +198,7 @@ export class EventRequestsController {
     @Param('id') id: string,
     @Body() dto: SendProposalDto,
     @UserRoleDecorator() role: UserRole,
-    @UserId() userId: string,
+    @UserId() userId: string
   ) {
     return this.service.sendProposal(id, dto, role, userId);
   }
@@ -185,7 +210,7 @@ export class EventRequestsController {
     @Param('id') id: string,
     @Body() dto: ReviseProposalDto,
     @UserRoleDecorator() role: UserRole,
-    @UserId() userId: string,
+    @UserId() userId: string
   ) {
     return this.service.reviseProposal(id, dto, role, userId);
   }
@@ -197,19 +222,22 @@ export class EventRequestsController {
     @Param('id') id: string,
     @Body() dto: RejectRequestDto,
     @UserRoleDecorator() role: UserRole,
-    @UserId() userId: string,
+    @UserId() userId: string
   ) {
     return this.service.rejectRequest(id, dto, role, userId);
   }
 
   @Post(':id/client-response')
-  @ApiOperation({ summary: 'Client responds to proposal: accept, request_revision, reject, withdraw (CLIENT only)' })
+  @ApiOperation({
+    summary:
+      'Client responds to proposal: accept, request_revision, reject, withdraw (CLIENT only)',
+  })
   @ApiResponse({ status: 200, description: 'Client decision recorded' })
   clientResponse(
     @Param('id') id: string,
     @Body() dto: ClientResponseDto,
     @UserRoleDecorator() role: UserRole,
-    @UserId() userId: string,
+    @UserId() userId: string
   ) {
     return this.service.clientResponse(id, dto, role, userId);
   }
@@ -221,32 +249,36 @@ export class EventRequestsController {
     @Param('id') id: string,
     @Body() dto: UpdateAgreementStatusDto,
     @UserRoleDecorator() role: UserRole,
-    @UserId() userId: string,
+    @UserId() userId: string
   ) {
     return this.service.updateAgreementStatus(id, dto, role, userId);
   }
 
   @Post(':id/payment')
-  @ApiOperation({ summary: 'Legacy endpoint; payment status is changed only by verified payment processing' })
+  @ApiOperation({
+    summary: 'Legacy endpoint; payment status is changed only by verified payment processing',
+  })
   @ApiResponse({ status: 403, description: 'Manual payment status changes are not allowed' })
   updatePaymentStatus(
     @Param('id') id: string,
     @Body() dto: UpdatePaymentStatusDto,
     @UserRoleDecorator() role: UserRole,
-    @UserId() userId: string,
+    @UserId() userId: string
   ) {
     return this.service.updatePaymentStatus(id, dto, role, userId);
   }
 
   @Post(':id/confirm')
-  @ApiOperation({ summary: 'Confirm booking after agreement and deposit satisfied (ORGANIZER only)' })
+  @ApiOperation({
+    summary: 'Confirm booking after agreement and deposit satisfied (ORGANIZER only)',
+  })
   @ApiResponse({ status: 200, description: 'Booking confirmed and event created' })
   @ApiResponse({ status: 400, description: 'Missing agreement or deposit satisfaction' })
   confirmBooking(
     @Param('id') id: string,
     @Body() dto: ConfirmBookingDto,
     @UserRoleDecorator() role: UserRole,
-    @UserId() userId: string,
+    @UserId() userId: string
   ) {
     return this.service.confirmBooking(id, dto, role, userId);
   }
@@ -258,7 +290,7 @@ export class EventRequestsController {
     @Param('id') id: string,
     @Body() dto: PayDepositDto,
     @UserRoleDecorator() role: UserRole,
-    @UserId() userId: string,
+    @UserId() userId: string
   ) {
     return this.service.payDeposit(id, dto, role, userId);
   }
@@ -270,7 +302,7 @@ export class EventRequestsController {
     @Param('id') id: string,
     @Body() dto: RequestEventModificationDto,
     @UserRoleDecorator() role: UserRole,
-    @UserId() userId: string,
+    @UserId() userId: string
   ) {
     return this.service.requestModification(id, dto, role, userId);
   }
@@ -283,7 +315,7 @@ export class EventRequestsController {
     @Param('modId') modId: string,
     @Body() dto: RespondToEventModificationDto,
     @UserRoleDecorator() role: UserRole,
-    @UserId() userId: string,
+    @UserId() userId: string
   ) {
     return this.service.respondToModification(id, modId, dto, role, userId);
   }
@@ -295,27 +327,31 @@ export class EventRequestsController {
     @Param('id') id: string,
     @Body() dto: UpdateEventRequestStatusDto,
     @UserRoleDecorator() role: UserRole,
-    @UserId() userId: string,
+    @UserId() userId: string
   ) {
     return this.service.updateStatus(id, dto, role, userId);
   }
 
   @Get(':id/cancellation-preview')
-  @ApiOperation({ summary: 'Preview the cancellation policy, fee, and refund for a client event request' })
+  @ApiOperation({
+    summary: 'Preview the cancellation policy, fee, and refund for a client event request',
+  })
   @ApiResponse({ status: 200, description: 'Cancellation preview data' })
   @ApiResponse({ status: 403, description: 'Only clients can view cancellation previews' })
   @ApiResponse({ status: 404, description: 'Request not found' })
   cancellationPreview(
     @Param('id') id: string,
     @UserRoleDecorator() role: UserRole,
-    @UserId() userId: string,
+    @UserId() userId: string
   ) {
     return this.service.requestCancellationPreview(id, role, userId);
   }
 
   @Post(':id/cancel')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Client cancels or withdraws their event request, applying the cancellation policy' })
+  @ApiOperation({
+    summary: 'Client cancels or withdraws their event request, applying the cancellation policy',
+  })
   @ApiResponse({ status: 200, description: 'Request cancelled or withdrawn' })
   @ApiResponse({ status: 400, description: 'Cancellation not permitted or bad payload' })
   @ApiResponse({ status: 403, description: 'Only clients can cancel their own requests' })
@@ -324,9 +360,8 @@ export class EventRequestsController {
     @Param('id') id: string,
     @Body() dto: any,
     @UserRoleDecorator() role: UserRole,
-    @UserId() userId: string,
+    @UserId() userId: string
   ) {
     return this.service.cancelRequest(id, dto, role, userId);
   }
 }
-

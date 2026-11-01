@@ -5,7 +5,10 @@ const path = require('node:path');
 const { DataStore } = require(path.join(__dirname, '../dist/common/data-store'));
 const { AuthService } = require(path.join(__dirname, '../dist/modules/auth/auth.service'));
 const { EventsService } = require(path.join(__dirname, '../dist/modules/events/events.service'));
-const { EventRequestsService } = require(path.join(__dirname, '../dist/modules/event-requests/event-requests.service'));
+const { EventRequestsService } = require(path.join(
+  __dirname,
+  '../dist/modules/event-requests/event-requests.service'
+));
 const { UserRole } = require(path.join(__dirname, '../dist/common/constants'));
 
 const runId = Date.now();
@@ -37,8 +40,16 @@ test('Backend: Organizer Application Submission & Status Tracking', () => {
       authorizedRepresentativeName: 'Robert Taylor',
       representativeDesignation: 'Managing Director',
       websiteUrl: 'https://apexevents.com',
-      registrationCertificateDoc: { name: 'apex-incorporation.pdf', size: 102400, type: 'application/pdf' },
-      proofOfAuthorizationDoc: { name: 'board-resolution.pdf', size: 51200, type: 'application/pdf' },
+      registrationCertificateDoc: {
+        name: 'apex-incorporation.pdf',
+        size: 102400,
+        type: 'application/pdf',
+      },
+      proofOfAuthorizationDoc: {
+        name: 'board-resolution.pdf',
+        size: 51200,
+        type: 'application/pdf',
+      },
     },
     declarationAccepted: true,
   };
@@ -94,31 +105,44 @@ test('Backend: Unapproved organizer cannot publish events or accept bookings', (
 
   // Attempting to publish an event as an unapproved organizer should throw ForbiddenException
   assert.throws(() => {
-    eventsService.create({
-      name: 'Unauthorized Concert',
-      date: '2026-11-20',
-      time: '18:10',
-      location: 'Stadium',
-      capacity: 500,
-      ticketPrice: 50,
-      status: 'published',
-    }, UserRole.EVENT_ORGANIZER, pendingUser.userId);
+    eventsService.create(
+      {
+        name: 'Unauthorized Concert',
+        date: '2026-11-20',
+        time: '18:10',
+        location: 'Stadium',
+        capacity: 500,
+        ticketPrice: 50,
+        status: 'published',
+      },
+      UserRole.EVENT_ORGANIZER,
+      pendingUser.userId
+    );
   }, /Only approved organizers can publish events/);
 
   // Organizer can create as draft, but cannot update to published
-  const draftEvent = eventsService.create({
-    name: 'Draft Event',
-    date: '2026-11-20',
-    time: '18:20',
-    location: 'Stadium',
-    capacity: 500,
-    ticketPrice: 50,
-    status: 'draft',
-  }, UserRole.EVENT_ORGANIZER, pendingUser.userId);
+  const draftEvent = eventsService.create(
+    {
+      name: 'Draft Event',
+      date: '2026-11-20',
+      time: '18:20',
+      location: 'Stadium',
+      capacity: 500,
+      ticketPrice: 50,
+      status: 'draft',
+    },
+    UserRole.EVENT_ORGANIZER,
+    pendingUser.userId
+  );
   assert.equal(draftEvent.status, 'draft');
 
   assert.throws(() => {
-    eventsService.update(draftEvent.eventId, { status: 'published' }, UserRole.EVENT_ORGANIZER, pendingUser.userId);
+    eventsService.update(
+      draftEvent.eventId,
+      { status: 'published' },
+      UserRole.EVENT_ORGANIZER,
+      pendingUser.userId
+    );
   }, /Only approved organizers can publish events/);
 
   // Attempting to accept an event booking/request should throw ForbiddenException
@@ -140,7 +164,10 @@ test('Backend: Unapproved organizer cannot publish events or accept bookings', (
   });
 
   assert.throws(() => {
-    requestsService.acceptRequest(dummyRequestId, UserRole.EVENT_ORGANIZER, pendingUser.userId, { policyAccepted: true, acceptedPolicyVersion: '2026-10-17.1' });
+    requestsService.acceptRequest(dummyRequestId, UserRole.EVENT_ORGANIZER, pendingUser.userId, {
+      policyAccepted: true,
+      acceptedPolicyVersion: '2026-10-17.1',
+    });
   }, /Only approved organizers can accept event bookings or requests/);
 });
 
@@ -159,16 +186,19 @@ test('Backend: Reviewer workflow (Under Review, Additional Info, Approved, Rejec
     app.referenceNumber,
     { status: 'Under Review', comments: 'Review started by admin team.' },
     'usr-admin-001',
-    UserRole.SUPER_ADMIN,
+    UserRole.SUPER_ADMIN
   );
   assert.equal(underReviewRes.status, 'Under Review');
 
   // 2. Request Additional Info
   const addInfoRes = authService.reviewOrganizerApplication(
     app.referenceNumber,
-    { status: 'Additional Information Required', additionalInfoRequest: 'Please provide the latest audited financial statement.' },
+    {
+      status: 'Additional Information Required',
+      additionalInfoRequest: 'Please provide the latest audited financial statement.',
+    },
     'usr-admin-001',
-    UserRole.SUPER_ADMIN,
+    UserRole.SUPER_ADMIN
   );
   assert.equal(addInfoRes.status, 'Additional Information Required');
 
@@ -177,28 +207,43 @@ test('Backend: Reviewer workflow (Under Review, Additional Info, Approved, Rejec
     app.referenceNumber,
     { status: 'Approved', comments: 'All corporate documents verified.' },
     'usr-admin-001',
-    UserRole.SUPER_ADMIN,
+    UserRole.SUPER_ADMIN
   );
   assert.equal(approveRes.status, 'Approved');
   assert.equal(user.status, 'active', 'User account is activated upon approval');
-  assert.equal(approveRes.emailDelivery.configured, false, 'Correctly reports email delivery limitation');
+  assert.equal(
+    approveRes.emailDelivery.configured,
+    false,
+    'Correctly reports email delivery limitation'
+  );
 
   // 4. Now that organizer is approved, publishing events and accepting bookings succeed!
   const uniqueTime = '16:' + String(Math.floor(Math.random() * 50) + 10);
-  const publishedEvent = eventsService.create({
-    name: 'Approved Festival',
-    date: '2026-11-28',
-    time: uniqueTime,
-    location: 'Open Grounds',
-    capacity: 1000,
-    ticketPrice: 100,
-    status: 'published',
-  }, UserRole.EVENT_ORGANIZER, user.userId);
+  const publishedEvent = eventsService.create(
+    {
+      name: 'Approved Festival',
+      date: '2026-11-28',
+      time: uniqueTime,
+      location: 'Open Grounds',
+      capacity: 1000,
+      ticketPrice: 100,
+      status: 'published',
+    },
+    UserRole.EVENT_ORGANIZER,
+    user.userId
+  );
   assert.equal(publishedEvent.status, 'published');
 
-  const req = ds.eventRequests.find(r => r.organizerId === ds.organizers.find(o => o.userId === user.userId)?.organizerId);
+  const req = ds.eventRequests.find(
+    r => r.organizerId === ds.organizers.find(o => o.userId === user.userId)?.organizerId
+  );
   if (req) {
-    const accepted = requestsService.acceptRequest(req.requestId, UserRole.EVENT_ORGANIZER, user.userId, { policyAccepted: true, acceptedPolicyVersion: '2026-10-17.1' });
+    const accepted = requestsService.acceptRequest(
+      req.requestId,
+      UserRole.EVENT_ORGANIZER,
+      user.userId,
+      { policyAccepted: true, acceptedPolicyVersion: '2026-10-17.1' }
+    );
     assert.equal(accepted.success, true);
   }
 });

@@ -19,7 +19,11 @@ export class OperationalReportsController {
   }
 
   @Post()
-  create(@Body() dto: CreateOperationalReportDto, @UserId() userId: string, @UserRoleDecorator() role: UserRole) {
+  create(
+    @Body() dto: CreateOperationalReportDto,
+    @UserId() userId: string,
+    @UserRoleDecorator() role: UserRole
+  ) {
     return this.reports.create(dto, undefined, userId, role, true);
   }
 

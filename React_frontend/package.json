@@ -6,7 +6,7 @@
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0",
-    "test": "node --test scripts/*.test.cjs",
+    "test": "node --test --test-concurrency=1 scripts/*.test.cjs",
     "test:react": "vitest run"
   },
   "dependencies": {

@@ -2,7 +2,9 @@ import { ApiProperty, ApiPropertyOptional, OmitType } from '@nestjs/swagger';
 import { IsIn, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export const SUPPORT_REPORT_CATEGORIES = [
-  'Registration & User Management', 'Event Operations Report', 'Support & Issue Summary',
+  'Registration & User Management',
+  'Event Operations Report',
+  'Support & Issue Summary',
 ];
 
 export class CreateSupportReportDto {
@@ -39,7 +41,9 @@ export class CreateSupportReportDto {
   @IsIn(['draft', 'submitted'])
   status?: 'draft' | 'submitted';
 
-  @ApiPropertyOptional({ description: 'Stable reference used to retry a submission without duplicating it' })
+  @ApiPropertyOptional({
+    description: 'Stable reference used to retry a submission without duplicating it',
+  })
   @IsOptional()
   @IsString()
   @IsNotEmpty()
@@ -55,7 +59,9 @@ export class ReviewSupportReportDto {
   feedback?: string;
 }
 
-export class CreateOperationalReportDto extends OmitType(CreateSupportReportDto, ['category'] as const) {
+export class CreateOperationalReportDto extends OmitType(CreateSupportReportDto, [
+  'category',
+] as const) {
   @IsIn(['Support Report', 'Finance Report', 'Combined Operational Report'])
   category!: string;
 }

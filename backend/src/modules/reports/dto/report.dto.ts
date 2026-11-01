@@ -22,7 +22,10 @@ export class CreateEventReportDto {
   @IsNotEmpty()
   reportTitle!: string;
 
-  @ApiProperty({ description: 'Report details', example: 'Event was successful with 450 attendees.' })
+  @ApiProperty({
+    description: 'Report details',
+    example: 'Event was successful with 450 attendees.',
+  })
   @IsString()
   @IsNotEmpty()
   reportDetails!: string;

@@ -39,25 +39,32 @@ export class EventsController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a new event' })
   @ApiResponse({ status: 201, description: 'Event created successfully' })
-  @ApiResponse({ status: 400, description: 'Bad request - missing required fields or insufficient permissions' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - missing required fields or insufficient permissions',
+  })
   create(
     @Body() createEventDto: CreateEventDto,
     @UserRoleDecorator() role: UserRole,
-    @UserId() userId: string,
+    @UserId() userId: string
   ) {
     return this.eventsService.create(createEventDto, role, userId);
   }
 
   @Get()
   @ApiOperation({ summary: 'Get all events with optional filters' })
-  @ApiQuery({ name: 'search', required: false, description: 'Search by event name, description, or location' })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Search by event name, description, or location',
+  })
   @ApiQuery({ name: 'status', required: false, description: 'Filter by status' })
   @ApiResponse({ status: 200, description: 'List of events' })
   findAll(
     @UserRoleDecorator() role: UserRole,
     @UserId() userId: string,
     @Query('search') search?: string,
-    @Query('status') status?: string,
+    @Query('status') status?: string
   ) {
     return this.eventsService.findAll(role, search, status, userId);
   }
@@ -70,7 +77,7 @@ export class EventsController {
   findAllAdmin(
     @UserRoleDecorator() role: UserRole,
     @Query('search') search?: string,
-    @Query('status') status?: string,
+    @Query('status') status?: string
   ) {
     return this.eventsService.findAllAdmin(role, search, status);
   }
@@ -92,25 +99,39 @@ export class EventsController {
 
   @Post(':id/complete')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Mark a fully paid client event completed after its event date (assigned organizer only)' })
+  @ApiOperation({
+    summary:
+      'Mark a fully paid client event completed after its event date (assigned organizer only)',
+  })
   completeClientEvent(
     @Param('id') id: string,
     @UserRoleDecorator() role: UserRole,
-    @UserId() userId: string,
+    @UserId() userId: string
   ) {
     return this.eventsService.completeClientEvent(id, role, userId);
   }
 
   @Get(':id/cancellation-preview')
   @ApiOperation({ summary: 'Preview the client cancellation deadline, fee, and refund due' })
-  cancellationPreview(@Param('id') id: string, @UserRoleDecorator() role: UserRole, @UserId() userId: string) {
+  cancellationPreview(
+    @Param('id') id: string,
+    @UserRoleDecorator() role: UserRole,
+    @UserId() userId: string
+  ) {
     return { success: true, data: this.eventsService.clientCancellationPreview(id, role, userId) };
   }
 
   @Post(':id/cancel')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Client cancels an event under its accepted, versioned cancellation policy' })
-  cancelClientEvent(@Param('id') id: string, @Body() dto: CancelClientEventDto, @UserRoleDecorator() role: UserRole, @UserId() userId: string) {
+  @ApiOperation({
+    summary: 'Client cancels an event under its accepted, versioned cancellation policy',
+  })
+  cancelClientEvent(
+    @Param('id') id: string,
+    @Body() dto: CancelClientEventDto,
+    @UserRoleDecorator() role: UserRole,
+    @UserId() userId: string
+  ) {
     return this.eventsService.cancelClientEvent(id, dto, role, userId);
   }
 
@@ -123,7 +144,7 @@ export class EventsController {
     @Param('id') id: string,
     @Body() updateEventDto: UpdateEventDto,
     @UserRoleDecorator() role: UserRole,
-    @UserId() userId: string,
+    @UserId() userId: string
   ) {
     return this.eventsService.update(id, updateEventDto, role, userId);
   }
@@ -134,11 +155,7 @@ export class EventsController {
   @ApiResponse({ status: 200, description: 'Event deleted successfully' })
   @ApiResponse({ status: 400, description: 'Insufficient permissions' })
   @ApiResponse({ status: 404, description: 'Event not found' })
-  delete(
-    @Param('id') id: string,
-    @UserRoleDecorator() role: UserRole,
-    @UserId() userId: string,
-  ) {
+  delete(@Param('id') id: string, @UserRoleDecorator() role: UserRole, @UserId() userId: string) {
     return this.eventsService.delete(id, role, userId);
   }
 }

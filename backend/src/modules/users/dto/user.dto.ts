@@ -1,6 +1,13 @@
 import {
-  IsString, IsNotEmpty, IsOptional, IsEmail,
-  IsEnum, MinLength, Matches, ValidateIf, MaxLength,
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsEmail,
+  IsEnum,
+  MinLength,
+  Matches,
+  ValidateIf,
+  MaxLength,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -41,7 +48,7 @@ export class CreateUserDto {
     description: 'Phone number (10 digits, starts with 6-9)',
     example: '9876543210',
   })
-  @Transform(({ value }) => typeof value === 'string' ? value.trim() : value)
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsString()
   @IsOptional()
   @ValidateIf((_, value) => value !== '')
@@ -72,7 +79,7 @@ export class UpdateUserDto {
   address?: string;
 
   @ApiPropertyOptional({ description: 'Phone number (10 digits, starts with 6-9)' })
-  @Transform(({ value }) => typeof value === 'string' ? value.trim() : value)
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsString()
   @IsOptional()
   @ValidateIf((_, value) => value !== '')

@@ -21,12 +21,28 @@ export default function LegacyRuntime({ source, role }) {
   useEffect(() => {
     const existingRuntime = window.__eventFlowLegacyRuntime;
     if (existingRuntime) {
-      if (!existingRuntime.active || existingRuntime.role !== role || existingRuntime.source !== source) window.location.reload();
+      if (
+        !existingRuntime.active ||
+        existingRuntime.role !== role ||
+        existingRuntime.source !== source
+      )
+        window.location.reload();
       return;
     }
     window.__eventFlowLegacyRuntime = { role, source, active: true };
     document.body.dataset.eventflowRole = role;
-    const scripts = [run(validationRulesSource), run(themeSource), run(scannerSource), run(supportSource), run(supportReportsSource), run(accountPolicySource), run(organizerRegSource), run(source), run(paymentCheckoutSource), run(dataSyncSource)];
+    const scripts = [
+      run(validationRulesSource),
+      run(themeSource),
+      run(scannerSource),
+      run(supportSource),
+      run(supportReportsSource),
+      run(accountPolicySource),
+      run(organizerRegSource),
+      run(source),
+      run(paymentCheckoutSource),
+      run(dataSyncSource),
+    ];
     document.dispatchEvent(new Event('DOMContentLoaded'));
     return () => {
       window.EventFlowData?.dispose?.();

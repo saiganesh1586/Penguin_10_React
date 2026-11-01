@@ -14,19 +14,14 @@ async function bootstrap() {
   app.use(
     helmet({
       crossOriginResourcePolicy: { policy: 'cross-origin' },
-    }),
+    })
   );
 
   // Enable CORS for frontend integration with specific origins
   app.enableCors({
     origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: [
-      'Content-Type',
-      'Authorization',
-      'x-role',
-      'x-user-id',
-    ],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-role', 'x-user-id'],
   });
 
   // Global validation pipe with whitelist and transform
@@ -38,7 +33,7 @@ async function bootstrap() {
       transformOptions: {
         enableImplicitConversion: true,
       },
-    }),
+    })
   );
 
   app.useGlobalFilters(new HttpExceptionFilter());
@@ -48,13 +43,13 @@ async function bootstrap() {
     .setTitle('Event Management System API')
     .setDescription(
       'Complete REST API for Event Management & Coordination with RBAC\n\n' +
-      '**Authentication:**\n\n' +
-      'Authenticated endpoints require `Authorization: Bearer <JWT>`.\n\n' +
-      '**Demo Users:**\n\n' +
-      '- SuperAdmin: superadmin@example.com / Admin@123\n' +
-      '- Client: client@example.com / Client@123\n' +
-      '- Organizer: organizer@example.com / Organizer@123\n' +
-      '- Attendee: attendee@example.com / Attendee@123',
+        '**Authentication:**\n\n' +
+        'Authenticated endpoints require `Authorization: Bearer <JWT>`.\n\n' +
+        '**Demo Users:**\n\n' +
+        '- SuperAdmin: superadmin@example.com / Admin@123\n' +
+        '- Client: client@example.com / Client@123\n' +
+        '- Organizer: organizer@example.com / Organizer@123\n' +
+        '- Attendee: attendee@example.com / Attendee@123'
     )
     .setVersion('1.0.0')
     .addBearerAuth(
@@ -63,7 +58,7 @@ async function bootstrap() {
         scheme: 'bearer',
         bearerFormat: 'JWT',
       },
-      'bearer',
+      'bearer'
     )
     .build();
 
@@ -74,10 +69,7 @@ async function bootstrap() {
   if (!fs.existsSync(docsPath)) {
     fs.mkdirSync(docsPath, { recursive: true });
   }
-  fs.writeFileSync(
-    path.join(docsPath, 'swagger.json'),
-    JSON.stringify(document, null, 2),
-  );
+  fs.writeFileSync(path.join(docsPath, 'swagger.json'), JSON.stringify(document, null, 2));
 
   SwaggerModule.setup('docs', app, document);
 

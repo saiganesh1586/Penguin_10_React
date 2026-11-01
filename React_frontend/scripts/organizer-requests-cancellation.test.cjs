@@ -11,7 +11,7 @@ const clientRuntime = portalSource('client');
 const policy = {
   version: 'policy-test-1',
   cancellation: { minimumNoticeDays: 14, feePercent: 10 },
-  sections: []
+  sections: [],
 };
 
 function dateInDays(days) {
@@ -29,8 +29,13 @@ function setupOrganizerHarness(initialRequests = [], initialEvents = [], initial
     CU: { id: 'usr-org-001', role: 'organizer', name: 'James Wilson' },
     DB: {
       users: [
-        { id: 'usr-client-001', name: 'Michael Torres', email: 'michael@torres.com', role: 'client' },
-        { id: 'usr-org-001', name: 'James Wilson', email: 'james@wilson.com', role: 'organizer' }
+        {
+          id: 'usr-client-001',
+          name: 'Michael Torres',
+          email: 'michael@torres.com',
+          role: 'client',
+        },
+        { id: 'usr-org-001', name: 'James Wilson', email: 'james@wilson.com', role: 'organizer' },
       ],
       eventRequests: structuredClone(initialRequests),
       events: structuredClone(initialEvents),
@@ -39,19 +44,31 @@ function setupOrganizerHarness(initialRequests = [], initialEvents = [], initial
       refunds: [],
       eventPlans: [],
       notifications: [],
-      eventCompletionReports: []
+      eventCompletionReports: [],
     },
     workflowEventPolicy: policy,
     sessionStorage: {
       getItem: key => session.get(key) || null,
       setItem: (key, val) => session.set(key, String(val)),
       removeItem: key => session.delete(key),
-      clear: () => session.clear()
+      clear: () => session.clear(),
     },
-    escapeHtml: str => String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'),
-    toast: (msg, type) => { toasts.push({ msg, type }); },
-    openModal: (title, html, buttons) => { modalState = { title, html, buttons }; },
-    closeModal: () => { modalState = null; },
+    escapeHtml: str =>
+      String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;'),
+    toast: (msg, type) => {
+      toasts.push({ msg, type });
+    },
+    openModal: (title, html, buttons) => {
+      modalState = { title, html, buttons };
+    },
+    closeModal: () => {
+      modalState = null;
+    },
     g: id => elements.get(id) || null,
     v: id => elements.get(id)?.value || '',
     setElement: (id, val) => elements.set(id, { value: val, style: {} }),
@@ -62,7 +79,9 @@ function setupOrganizerHarness(initialRequests = [], initialEvents = [], initial
     apiCancelOrganizerEvent: async () => ({ status: 'cancelled' }),
     apiRequest: async (url, options) => {
       const requestId = decodeURIComponent(url.split('/')[2]);
-      const request = context.DB.eventRequests.find(item => String(item.id || item.requestId) === requestId);
+      const request = context.DB.eventRequests.find(
+        item => String(item.id || item.requestId) === requestId
+      );
       if (!request) throw new Error('Booking record not found');
       const payload = JSON.parse(options.body);
       request.status = 'cancelled';
@@ -72,20 +91,32 @@ function setupOrganizerHarness(initialRequests = [], initialEvents = [], initial
         paidAmount: payload.expectedPaidAmount,
         cancellationFee: 0,
         refundAmount: payload.expectedPaidAmount,
-        refundStatus: payload.expectedPaidAmount > 0 ? 'pending' : 'not_applicable'
+        refundStatus: payload.expectedPaidAmount > 0 ? 'pending' : 'not_applicable',
       };
-      request.auditHistory = [...(request.auditHistory || []), { action: 'Event Booking Cancelled by Organizer' }];
+      request.auditHistory = [
+        ...(request.auditHistory || []),
+        { action: 'Event Booking Cancelled by Organizer' },
+      ];
       return { data: { request: structuredClone(request) } };
-    }
+    },
   });
   context.window = context;
   context.EventFlowData = { invalidate: () => {}, sync: async () => {} };
 
   // Extract functions from runtime
   const codeToRun = `
-    ${orgRuntime.slice(orgRuntime.indexOf('function normalizeEventRequest('), orgRuntime.indexOf('function pageEventRequests()'))}
-    ${orgRuntime.slice(orgRuntime.indexOf('function renderOrganizerRowActions('), orgRuntime.indexOf('function workflowPayload('))}
-    ${orgRuntime.slice(orgRuntime.indexOf('let _pendingOrganizerCancel = null;'), orgRuntime.indexOf('function openRejectModal('))}
+    ${orgRuntime.slice(
+      orgRuntime.indexOf('function normalizeEventRequest('),
+      orgRuntime.indexOf('function pageEventRequests()')
+    )}
+    ${orgRuntime.slice(
+      orgRuntime.indexOf('function renderOrganizerRowActions('),
+      orgRuntime.indexOf('function workflowPayload(')
+    )}
+    ${orgRuntime.slice(
+      orgRuntime.indexOf('let _pendingOrganizerCancel = null;'),
+      orgRuntime.indexOf('function openRejectModal(')
+    )}
   `;
 
   vm.runInContext(codeToRun, context);
@@ -94,18 +125,102 @@ function setupOrganizerHarness(initialRequests = [], initialEvents = [], initial
 
 test('1. Dynamic Status Filters: calculates real counts and filters across all 5 functional groups', () => {
   const requests = [
-    { id: 'req-1', organizer: 'usr-org-001', status: 'submitted', eventName: 'Tech Gala', eventDate: '2026-12-01', budget: 50000 },
-    { id: 'req-2', organizer: 'usr-org-001', status: 'pending', eventName: 'Music Fest', eventDate: '2026-12-02', budget: 30000 },
-    { id: 'req-3', organizer: 'usr-org-001', status: 'proposal_sent', eventName: 'AI Summit', eventDate: '2026-12-03', budget: 80000 },
-    { id: 'req-4', organizer: 'usr-org-001', status: 'changes_requested', eventName: 'Auto Expo', eventDate: '2026-12-04', budget: 60000 },
-    { id: 'req-5', organizer: 'usr-org-001', status: 'under_review', eventName: 'Startup Pitch', eventDate: '2026-12-05', budget: 25000 },
-    { id: 'req-6', organizer: 'usr-org-001', status: 'info_requested', eventName: 'Art Show', eventDate: '2026-12-06', budget: 15000 },
-    { id: 'req-7', organizer: 'usr-org-001', status: 'confirmed', eventName: 'Annual Conference', eventDate: '2026-12-07', budget: 120000 },
-    { id: 'req-8', organizer: 'usr-org-001', status: 'approved', eventName: 'Winter Ball', eventDate: '2026-12-08', budget: 90000 },
-    { id: 'req-9', organizer: 'usr-org-001', status: 'cancelled', eventName: 'Cancelled Event', eventDate: '2026-12-09', budget: 10000 },
-    { id: 'req-10', organizer: 'usr-org-001', status: 'rejected', eventName: 'Rejected Event', eventDate: '2026-12-10', budget: 20000 },
-    { id: 'req-11', organizer: 'usr-org-001', status: 'withdrawn', eventName: 'Withdrawn Event', eventDate: '2026-12-11', budget: 12000 },
-    { id: 'req-12', organizer: 'usr-org-001', status: 'expired', eventName: 'Expired Event', eventDate: '2026-12-12', budget: 18000 },
+    {
+      id: 'req-1',
+      organizer: 'usr-org-001',
+      status: 'submitted',
+      eventName: 'Tech Gala',
+      eventDate: '2026-12-01',
+      budget: 50000,
+    },
+    {
+      id: 'req-2',
+      organizer: 'usr-org-001',
+      status: 'pending',
+      eventName: 'Music Fest',
+      eventDate: '2026-12-02',
+      budget: 30000,
+    },
+    {
+      id: 'req-3',
+      organizer: 'usr-org-001',
+      status: 'proposal_sent',
+      eventName: 'AI Summit',
+      eventDate: '2026-12-03',
+      budget: 80000,
+    },
+    {
+      id: 'req-4',
+      organizer: 'usr-org-001',
+      status: 'changes_requested',
+      eventName: 'Auto Expo',
+      eventDate: '2026-12-04',
+      budget: 60000,
+    },
+    {
+      id: 'req-5',
+      organizer: 'usr-org-001',
+      status: 'under_review',
+      eventName: 'Startup Pitch',
+      eventDate: '2026-12-05',
+      budget: 25000,
+    },
+    {
+      id: 'req-6',
+      organizer: 'usr-org-001',
+      status: 'info_requested',
+      eventName: 'Art Show',
+      eventDate: '2026-12-06',
+      budget: 15000,
+    },
+    {
+      id: 'req-7',
+      organizer: 'usr-org-001',
+      status: 'confirmed',
+      eventName: 'Annual Conference',
+      eventDate: '2026-12-07',
+      budget: 120000,
+    },
+    {
+      id: 'req-8',
+      organizer: 'usr-org-001',
+      status: 'approved',
+      eventName: 'Winter Ball',
+      eventDate: '2026-12-08',
+      budget: 90000,
+    },
+    {
+      id: 'req-9',
+      organizer: 'usr-org-001',
+      status: 'cancelled',
+      eventName: 'Cancelled Event',
+      eventDate: '2026-12-09',
+      budget: 10000,
+    },
+    {
+      id: 'req-10',
+      organizer: 'usr-org-001',
+      status: 'rejected',
+      eventName: 'Rejected Event',
+      eventDate: '2026-12-10',
+      budget: 20000,
+    },
+    {
+      id: 'req-11',
+      organizer: 'usr-org-001',
+      status: 'withdrawn',
+      eventName: 'Withdrawn Event',
+      eventDate: '2026-12-11',
+      budget: 12000,
+    },
+    {
+      id: 'req-12',
+      organizer: 'usr-org-001',
+      status: 'expired',
+      eventName: 'Expired Event',
+      eventDate: '2026-12-12',
+      budget: 18000,
+    },
   ];
 
   const { context, session } = setupOrganizerHarness(requests);
@@ -115,9 +230,9 @@ test('1. Dynamic Status Filters: calculates real counts and filters across all 5
   let html = context.pageEventRequests();
   assert.match(html, /All Requests \(12\)/);
   assert.match(html, /Action Required \(4\)/); // submitted, pending, proposal_sent, changes_requested
-  assert.match(html, /Under Review \(2\)/);     // under_review, info_requested
+  assert.match(html, /Under Review \(2\)/); // under_review, info_requested
   assert.match(html, /Confirmed Bookings \(2\)/); // confirmed, approved
-  assert.match(html, /Closed Requests \(4\)/);     // cancelled, rejected, withdrawn, expired
+  assert.match(html, /Closed Requests \(4\)/); // cancelled, rejected, withdrawn, expired
   assert.match(html, /Showing 12 of 12 requests/);
 
   // Dropdown verification
@@ -208,9 +323,27 @@ test('2. Dynamic Actions by Status: shows only permitted actions for each lifecy
 
 test('3. Cancellation Validation: blocks missing IDs, unauthorized access, and unconfirmed requests', () => {
   const requests = [
-    { id: 'req-unconfirmed', organizer: 'usr-org-001', status: 'under_review', eventName: 'Draft Pitch', eventDate: '2026-11-20' },
-    { id: 'req-other-org', organizer: 'usr-other-org', status: 'confirmed', eventName: 'Secret Gala', eventDate: '2026-11-20' },
-    { id: 'req-confirmed', organizer: 'usr-org-001', status: 'confirmed', eventName: 'Valid Gala', eventDate: '2026-11-20' }
+    {
+      id: 'req-unconfirmed',
+      organizer: 'usr-org-001',
+      status: 'under_review',
+      eventName: 'Draft Pitch',
+      eventDate: '2026-11-20',
+    },
+    {
+      id: 'req-other-org',
+      organizer: 'usr-other-org',
+      status: 'confirmed',
+      eventName: 'Secret Gala',
+      eventDate: '2026-11-20',
+    },
+    {
+      id: 'req-confirmed',
+      organizer: 'usr-org-001',
+      status: 'confirmed',
+      eventName: 'Valid Gala',
+      eventDate: '2026-11-20',
+    },
   ];
 
   const { context, toasts, getModal } = setupOrganizerHarness(requests);
@@ -233,14 +366,31 @@ test('3. Cancellation Validation: blocks missing IDs, unauthorized access, and u
   context.openOrganizerEventCancellationModal('', 'req-unconfirmed');
   const unconfirmedModal = getModal();
   assert.equal(unconfirmedModal.title, 'Cancellation Not Permitted');
-  assert.match(unconfirmedModal.html, /Booking cancellation is only permitted for confirmed bookings/);
+  assert.match(
+    unconfirmedModal.html,
+    /Booking cancellation is only permitted for confirmed bookings/
+  );
   assert.match(unconfirmedModal.html, /withdrawal or rejection workflow/);
 });
 
 test('4. Cancellation Policy Window: displays the cutoff and permits organizer-initiated cancellation', () => {
   const requests = [
-    { id: 'req-valid-date', organizer: 'usr-org-001', status: 'confirmed', eventName: 'Future Summit', eventDate: dateInDays(31), budget: 50000 },
-    { id: 'req-past-cutoff', organizer: 'usr-org-001', status: 'confirmed', eventName: 'Imminent Summit', eventDate: dateInDays(5), budget: 50000 }
+    {
+      id: 'req-valid-date',
+      organizer: 'usr-org-001',
+      status: 'confirmed',
+      eventName: 'Future Summit',
+      eventDate: dateInDays(31),
+      budget: 50000,
+    },
+    {
+      id: 'req-past-cutoff',
+      organizer: 'usr-org-001',
+      status: 'confirmed',
+      eventName: 'Imminent Summit',
+      eventDate: dateInDays(5),
+      budget: 50000,
+    },
   ];
 
   const { context, getModal } = setupOrganizerHarness(requests);
@@ -262,11 +412,27 @@ test('4. Cancellation Policy Window: displays the cutoff and permits organizer-i
 
 test('5. Payment and Refund Calculation: unpaid cancellations owe no refund; organizer cancellations refund paid amounts in full', () => {
   const requests = [
-    { id: 'req-unpaid', organizer: 'usr-org-001', status: 'confirmed', eventName: 'Unpaid Gala', eventDate: dateInDays(31), budget: 100000, paymentStatus: 'unpaid' },
-    { id: 'req-paid', organizer: 'usr-org-001', status: 'confirmed', eventName: 'Paid Gala', eventDate: dateInDays(31), budget: 100000, paymentStatus: 'fully_paid' }
+    {
+      id: 'req-unpaid',
+      organizer: 'usr-org-001',
+      status: 'confirmed',
+      eventName: 'Unpaid Gala',
+      eventDate: dateInDays(31),
+      budget: 100000,
+      paymentStatus: 'unpaid',
+    },
+    {
+      id: 'req-paid',
+      organizer: 'usr-org-001',
+      status: 'confirmed',
+      eventName: 'Paid Gala',
+      eventDate: dateInDays(31),
+      budget: 100000,
+      paymentStatus: 'fully_paid',
+    },
   ];
   const payments = [
-    { paymentId: 'p-1', requestId: 'req-paid', amount: 100000, status: 'completed' }
+    { paymentId: 'p-1', requestId: 'req-paid', amount: 100000, status: 'completed' },
   ];
 
   const { context, getModal } = setupOrganizerHarness(requests, [], payments);
@@ -281,17 +447,30 @@ test('5. Payment and Refund Calculation: unpaid cancellations owe no refund; org
   // Organizer-initiated cancellation has no fee: the full paid amount is refundable.
   context.openOrganizerEventCancellationModal('', 'req-paid');
   modal = getModal();
-  assert.match(modal.html, /Amount Actually Paid:<\/span>\s*<strong>(?:₹100,000|₹1,00,000)<\/strong>/);
+  assert.match(
+    modal.html,
+    /Amount Actually Paid:<\/span>\s*<strong>(?:₹100,000|₹1,00,000)<\/strong>/
+  );
   assert.match(modal.html, /Applicable Cancellation Fee \(0%\):<\/span>\s*<strong>₹0<\/strong>/);
-  assert.match(modal.html, /Estimated Refund:<\/span>\s*<strong>(?:₹100,000|₹1,00,000) \(Pending review\)<\/strong>/);
+  assert.match(
+    modal.html,
+    /Estimated Refund:<\/span>\s*<strong>(?:₹100,000|₹1,00,000) \(Pending review\)<\/strong>/
+  );
 });
 
 test('6. Two-Step Confirmation and Duplicate Prevention: requires mandatory reason, summarizes consequences, and prevents duplicates', async () => {
   const requests = [
-    { id: 'req-booking', organizer: 'usr-org-001', status: 'confirmed', eventName: 'Leadership Retreat', eventDate: dateInDays(31), budget: 40000 }
+    {
+      id: 'req-booking',
+      organizer: 'usr-org-001',
+      status: 'confirmed',
+      eventName: 'Leadership Retreat',
+      eventDate: dateInDays(31),
+      budget: 40000,
+    },
   ];
   const payments = [
-    { paymentId: 'p-ret', requestId: 'req-booking', amount: 40000, status: 'completed' }
+    { paymentId: 'p-ret', requestId: 'req-booking', amount: 40000, status: 'completed' },
   ];
 
   const { context, getModal } = setupOrganizerHarness(requests, [], payments);
@@ -310,7 +489,10 @@ test('6. Two-Step Confirmation and Duplicate Prevention: requires mandatory reas
 
   // Valid mandatory reason opens Step 2 (Final Confirmation)
   context.setElement('org-cancel-reason', 'Venue double-booked by property management');
-  context.setElement('org-cancel-explanation', 'Attempted reschedule but client declined alternate dates');
+  context.setElement(
+    'org-cancel-explanation',
+    'Attempted reschedule but client declined alternate dates'
+  );
   context.proceedOrganizerCancelToFinalConfirmation('', 'req-booking');
 
   modal = getModal();

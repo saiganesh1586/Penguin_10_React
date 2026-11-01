@@ -5,39 +5,114 @@ const { JSDOM } = require('jsdom');
 const source = require('./portal-source.cjs')('client');
 
 function harness(overrides = {}) {
-  const dom = new JSDOM('<div id="modal-overlay" class="hidden"><div id="modal-box"><header id="modal-title"></header><div id="modal-body"></div><footer id="modal-foot"></footer></div></div>');
+  const dom = new JSDOM(
+    '<div id="modal-overlay" class="hidden"><div id="modal-box"><header id="modal-title"></header><div id="modal-body"></div><footer id="modal-foot"></footer></div></div>'
+  );
   const document = dom.window.document;
-  const state = { preview: { requestId: 'req-server', eventName: 'Client Conference', status: 'confirmed', canCancel: true,
-    cancellationDeadline: '2099-11-06T04:30:00Z', minimumNoticeDays: 14, paidAmount: 1500000, cancellationFeePercent: 10,
-    cancellationFee: 150000, refundAmount: 1350000, refundProcessingTimeline: '5–7 business days (pending review)',
-    policy: { version: 'saved-policy-1' }, ...overrides }, fail: false };
-  const calls = [], previews = [];
-  const escape = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
+  const state = {
+    preview: {
+      requestId: 'req-server',
+      eventName: 'Client Conference',
+      status: 'confirmed',
+      canCancel: true,
+      cancellationDeadline: '2099-11-06T04:30:00Z',
+      minimumNoticeDays: 14,
+      paidAmount: 1500000,
+      cancellationFeePercent: 10,
+      cancellationFee: 150000,
+      refundAmount: 1350000,
+      refundProcessingTimeline: '5–7 business days (pending review)',
+      policy: { version: 'saved-policy-1' },
+      ...overrides,
+    },
+    fail: false,
+  };
+  const calls = [],
+    previews = [];
+  const escape = value =>
+    String(value ?? '').replace(
+      /[&<>"']/g,
+      char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char])
+    );
   const context = vm.createContext({
-    CU: { id: 'client', role: 'client' }, DB: { users: [], eventRequests: [{ id: 'display-id', requestId: 'req-server',
-      clientId: 'client', organizerId: 'organizer', status: 'confirmed', title: 'Client Conference', budget: 5000000 }] },
-    document, g: id => document.getElementById(id), reqBadge: () => 'green', escapeHtml: escape, workflowHtml: escape,
-    workflowPayload: response => response.data ?? response, workflowPolicyDate: date => String(date),
-    isClientOwner: request => request.clientId === 'client', requestAnimationFrame: callback => callback(),
-    apiPreviewClientRequestCancellation: async id => { previews.push(id); return { data: structuredClone(state.preview) }; },
-    apiCancelClientRequest: async (id, body) => { calls.push({ id, body }); if (state.fail) throw new Error('Unable to cancel now'); return { success: true }; },
-    closeDrawer() {}, toast() {}, syncClientEventRequests: async () => {}, syncWorkflowData: async () => {}, loadClientRecentActivity() {},
-    renderPage() {}, _currentPage: 'request-status',
+    CU: { id: 'client', role: 'client' },
+    DB: {
+      users: [],
+      eventRequests: [
+        {
+          id: 'display-id',
+          requestId: 'req-server',
+          clientId: 'client',
+          organizerId: 'organizer',
+          status: 'confirmed',
+          title: 'Client Conference',
+          budget: 5000000,
+        },
+      ],
+    },
+    document,
+    g: id => document.getElementById(id),
+    reqBadge: () => 'green',
+    escapeHtml: escape,
+    workflowHtml: escape,
+    workflowPayload: response => response.data ?? response,
+    workflowPolicyDate: date => String(date),
+    isClientOwner: request => request.clientId === 'client',
+    requestAnimationFrame: callback => callback(),
+    apiPreviewClientRequestCancellation: async id => {
+      previews.push(id);
+      return { data: structuredClone(state.preview) };
+    },
+    apiCancelClientRequest: async (id, body) => {
+      calls.push({ id, body });
+      if (state.fail) throw new Error('Unable to cancel now');
+      return { success: true };
+    },
+    closeDrawer() {},
+    toast() {},
+    syncClientEventRequests: async () => {},
+    syncWorkflowData: async () => {},
+    loadClientRecentActivity() {},
+    renderPage() {},
+    _currentPage: 'request-status',
   });
   context.window = context;
-  vm.runInContext(source.slice(source.indexOf('    function openModal('), source.indexOf('    function closeModalOnBg(')), context);
-  vm.runInContext(source.slice(source.indexOf('    let _clientCancelPreview = null;'), source.indexOf('    function cancelReq(')), context);
-  const button = label => [...document.querySelectorAll('#modal-foot button')].find(item => item.textContent === label);
-  return { context, document, state, calls, previews, button,
+  vm.runInContext(
+    source.slice(source.indexOf('function openModal('), source.indexOf('function closeModalOnBg(')),
+    context
+  );
+  vm.runInContext(
+    source.slice(
+      source.indexOf('let _clientCancelPreview = null;'),
+      source.indexOf('function cancelReq(')
+    ),
+    context
+  );
+  const button = label =>
+    [...document.querySelectorAll('#modal-foot button')].find(item => item.textContent === label);
+  return {
+    context,
+    document,
+    state,
+    calls,
+    previews,
+    button,
     open: () => context.openClientCancelRequestModal('display-id'),
-    click(label) { const target = button(label); assert.ok(target, `Missing ${label}`); if (!target.disabled) return vm.runInContext(target.getAttribute('onclick'), context); },
+    click(label) {
+      const target = button(label);
+      assert.ok(target, `Missing ${label}`);
+      if (!target.disabled) return vm.runInContext(target.getAttribute('onclick'), context);
+    },
     title: () => document.getElementById('modal-title').textContent,
     body: () => document.getElementById('modal-body').textContent,
   };
 }
 
 test('a closed cancellation window shows a disabled Cancel Event action without an editable form or promised refund', async () => {
-  const h = harness({ canCancel: false, unavailableReason: 'Cancellation window closed. At least 14 days notice is required.' });
+  const h = harness({
+    canCancel: false,
+    unavailableReason: 'Cancellation window closed. At least 14 days notice is required.',
+  });
   await h.open();
   assert.equal(h.title(), 'Cancel Event');
   assert.ok(h.button('Cancel Event'));
@@ -68,7 +143,8 @@ test('an eligible client can select a reason, review the cancellation, and confi
   assert.match(h.document.getElementById('client-cancel-error').textContent, /select.*reason/);
   assert.equal(h.calls.length, 0);
   h.document.getElementById('client-cancel-reason').value = 'Organizer Issue';
-  h.document.getElementById('client-cancel-explanation').value = '  The venue arrangement changed.  ';
+  h.document.getElementById('client-cancel-explanation').value =
+    '  The venue arrangement changed.  ';
   h.click('Cancel Event');
   assert.equal(h.title(), 'Confirm Event Cancellation');
   assert.match(h.body(), /Organizer Issue/);
@@ -101,7 +177,10 @@ test('a failed confirmation keeps its summary available and enables retry with t
   h.click('Cancel Event');
   h.state.fail = true;
   await h.click('Yes, Cancel Event');
-  assert.match(h.document.getElementById('client-cancel-final-error').textContent, /Unable to cancel now/);
+  assert.match(
+    h.document.getElementById('client-cancel-final-error').textContent,
+    /Unable to cancel now/
+  );
   assert.equal(h.title(), 'Confirm Event Cancellation');
   assert.equal(h.button('Yes, Cancel Event').disabled, false);
   h.state.fail = false;

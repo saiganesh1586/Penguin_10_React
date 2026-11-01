@@ -22,13 +22,13 @@ export class ActivityLogService {
 
   findAll(
     limit = 100,
-    offset = 0,
+    offset = 0
   ): {
     logs: ActivityLog[];
     total: number;
   } {
     const allLogs = this.dataStore.activityLogs.sort(
-      (a, b) => b.timestamp.getTime() - a.timestamp.getTime(),
+      (a, b) => b.timestamp.getTime() - a.timestamp.getTime()
     );
 
     return {
@@ -39,13 +39,13 @@ export class ActivityLogService {
 
   findByRole(role: string): ActivityLog[] {
     return this.dataStore.activityLogs
-      .filter((log) => log.role === role)
+      .filter(log => log.role === role)
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
   }
 
   findByAction(action: string): ActivityLog[] {
     return this.dataStore.activityLogs
-      .filter((log) => log.action === action)
+      .filter(log => log.action === action)
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
   }
 
@@ -65,24 +65,25 @@ export class ActivityLogService {
     }
 
     const client = this.dataStore.clients.find(
-      (item) => item.userId === userId || item.clientId === userId,
+      item => item.userId === userId || item.clientId === userId
     );
-    const clientIdentifiers = new Set(
-      [userId, client?.clientId].filter(Boolean).map(String),
-    );
+    const clientIdentifiers = new Set([userId, client?.clientId].filter(Boolean).map(String));
 
     // ── 1. Activity-log entries that belong to this client ──────────
     const directLogs = this.dataStore.activityLogs
-      .filter((log) => this.belongsToClient(log, clientIdentifiers))
-      .filter((log) => !RAW_METHOD_ACTIONS.includes(log.action))
-      .filter((log) => !['user_login', 'user_logout'].includes(log.action))
-      .map((log) => {
+      .filter(log => this.belongsToClient(log, clientIdentifiers))
+      .filter(log => !RAW_METHOD_ACTIONS.includes(log.action))
+      .filter(log => !['user_login', 'user_logout'].includes(log.action))
+      .map(log => {
         const details = (log.details as any) || {};
         const nestedData = details.data || {};
         const eventName = details.eventName || nestedData.eventName || nestedData.name || '';
         const requestId = details.requestId || nestedData.requestId || '';
         const amount = details.amount || nestedData.amount || 0;
-        const description = details.description || nestedData.description || buildActivityDescription(log.action, eventName, amount);
+        const description =
+          details.description ||
+          nestedData.description ||
+          buildActivityDescription(log.action, eventName, amount);
         return {
           ...log,
           details: {
@@ -98,23 +99,24 @@ export class ActivityLogService {
     // ── 2. Synthesise from event-request audit history ───────────────
     const clientId = client?.clientId;
     const clientRequests = this.dataStore.eventRequests.filter(
-      (r) =>
-        r.clientId === clientId ||
-        clientIdentifiers.has(String(r.clientId)) ||
-        clientIdentifiers.has(String((r as any).userId)),
+      request =>
+        request.clientId === clientId ||
+        clientIdentifiers.has(String(request.clientId)) ||
+        clientIdentifiers.has(String((request as any).userId))
     );
 
     const syntheticLogs: ActivityLog[] = [];
     for (const req of clientRequests) {
       const requestId = req.requestId;
-      const eventName  = req.eventName || 'Event Request';
+      const eventName = req.eventName || 'Event Request';
       // Derive the latest payment amount from proposals or budget
-      const latestProposal  = Array.isArray(req.proposals) && req.proposals.length > 0
-        ? req.proposals[req.proposals.length - 1]
-        : null;
+      const latestProposal =
+        Array.isArray(req.proposals) && req.proposals.length > 0
+          ? req.proposals[req.proposals.length - 1]
+          : null;
       const amount = latestProposal?.amount || req.budget || 0;
 
-      for (const entry of (req.auditHistory || [])) {
+      for (const entry of req.auditHistory || []) {
         const action = mapAuditActionToActivityAction(entry.action, entry.role);
         if (!action) continue;
 
@@ -137,9 +139,10 @@ export class ActivityLogService {
 
       // Also add current-status entry if no audit entry covers it yet
       if (req.cancellation) {
-        const cancelledAt = req.cancellation.cancelledAt instanceof Date
-          ? req.cancellation.cancelledAt
-          : new Date(req.cancellation.cancelledAt);
+        const cancelledAt =
+          req.cancellation.cancelledAt instanceof Date
+            ? req.cancellation.cancelledAt
+            : new Date(req.cancellation.cancelledAt);
         syntheticLogs.push({
           id: `synthetic-cancel-${requestId}`,
           action: 'request_cancelled',
@@ -162,7 +165,7 @@ export class ActivityLogService {
     // ── 3. Merge, de-duplicate by id, sort newest-first, and cap ────
     const combined = [...directLogs, ...syntheticLogs];
     const seen = new Set<string>();
-    const deduped = combined.filter((log) => {
+    const deduped = combined.filter(log => {
       if (seen.has(log.id)) return false;
       seen.add(log.id);
       return true;
@@ -210,7 +213,7 @@ export class ActivityLogService {
     const actionCounts: { [key: string]: number } = {};
     const roleCounts: { [key: string]: number } = {};
 
-    logs.forEach((log) => {
+    logs.forEach(log => {
       actionCounts[log.action] = (actionCounts[log.action] || 0) + 1;
       roleCounts[log.role] = (roleCounts[log.role] || 0) + 1;
     });
@@ -243,21 +246,31 @@ function mapAuditActionToActivityAction(auditAction: string, role?: string): str
   if (a.includes('request submitted')) return 'event_request_submitted';
   if (a.includes('review started')) return 'request_review_started';
   if (a.includes('accepted') && a.includes('organizer')) return 'request_accepted_by_organizer';
-  if (a.includes('rejected') && (role === 'event_organizer' || a.includes('organizer'))) return 'request_rejected_by_organizer';
-  if (a.includes('clarification requested') || a.includes('info requested')) return 'info_requested_by_organizer';
-  if (a.includes('clarification provided') || a.includes('info provided')) return 'info_provided_by_client';
+  if (a.includes('rejected') && (role === 'event_organizer' || a.includes('organizer')))
+    return 'request_rejected_by_organizer';
+  if (a.includes('clarification requested') || a.includes('info requested'))
+    return 'info_requested_by_organizer';
+  if (a.includes('clarification provided') || a.includes('info provided'))
+    return 'info_provided_by_client';
   if (a.includes('proposal sent') || a.startsWith('proposal (v')) return 'proposal_sent';
   if (a.includes('proposal revised') || a.includes('revise')) return 'proposal_revised';
-  if (a.includes('proposal accepted') && (role === 'client' || a.includes('client'))) return 'client_proposal_accepted';
+  if (a.includes('proposal accepted') && (role === 'client' || a.includes('client')))
+    return 'client_proposal_accepted';
   if (a.includes('revision requested')) return 'revision_requested_by_client';
-  if (a.includes('agreement') && (a.includes('signed') || a.includes('agreed') || a.includes('acknowledged'))) return 'agreement_status_updated';
+  if (
+    a.includes('agreement') &&
+    (a.includes('signed') || a.includes('agreed') || a.includes('acknowledged'))
+  )
+    return 'agreement_status_updated';
   if (a.includes('deposit') && a.includes('paid')) return 'deposit_payment_completed';
   if (a.includes('deposit') && a.includes('confirm')) return 'deposit_payment_completed';
   if (a.includes('booking confirmed')) return 'booking_confirmed';
-  if (a.includes('withdrawn') || (a.includes('withdraw') && role === 'client')) return 'request_withdrawn';
+  if (a.includes('withdrawn') || (a.includes('withdraw') && role === 'client'))
+    return 'request_withdrawn';
   if (a.includes('cancelled') || a.includes('event cancelled')) return 'request_cancelled';
   if (a.includes('modification requested')) return 'modification_requested';
-  if (a.includes('modification approved') || a.includes('modification rejected')) return 'modification_responded';
+  if (a.includes('modification approved') || a.includes('modification rejected'))
+    return 'modification_responded';
   if (a.includes('counteroffer')) return 'counteroffer_sent';
 
   return null; // skip unrecognised entries
@@ -265,8 +278,12 @@ function mapAuditActionToActivityAction(auditAction: string, role?: string): str
 
 function clientActionShowsAmount(action: string): boolean {
   return [
-    'proposal_sent', 'proposal_revised', 'client_proposal_accepted',
-    'deposit_payment_completed', 'booking_confirmed', 'request_cancelled',
+    'proposal_sent',
+    'proposal_revised',
+    'client_proposal_accepted',
+    'deposit_payment_completed',
+    'booking_confirmed',
+    'request_cancelled',
   ].includes(action);
 }
 

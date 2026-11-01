@@ -20,19 +20,31 @@ export class WorkspaceController {
   }
 
   @Patch('customers/:id')
-  updateCustomer(@Param('id') id: string, @Body() dto: UpdateUserDto,
-    @UserRoleDecorator() role: UserRole, @UserId() userId: string) {
+  updateCustomer(
+    @Param('id') id: string,
+    @Body() dto: UpdateUserDto,
+    @UserRoleDecorator() role: UserRole,
+    @UserId() userId: string
+  ) {
     return this.workspace.updateCustomer(id, dto, role, userId);
   }
 
   @Delete('customers/:id')
-  removeCustomer(@Param('id') id: string, @UserRoleDecorator() role: UserRole, @UserId() userId: string) {
+  removeCustomer(
+    @Param('id') id: string,
+    @UserRoleDecorator() role: UserRole,
+    @UserId() userId: string
+  ) {
     return this.workspace.removeCustomer(id, role, userId);
   }
 
   @Patch('events/:id')
-  updateEvent(@Param('id') id: string, @Body() dto: UpdateEventDto,
-    @UserRoleDecorator() role: UserRole, @UserId() userId: string) {
+  updateEvent(
+    @Param('id') id: string,
+    @Body() dto: UpdateEventDto,
+    @UserRoleDecorator() role: UserRole,
+    @UserId() userId: string
+  ) {
     return this.workspace.updateEvent(id, dto, role, userId);
   }
 }

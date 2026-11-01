@@ -1,10 +1,23 @@
-import { Controller, Post, Get, Body, Param, Query, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Param,
+  Query,
+  HttpCode,
+  HttpStatus,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ThrottlerGuard, Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto, RegisterDto } from './dto/register.dto';
-import { SubmitOrganizerApplicationDto, ReviewOrganizerApplicationDto } from './dto/organizer-application.dto';
+import {
+  SubmitOrganizerApplicationDto,
+  ReviewOrganizerApplicationDto,
+} from './dto/organizer-application.dto';
 import { RoleGuard } from '../../common/guards/role.guard';
 import { UserId } from '../../common/decorators/user-id.decorator';
 import { UserRoleDecorator } from '../../common/decorators/user-role.decorator';
@@ -49,7 +62,7 @@ export class AuthController {
     @Param('ref') ref: string,
     @Body() dto: ReviewOrganizerApplicationDto,
     @UserId() userId: string,
-    @UserRoleDecorator() role: UserRole,
+    @UserRoleDecorator() role: UserRole
   ) {
     return this.authService.reviewOrganizerApplication(ref, dto, userId, role);
   }
@@ -67,7 +80,8 @@ export class AuthController {
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @ApiOperation({
     summary: 'Login with email and password',
-    description: 'Public endpoint. Returns user info and JWT token. Use token in Authorization header (Bearer token) for subsequent requests.',
+    description:
+      'Public endpoint. Returns user info and JWT token. Use token in Authorization header (Bearer token) for subsequent requests.',
   })
   @ApiResponse({
     status: 200,
@@ -94,4 +108,3 @@ export class AuthController {
     return this.authService.login(loginDto);
   }
 }
-

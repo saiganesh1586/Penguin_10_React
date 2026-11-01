@@ -6,8 +6,14 @@ const vm = require('node:vm');
 const jsQR = require('../public/assets/vendor/jsQR-1.4.0.js');
 
 const frontend = path.join(__dirname, '..');
-const scannerSource = fs.readFileSync(path.join(frontend, 'src/apps/attendee/utils/ticket-scanner.js'), 'utf8');
-const encoderSource = fs.readFileSync(path.join(frontend, 'public/assets/vendor/qrcode-1.5.4.js'), 'utf8');
+const scannerSource = fs.readFileSync(
+  path.join(frontend, 'src/apps/attendee/utils/ticket-scanner.js'),
+  'utf8'
+);
+const encoderSource = fs.readFileSync(
+  path.join(frontend, 'public/assets/vendor/qrcode-1.5.4.js'),
+  'utf8'
+);
 
 function qrFrame(svg) {
   const size = Number(svg.match(/viewBox="0 0 (\d+)/)[1]);
@@ -37,38 +43,70 @@ function harness(options = {}) {
   let image;
   const track = { stop: () => stops++, addEventListener() {} };
   const stream = { getTracks: () => [track], getVideoTracks: () => [track] };
-  for (const id of ['app', 'qr-input', 'ticket-camera', 'ticket-camera-video', 'ticket-scan-start', 'ticket-scan-stop', 'ticket-scan-status']) {
-    elements.set(id, { hidden: false, value: '', textContent: '', isConnected: true, style: {}, focus() {} });
+  for (const id of [
+    'app',
+    'qr-input',
+    'ticket-camera',
+    'ticket-camera-video',
+    'ticket-scan-start',
+    'ticket-scan-stop',
+    'ticket-scan-status',
+  ]) {
+    elements.set(id, {
+      hidden: false,
+      value: '',
+      textContent: '',
+      isConnected: true,
+      style: {},
+      focus() {},
+    });
   }
   const video = elements.get('ticket-camera-video');
   Object.assign(video, { readyState: 2, play: async () => {} });
   const document = {
-    body: {}, hidden: false,
+    body: {},
+    hidden: false,
     getElementById: id => elements.get(id),
     addEventListener: (name, fn) => listeners.set(name, fn),
     createElement: () => ({
-      getContext: () => ({ drawImage() {}, getImageData: () => image })
-    })
+      getContext: () => ({ drawImage() {}, getImageData: () => image }),
+    }),
   };
   const context = vm.createContext({
     document,
     navigator: { mediaDevices: { getUserMedia: options.getUserMedia || (async () => stream) } },
     MutationObserver: class {
-      constructor(callback) { observers.push(callback); }
+      constructor(callback) {
+        observers.push(callback);
+      }
       observe() {}
     },
-    requestAnimationFrame: callback => { frames.set(++frameId, callback); return frameId; },
+    requestAnimationFrame: callback => {
+      frames.set(++frameId, callback);
+      return frameId;
+    },
     cancelAnimationFrame: id => frames.delete(id),
     addEventListener: (name, fn) => listeners.set(name, fn),
     handleQRInput: value => inputCalls.push(value),
-    jsQR, console, TextEncoder
+    jsQR,
+    console,
+    TextEncoder,
   });
   context.window = context;
   vm.runInContext(encoderSource, context);
   vm.runInContext(scannerSource, context);
   return {
-    context, elements, document, observers, listeners, frames, inputCalls, stream,
-    get stops() { return stops; },
+    context,
+    elements,
+    document,
+    observers,
+    listeners,
+    frames,
+    inputCalls,
+    stream,
+    get stops() {
+      return stops;
+    },
     setQR(value) {
       image = qrFrame(context.renderTicketQRCode(value));
       video.videoWidth = image.width;
@@ -79,7 +117,7 @@ function harness(options = {}) {
       const [id, callback] = frames.entries().next().value;
       frames.delete(id);
       callback(300);
-    }
+    },
   };
 }
 
@@ -107,7 +145,12 @@ test('Scan reads the camera frame into the input and stops before verification',
 
 test('Stop also releases a camera granted after cancellation', async () => {
   let grant;
-  const h = harness({ getUserMedia: () => new Promise(resolve => { grant = resolve; }) });
+  const h = harness({
+    getUserMedia: () =>
+      new Promise(resolve => {
+        grant = resolve;
+      }),
+  });
   const start = h.context.startTicketScan();
   h.context.stopTicketScan();
   grant(h.stream);
@@ -118,7 +161,11 @@ test('Stop also releases a camera granted after cancellation', async () => {
 });
 
 test('denied access keeps manual entry available', async () => {
-  const h = harness({ getUserMedia: async () => { throw Object.assign(new Error(), { name: 'NotAllowedError' }); } });
+  const h = harness({
+    getUserMedia: async () => {
+      throw Object.assign(new Error(), { name: 'NotAllowedError' });
+    },
+  });
   h.elements.get('qr-input').value = 'TKT-EMP-101';
   await h.context.startTicketScan();
   assert.equal(h.elements.get('qr-input').value, 'TKT-EMP-101');

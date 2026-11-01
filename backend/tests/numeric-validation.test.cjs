@@ -15,20 +15,29 @@ const {
   validateIndianMobile,
 } = require(path.join(__dirname, '../dist/common/validation-rules'));
 
-const { CreateEventRequestDto } = require(path.join(__dirname, '../dist/modules/event-requests/dto/event-request.dto'));
+const { CreateEventRequestDto } = require(path.join(
+  __dirname,
+  '../dist/modules/event-requests/dto/event-request.dto'
+));
 const { CreateEventDto } = require(path.join(__dirname, '../dist/modules/events/dtos/event.dto'));
-const { CreatePaymentDto } = require(path.join(__dirname, '../dist/modules/payments/dto/payment.dto'));
+const { CreatePaymentDto } = require(path.join(
+  __dirname,
+  '../dist/modules/payments/dto/payment.dto'
+));
 const { validate } = require('class-validator');
 const { plainToInstance } = require('class-transformer');
 const { DataStore } = require(path.join(__dirname, '../dist/common/data-store'));
-const { PaymentsService } = require(path.join(__dirname, '../dist/modules/payments/payments.service'));
+const { PaymentsService } = require(path.join(
+  __dirname,
+  '../dist/modules/payments/payments.service'
+));
 const { UserRole } = require(path.join(__dirname, '../dist/common/constants'));
 
 test('Numeric Validation: Event Budget Limits (₹1,000 to ₹1,00,00,000)', () => {
   // Valid boundaries
   assert.equal(validateEventBudget(1000), null, 'Min budget 1,000 should be valid');
   assert.equal(validateEventBudget(10000000), null, 'Max budget 10,000,000 should be valid');
-  assert.equal(validateEventBudget(50000.50), null, 'Valid 2-decimal budget should be valid');
+  assert.equal(validateEventBudget(50000.5), null, 'Valid 2-decimal budget should be valid');
 
   // Below minimum
   assert.equal(validateEventBudget(999), EVENTFLOW_NUMERIC_LIMITS.BUDGET.ERROR_MIN);
@@ -50,7 +59,7 @@ test('Numeric Validation: Event Budget Limits (₹1,000 to ₹1,00,00,000)', () 
 test('Numeric Validation: Ticket Price Limits (₹0 to ₹1,00,000)', () => {
   // Valid values
   assert.equal(validateTicketPrice(0), null, 'Free event (₹0) should be valid');
-  assert.equal(validateTicketPrice(499.50), null, '₹499.50 should be valid');
+  assert.equal(validateTicketPrice(499.5), null, '₹499.50 should be valid');
   assert.equal(validateTicketPrice(100000), null, 'Max price ₹1,00,000 should be valid');
 
   // Below minimum (negative)
@@ -112,7 +121,10 @@ test('Numeric Validation: Years of Experience (0 to 60 integers)', () => {
   assert.equal(validateYearsOfExperience(60), null, 'Max 60 years should be valid');
 
   // Non-integers
-  assert.equal(validateYearsOfExperience(4.5), EVENTFLOW_NUMERIC_LIMITS.YEARS_EXPERIENCE.ERROR_INTEGER);
+  assert.equal(
+    validateYearsOfExperience(4.5),
+    EVENTFLOW_NUMERIC_LIMITS.YEARS_EXPERIENCE.ERROR_INTEGER
+  );
 
   // Out of bounds
   assert.equal(validateYearsOfExperience(-1), EVENTFLOW_NUMERIC_LIMITS.YEARS_EXPERIENCE.ERROR_MIN);
@@ -174,7 +186,10 @@ test('Backend DTO Validation: CreateEventRequestDto rejects out-of-bound inputs'
     acceptedPolicyVersion: '1.0',
   });
   const budgetErrors = await validate(invalidBudgetDto);
-  assert.ok(budgetErrors.some(e => e.property === 'budget'), 'Budget < 1000 should be rejected by DTO');
+  assert.ok(
+    budgetErrors.some(e => e.property === 'budget'),
+    'Budget < 1000 should be rejected by DTO'
+  );
 
   // 2. Budget > 10,000,000
   const highBudgetDto = plainToInstance(CreateEventRequestDto, {
@@ -189,7 +204,10 @@ test('Backend DTO Validation: CreateEventRequestDto rejects out-of-bound inputs'
     acceptedPolicyVersion: '1.0',
   });
   const highBudgetErrors = await validate(highBudgetDto);
-  assert.ok(highBudgetErrors.some(e => e.property === 'budget'), 'Budget > 10,000,000 should be rejected');
+  assert.ok(
+    highBudgetErrors.some(e => e.property === 'budget'),
+    'Budget > 10,000,000 should be rejected'
+  );
 
   // 3. Out-of-bounds capacity (> 50,000)
   const highCapDto = plainToInstance(CreateEventRequestDto, {
@@ -204,7 +222,10 @@ test('Backend DTO Validation: CreateEventRequestDto rejects out-of-bound inputs'
     acceptedPolicyVersion: '1.0',
   });
   const capErrors = await validate(highCapDto);
-  assert.ok(capErrors.some(e => e.property === 'capacity'), 'Capacity > 50,000 should be rejected');
+  assert.ok(
+    capErrors.some(e => e.property === 'capacity'),
+    'Capacity > 50,000 should be rejected'
+  );
 
   // 4. Ticket price > 100,000
   const highPriceDto = plainToInstance(CreateEventRequestDto, {
@@ -220,7 +241,10 @@ test('Backend DTO Validation: CreateEventRequestDto rejects out-of-bound inputs'
     acceptedPolicyVersion: '1.0',
   });
   const priceErrors = await validate(highPriceDto);
-  assert.ok(priceErrors.some(e => e.property === 'ticketPrice'), 'Ticket price > 100,000 should be rejected');
+  assert.ok(
+    priceErrors.some(e => e.property === 'ticketPrice'),
+    'Ticket price > 100,000 should be rejected'
+  );
 });
 
 test('Financial Rules: Payments prevent tampering and duplicate processing', async () => {
@@ -347,7 +371,7 @@ test('Financial Rules: Payments prevent tampering and duplicate processing', asy
     refundId: testRefundValidId,
     paymentId: payResult.data.paymentId,
     registrationId: testRegId,
-    amount: 250.50,
+    amount: 250.5,
     status: 'pending',
     reason: 'Valid partial refund',
     requestedAt: new Date(),
@@ -377,4 +401,3 @@ test('Financial Rules: Payments prevent tampering and duplicate processing', asy
     'Duplicate refund on same payment must be blocked'
   );
 });
-

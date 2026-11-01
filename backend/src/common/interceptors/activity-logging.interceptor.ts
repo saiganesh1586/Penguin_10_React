@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  NestInterceptor,
-  ExecutionContext,
-  CallHandler,
-} from '@nestjs/common';
+import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { Request } from 'express';
@@ -31,7 +26,7 @@ export class ActivityLoggingInterceptor implements NestInterceptor {
     }
 
     return next.handle().pipe(
-      tap((data) => {
+      tap(data => {
         this.activityLogService.logActivity({
           action: deriveActionName(method, path),
           resource: path,
@@ -41,7 +36,7 @@ export class ActivityLoggingInterceptor implements NestInterceptor {
           status: 'success',
           details: data,
         });
-      }),
+      })
     );
   }
 }
@@ -61,7 +56,7 @@ function deriveActionName(method: string, path: string): string {
     .replace(/^\/api\//, '')
     .split('/')
     .filter(Boolean)
-    .map((s) => (/^[a-f0-9-]{8,}$|^\d+$/.test(s) ? ':id' : s));
+    .map(s => (/^[a-f0-9-]{8,}$|^\d+$/.test(s) ? ':id' : s));
 
   const resource = segments[0] || 'resource';
   const sub = segments[2]; // action after /:id/

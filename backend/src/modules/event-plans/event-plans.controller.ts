@@ -15,7 +15,15 @@ import {
   Res,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiTags, ApiOperation, ApiResponse, ApiHeader, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiHeader,
+  ApiBearerAuth,
+  ApiConsumes,
+  ApiBody,
+} from '@nestjs/swagger';
 import { diskStorage } from 'multer';
 import { randomUUID } from 'crypto';
 import * as fs from 'fs';
@@ -67,19 +75,22 @@ export class EventPlansController {
       }),
       limits: { fileSize: 20 * 1024 * 1024 },
       fileFilter: (_request, file, callback) => {
-        if (file.mimetype !== 'application/pdf' || path.extname(file.originalname).toLowerCase() !== '.pdf') {
+        if (
+          file.mimetype !== 'application/pdf' ||
+          path.extname(file.originalname).toLowerCase() !== '.pdf'
+        ) {
           callback(new BadRequestException('Event plans must be uploaded as PDF files'), false);
           return;
         }
         callback(null, true);
       },
-    }),
+    })
   )
   uploadDocument(
     @Param('requestId') requestId: string,
     @UploadedFile() file: Express.Multer.File | undefined,
     @UserRoleDecorator() role: UserRole,
-    @UserId() userId: string,
+    @UserId() userId: string
   ) {
     if (!file) throw new BadRequestException('A PDF event plan file is required');
     return this.service.uploadDocument(requestId, file, role, userId);
@@ -90,7 +101,11 @@ export class EventPlansController {
   @ApiOperation({ summary: 'Create event plan (EVENT_ORGANIZER)' })
   @ApiResponse({ status: 201, description: 'Event plan created. Notifies client.' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
-  create(@Body() dto: CreateEventPlanDto, @UserRoleDecorator() role: UserRole, @UserId() userId: string) {
+  create(
+    @Body() dto: CreateEventPlanDto,
+    @UserRoleDecorator() role: UserRole,
+    @UserId() userId: string
+  ) {
     return this.service.create(dto, role, userId);
   }
 
@@ -115,7 +130,7 @@ export class EventPlansController {
     @Param('id') id: string,
     @UserRoleDecorator() role: UserRole,
     @UserId() userId: string,
-    @Res({ passthrough: true }) response: Response,
+    @Res({ passthrough: true }) response: Response
   ): Promise<StreamableFile> {
     const result = await this.service.getDocument(id, role, userId);
     const fileName = result.fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
@@ -135,7 +150,7 @@ export class EventPlansController {
     @Param('id') id: string,
     @Body() dto: UpdateEventPlanApprovalDto,
     @UserRoleDecorator() role: UserRole,
-    @UserId() userId: string,
+    @UserId() userId: string
   ) {
     return this.service.updateApproval(id, dto, role, userId);
   }

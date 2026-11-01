@@ -6,5 +6,4 @@ import { UserRole } from '../constants';
  * Usage: @RequiredRoles(UserRole.SUPER_ADMIN, UserRole.CLIENT)
  */
 export const REQUIRED_ROLES_KEY = 'required_roles';
-export const RequiredRoles = (...roles: UserRole[]) =>
-  SetMetadata(REQUIRED_ROLES_KEY, roles);
+export const RequiredRoles = (...roles: UserRole[]) => SetMetadata(REQUIRED_ROLES_KEY, roles);
