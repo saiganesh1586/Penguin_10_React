@@ -1642,15 +1642,7 @@ window.EventFlowModules['shared'] = true;
       switch (pg) {
         case 'dashboard':
           if (r === 'attendee') {
-            el.innerHTML = `<div class="empty"><div class="empty-icon">📊</div><div class="empty-title">Loading dashboard…</div></div>`;
-            try {
-              const [serverEvents, serverRegistrations] = await Promise.all([apiGetEvents(), apiGetAttendeeRegistrations()]);
-              attendeeEventCatalog = (Array.isArray(serverEvents) ? serverEvents : []).map(normalizeAttendeeEvent);
-              attendeeRegistrationCatalog = (Array.isArray(serverRegistrations) ? serverRegistrations : []).map(normalizeAttendeeRegistration);
-              window.EventFlowAttendeePages.render(el, 'dashboard', dashAttendee());
-            } catch (error) {
-              el.innerHTML = `<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-title">Dashboard could not be loaded</div><p class="empty-desc">${error.message || 'The server did not return attendee data.'}</p><button class="btn btn-primary mt-16" onclick="goNav('dashboard')">Try Again</button></div>`;
-            }
+            window.EventFlowAttendeePages.render(el, 'dashboard', { user: CU });
           } else {
             el.innerHTML = isDepartmentEmployee()
               ? dashDepartmentEmployee()
@@ -1692,32 +1684,10 @@ window.EventFlowModules['shared'] = true;
 
 
         case 'browse-events':
-          el.innerHTML = `<div class="empty"><div class="empty-icon">📅</div><div class="empty-title">Loading events…</div></div>`;
-          try {
-            const [serverEvents, serverRegistrations] = await Promise.all([
-              apiGetEvents(),
-              attendeeRegistrationCatalog.length ? Promise.resolve(null) : apiGetAttendeeRegistrations().catch(() => [])
-            ]);
-            attendeeEventCatalog = (Array.isArray(serverEvents) ? serverEvents : []).map(normalizeAttendeeEvent);
-            if (serverRegistrations) {
-              attendeeRegistrationCatalog = (Array.isArray(serverRegistrations) ? serverRegistrations : []).map(normalizeAttendeeRegistration);
-            }
-            window.EventFlowAttendeePages.render(el, 'browse-events', pageBrowseEvents());
-          } catch (error) {
-            attendeeEventCatalog = [];
-            el.innerHTML = `<div class="page-hd"><div class="page-hd-left"><div class="page-title">Browse Events</div><div class="page-sub">Discover and register for upcoming events.</div></div></div><div class="empty"><div class="empty-icon">⚠️</div><div class="empty-title">Events could not be loaded</div><p class="empty-desc">${error.message || 'The server did not return the event catalog.'}</p><button class="btn btn-primary mt-16" onclick="goNav('browse-events')">Try Again</button></div>`;
-          }
+          window.EventFlowAttendeePages.render(el, 'browse-events', { user: CU });
           break;
         case 'my-tickets':
-          el.innerHTML = `<div class="empty"><div class="empty-icon">🎟️</div><div class="empty-title">Loading registrations…</div></div>`;
-          try {
-            const serverRegistrations = await apiGetAttendeeRegistrations();
-            attendeeRegistrationCatalog = (Array.isArray(serverRegistrations) ? serverRegistrations : []).map(normalizeAttendeeRegistration);
-            window.EventFlowAttendeePages.render(el, 'my-tickets', pageMyTickets());
-          } catch (error) {
-            attendeeRegistrationCatalog = [];
-            el.innerHTML = `<div class="page-hd"><div class="page-hd-left"><div class="page-title">My Registrations</div></div></div><div class="empty"><div class="empty-icon">⚠️</div><div class="empty-title">Registrations could not be loaded</div><p class="empty-desc">${error.message || 'The server did not return your registrations.'}</p><button class="btn btn-primary mt-16" onclick="goNav('my-tickets')">Try Again</button></div>`;
-          }
+          window.EventFlowAttendeePages.render(el, 'my-tickets', { user: CU });
           break;
         case 'find-organizers':
           el.innerHTML = pageFindOrganizers();
@@ -1733,28 +1703,17 @@ window.EventFlowModules['shared'] = true;
           break;
         case 'notifications':
           if (r === 'attendee') {
-            el.innerHTML = `<div class="empty"><div class="empty-icon">🔔</div><div class="empty-title">Loading notifications…</div></div>`;
-            try {
-              const serverNotifications = await apiGetNotifications();
-              attendeeNotificationCatalog = (Array.isArray(serverNotifications) ? serverNotifications : [])
-                 .filter(n => n.type !== 'waitlist_offer' && !/waitlist|waiting list/i.test(n.message || ''))
-                 .map(n => ({
-                id: n.notificationId, title: notificationTitle(n.type), msg: n.message, time: new Date(n.dateTime).toLocaleString(), read: n.read, type: notificationTone(n.type), icon: '🔔',
-              }));
-              window.EventFlowAttendeePages.render(el, 'notifications', pageNotifications());
-            } catch (error) {
-              el.innerHTML = `<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-title">Notifications could not be loaded</div><p class="empty-desc">${error.message || 'Please try again.'}</p></div>`;
-            }
+            window.EventFlowAttendeePages.render(el, 'notifications', { user: CU });
           } else {
             el.innerHTML = pageNotifications();
           }
           break;
         case 'profile':
-          if (r === 'attendee') window.EventFlowAttendeePages.render(el, 'profile', pageProfile());
+          if (r === 'attendee') window.EventFlowAttendeePages.render(el, 'profile', { user: CU });
           else el.innerHTML = pageProfile();
           break;
         case 'settings':
-          if (r === 'attendee') window.EventFlowAttendeePages.render(el, 'settings', pageSettings());
+          if (r === 'attendee') window.EventFlowAttendeePages.render(el, 'settings', { user: CU });
           else el.innerHTML = pageSettings();
           window.EventFlowSupport.addSettingsEntry(el, () => goNav('customer-support'), CU);
           break;
@@ -3963,7 +3922,199 @@ window.EventFlowModules['shared'] = true;
 
 
 
-/* ATTENDEE_PAGE_dashboard */
+    function dashAttendee() {
+      const now = new Date();
+      function esc(v) {
+        return String(v ?? '').replace(/[&<>"']/g, c =>
+          ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+      }
+
+      // Use authenticated attendee's actual records
+      const allMyRegs = (attendeeRegistrationCatalog && attendeeRegistrationCatalog.length > 0)
+        ? attendeeRegistrationCatalog
+        : (DB.registrations || []).filter(r => String(r.attendeeId) === String(CU.id));
+      const myRegs = allMyRegs.filter(r => r.status !== 'waitlisted');
+
+      const allEvents = (attendeeEventCatalog && attendeeEventCatalog.length > 0)
+        ? attendeeEventCatalog
+        : (DB.events || []);
+
+      function findEvent(eventId) {
+        return allEvents.find(e => String(e.id) === String(eventId) || String(e.eventId) === String(eventId))
+          || (DB.events || []).find(e => String(e.id) === String(eventId) || String(e.eventId) === String(eventId))
+          || { id: eventId, title: 'Event', emoji: '🎟️', date: '', time: '', venue: '', price: 0, status: 'upcoming', category: 'General' };
+      }
+
+      // ─── 1. SUMMARY METRICS ───────────────────────────────────────────
+      // Confirmed Registrations: confirmed / registered status
+      const confirmedRegs = myRegs.filter(r => r.status === 'confirmed' || r.status === 'registered');
+
+      // Awaiting Action: only actionable unresolved items (not expired)
+      const awaitingActionRegs = myRegs.filter(r => {
+        if (r.status === 'pending_payment') {
+          return !r.reservationExpiresAt || new Date(r.reservationExpiresAt) > now;
+        }
+        return false;
+      });
+
+      // Events Attended: verified attendance
+      const attendedRegs = myRegs.filter(r => r.checkedIn || r.status === 'attended');
+
+      // Net Spent: successful payments minus completed refunds
+      let totalPaid = 0;
+      let totalRefunded = 0;
+      myRegs.forEach(r => {
+        const isPaid = r.payment === 'completed' || r.payment === 'paid' || r.paymentObj?.status === 'completed';
+        if (isPaid) {
+          totalPaid += Number(r.paymentObj?.amount ?? r.amount ?? 0);
+        }
+        const isRefunded = r.refundStatus === 'completed' || r.payment === 'refunded' || r.refundObj?.status === 'completed';
+        if (isRefunded) {
+          totalRefunded += Number(r.refundObj?.amount ?? r.amount ?? 0);
+        }
+      });
+      const netSpent = Math.max(0, totalPaid - totalRefunded);
+
+      // ─── 2. RECOMMENDED FOR YOU (Directly below summary cards) ────────
+      const activeOrPendingEventIds = new Set(
+        allMyRegs.filter(r => r.status !== 'cancelled').map(r => String(r.eventId))
+      );
+
+      const recommended = allEvents
+        .filter(e => {
+          const st = (e.status || '').toLowerCase();
+          if (st === 'completed' || st === 'cancelled') return false;
+          if (e.date && new Date(`${e.date}T23:59:59`) < now) return false;
+          if (activeOrPendingEventIds.has(String(e.id)) || activeOrPendingEventIds.has(String(e.eventId))) return false;
+          return true;
+        })
+        .sort((a, b) => {
+          const aRemaining = a.remainingCapacity !== undefined ? a.remainingCapacity : ((a.capacity || 100) - (a.registered || 0));
+          const bRemaining = b.remainingCapacity !== undefined ? b.remainingCapacity : ((b.capacity || 100) - (b.registered || 0));
+          const aHasCap = aRemaining > 0 && a.status !== 'full';
+          const bHasCap = bRemaining > 0 && b.status !== 'full';
+          if (aHasCap && !bHasCap) return -1;
+          if (!aHasCap && bHasCap) return 1;
+          return new Date(a.date || 0) - new Date(b.date || 0);
+        })
+        .slice(0, 4);
+
+      // ─── 3. UPCOMING EVENTS (Confirmed future registrations only) ─────
+      const upcomingRegs = myRegs.filter(r => {
+        if (!['confirmed', 'registered'].includes(r.status)) return false;
+        if (r.checkedIn || r.status === 'attended') return false;
+        const e = findEvent(r.eventId);
+        return e.date && new Date(`${e.date}T23:59:59`) >= now;
+      });
+
+      function canCancelReg(r, e) {
+        if (r.checkedIn || ['attended', 'cancelled', 'no-show'].includes(r.status)) return false;
+        return true;
+      }
+
+      // ─── 4. NEEDS ATTENTION (Only unresolved items) ─────────────────
+      const needsAttentionRegs = awaitingActionRegs;
+
+      // ─── BUILD HTML ──────────────────────────────────────────────────
+      return `
+  <div class="page-hd">
+    <div class="page-hd-left"><div class="page-title">My Dashboard</div><div class="page-sub">Welcome back, ${esc(CU.name || 'Attendee')}! Here are your event highlights.</div></div>
+    <div class="page-hd-right"><button class="btn btn-primary" onclick="goNav('browse-events')">🔍 Browse Events</button></div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="grid-4 mb-20">
+    <div class="stat-card">
+      <div class="stat-icon" style="background:var(--green-dim);color:var(--green)">🎟️</div>
+      <div class="stat-value" style="color:var(--green)">${confirmedRegs.length}</div>
+      <div class="stat-label">Confirmed Registrations</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:var(--yellow-dim);color:var(--yellow)">⏳</div>
+      <div class="stat-value" style="color:var(--yellow)">${awaitingActionRegs.length}</div>
+      <div class="stat-label">Awaiting Action</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:var(--blue-dim,rgba(66,153,225,.12));color:var(--blue,#4299e1)">✅</div>
+      <div class="stat-value" style="color:var(--blue,#4299e1)">${attendedRegs.length}</div>
+      <div class="stat-label">Events Attended</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:var(--yellow-dim);color:var(--yellow)">💰</div>
+      <div class="stat-value" style="color:var(--yellow)">₹${netSpent.toLocaleString('en-IN')}</div>
+      <div class="stat-label">Net Spent</div>
+    </div>
+  </div>
+
+  <!-- Recommended For You (Directly below summary cards) -->
+  <div class="h4 mb-16">✨ Recommended For You</div>
+  <div class="events-grid">
+    ${recommended.length
+      ? recommended.map(e => evCard(e, 'attendee')).join('')
+      : `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">✨</div><div class="empty-title">No recommendations right now</div><p class="empty-desc">You are up to date on all available events.</p></div>`
+    }
+  </div>
+
+  <!-- Upcoming Events (Confirmed future registrations) -->
+  <div class="h4 mb-16 mt-24">📅 Upcoming Events</div>
+  ${upcomingRegs.length > 0 ? `
+  <div style="display:flex;flex-direction:column;gap:12px">
+    ${upcomingRegs.map(r => {
+      const e = findEvent(r.eventId);
+      const allowCancel = canCancelReg(r, e);
+      return `<div class="card p-0" style="display:flex;justify-content:space-between;align-items:center;padding:16px;gap:12px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:14px;min-width:0;flex:1">
+          <span style="font-size:32px;flex-shrink:0">${esc(e.emoji || '🎟️')}</span>
+          <div style="min-width:0">
+            <div style="font-weight:700;font-size:15px;margin-bottom:3px">${esc(e.title)}</div>
+            <div class="small" style="color:var(--text2)">📅 ${esc(e.date)}${e.time ? ' · ' + esc(e.time) : ''}${e.venue ? ' · 📍 ' + esc(e.venue) : ''}</div>
+            <div class="small mt-4"><span class="badge badge-green">${esc(r.ticketId || 'Confirmed')}</span></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-shrink:0;align-items:center">
+          <button class="btn btn-ghost btn-xs" onclick="openViewEventDrawer('${e.id}', '${r.id || r.registrationId}')">👁️ View Details</button>
+          <button class="btn btn-primary btn-xs" onclick="openViewTicketModal('${r.id || r.registrationId}')">🎫 View Ticket</button>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>` : `
+  <div class="empty">
+    <div class="empty-icon">🎟️</div>
+    <div class="empty-title">No upcoming events</div>
+    <div class="empty-desc">Browse and register for events to see them here.</div>
+    <button class="btn btn-primary mt-16" onclick="goNav('browse-events')">Browse Events</button>
+  </div>`}
+
+  <!-- Needs Attention (Only unresolved items) -->
+  ${needsAttentionRegs.length > 0 ? `
+  <div class="h4 mb-12 mt-24">⚠️ Needs Attention</div>
+  <div class="card p-0">
+    ${needsAttentionRegs.map(r => {
+      const e = findEvent(r.eventId);
+      const expiry = r.reservationExpiresAt;
+      const expiryStr = expiry ? ` · Expires: ${new Date(expiry).toLocaleDateString()} ${new Date(expiry).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}` : '';
+      const desc = `Payment required to confirm your reservation.${expiryStr}`;
+      const actionBtn = `<button class="btn btn-primary btn-xs" onclick="completeDemoPayment('${r.registrationId || r.id}')">💳 Pay Now</button>`;
+      return `<div class="flex items-center justify-between" style="padding:12px 16px;border-bottom:1px solid var(--border)">
+        <div>
+          <div style="font-weight:600">${esc(e.title)}</div>
+          <div class="small" style="color:var(--yellow)">${desc}</div>
+        </div>
+        <div class="flex gap-8">
+          ${actionBtn}
+          <button class="btn btn-ghost btn-xs" onclick="goNav('my-tickets')">Review →</button>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>` : ''}
+
+`;
+    }
+    window.dashAttendee = dashAttendee;
+
+    // ════════════════════════════════════════════════
+    //  ADMIN SUBPAGE 1: USER REPORTS (BAR GRAPHS)
+    // ════════════════════════════════════════════════
     function filterUserReports(role) {
       sessionStorage.setItem('admin_user_filter_role', role);
       renderPage('user-reports');
@@ -4762,7 +4913,39 @@ window.EventFlowModules['shared'] = true;
           });
       });
     }
-/* ATTENDEE_PAGE_eventDetails */
+function openViewEventDrawer(id, registrationId = null) {
+      const e = DB.events.find(ev => String(ev.id) === String(id)); if (!e) return;
+      const regs = DB.registrations.filter(r => String(r.eventId) === String(id));
+      if (CU?.role === 'attendee') {
+        openDrawer(e.title, '');
+        window.EventFlowAttendeePages.renderDetails(g('drawer-body'), { event: e, registrationCount: regs.length });
+        return;
+      }
+
+      const bannerHTML = e.image ? `
+        <div style="height:140px;border-radius:12px;overflow:hidden;margin-bottom:16px;position:relative;background:${e.color || 'var(--accent)'}18">
+          <img src="${e.image}" alt="${e.title || 'Event'}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML='<div style=\'font-size:52px;text-align:center;padding:30px 0\'>${e.emoji || '📅'}</div>'">
+        </div>
+      ` : `<div style="font-size:52px;text-align:center;margin-bottom:16px">${e.emoji || '📅'}</div>`;
+      openDrawer(e.title, `
+    ${bannerHTML}
+    <span class="badge badge-${evStatBadge(e.status)} mb-16">${e.status}</span>
+    <div style="display:flex;flex-direction:column;gap:2px;margin-bottom:20px">
+      <div class="info-row"><span class="info-label">Category</span><span class="info-value">${escapeHtml(e.category)}</span></div>
+      <div class="info-row"><span class="info-label">Date & Time</span><span class="info-value">${escapeHtml(e.date)} · ${escapeHtml(e.time)}</span></div>
+      <div class="info-row"><span class="info-label">Venue</span><span class="info-value" style="max-width:200px;text-align:right">${escapeHtml(e.venue)}</span></div>
+      <div class="info-row"><span class="info-label">City</span><span class="info-value">${escapeHtml(e.city || '—')}</span></div>
+      <div class="info-row"><span class="info-label">Capacity</span><span class="info-value">${e.registered} / ${e.capacity}</span></div>
+      <div class="info-row"><span class="info-label">Price</span><span class="info-value" style="color:var(--green)">${e.price === 0 ? 'Free' : '₹' + e.price}</span></div>
+      <div class="info-row"><span class="info-label">Registrations</span><span class="info-value">${regs.length}</span></div>
+
+    </div>
+    ${e.description ? `<div class="label mb-8">Description</div><p class="muted" style="font-size:13px;line-height:1.7">${e.description}</p>` : ''}
+    ${(e.tags || []).length ? `<div class="label mt-16 mb-8">Tags</div><div class="tag-list">${e.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>` : ''}
+    ${CU?.role === 'organizer' ? `<div class="flex gap-8 mt-20"><button class="btn btn-primary w-full" onclick="closeDrawer();openEditEventModal('${id}')">✏️ Edit Event</button></div>` : ''}
+  `);
+    }
+
     function viewPublicEventDetails(id) {
       const e = DB.events.find(ev => String(ev.id) === String(id)); if (!e) return;
       const regs = DB.registrations.filter(r => String(r.eventId) === String(id));
@@ -4953,9 +5136,439 @@ window.EventFlowModules['shared'] = true;
     //  BROWSE EVENTS (Attendee)
     // ════════════════════════════════════════════════
     let attendeeEventCatalog = [];
-/* ATTENDEE_PAGE_browseEvents */
+    function normalizeAttendeeEvent(event) {
+      const existing = DB.events.find(e => String(e.eventId || e.id) === String(event.eventId || event.id));
+      const registered = Number(event.registered ?? existing?.registered ?? 0);
+      const remaining = event.remainingCapacity !== undefined
+        ? Number(event.remainingCapacity)
+        : Math.max(0, Number(event.capacity || 0) - registered);
+      const start = event.date ? new Date(`${event.date}T${event.time || '00:00'}`) : null;
+      const end = event.endDate
+        ? new Date(`${event.endDate}T${event.endTime || '23:59:59'}`)
+        : event.date ? new Date(`${event.date}T${event.endTime || '23:59:59'}`) : null;
+      const now = new Date();
+      const calendarStatus = start && !Number.isNaN(start.getTime())
+        ? now < start ? 'upcoming' : end && now > end ? 'completed' : 'ongoing'
+        : event.status === 'published' ? 'upcoming' : event.status;
+      const normalized = {
+        ...(existing || {}),
+        ...event,
+        id: event.eventId || event.id,
+        eventId: event.eventId || event.id,
+        title: event.title || event.name,
+        emoji: event.emoji || existing?.emoji || '📅',
+        venue: event.venue || event.location,
+        price: Number(event.price ?? event.ticketPrice ?? 0),
+        registered,
+        remainingCapacity: remaining,
+        visibility: event.visibility === 'private' ? 'private' : 'public',
+        status: ['cancelled', 'draft'].includes(event.status) ? event.status : calendarStatus === 'completed' ? 'completed' : remaining === 0 && Number(event.capacity) > 0 ? 'full' : calendarStatus,
+      };
+      const index = DB.events.findIndex(e => String(e.id) === String(normalized.id));
+      if (index >= 0) DB.events[index] = normalized;
+      else DB.events.push(normalized);
+      return normalized;
+    }
+    function getRegisteredEventIdSet() {
+      const set = new Set();
+      (attendeeRegistrationCatalog || [])
+        .filter(r => r.status !== 'cancelled')
+        .forEach(r => {
+          if (r.eventId) set.add(String(r.eventId));
+          if (r.event?.id) set.add(String(r.event.id));
+          if (r.event?.eventId) set.add(String(r.event.eventId));
+        });
+      (DB.registrations || [])
+        .filter(r => r.status !== 'cancelled' && (String(r.attendeeId) === String(CU?.id) || String(r.attendeeId) === String(CU?.userId)))
+        .forEach(r => {
+          if (r.eventId) set.add(String(r.eventId));
+        });
+      return set;
+    }
+
+    function newestBrowseEventFirst(a, b) {
+      const createdA = Date.parse(a.createdAt || a.created || a.updatedAt || '') || 0;
+      const createdB = Date.parse(b.createdAt || b.created || b.updatedAt || '') || 0;
+      return createdB - createdA || String(b.eventId || b.id || '').localeCompare(String(a.eventId || a.id || ''));
+    }
+
+    function pageBrowseEvents() {
+      const now = new Date();
+      const registeredIds = getRegisteredEventIdSet();
+      const avail = attendeeEventCatalog.filter(e =>
+        e.status !== 'completed' &&
+        e.status !== 'cancelled' &&
+        new Date(`${e.date}T23:59:59`) >= now &&
+        !registeredIds.has(String(e.id)) &&
+        !registeredIds.has(String(e.eventId))
+      ).sort(newestBrowseEventFirst);
+      return `
+  <div class="page-hd">
+    <div class="page-hd-left"><div class="page-title">Browse Events</div><div class="page-sub">Discover and register for new upcoming events.</div></div>
+  </div>
+  <div class="filter-row">
+    <div class="search-box input-group"><span class="input-icon">🔍</span><input class="form-control" id="be-q" placeholder="Search events…" oninput="refreshBrowse()"></div>
+    <select class="form-control filter-select" id="be-cat" onchange="refreshBrowse()">
+      <option value="">All Categories</option>${[...new Set(avail.map(e => e.category).filter(Boolean))].sort().map(category => `<option>${escapeHtml(category)}</option>`).join('')}
+    </select>
+    <select class="form-control filter-select" id="be-price" onchange="refreshBrowse()">
+      <option value="">Any Price</option><option value="free">Free Only</option><option value="paid">Paid Only</option>
+    </select>
+    <select class="form-control filter-select" id="be-city" onchange="refreshBrowse()">
+      <option value="">Any City</option>
+      ${[...new Set(avail.map(e => e.city).filter(Boolean))].map(c => `<option>${escapeHtml(c)}</option>`).join('')}
+    </select>
+  </div>
+  <div class="events-grid" id="browse-grid">${avail.length ? avail.map(e => evCard(e, 'attendee')).join('') : `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">📅</div><div class="empty-title">No new upcoming events</div><p class="empty-desc">Your registrations are in My Tickets. Check back soon for new events.</p></div>`}</div>`;
+    }
+    function refreshBrowse() {
+      const q = (g('be-q') || {}).value?.toLowerCase() || '';
+      const cat = (g('be-cat') || {}).value || '';
+      const price = (g('be-price') || {}).value || '';
+      const city = (g('be-city') || {}).value || '';
+      const registeredIds = getRegisteredEventIdSet();
+      const list = attendeeEventCatalog.filter(e => {
+        if (e.status === 'completed' || e.status === 'cancelled' || new Date(`${e.date}T23:59:59`) < new Date()) return false;
+        if (registeredIds.has(String(e.id)) || registeredIds.has(String(e.eventId))) return false;
+        return (!q || e.title.toLowerCase().includes(q))
+          && (!cat || e.category === cat)
+          && (!price || (price === 'free' && e.price === 0) || (price === 'paid' && e.price > 0))
+          && (!city || e.city === city);
+      }).sort(newestBrowseEventFirst);
+      g('browse-grid').innerHTML = list.map(e => evCard(e, 'attendee')).join('') || `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔍</div><div class="empty-title">No events match</div><p class="empty-desc">Try adjusting your filters.</p></div>`;
+    }
 /* ATTENDEE_PAGE_registration */
-/* ATTENDEE_PAGE_myTickets */
+    let attendeeRegistrationCatalog = [];
+    function normalizeAttendeeRegistration(registration) {
+      const event = registration.event ? normalizeAttendeeEvent(registration.event) : DB.events.find(e => String(e.id) === String(registration.eventId));
+      const normalized = {
+        id: registration.registrationId,
+        registrationId: registration.registrationId,
+        attendeeId: CU.id,
+        eventId: event?.id || registration.eventId,
+        event,
+        date: registration.registrationDate,
+        ticketId: registration.verificationId || '—',
+        status: registration.status === 'registered' ? 'confirmed' : registration.status,
+        payment: registration.payment?.status || (event?.price === 0 && registration.status === 'registered' ? 'free' : 'not_due'),
+        refundStatus: registration.refund?.status || null,
+        refundObj: registration.refund || null,
+        refundAmount: registration.refund?.amount ?? 0,
+        amount: registration.payment?.amount ?? (registration.status === 'pending_approval' ? 0 : event?.price ?? 0),
+        checkedIn: registration.checkInStatus === 'checked-in' || registration.status === 'attended',
+        seat: registration.ticketType || 'General Admission',
+        verificationId: registration.verificationId || '',
+        cancelledAt: registration.cancelledAt,
+        reviewStatus: registration.reviewStatus,
+        reservationExpiresAt: registration.reservationExpiresAt,
+        rejectionReason: registration.rejectionReason || '',
+        reviewedAt: registration.reviewedAt,
+        declineViewedAt: registration.declineViewedAt,
+      };
+      const index = DB.registrations.findIndex(r => r.registrationId === registration.registrationId);
+      if (index >= 0) DB.registrations[index] = normalized;
+      else DB.registrations.push(normalized);
+      return normalized;
+    }
+
+    function filterMyTickets(filterVal) {
+      sessionStorage.setItem('ticket_filter', filterVal || 'all');
+      renderPage('my-tickets');
+    }
+    window.filterMyTickets = filterMyTickets;
+    function sortMyTickets(sortVal) {
+      sessionStorage.setItem('ticket_sort', sortVal === 'earliest' ? 'earliest' : 'latest');
+      renderPage('my-tickets');
+    }
+    window.sortMyTickets = sortMyTickets;
+
+    function showTicketTab(tab) {
+      sessionStorage.setItem('ticket_tab', tab === 'other' ? 'other' : 'upcoming');
+      sessionStorage.setItem('ticket_filter', 'all');
+      renderPage('my-tickets');
+    }
+    window.showTicketTab = showTicketTab;
+
+    function pageMyTickets() {
+      const regs = attendeeRegistrationCatalog.filter(r => r.status !== 'waitlisted');
+      const activeTab = sessionStorage.getItem('ticket_tab') === 'other' ? 'other' : 'upcoming';
+      const savedFilter = sessionStorage.getItem('ticket_filter') || 'all';
+      const activeFilter = savedFilter === 'waitlisted' || (activeTab === 'upcoming' && !['all', 'registered', 'pending_approval', 'pending_payment', 'rejected'].includes(savedFilter)) ? 'all' : savedFilter;
+      const activeSort = sessionStorage.getItem('ticket_sort') === 'earliest' ? 'earliest' : 'latest';
+
+      function ticketEvent(registration) {
+        return DB.events.find(ev => String(ev.id) === String(registration.eventId) || String(ev.eventId) === String(registration.eventId))
+          || attendeeEventCatalog.find(ev => String(ev.id) === String(registration.eventId) || String(ev.eventId) === String(registration.eventId))
+          || { title: 'Unknown', emoji: '🎟️', color: '#7c6ff7', venue: '', date: '', time: '' };
+      }
+
+      const now = new Date();
+      function isUpcomingTicket(registration) {
+        if (registration.status === 'rejected') return !registration.declineViewedAt;
+        if (!['confirmed', 'registered', 'booked', 'pending_approval', 'pending_payment'].includes(registration.status) || registration.checkedIn) return false;
+        const event = ticketEvent(registration);
+        if (['cancelled', 'completed'].includes(event.status)) return false;
+        const eventEnd = Date.parse(`${event.date}T23:59:59`);
+        return !Number.isNaN(eventEnd) && eventEnd >= now.getTime();
+      }
+
+      const upcomingRegs = regs.filter(isUpcomingTicket);
+      const otherRegs = regs.filter(r => !isUpcomingTicket(r));
+      const tabRegs = activeTab === 'upcoming' ? upcomingRegs : otherRegs;
+      const allCount = tabRegs.length;
+      const registeredCount = tabRegs.filter(r => ['confirmed', 'registered', 'booked'].includes(r.status)).length;
+      const pendingCount = tabRegs.filter(r => r.status === 'pending_payment').length;
+      const approvalCount = tabRegs.filter(r => r.status === 'pending_approval').length;
+      const refundCount = tabRegs.filter(r =>
+        r.refundStatus === 'pending' ||
+        r.refundStatus === 'completed' ||
+        r.payment === 'refunded' ||
+        (r.refundObj && r.refundObj.amount > 0) ||
+        (r.status === 'cancelled' && (r.amount > 0 || r.refundStatus))
+      ).length;
+      const cancelledCount = tabRegs.filter(r => r.status === 'cancelled').length;
+      const declinedTabCount = tabRegs.filter(r => r.status === 'rejected').length;
+      const checkedInCount = tabRegs.filter(r => r.checkedIn || r.status === 'attended').length;
+
+      let filtered = tabRegs;
+      if (activeFilter === 'registered') {
+        filtered = tabRegs.filter(r => ['confirmed', 'registered', 'booked'].includes(r.status));
+      } else if (activeFilter === 'pending_approval') {
+        filtered = tabRegs.filter(r => r.status === 'pending_approval');
+      } else if (activeFilter === 'pending_payment') {
+        filtered = tabRegs.filter(r => r.status === 'pending_payment');
+      } else if (activeFilter === 'refund') {
+        filtered = tabRegs.filter(r =>
+          r.refundStatus === 'pending' ||
+          r.refundStatus === 'completed' ||
+          r.payment === 'refunded' ||
+          (r.refundObj && r.refundObj.amount > 0) ||
+          (r.status === 'cancelled' && (r.amount > 0 || r.refundStatus))
+        );
+      } else if (activeFilter === 'cancelled') {
+        filtered = tabRegs.filter(r => r.status === 'cancelled');
+      } else if (activeFilter === 'rejected') {
+        filtered = tabRegs.filter(r => r.status === 'rejected');
+      } else if (activeFilter === 'checked-in') {
+        filtered = tabRegs.filter(r => r.checkedIn || r.status === 'attended');
+      }
+
+      filtered = [...filtered].sort((a, b) => {
+        const aDate = Date.parse(ticketEvent(a).date);
+        const bDate = Date.parse(ticketEvent(b).date);
+        if (Number.isNaN(aDate)) return Number.isNaN(bDate) ? 0 : 1;
+        if (Number.isNaN(bDate)) return -1;
+        return activeSort === 'earliest' ? aDate - bDate : bDate - aDate;
+      });
+
+      let emptyLabel = 'tickets';
+      if (activeFilter === 'registered') emptyLabel = 'registered or confirmed event tickets';
+      else if (activeFilter === 'pending_approval') emptyLabel = 'registration requests awaiting organizer approval';
+      else if (activeFilter === 'pending_payment') emptyLabel = 'tickets awaiting payment';
+      else if (activeFilter === 'refund') emptyLabel = 'refund-required or refunded event tickets';
+      else if (activeFilter === 'cancelled') emptyLabel = 'cancelled event tickets';
+      else if (activeFilter === 'rejected') emptyLabel = 'declined registrations';
+      else if (activeFilter === 'checked-in') emptyLabel = 'checked-in event tickets';
+
+      return `
+  <div class="page-hd" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+    <div class="page-hd-left">
+      <div class="page-title">My Tickets</div>
+      <div class="page-sub">${filtered.length} of ${allCount} ${activeTab === 'upcoming' ? 'upcoming' : 'other'} ticket(s) shown</div>
+    </div>
+    <div class="page-hd-right" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <label for="ticket-sort" class="small" style="font-weight:600;color:var(--text2);white-space:nowrap">Event Date:</label>
+      <select class="form-control filter-select" id="ticket-sort" onchange="sortMyTickets(this.value)" style="min-width:160px">
+        <option value="latest" ${activeSort === 'latest' ? 'selected' : ''}>Latest first</option>
+        <option value="earliest" ${activeSort === 'earliest' ? 'selected' : ''}>Earliest first</option>
+      </select>
+      <label for="ticket-filter" class="small" style="font-weight:600;color:var(--text2);white-space:nowrap">Filter Tickets:</label>
+      <select class="form-control filter-select" id="ticket-filter" onchange="filterMyTickets(this.value)" style="min-width:240px">
+        <option value="all" ${activeFilter === 'all' ? 'selected' : ''}>All Tickets (${allCount})</option>
+        <option value="registered" ${activeFilter === 'registered' ? 'selected' : ''}>Registered / Confirmed (${registeredCount})</option>
+        ${activeTab === 'upcoming'
+          ? `<option value="pending_approval" ${activeFilter === 'pending_approval' ? 'selected' : ''}>Approval Pending (${approvalCount})</option><option value="pending_payment" ${activeFilter === 'pending_payment' ? 'selected' : ''}>Payment Pending (${pendingCount})</option>`
+          : `<option value="checked-in" ${activeFilter === 'checked-in' ? 'selected' : ''}>Checked In / Attended (${checkedInCount})</option>
+             <option value="cancelled" ${activeFilter === 'cancelled' ? 'selected' : ''}>Cancelled Tickets (${cancelledCount})</option>
+             <option value="refund" ${activeFilter === 'refund' ? 'selected' : ''}>Refund Status (${refundCount})</option>`}
+        <option value="rejected" ${activeFilter === 'rejected' ? 'selected' : ''}>Declined Registrations (${declinedTabCount})</option>
+      </select>
+    </div>
+  </div>
+  <div role="tablist" aria-label="Ticket groups" style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">
+    <button type="button" role="tab" aria-selected="${activeTab === 'upcoming'}" class="btn ${activeTab === 'upcoming' ? 'btn-primary' : 'btn-ghost'}" onclick="showTicketTab('upcoming')">Upcoming Tickets (${upcomingRegs.length})</button>
+    <button type="button" role="tab" aria-selected="${activeTab === 'other'}" class="btn ${activeTab === 'other' ? 'btn-primary' : 'btn-ghost'}" onclick="showTicketTab('other')">Other Tickets (${otherRegs.length})</button>
+  </div>
+  <div id="my-tickets-container" style="display:flex;flex-direction:column;gap:16px">
+    ${filtered.length > 0 ? filtered.map(r => ticketCard(r, ticketEvent(r), true)).join('') : `
+      <div class="empty" style="padding:40px 20px">
+        <div class="empty-icon">🎟️</div>
+        <div class="empty-title">No ${activeFilter === 'all' ? activeTab === 'upcoming' ? 'upcoming tickets' : 'other tickets' : emptyLabel} found</div>
+        <p class="empty-desc">${activeFilter === 'all' ? activeTab === 'upcoming' ? 'Browse events to book your next ticket.' : 'Attended, declined, cancelled, and past registrations will appear here.' : 'Try choosing a different filter.'}</p>
+        ${activeTab === 'upcoming' && activeFilter === 'all' ? `<button class="btn btn-primary mt-16" onclick="goNav('browse-events')">Browse Events</button>` : ''}
+      </div>
+    `}
+  </div>`;
+    }
+
+    function ticketCard(r, e, compact = false) {
+      const isCancelled = r.status === 'cancelled';
+      const isDeclined = r.status === 'rejected';
+      const isInactive = isCancelled || isDeclined;
+      const isRegistered = ['confirmed', 'registered', 'booked'].includes(r.status);
+      const awaitingApproval = r.status === 'pending_approval' || (e.visibility !== 'public' && r.reviewStatus !== 'approved' && !r.checkedIn
+        && (isRegistered || (e.visibility === 'private' && r.status === 'pending_payment')));
+      const canPay = r.status === 'pending_payment' && (e.visibility !== 'private' || r.reviewStatus === 'approved');
+      const registrationLabel = isDeclined ? 'Declined' : isCancelled ? 'Cancelled'
+        : awaitingApproval ? 'Pending Organizer Approval' : isRegistered && e.visibility === 'public' ? 'Confirmed' : isRegistered && r.reviewStatus === 'approved' ? 'Organizer Approved'
+          : r.status === 'pending_payment' ? 'Payment Pending' : r.status;
+      const registrationColor = isInactive ? 'red' : awaitingApproval || r.status === 'pending_payment' ? 'yellow'
+        : isRegistered || r.status === 'attended' ? 'green' : 'yellow';
+      const approvalNotice = awaitingApproval
+        ? `<div class="small mt-12" role="status" style="padding:10px 12px;border:1px solid var(--yellow);color:var(--yellow);border-radius:8px">${r.status === 'pending_approval' || (e.visibility === 'private' && r.status === 'pending_payment') ? 'Your registration request is awaiting organizer approval. No payment is required until approval.' : (r.payment === 'completed' || r.payment === 'paid' ? 'Your payment is confirmed. ' : '') + 'Your registration is awaiting organizer approval.'}</div>` : '';
+      const declineNotice = isDeclined ? `<div style="margin-top:12px;padding:12px;background:var(--red-dim);border:1px solid var(--red);border-radius:8px"><strong style="color:var(--red)">Registration declined${r.reviewedAt ? ' on ' + new Date(r.reviewedAt).toLocaleDateString() : ''}</strong><div class="small mt-8" style="color:var(--text2)">Reason from organizer</div><p style="margin:4px 0 0;white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;line-height:1.6">${escapeHtml(r.rejectionReason || 'Please contact the organizer for more information.')}</p></div>` : '';
+      const hasValidTicket = !isInactive && r.status === 'confirmed' && !!r.verificationId && (e.visibility !== 'private' || r.reviewStatus === 'approved');
+      const qr = hasValidTicket
+        ? renderTicketQRCode(r.verificationId)
+        : isInactive
+          ? `<div style="text-align:center;padding:12px 8px;border:1px dashed var(--red);border-radius:8px;background:var(--red-dim, rgba(239,68,68,0.08))"><div style="font-size:24px">🚫</div><div style="font-size:11px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:0.5px">${isDeclined ? 'Declined' : 'Cancelled'}</div><div class="small" style="font-size:10px;color:var(--text3)">QR Disabled</div></div>`
+            : `<span class="small">${awaitingApproval ? 'Ticket available after approval' : 'No valid ticket'}</span>`;
+
+      const paymentLabel = r.status === 'pending_approval' ? 'No Payment Collected' : r.refundStatus === 'completed' || r.payment === 'refunded'
+        ? '↩️ Demo Refund Completed'
+        : r.refundStatus === 'pending'
+          ? '⏳ Demo Refund Pending'
+          : r.refundStatus === 'not_applicable'
+            ? 'Policy Expired (No Refund)'
+            : r.payment === 'free'
+              ? 'Free Ticket'
+              : r.payment === 'completed' || r.payment === 'paid'
+                ? '✓ Demo Payment Confirmed'
+                : r.status === 'pending_payment' || r.payment === 'pending'
+                  ? 'Payment Pending'
+                  : 'No Payment Due';
+
+      let refundBadge = '';
+      if (r.refundStatus === 'pending') {
+        refundBadge = `<span class="badge badge-yellow">↩️ Simulated Refund: Pending (₹${r.refundObj?.amount ?? r.amount})</span>`;
+      } else if (r.refundStatus === 'completed') {
+        refundBadge = `<span class="badge badge-blue">↩️ Simulated Refund: Completed (₹${r.refundObj?.amount ?? r.amount})</span>`;
+      } else if (isCancelled && r.refundStatus === 'not_applicable') {
+        refundBadge = `<span class="badge badge-gray">No Refund (Policy Expired)</span>`;
+      }
+
+      if (compact) {
+        return `<div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 18px;border-left:4px solid ${isInactive ? 'var(--red)' : 'var(--accent)'};flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:12px;min-width:0;flex:1">
+            <span style="font-size:28px;flex-shrink:0">${e.emoji || '🎟️'}</span>
+            <div style="min-width:0;flex:1">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px"><strong style="font-size:14px">${e.title}</strong><span class="badge badge-${registrationColor}">${registrationLabel}</span>${refundBadge}</div>
+              <div class="small muted">📅 ${e.date || 'Date TBD'} · 📍 ${e.venue || 'Venue TBD'} · Ticket ${r.ticketId || '—'}</div>
+              ${approvalNotice}
+              ${declineNotice}
+              ${isDeclined && !r.declineViewedAt ? '<div class="small mt-8" style="color:var(--text2)">View Details to move this ticket to Other Tickets.</div>' : ''}
+            </div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="openViewTicketModal('${r.registrationId || r.id}')">View Details</button>
+          ${canPay ? `<button class="btn btn-primary btn-sm" onclick="completeDemoPayment('${r.registrationId || r.id}')">Pay ₹${Number(e.price || 0).toLocaleString('en-IN')}</button>` : ''}
+        </div>`;
+      }
+
+      return `<div class="ticket" style="${isInactive ? 'opacity:0.85;border-color:var(--border);' : ''}">
+    <div class="ticket-top">
+      <div class="flex justify-between items-start">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">
+            <span style="font-size:28px">${e.emoji || '🎟️'}</span>
+            <span class="badge badge-${evStatBadge(e.status)}">${e.status}</span>
+            <span class="badge badge-${registrationColor}">${registrationLabel}</span>
+            ${r.status === 'pending_payment' && r.reviewStatus === 'approved' && e.visibility !== 'public' ? '<span class="badge badge-green">Organizer Approved</span>' : ''}
+            ${(r.checkedIn || r.status === 'attended') ? '<span class="badge badge-green">✅ Checked In</span>' : ''}
+            ${refundBadge}
+          </div>
+          <div style="font-family:var(--font-head);font-size:17px;font-weight:700;line-height:1.3;margin-bottom:8px">${e.title}</div>
+          <div class="small" style="margin-bottom:2px">📅 ${e.date} · ${e.time}</div>
+          <div class="small">📍 ${e.venue}</div>
+        </div>
+        <div class="qr-box ticket-qr" style="margin-left:16px">${qr}</div>
+      </div>
+    </div>
+    <div class="ticket-divider"><div class="ticket-notch-l"></div><div class="ticket-notch-r"></div></div>
+    <div class="ticket-bot">
+      <div class="grid-2" style="gap:8px">
+        <div><div class="label mb-4">Attendee</div><div style="font-weight:500;font-size:13.5px">${CU.name}</div></div>
+        <div>
+          <div class="label mb-4">Ticket ID</div>
+          <div class="mono" style="${isInactive ? 'text-decoration:line-through;color:var(--text3);' : ''}">${r.ticketId || '—'}</div>
+        </div>
+        <div><div class="label mb-4">Seat / Zone</div><div style="font-weight:500;font-size:13.5px">${r.seat || 'GA'}</div></div>
+        <div><div class="label mb-4">${['pending_approval', 'pending_payment'].includes(r.status) ? 'Ticket Price' : 'Amount Paid'}</div><div style="font-weight:700;font-size:15px;color:var(--green)">${['pending_approval', 'pending_payment'].includes(r.status) ? Number(e.price || 0) === 0 ? 'Free' : '₹' + Number(e.price).toLocaleString('en-IN') : r.amount === 0 ? 'Free' : '₹' + r.amount}</div></div>
+      </div>
+      <div class="flex justify-between items-center mt-12 flex-wrap gap-8">
+        <span class="badge badge-${r.checkedIn || r.status === 'attended' ? 'green' : isInactive ? 'red' : 'purple'}">${r.checkedIn || r.status === 'attended' ? '✅ Checked In' : isInactive ? '🚫 Ticket Invalidated' : '⏳ Not Yet Checked In'}</span>
+        <span class="badge badge-${r.payment === 'completed' || r.payment === 'paid' || r.payment === 'free' ? 'green' : r.refundStatus === 'pending' ? 'yellow' : 'gray'}">${paymentLabel}</span>
+      </div>
+      ${approvalNotice}
+      ${declineNotice}
+      ${canPay && r.reservationExpiresAt ? `<p class="small mt-12">Payment deadline: ${new Date(r.reservationExpiresAt).toLocaleString('en-IN')}</p>` : ''}
+      ${canPay ? `<button class="btn btn-primary btn-sm mt-12" onclick="completeDemoPayment('${r.registrationId}')">Complete Demo Payment</button>` : ''}
+      ${!r.checkedIn && !['attended', 'no-show', 'cancelled'].includes(r.status) && ['confirmed', 'pending_approval', 'pending_payment'].includes(r.status) ? `<button class="btn btn-danger btn-sm mt-12" onclick="cancelTicket('${r.registrationId || r.id}')">${r.status === 'pending_approval' ? 'Cancel Request' : 'Cancel Registration'}</button>` : ''}
+      ${isCancelled ? `<div class="small mt-12" style="color:var(--text3);font-style:italic">❌ Registration cancelled${r.cancelledAt ? ' on ' + new Date(r.cancelledAt).toLocaleDateString() : ''}. Ticket QR and seat capacity are invalidated.</div>` : ''}
+    </div>
+  </div>`;
+    }
+    function completeDemoPayment(registrationId) {
+      const registration = (attendeeRegistrationCatalog || []).find(r => r.registrationId === registrationId || String(r.id) === String(registrationId))
+        || (DB.registrations || []).find(r => r.registrationId === registrationId || String(r.id) === String(registrationId));
+      const event = registration && ((attendeeEventCatalog || []).find(e => String(e.id) === String(registration.eventId) || String(e.eventId) === String(registration.eventId)) || (DB.events || []).find(e => String(e.id) === String(registration.eventId)));
+      if (!registration || !event) { toast('Registration details are unavailable.', 'error'); return; }
+      openPaymentCheckoutModal(event, registration);
+    }
+    window.completeDemoPayment = completeDemoPayment;
+
+    function makeQR() {
+      const cells = Array.from({ length: 25 }, () => Math.random() > 0.5);
+      return cells.map(on => `<div class="qr-cell${on ? ' on' : ''}"></div>`).join('');
+    }
+    async function openViewTicketModal(regId) {
+      let r = (attendeeRegistrationCatalog || []).find(reg => String(reg.id) === String(regId) || String(reg.registrationId) === String(regId))
+        || (DB.registrations || []).find(reg => String(reg.id) === String(regId) || String(reg.registrationId) === String(regId));
+      if (!r || r.status === 'waitlisted') return;
+      try {
+        const latest = await apiGetRegistration(r.registrationId || r.id);
+        Object.assign(r, normalizeAttendeeRegistration(latest));
+        const index = attendeeRegistrationCatalog.findIndex(reg => String(reg.registrationId || reg.id) === String(r.registrationId));
+        if (index >= 0) attendeeRegistrationCatalog[index] = r;
+        else attendeeRegistrationCatalog.push(r);
+      } catch (error) {
+        toast('Unable to load the latest ticket details. Please try again.', 'error');
+        return;
+      }
+      const e = (attendeeEventCatalog || []).find(ev => String(ev.id) === String(r.eventId) || String(ev.eventId) === String(r.eventId))
+        || (DB.events || []).find(ev => String(ev.id) === String(r.eventId) || String(ev.eventId) === String(r.eventId))
+        || { title: 'Event', emoji: '🎟️', venue: '', date: '', time: '' };
+      if (CU?.role === 'attendee') {
+        openModal('Ticket Details', '', [], false);
+        window.EventFlowAttendeePages.renderTicket(g('modal-body'), { registration: r, event: e, user: CU });
+      } else openModal('Ticket Details', ticketCard(r, e), [], false);
+      if (r.status === 'rejected' && !r.declineViewedAt) {
+        try {
+          const updated = await apiMarkDeclineViewed(r.registrationId || r.id);
+          r.declineViewedAt = updated.declineViewedAt;
+          const stored = DB.registrations.find(reg => String(reg.registrationId || reg.id) === String(r.registrationId || r.id));
+          if (stored) stored.declineViewedAt = updated.declineViewedAt;
+          saveDB();
+          if (_currentPage === 'my-tickets') await renderPage('my-tickets');
+        } catch (error) {
+          toast('Unable to move this ticket to Other Tickets. Please open its details again to retry.', 'error');
+        }
+      }
+    }
+    window.openViewTicketModal = openViewTicketModal;
+
+    // ════════════════════════════════════════════════
+    //  ATTENDEE MANAGEMENT
+    // ════════════════════════════════════════════════
     function pageAttendees() {
       const myEvents = DB.events.filter(e => e.organizer === CU.id);
       const selectedEventId = parseInt(sessionStorage.getItem('org_attendees_event') || myEvents[0]?.id || '');
@@ -6478,7 +7091,91 @@ window.EventFlowModules['shared'] = true;
     //  NOTIFICATIONS
     // ════════════════════════════════════════════════
     let attendeeNotificationCatalog = [];
-/* ATTENDEE_PAGE_notifications */
+    window.EventFlowAttendeeData = {
+      setEvents(rows) {
+        attendeeEventCatalog = (Array.isArray(rows) ? rows : []).map(normalizeAttendeeEvent);
+        return attendeeEventCatalog;
+      },
+      setRegistrations(rows) {
+        attendeeRegistrationCatalog = (Array.isArray(rows) ? rows : []).map(normalizeAttendeeRegistration);
+        return attendeeRegistrationCatalog;
+      },
+      setNotifications(rows) {
+        attendeeNotificationCatalog = (Array.isArray(rows) ? rows : [])
+          .filter(item => item.type !== 'waitlist_offer' && !/waitlist|waiting list/i.test(item.message || ''))
+          .map(item => ({ id: item.notificationId, title: notificationTitle(item.type), msg: item.message,
+            time: new Date(item.dateTime).toLocaleString(), read: item.read, type: notificationTone(item.type), icon: '🔔' }));
+        return attendeeNotificationCatalog;
+      },
+      getEvents() { return DB.events; },
+    };
+    function notificationTitle(type) {
+      return ({ registration_confirmed: 'Registration Confirmed', registration_approved: 'Registration Approved', registration_rejected: 'Registration Declined', pending_approval: 'Approval Requested', registration_requested: 'New Registration Request', pending_payment: 'Payment Required', refund_completed: 'Refund Completed', event_changed: 'Event Updated', event_cancelled: 'Event Cancelled' })[type] || 'EventFlow Update';
+    }
+    function notificationTone(type) {
+      if (['registration_confirmed', 'registration_approved', 'payment_confirmed', 'refund_completed'].includes(type)) return 'success';
+      if (['pending_payment', 'event_changed'].includes(type)) return 'warning';
+      if (['event_cancelled', 'registration_rejected'].includes(type)) return 'error';
+      return 'info';
+    }
+    function visibleNotifications() {
+      if (CU?.role === 'attendee') return attendeeNotificationCatalog;
+      return CU?.role === 'employee' && CU.employeeType === 'SUPPORT_FINANCE'
+        ? DB.notifications.filter(notification => notification.employeeType === 'SUPPORT_FINANCE')
+        : DB.notifications;
+    }
+    function pageNotifications() {
+      const notifications = visibleNotifications();
+      const unread = notifications.filter(n => !n.read).length;
+      return `
+  <div class="page-hd">
+    <div class="page-hd-left"><div class="page-title">Notifications</div><div class="page-sub">${unread} unread notification${unread !== 1 ? 's' : ''}</div></div>
+    <div class="page-hd-right"><button class="btn btn-ghost btn-sm" onclick="markAllRead()">✓ Mark All Read</button></div>
+  </div>
+  <div class="card p-0 notif-panel">
+    ${notifications.length === 0 ? `<div class="empty"><div class="empty-icon">🔔</div><div class="empty-title">All caught up!</div></div>` : `
+    ${notifications.map(n => `
+      <div class="notif-item${n.read ? '' : ' unread'}" onclick="markNotifRead('${n.id}')">
+        <div class="notif-icon" style="background:${n.type === 'success' ? 'var(--green-dim)' : n.type === 'warning' ? 'var(--yellow-dim)' : n.type === 'error' ? 'var(--red-dim)' : 'var(--accent-dim)'}">${n.icon || '🔔'}</div>
+        <div class="notif-content">
+          <div class="notif-title" style="${n.read ? '' : 'font-weight:600'}">${escapeHtml(n.title || '')}</div>
+          <div class="notif-msg" style="white-space:pre-wrap;overflow-wrap:anywhere">${escapeHtml(n.msg || '')}</div>
+          <div class="notif-time">${n.time}</div>
+        </div>
+        ${!n.read ? `<div class="unread-dot"></div>` : ''}
+      </div>`).join('')}`}
+  </div>`;
+    }
+    function markNotifRead(id) {
+      if (CU.role === 'attendee') {
+        apiMarkNotificationRead(id)
+          .then(function () { const n = attendeeNotificationCatalog.find(item => item.id === id); if (n) n.read = true; renderPage('notifications'); })
+          .catch(function (error) { toast(error.message || 'Notification could not be updated.', 'error'); });
+        return;
+      }
+      const n = DB.notifications.find(n => n.id == id);
+      if (!n) return;
+      n.read = true;
+      saveDB();
+      updateNotifDot();
+      if (isDepartmentEmployee()) buildEmployeeNav(CU.employeeType); else buildNav(CU.role);
+
+      renderPage('notifications');
+    }
+    function markAllRead() {
+      if (CU.role === 'attendee') {
+        apiMarkAllNotificationsRead()
+          .then(function () { attendeeNotificationCatalog.forEach(n => n.read = true); renderPage('notifications'); toast('All notifications marked as read', 'success'); })
+          .catch(function (error) { toast(error.message || 'Notifications could not be updated.', 'error'); });
+        return;
+      }
+      visibleNotifications().forEach(n => n.read = true);
+      renderPage('notifications'); updateNotifDot(); if (isDepartmentEmployee()) buildEmployeeNav(CU.employeeType); else buildNav(CU.role); toast('All notifications marked as read', 'success');
+    }
+
+    // ════════════════════════════════════════════════
+    //  PROFILE
+    // ════════════════════════════════════════════════
     function pageDepartmentEmployeeProfile() {
       const type = CU.employeeType;
       const profile = {
@@ -6571,8 +7268,165 @@ window.EventFlowModules['shared'] = true;
   </div>`;
     }
 
-/* ATTENDEE_PAGE_profile */
-/* ATTENDEE_PAGE_settings */
+    function pageProfile() {
+      if (isDepartmentEmployee()) return pageDepartmentEmployeeProfile();
+
+      const regs = CU.role === 'attendee' ? DB.registrations.filter(r => r.attendeeId === CU.id) : [];
+      const myEvs = CU.role === 'organizer' ? DB.events.filter(e => e.organizer === CU.id) : [];
+      const isSF = CU.role === 'employee' && CU.employeeType === 'SUPPORT_FINANCE';
+      const sfSupportHandled = (DB.supportRequests || []).length;
+      const sfResolved = (DB.supportRequests || []).filter(r => r.status === 'Resolved' || r.status === 'Closed').length;
+      const sfTxnsReviewed = (DB.financeTransactions || []).length;
+      const sfReportsSubmitted = (DB.operationalReports || []).filter(r => r.status === 'Submitted' || r.status === 'Reviewed').length;
+      return `
+  <div class="page-hd"><div class="page-hd-left"><div class="page-title">My Profile</div></div><div class="page-hd-right"><button class="btn btn-ghost" onclick="goNav('settings')">✏️ Edit Profile</button></div></div>
+  <div class="profile-banner">
+    ${CU.avatarImage ? `<div class="av av-xl"><img src="${CU.avatarImage}" alt="${CU.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span style="display:none">${CU.avatar || CU.name[0]}</span></div>` : `<div class="av av-xl">${CU.avatar || CU.name[0]}</div>`}
+    <div class="profile-info">
+      <div class="profile-name">${CU.name}</div>
+      <div class="profile-role-tag">${isSF ? 'Customer Support &amp; Finance Executive' : ROLE_LABELS[CU.role]}</div>
+      ${CU.company ? `<div class="small mt-4">${CU.company}</div>` : ''}
+      ${CU.specialization ? `<div class="small mt-4">Specialization: ${CU.specialization}</div>` : ''}
+      ${CU.service ? `<div class="small mt-4">Service: ${CU.service}</div>` : ''}
+      <span class="badge badge-green mt-8">Active Account</span>
+    </div>
+  </div>
+  <div class="grid-2" style="align-items:start;gap:20px">
+    <div class="card">
+      <div class="h4 mb-14">Contact Information</div>
+      <div class="info-row"><span class="info-label">Email</span><span class="info-value">${CU.email}</span></div>
+      <div class="info-row"><span class="info-label">Phone</span><span class="info-value">${CU.phone || 'Not set'}</span></div>
+      <div class="info-row"><span class="info-label">Member Since</span><span class="info-value">${CU.joined || '—'}</span></div>
+      <div class="info-row"><span class="info-label">Role</span><span class="info-value"><span class="badge badge-${ROLE_COLORS[CU.role]}">${isSF ? 'Customer Support &amp; Finance Executive' : CU.role}</span></span></div>
+      ${CU.bio ? `<div class="mt-14"><div class="label mb-8">Bio</div><p style="font-size:13.5px;color:var(--text2);line-height:1.7">${CU.bio}</p></div>` : ''}
+    </div>
+    <div>
+      ${isSF ? `<div class="card mb-16">
+        <div class="h4 mb-14">Work Summary</div>
+        <div class="info-row"><span class="info-label">Support Requests Handled</span><span class="info-value" style="color:var(--accent);font-weight:700">${sfSupportHandled}</span></div>
+        <div class="info-row"><span class="info-label">Issues Resolved</span><span class="info-value" style="color:var(--green);font-weight:700">${sfResolved}</span></div>
+        <div class="info-row"><span class="info-label">Transactions Reviewed</span><span class="info-value" style="color:var(--blue);font-weight:700">${sfTxnsReviewed}</span></div>
+        <div class="info-row"><span class="info-label">Reports Submitted</span><span class="info-value" style="color:var(--purple);font-weight:700">${sfReportsSubmitted}</span></div>
+      </div>` : CU.role === 'attendee' ? `<div class="card mb-16">
+        <div class="h4 mb-14">Activity Summary</div>
+        <div class="info-row"><span class="info-label">Events Registered</span><span class="info-value">${regs.length}</span></div>
+        <div class="info-row"><span class="info-label">Upcoming Events</span><span class="info-value" style="color:var(--accent)">${regs.filter(r => { const e = DB.events.find(ev => ev.id === r.eventId); return e && e.status === 'upcoming'; }).length}</span></div>
+        <div class="info-row"><span class="info-label">Events Attended</span><span class="info-value" style="color:var(--green)">${regs.filter(r => r.checkedIn).length}</span></div>
+        <div class="info-row"><span class="info-label">Total Spent</span><span class="info-value" style="color:var(--green);font-weight:700">₹${regs.reduce((s, r) => s + r.amount, 0)}</span></div>
+      </div>`: CU.role === 'organizer' ? `<div class="card mb-16">
+        <div class="h4 mb-14">Event Summary</div>
+        <div class="info-row"><span class="info-label">Total Events</span><span class="info-value">${myEvs.length}</span></div>
+        <div class="info-row"><span class="info-label">Upcoming</span><span class="info-value" style="color:var(--accent)">${myEvs.filter(e => e.status === 'upcoming').length}</span></div>
+        <div class="info-row"><span class="info-label">Completed</span><span class="info-value" style="color:var(--green)">${myEvs.filter(e => e.status === 'completed').length}</span></div>
+      </div>`: ''}
+      <div class="card">
+        <div class="h4 mb-14">Quick Actions</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button class="btn btn-ghost w-full" onclick="goNav('settings')">⚙️ Account Settings</button>
+          <button class="btn btn-danger w-full" onclick="doLogout()">🚪 Sign Out</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+    }
+
+    // ════════════════════════════════════════════════
+    //  SETTINGS
+    // ════════════════════════════════════════════════
+    function pageSettings() {
+      return `
+  <div class="page-hd"><div class="page-hd-left"><div class="page-title">Account Settings</div><div class="page-sub">Manage your personal information and account preferences.</div></div></div>
+  <div class="grid-2" style="align-items:start;gap:20px">
+    <div class="card card-lg">
+      <div class="h4 mb-20">Personal Information</div>
+      <div class="profile-banner" style="margin-bottom:20px;padding:18px">
+        ${CU.avatarImage ? `<div class="av av-lg"><img src="${CU.avatarImage}" alt="${CU.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span style="display:none">${CU.avatar || CU.name[0]}</span></div>` : `<div class="av av-lg">${CU.avatar || CU.name[0]}</div>`}
+        <div><div style="font-weight:700">${CU.name}</div><div class="small">${ROLE_LABELS[CU.role]}</div></div>
+      </div>
+      <div class="form-group"><label class="form-label">Full Name</label><input class="form-control" id="st-name" value="${CU.name}"></div>
+      <div class="form-group"><label class="form-label">Email Address</label><input class="form-control" id="st-email" value="${CU.email}"></div>
+      <div class="form-group"><label class="form-label">Phone Number</label><input class="form-control" id="st-phone" value="${CU.phone || ''}"></div>
+      <div class="form-group"><label class="form-label">Bio</label><textarea class="form-control" id="st-bio">${CU.bio || ''}</textarea></div>
+      <button class="btn btn-primary w-full" onclick="saveSettings()" style="justify-content:center">Save Changes</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div class="card card-lg">
+        <div class="h4 mb-20">Change Password</div>
+        <div class="form-group"><label class="form-label">Current Password</label><input class="form-control" id="st-cur" type="password" placeholder="Enter current password"></div>
+        <div class="form-group"><label class="form-label">New Password</label><input class="form-control" id="st-new" type="password" placeholder="Min 6 characters"></div>
+        <div class="form-group"><label class="form-label">Confirm New Password</label><input class="form-control" id="st-conf" type="password" placeholder="Re-enter new password"></div>
+        <button class="btn btn-primary w-full" onclick="changePass()" style="justify-content:center">Update Password</button>
+      </div>
+      <div class="card">
+        <div class="h4 mb-16">Preferences</div>
+        <div class="info-row"><span class="info-label">Email Notifications</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+        <div class="info-row"><span class="info-label">SMS Reminders</span><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
+        <div class="info-row"><span class="info-label">Event Recommendations</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+      </div>
+      <div class="card">
+        <button class="btn btn-danger w-full mb-8" onclick="doLogout()" style="justify-content:center">Sign Out</button>
+      </div>
+    </div>
+  </div>`;
+    }
+    async function saveSettings(values) {
+      const name = values?.name ?? v('st-name'), email = values?.email ?? v('st-email'), phone = values?.phone ?? v('st-phone'), bio = values?.bio ?? v('st-bio');
+      if (!name) { toast('Name is required', 'error'); return; }
+      if (!email || !email.includes('@')) { toast('Enter a valid email', 'error'); return; }
+      if (CU.role === 'attendee') {
+        try {
+          const response = await apiUpdateUser(CU.userId || CU.id, { name, email, phoneNo: phone, bio });
+          const saved = response.data || response;
+          Object.assign(CU, saved, { phone: saved.phoneNo ?? phone });
+          CU.avatar = (CU.name.split(' ').map(part => part[0]).join('').toUpperCase()).slice(0, 2);
+          const stored = DB.users.find(u => String(u.userId || u.id) === String(CU.userId || CU.id));
+          if (stored) Object.assign(stored, CU);
+          setCurrentUser(CU);
+          saveDB();
+          g('sb-name').textContent = CU.name;
+          updateHeaderUser();
+          g('sb-av').textContent = (CU.name.split(' ').map(part => part[0]).join('').toUpperCase()).slice(0, 2);
+          toast('Settings saved successfully!', 'success');
+          return true;
+        } catch (error) { toast(error.message || 'Settings could not be saved.', 'error'); return false; }
+      }
+      if (window.EventFlowAccountPolicy.isEmailInUse(DB.users, email, CU.id || CU.userId)) { toast('Email already registered', 'error'); return; }
+      CU.name = name; CU.email = email; CU.phone = phone; CU.bio = bio;
+      CU.avatar = (name.split(' ').map(n => n[0]).join('').toUpperCase()).slice(0, 2);
+      const u = DB.users.find(u => u.id === CU.id);
+      if (u) { Object.assign(u, { name, email, phone, bio, avatar: CU.avatar }); }
+      g('sb-name').textContent = name;
+      updateHeaderUser();
+      g('sb-av').textContent = CU.avatar;
+      toast('Settings saved successfully!', 'success');
+      return true;
+    }
+    async function changePass(values) {
+      const cur = values?.current ?? v('st-cur'), nw = values?.next ?? v('st-new'), conf = values?.confirm ?? v('st-conf');
+      if (!cur || !nw || !conf) { toast('Fill all password fields', 'error'); return; }
+      if (CU.role === 'attendee') {
+        if (nw.length < 6) { toast('Password must be at least 6 characters', 'error'); return false; }
+        if (nw !== conf) { toast('Passwords do not match', 'error'); return false; }
+        try {
+          await apiRequest('/users/me/password', { method: 'PATCH', body: JSON.stringify({ currentPassword: cur, newPassword: nw }) });
+          toast('Password changed successfully!', 'success');
+          return true;
+        } catch (error) { toast(error.message || 'Password could not be changed.', 'error'); return false; }
+      }
+      if (cur !== CU.password) { toast('Current password is incorrect', 'error'); return; }
+      if (nw.length < 6) { toast('Password must be at least 6 characters', 'error'); return; }
+      if (nw !== conf) { toast('Passwords do not match', 'error'); return; }
+      CU.password = nw;
+      const u = DB.users.find(u => u.id === CU.id);
+      if (u) u.password = nw;
+      ['st-cur', 'st-new', 'st-conf'].forEach(id => { const el = g(id); if (el) el.value = ''; });
+      toast('Password changed successfully!', 'success');
+      return true;
+    }
+
+    // ════════════════════════════════════════════════
+    //  CLIENT PAGES
+    // ════════════════════════════════════════════════
     function pageFindOrganizers() {
       const q = (sessionStorage.getItem('search_org_q') || '').toLowerCase();
       const rating = sessionStorage.getItem('search_org_rating') || 'all';
@@ -6887,6 +7741,7 @@ window.EventFlowModules['shared'] = true;
     //  MODAL SYSTEM
     // ════════════════════════════════════════════════
     function openModal(title, body, btns = [], showCancel = true) {
+      if (typeof window !== 'undefined') window.EventFlowAttendeePages?.clearTicket();
       g('modal-title').textContent = title;
       g('modal-body').innerHTML = body;
       const foot = g('modal-foot');
@@ -6910,6 +7765,7 @@ window.EventFlowModules['shared'] = true;
       requestAnimationFrame(() => ov.classList.add('open'));
     }
     function closeModal() {
+      if (typeof window !== 'undefined') window.EventFlowAttendeePages?.clearTicket();
       const ov = g('modal-overlay');
       ov.classList.remove('open');
       ov.style.padding = '';
@@ -6928,12 +7784,14 @@ window.EventFlowModules['shared'] = true;
 
     // DRAWER
     function openDrawer(title, body) {
+      if (typeof window !== 'undefined') window.EventFlowAttendeePages?.clearDetails();
       g('drawer-title').textContent = title;
       g('drawer-body').innerHTML = body;
       g('drawer-overlay').classList.add('open');
       g('drawer').classList.add('open');
     }
     function closeDrawer() {
+      if (typeof window !== 'undefined') window.EventFlowAttendeePages?.clearDetails();
       g('drawer-overlay').classList.remove('open');
       g('drawer').classList.remove('open');
     }

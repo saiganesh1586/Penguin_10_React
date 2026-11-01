@@ -282,7 +282,6 @@
       })
       .then(function (regData) {
         const registration = normalizeAttendeeRegistration(regData);
-        if (_currentPage === 'browse-events') refreshBrowse();
         if (registration.status === 'pending_approval') {
           closeModal();
           toast('Registration request sent for organizer approval.', 'success');

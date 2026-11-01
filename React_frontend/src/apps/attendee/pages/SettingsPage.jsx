@@ -1,76 +1,72 @@
-import React from 'react';
-import LegacyPageMarkup from '../../../app/LegacyPageMarkup.jsx';
+import React, { useState } from 'react';
+import PageHeader from '../components/PageHeader.jsx';
+import ProfileAvatar from '../components/ProfileAvatar.jsx';
 
-function attendeeRuntimeDefinitions() {
-/* ATTENDEE_RUNTIME_START */    function pageSettings() {
-      return `
-  <div class="page-hd"><div class="page-hd-left"><div class="page-title">Account Settings</div><div class="page-sub">Manage your personal information and account preferences.</div></div></div>
-  <div class="grid-2" style="align-items:start;gap:20px">
-    <div class="card card-lg">
-      <div class="h4 mb-20">Personal Information</div>
-      <div class="profile-banner" style="margin-bottom:20px;padding:18px">
-        ${CU.avatarImage ? `<div class="av av-lg"><img src="${CU.avatarImage}" alt="${CU.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span style="display:none">${CU.avatar || CU.name[0]}</span></div>` : `<div class="av av-lg">${CU.avatar || CU.name[0]}</div>`}
-        <div><div style="font-weight:700">${CU.name}</div><div class="small">${ROLE_LABELS[CU.role]}</div></div>
-      </div>
-      <div class="form-group"><label class="form-label">Full Name</label><input class="form-control" id="st-name" value="${CU.name}"></div>
-      <div class="form-group"><label class="form-label">Email Address</label><input class="form-control" id="st-email" value="${CU.email}"></div>
-      <div class="form-group"><label class="form-label">Phone Number</label><input class="form-control" id="st-phone" value="${CU.phone || ''}"></div>
-      <div class="form-group"><label class="form-label">Bio</label><textarea class="form-control" id="st-bio">${CU.bio || ''}</textarea></div>
-      <button class="btn btn-primary w-full" onclick="saveSettings()" style="justify-content:center">Save Changes</button>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:20px">
-      <div class="card card-lg">
-        <div class="h4 mb-20">Change Password</div>
-        <div class="form-group"><label class="form-label">Current Password</label><input class="form-control" id="st-cur" type="password" placeholder="Enter current password"></div>
-        <div class="form-group"><label class="form-label">New Password</label><input class="form-control" id="st-new" type="password" placeholder="Min 6 characters"></div>
-        <div class="form-group"><label class="form-label">Confirm New Password</label><input class="form-control" id="st-conf" type="password" placeholder="Re-enter new password"></div>
-        <button class="btn btn-primary w-full" onclick="changePass()" style="justify-content:center">Update Password</button>
-      </div>
-      <div class="card">
-        <div class="h4 mb-16">Preferences</div>
-        <div class="info-row"><span class="info-label">Email Notifications</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
-        <div class="info-row"><span class="info-label">SMS Reminders</span><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
-        <div class="info-row"><span class="info-label">Event Recommendations</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
-      </div>
-      <div class="card">
-        <button class="btn btn-danger w-full mb-8" onclick="doLogout()" style="justify-content:center">Sign Out</button>
-      </div>
-    </div>
-  </div>`;
-    }
-    function saveSettings() {
-      const name = v('st-name'), email = v('st-email'), phone = v('st-phone'), bio = v('st-bio');
-      if (!name) { toast('Name is required', 'error'); return; }
-      if (!email || !email.includes('@')) { toast('Enter a valid email', 'error'); return; }
-      if (window.EventFlowAccountPolicy.isEmailInUse(DB.users, email, CU.id || CU.userId)) { toast('Email already registered', 'error'); return; }
-      CU.name = name; CU.email = email; CU.phone = phone; CU.bio = bio;
-      CU.avatar = (name.split(' ').map(n => n[0]).join('').toUpperCase()).slice(0, 2);
-      const u = DB.users.find(u => u.id === CU.id);
-      if (u) { Object.assign(u, { name, email, phone, bio, avatar: CU.avatar }); }
-      g('sb-name').textContent = name;
-      updateHeaderUser();
-      g('sb-av').textContent = CU.avatar;
-      toast('Settings saved successfully!', 'success');
-    }
-    function changePass() {
-      const cur = v('st-cur'), nw = v('st-new'), conf = v('st-conf');
-      if (!cur || !nw || !conf) { toast('Fill all password fields', 'error'); return; }
-      if (cur !== CU.password) { toast('Current password is incorrect', 'error'); return; }
-      if (nw.length < 6) { toast('Password must be at least 6 characters', 'error'); return; }
-      if (nw !== conf) { toast('Passwords do not match', 'error'); return; }
-      CU.password = nw;
-      const u = DB.users.find(u => u.id === CU.id);
-      if (u) u.password = nw;
-      ['st-cur', 'st-new', 'st-conf'].forEach(id => { const el = g(id); if (el) el.value = ''; });
-      toast('Password changed successfully!', 'success');
-    }
-
-    // ════════════════════════════════════════════════
-    //  CLIENT PAGES
-    // ════════════════════════════════════════════════
-/* ATTENDEE_RUNTIME_END */
+function Field({ id, label, value, onChange, type = 'text', placeholder, multiline = false }) {
+  return <div className="form-group">
+    <label className="form-label" htmlFor={id}>{label}</label>
+    {multiline ? <textarea className="form-control" id={id} value={value} onChange={onChange} />
+      : <input className="form-control" id={id} type={type} placeholder={placeholder} value={value} onChange={onChange} />}
+  </div>;
 }
 
-export default function SettingsPage({ html }) {
-  return <LegacyPageMarkup html={html} />;
+export default function SettingsPage({ user = {}, onSaveSettings, onChangePassword, onSignOut }) {
+  const [profile, setProfile] = useState({
+    name: user.name || '', email: user.email || '', phone: user.phone || user.phoneNo || '', bio: user.bio || '',
+  });
+  const [password, setPassword] = useState({ current: '', next: '', confirm: '' });
+  const [displayName, setDisplayName] = useState(user.name || '');
+  const [preferences, setPreferences] = useState([true, false, true]);
+  const updateProfile = field => event => setProfile(current => ({ ...current, [field]: event.target.value }));
+  const updatePassword = field => event => setPassword(current => ({ ...current, [field]: event.target.value }));
+
+  async function saveProfile() {
+    if (await onSaveSettings?.(profile)) setDisplayName(profile.name);
+  }
+
+  async function savePassword() {
+    if (await onChangePassword?.(password)) setPassword({ current: '', next: '', confirm: '' });
+  }
+
+  function togglePreference(index) {
+    setPreferences(current => current.map((value, position) => position === index ? !value : value));
+  }
+
+  return <>
+    <PageHeader title="Account Settings" subtitle="Manage your personal information and account preferences." />
+    <div className="grid-2" style={{ alignItems: 'start', gap: 20 }}>
+      <div className="card card-lg">
+        <div className="h4 mb-20">Personal Information</div>
+        <div className="profile-banner" style={{ marginBottom: 20, padding: 18 }}>
+          <ProfileAvatar size="av-lg" name={displayName} image={user.avatarImage}
+            fallback={displayName.split(' ').map(part => part[0]).join('').toUpperCase().slice(0, 2)} />
+          <div><div style={{ fontWeight: 700 }}>{displayName}</div><div className="small">Attendee</div></div>
+        </div>
+        <Field id="st-name" label="Full Name" value={profile.name} onChange={updateProfile('name')} />
+        <Field id="st-email" label="Email Address" value={profile.email} onChange={updateProfile('email')} />
+        <Field id="st-phone" label="Phone Number" value={profile.phone} onChange={updateProfile('phone')} />
+        <Field id="st-bio" label="Bio" value={profile.bio} onChange={updateProfile('bio')} multiline />
+        <button className="btn btn-primary w-full" style={{ justifyContent: 'center' }} onClick={saveProfile}>Save Changes</button>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div className="card card-lg">
+          <div className="h4 mb-20">Change Password</div>
+          <Field id="st-cur" label="Current Password" type="password" placeholder="Enter current password" value={password.current} onChange={updatePassword('current')} />
+          <Field id="st-new" label="New Password" type="password" placeholder="Min 6 characters" value={password.next} onChange={updatePassword('next')} />
+          <Field id="st-conf" label="Confirm New Password" type="password" placeholder="Re-enter new password" value={password.confirm} onChange={updatePassword('confirm')} />
+          <button className="btn btn-primary w-full" style={{ justifyContent: 'center' }} onClick={savePassword}>Update Password</button>
+        </div>
+        <div className="card">
+          <div className="h4 mb-16">Preferences</div>
+          {['Email Notifications', 'SMS Reminders', 'Event Recommendations'].map((label, index) =>
+            <div className="info-row" key={label}>
+              <span className="info-label">{label}</span>
+              <div className={`toggle${preferences[index] ? ' on' : ''}`} onClick={() => togglePreference(index)} />
+            </div>
+          )}
+        </div>
+        <div className="card"><button className="btn btn-danger w-full mb-8" style={{ justifyContent: 'center' }} onClick={onSignOut}>Sign Out</button></div>
+      </div>
+    </div>
+  </>;
 }
