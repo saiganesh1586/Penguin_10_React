@@ -115,26 +115,29 @@ function portalRuntimeDefinitions() {
         function clientRequestActions(r) {
           const id = r.id;
           const s = (r.status||'').toLowerCase();
-          const parts = [`<button class="btn btn-ghost btn-sm" onclick="viewRequestDrawer('${id}')">View Details</button>`];
+          const closed = ['cancelled', 'withdrawn', 'rejected', 'expired', 'completed'].includes(s);
+          const parts = [s === 'cancelled'
+            ? `<button class="btn btn-primary btn-sm" onclick="viewWorkflowRequestDrawer('${id}')">View Cancellation Details</button>`
+            : `<button class="btn btn-ghost btn-sm" onclick="viewRequestDrawer('${id}')">View Details</button>`];
           if (['submitted','pending','under_review','in_review','info_requested'].includes(s))
             parts.push(`<button class="btn btn-danger btn-sm" onclick="openClientCancelRequestModal('${id}')">Withdraw Request</button>`);
           if (s === 'proposal_sent')
             parts.push(`<button class="btn btn-primary btn-sm" onclick="openClientPlanReview('${id}')">Review Plan</button>`);
           if (s === 'plan_submitted')
             parts.push(`<button class="btn btn-primary btn-sm" onclick="viewWorkflowRequestDrawer('${id}')">View Plan</button>`);
-          if (s === 'awaiting_client' || (r.paymentStatus === 'deposit_pending' && (r.proposals || []).some(p => p.status === 'accepted')))
+          if (!closed && (s === 'awaiting_client' || (r.paymentStatus === 'deposit_pending' && (r.proposals || []).some(p => p.status === 'accepted'))))
             parts.push(`<button class="btn btn-success btn-sm" onclick="openClientPaymentModal('${id}')">Proceed to Payment &amp; Confirmation</button>`);
           if (['changes_requested','counteroffer_received'].includes(s))
             parts.push(`<button class="btn btn-primary btn-sm" onclick="openClientPlanReview('${id}')">View &amp; Respond</button>`);
           if (['confirmed','approved'].includes(s))
-            parts.push(`<button class="btn btn-danger btn-sm" onclick="openClientCancelRequestModal('${id}')">Cancel Booking</button>`);
+            parts.push(`<button class="btn btn-danger btn-sm" onclick="openClientCancelRequestModal('${id}')">Cancel Event</button>`);
           return parts.join(' ');
         }
         function clientRequestHistory(r) {
           const s = (r.status||'').toLowerCase();
           if (s==='rejected'&&r.rejectionReason) return `<div style="margin-top:8px;padding:8px 12px;background:var(--red-dim);border-radius:6px;font-size:12.5px"><strong style="color:var(--red)">Declined:</strong> ${escapeHtml(r.rejectionReason)}${r.rejectionComments?`<div class="small mt-4" style="color:var(--text2)">${escapeHtml(r.rejectionComments)}</div>`:''}</div>`;
-          if (s==='withdrawn'&&r.withdrawReason) return `<div style="margin-top:8px;padding:8px 12px;background:var(--surface2);border-radius:6px;font-size:12.5px"><strong>Withdrawn:</strong> ${escapeHtml(r.withdrawReason)}</div>`;
-          if (s==='cancelled'&&r.cancelReason) return `<div style="margin-top:8px;padding:8px 12px;background:var(--surface2);border-radius:6px;font-size:12.5px"><strong>Cancelled - ${escapeHtml(r.cancelReason)}:</strong> ${escapeHtml(r.cancelExplanation||'')}${r.refundStatus?`<div class="small mt-4" style="color:var(--text2)">Refund: ${escapeHtml(r.refundStatus)}${r.estimatedRefund?` \u00b7 \u20b9${Number(r.estimatedRefund).toLocaleString()}`:''}  </div>`:''}</div>`;
+          if (s==='withdrawn'&&(r.withdrawalReason || r.withdrawReason)) return `<div style="margin-top:8px;padding:8px 12px;background:var(--surface2);border-radius:6px;font-size:12.5px"><strong>Withdrawn:</strong> ${escapeHtml(r.withdrawalReason || r.withdrawReason)}</div>`;
+          if (s==='cancelled') return renderWorkflowCancellation(r.cancellation, r, true);
           if (s==='expired') return `<div style="margin-top:8px;padding:8px 12px;background:var(--red-dim);border-radius:6px;font-size:12.5px"><strong style="color:var(--red)">Proposal Expired:</strong> The organizer's proposal was not accepted in time.</div>`;
           if (['changes_requested','counteroffer_received'].includes(s)&&r.clientFeedback) return `<div style="margin-top:8px;padding:8px 12px;background:var(--yellow-dim);border-radius:6px;font-size:12.5px"><strong>Your feedback:</strong> ${escapeHtml(r.clientFeedback)}</div>`;
           if (['confirmed','approved'].includes(s)&&r.cancellationPolicy) { const pol=r.cancellationPolicy; return `<div style="margin-top:8px;padding:8px 12px;background:var(--green-dim);border-radius:6px;font-size:12.5px"><strong style="color:var(--green)">\u2713 Booking Confirmed</strong>${r.depositAmount?` \u00b7 Deposit paid \u20b9${Number(r.depositAmount).toLocaleString()}`:''}${pol.deadlineText?`<div class="small mt-4" style="color:var(--text2)">Cancellation deadline: ${escapeHtml(pol.deadlineText)}</div>`:''}</div>`; }

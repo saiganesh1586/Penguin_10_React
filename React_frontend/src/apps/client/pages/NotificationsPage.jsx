@@ -16,9 +16,10 @@ function portalRuntimeDefinitions() {
       <div class="notif-item${n.read ? '' : ' unread'}" onclick="markNotifRead('${n.id}')">
         <div class="notif-icon" style="background:${n.type === 'success' ? 'var(--green-dim)' : n.type === 'warning' ? 'var(--yellow-dim)' : n.type === 'error' ? 'var(--red-dim)' : 'var(--accent-dim)'}">${n.icon || '🔔'}</div>
         <div class="notif-content">
-          <div class="notif-title" style="${n.read ? '' : 'font-weight:600'}">${n.title}</div>
-          <div class="notif-msg">${n.msg}</div>
-          <div class="notif-time">${n.time}</div>
+          <div class="notif-title" style="${n.read ? '' : 'font-weight:600'}">${escapeHtml(n.title || 'Notification')}</div>
+          <div class="notif-msg">${escapeHtml(n.msg || n.message || '')}</div>
+          <div class="notif-time">${escapeHtml(n.time || '')}</div>
+          ${['event_cancelled', 'booking_cancelled', 'request_cancelled'].includes(n.notificationType || n.type) && (n.requestId || n.eventId) ? `<button type="button" class="btn btn-ghost btn-sm mt-8" onclick="event.stopPropagation();openClientCancellationNotification('${escapeHtml(String(n.id))}')">View Cancellation Details</button>` : ''}
         </div>
         ${!n.read ? `<div class="unread-dot"></div>` : ''}
       </div>`).join('')}`}

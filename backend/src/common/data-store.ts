@@ -1,4 +1,6 @@
 import { upgradeEmployeeAccounts } from './migrations/employee-accounts';
+import { CANCELLATION_DEMO_SCENARIO, seedEventCancellationDemo } from './event-cancellation-demo';
+import { removeOrganizerAttendeeDemo, seedOrganizerAttendeeDemo } from './organizer-attendee-demo';
 /**
  * In-memory data store for the application
  * Simulates a database without actual persistence
@@ -76,7 +78,7 @@ export interface User {
   bio?: string;
   preferences?: { emailNotifications: boolean };
   profile?: Record<string, unknown>;
-  demoScenario?: 'event-request-workflow-v1';
+  demoScenario?: 'event-request-workflow-v1' | 'organizer-attendees-v1';
   createdAt: Date;
   updatedAt: Date;
 }
@@ -221,7 +223,7 @@ export interface Event {
   /** Development-only actionable reasons attached to the same event record. */
   attentionReasons?: string[];
   cancellationReason?: string;
-  demoScenario?: 'organizer-dashboard-v3' | 'event-request-workflow-v1';
+  demoScenario?: 'organizer-dashboard-v3' | 'event-request-workflow-v1' | 'event-cancellation-workflow-v1' | 'organizer-attendees-v1';
   policySnapshot?: EventPolicy;
   cancellation?: EventCancellation;
   createdAt: Date;
@@ -308,7 +310,7 @@ export interface EventRequest {
   status: 'submitted' | 'pending' | 'under_review' | 'info_requested' | 'proposal_sent' | 'awaiting_client' | 'changes_requested' | 'counteroffer_received' | 'planning' | 'plan_submitted' | 'plan_revision_requested' | 'confirmed' | 'approved' | 'completed' | 'rejected' | 'cancelled' | 'withdrawn' | 'expired';
   agreementStatus: 'not_sent' | 'pending_signature' | 'agreed' | 'declined';
   paymentStatus: 'unpaid' | 'deposit_pending' | 'deposit_paid' | 'fully_paid' | 'failed' | 'refunded';
-  demoScenario?: 'event-request-workflow-v1';
+  demoScenario?: 'event-request-workflow-v1' | 'event-cancellation-workflow-v1';
   rejectionReason?: string;
   rejectionComments?: string;
   withdrawalReason?: string;
@@ -418,7 +420,7 @@ export interface EventPlan {
   revisionReason?: string;
   status: 'draft' | 'submitted' | 'revised' | 'approved' | 'rejected';
   approvalStatus: 'pending' | 'approved' | 'revision_requested' | 'rejected';
-  demoScenario?: 'event-request-workflow-v1';
+  demoScenario?: 'event-request-workflow-v1' | 'event-cancellation-workflow-v1';
   createdAt: Date;
   updatedAt: Date;
 }
@@ -442,7 +444,10 @@ export interface EventWorkflowPayment {
 
 export interface EventCancellation {
   reason: string;
+  explanation?: string;
   cancelledBy: string;
+  cancelledByRole?: UserRole;
+  cancelledByName?: string;
   cancelledAt: Date;
   policyVersion: string;
   paidAmount: number;
@@ -633,6 +638,7 @@ export interface Notification {
   supportTicketId?: string;
   supportReportId?: string;
   eventId?: string;
+  requestId?: string;
   registrationId?: string;
   paymentId?: string;
   message: string;
@@ -800,10 +806,15 @@ export class DataStore {
       if (Array.isArray(rows)) Object.assign(this, { [collection]: rows });
     }
     if (process.env.NODE_ENV === 'production') {
+      const attendeeDemosRemoved = removeOrganizerAttendeeDemo(this);
       const demoRequests = this.eventRequests.filter(request =>
-        request.demoScenario === 'event-request-workflow-v1' || request.requestId.startsWith('req-demo-flow-'),
+        request.demoScenario === 'event-request-workflow-v1' || request.requestId.startsWith('req-demo-flow-') ||
+        request.demoScenario === CANCELLATION_DEMO_SCENARIO || request.requestId.startsWith('req-demo-cancel-'),
       );
       const demoRequestIds = new Set(demoRequests.map(request => request.requestId));
+      const cancellationDemoEventIds = new Set(this.events.filter(event =>
+        event.demoScenario === CANCELLATION_DEMO_SCENARIO || event.eventId.startsWith('evt-demo-cancel-'),
+      ).map(event => event.eventId));
       const demoClientIds = new Set(this.clients
         .filter(client => client.demoScenario === 'event-request-workflow-v1' || client.clientId.startsWith('cli-reqdemo-'))
         .map(client => client.clientId));
@@ -813,18 +824,22 @@ export class DataStore {
       const originalCounts = [this.eventRequests.length, this.eventPlans.length, this.events.length, this.clients.length, this.users.length];
       this.eventRequests = this.eventRequests.filter(request => !demoRequestIds.has(request.requestId));
       this.eventPlans = this.eventPlans.filter(plan =>
-        plan.demoScenario !== 'event-request-workflow-v1' && !demoRequestIds.has(plan.requestId || ''),
+        plan.demoScenario !== 'event-request-workflow-v1' && plan.demoScenario !== CANCELLATION_DEMO_SCENARIO && !demoRequestIds.has(plan.requestId || ''),
       );
       this.events = this.events.filter(event =>
-        event.demoScenario !== 'event-request-workflow-v1' && !event.eventId.startsWith('evt-demo-flow-'),
+        event.demoScenario !== 'event-request-workflow-v1' && !event.eventId.startsWith('evt-demo-flow-') && !cancellationDemoEventIds.has(event.eventId),
       );
+      this.eventWorkflowPayments = this.eventWorkflowPayments.filter(payment => !demoRequestIds.has(payment.requestId) && !cancellationDemoEventIds.has(payment.eventId));
+      this.eventWorkflowRefunds = this.eventWorkflowRefunds.filter(refund => !demoRequestIds.has(refund.requestId || '') && !cancellationDemoEventIds.has(refund.eventId));
+      this.notifications = this.notifications.filter(notification => !cancellationDemoEventIds.has(notification.eventId || ''));
+      this.eventChanges = this.eventChanges.filter(change => !cancellationDemoEventIds.has(change.eventId));
       this.clients = this.clients.filter(client => !demoClientIds.has(client.clientId));
       this.users = this.users.filter(user =>
         !demoUserIds.has(user.userId) &&
         user.demoScenario !== 'event-request-workflow-v1' &&
         !user.userId.startsWith('usr-reqdemo-client-'),
       );
-      if ([this.eventRequests.length, this.eventPlans.length, this.events.length, this.clients.length, this.users.length]
+      if (attendeeDemosRemoved || [this.eventRequests.length, this.eventPlans.length, this.events.length, this.clients.length, this.users.length]
         .some((count, index) => count !== originalCounts[index])) this.persist();
     }
 
@@ -899,6 +914,8 @@ export class DataStore {
     if (process.env.NODE_ENV !== 'production') {
       this.applyOrganizerDashboardDemoScenario();
       this.applyEventRequestDemoScenario();
+      seedEventCancellationDemo(this);
+      seedOrganizerAttendeeDemo(this);
       this.persist();
     }
   }
@@ -2131,6 +2148,8 @@ export class DataStore {
     ];
     this.applyOrganizerDashboardDemoScenario();
     this.applyEventRequestDemoScenario();
+    seedEventCancellationDemo(this);
+    seedOrganizerAttendeeDemo(this);
   }
 
   private applyOrganizerDashboardDemoScenario(): void {

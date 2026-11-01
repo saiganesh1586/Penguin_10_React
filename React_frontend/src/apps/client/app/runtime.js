@@ -5858,13 +5858,46 @@ eventRequests: [
       const date = new Date(value);
       return value && !Number.isNaN(date.getTime()) ? date.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) + ' IST' : 'Not recorded';
     }
-    function renderWorkflowCancellation(cancellation) {
-      return cancellation ? `<section style="margin-top:16px;padding:16px;border:1px solid var(--border)"><h3 style="margin:0 0 12px">Event cancelled</h3>
-        <p style="white-space:pre-wrap;overflow-wrap:anywhere">${workflowHtml(cancellation.reason)}</p>
-        <div class="info-row"><span class="info-label">Amount paid</span><span>${workflowMoney(cancellation.paidAmount)}</span></div>
-        <div class="info-row"><span class="info-label">Cancellation fee (${cancellation.cancellationFeePercent}%)</span><span>${workflowMoney(cancellation.cancellationFee)}</span></div>
-        <div class="info-row"><span class="info-label">Refund due</span><strong>${workflowMoney(cancellation.refundAmount)}</strong></div>
-        <p class="small">${cancellation.refundStatus === 'pending' ? 'Refund pending review.' : 'No payment was taken; no refund is needed.'} Cancelled: ${workflowHtml(workflowPolicyDate(cancellation.cancelledAt))}</p></section>` : '';
+    function renderWorkflowCancellation(cancellation, request = {}, compact = false) {
+      const event = (DB.events || []).find(item => request.eventId && String(item.eventId || item.id) === String(request.eventId));
+      const record = cancellation || event?.cancellation;
+      if (!record && request.status !== 'cancelled') return '';
+      const c = record || {};
+      const actor = (DB.users || []).find(user => c.cancelledBy && String(user.userId || user.id) === String(c.cancelledBy));
+      const role = c.cancelledByRole || actor?.role || actor?.userRole;
+      const matchesActor = id => id != null && c.cancelledBy != null && String(id) === String(c.cancelledBy);
+      const organizer = ['organizer', 'event_organizer'].includes(role) ||
+        [request.organizerUserId, request.organizer, request.organizerId, request.backendOrganizerId].some(matchesActor);
+      const client = role === 'client' || [request.clientUserId, request.clientId, request.backendClientId, CU?.id].some(matchesActor);
+      const heading = organizer ? 'Cancelled by organizer' : client ? 'Cancelled by you' : ['super_admin', 'superuser'].includes(role) ? 'Cancelled by administrator' : 'Event cancelled';
+      const actorName = c.cancelledByName || actor?.name || (organizer ? request.organizerName : client ? CU?.name : '');
+      const reason = c.reason || request.cancelReason || request.cancellationReason || event?.cancellationReason || 'A cancellation reason was not recorded. Contact the organizer for details.';
+      const explanation = c.explanation || request.cancelExplanation;
+      const hasAmounts = ['paidAmount', 'cancellationFee', 'refundAmount'].every(key =>
+        c[key] != null && c[key] !== '' && Number.isFinite(Number(c[key])) && Number(c[key]) >= 0);
+      const refundAmount = hasAmounts ? Number(c.refundAmount) : null;
+      const refundStatus = c.refundStatus || request.refundStatus;
+      const refunded = ['completed', 'refunded'].includes(refundStatus);
+      const refundTitle = !hasAmounts ? 'Payment and refund details not recorded' : refundAmount === 0
+        ? Number(c.paidAmount) === 0 ? 'No payment was taken; no refund is needed.' : 'No refund due under the recorded policy'
+        : refunded ? 'Refund completed' : refundStatus === 'pending' ? 'Refund pending review'
+        : refundStatus === 'processing' ? 'Refund processing' : 'Refund due — status not recorded';
+      const nextStep = !hasAmounts ? 'Contact your organizer for the payment and refund details.'
+        : refundAmount === 0 ? 'There is no refund to wait for.'
+        : refunded ? 'Your refund is marked as completed. Contact the organizer if you need help checking it.'
+        : refundStatus === 'pending' ? 'Your refund is recorded and awaiting review. It has not been paid yet. Contact the organizer if you need an update.'
+        : 'Contact your organizer for an update on the refund.';
+      const policy = request.policySnapshot || event?.policySnapshot;
+      const processing = refundAmount > 0 && refundStatus === 'pending' && policy?.cancellation?.processingTimeline;
+      const feeLabel = c.cancellationFeePercent != null && Number.isFinite(Number(c.cancellationFeePercent))
+        ? `Cancellation fee (${Number(c.cancellationFeePercent)}%)` : 'Cancellation fee';
+      return `<section class="client-cancellation${compact ? ' client-cancellation-compact' : ''}" aria-label="Cancellation details">
+        <div class="client-cancellation-heading"><div><h3>${workflowHtml(heading)}</h3><p>${actorName ? `${workflowHtml(actorName)} &middot; ` : ''}${workflowHtml(workflowPolicyDate(c.cancelledAt || request.cancelledAt))}</p></div><span class="badge badge-red">Booking closed</span></div>
+        <div class="client-cancellation-reason"><strong>Reason for cancellation</strong><p>${workflowHtml(reason)}</p>${explanation ? `<p>${workflowHtml(explanation)}</p>` : ''}</div>
+        ${hasAmounts ? `<div class="client-cancellation-amounts"><div><span>Amount paid</span><strong>${workflowMoney(c.paidAmount)}</strong></div><div><span>${workflowHtml(feeLabel)}</span><strong>${workflowMoney(c.cancellationFee)}</strong></div><div><span>${organizer && Number(c.cancellationFee) === 0 && refundAmount === Number(c.paidAmount) && refundAmount > 0 ? 'Full refund due' : 'Refund due'}</span><strong>${workflowMoney(c.refundAmount)}</strong></div></div>` : ''}
+        <ol class="client-cancellation-progress" aria-label="Cancellation progress"><li class="complete">Cancellation recorded</li><li class="${refunded || refundAmount === 0 ? 'complete' : 'pending'}">${workflowHtml(refundTitle)}</li></ol>
+        <p class="client-cancellation-next"><strong>No further booking payments are due.</strong> ${workflowHtml(nextStep)}${processing ? `<br>Estimated processing after review: ${workflowHtml(processing)}.` : ''}</p>
+      </section>`;
     }
 
     function mapWorkflowRequest(request) {
@@ -6574,6 +6607,19 @@ eventRequests: [
       goNav('request-details');
     }
 
+    async function openClientCancellationNotification(notificationId) {
+      const notification = visibleNotifications().find(item => String(item.id || item.notificationId) === String(notificationId));
+      if (!notification || (notification.userId && String(notification.userId) !== String(CU.userId || CU.id))) { toast('This cancellation notification is unavailable.', 'error'); return; }
+      const findRequest = () => DB.eventRequests.find(item =>
+        (notification.requestId && String(item.requestId || item.id) === String(notification.requestId)) ||
+        (notification.eventId && String(item.eventId) === String(notification.eventId)));
+      let request = findRequest();
+      if (!request) { try { await syncWorkflowData(); request = findRequest(); } catch (error) { toast(error.message, 'error'); return; } }
+      if (!request || !isClientOwner(request, CU)) { toast('Cancellation details are unavailable for this booking.', 'error'); return; }
+      await markNotifRead(notificationId);
+      viewWorkflowRequestDrawer(request.id || request.requestId);
+    }
+
     function viewWorkflowEventDetails(eventId) {
       const request = DB.eventRequests.find(item => String(item.eventId) === String(eventId));
       if (request) viewWorkflowRequestDrawer(request.id);
@@ -6961,12 +7007,7 @@ eventRequests: [
       } else if (s === 'withdrawn' && (r.withdrawReason || r.withdrawalReason)) {
         statusDetail = `<div style="margin-top:12px;padding:10px 14px;background:var(--surface2);border-radius:8px;font-size:13px"><strong>Withdrawal Reason:</strong> ${escapeHtml(r.withdrawReason || r.withdrawalReason)}</div>`;
       } else if (s === 'cancelled') {
-        const c = r.cancellation || {};
-        statusDetail = `<div style="margin-top:12px;padding:10px 14px;background:var(--surface2);border-radius:8px;font-size:13px">`
-          + `<div><strong>Cancellation Reason:</strong> ${escapeHtml(c.reason || r.cancelReason || 'Booking cancelled')}</div>`
-          + ((c.explanation || r.cancelExplanation) ? `<div class="mt-4"><strong>Details:</strong> ${escapeHtml(c.explanation || r.cancelExplanation)}</div>` : '')
-          + (c.refundAmount !== undefined ? `<div class="small mt-4" style="color:var(--text2)">Refund: ${escapeHtml(c.refundStatus || 'processed')} · ₹${Number(c.refundAmount).toLocaleString()}</div>` : '')
-          + `</div>`;
+        statusDetail = renderWorkflowCancellation(r.cancellation, r);
       } else if (s === 'expired') {
         statusDetail = `<div style="margin-top:12px;padding:10px 14px;background:var(--red-dim);border-radius:8px;font-size:13px"><strong style="color:var(--red)">Proposal Expired:</strong> The proposal was not accepted within the validity window.</div>`;
       } else if (['confirmed', 'approved'].includes(s)) {
@@ -7058,7 +7099,7 @@ eventRequests: [
             <button class="btn btn-primary" onclick="closeDrawer();openClientPlanReview('${r.id}')">View &amp; Respond</button>
           </div>`;
         } else if (['confirmed', 'approved'].includes(s)) {
-          drawerActions = `<div class="mt-20"><button class="btn btn-danger w-full" onclick="closeDrawer();openClientCancelRequestModal('${r.id}')">Cancel Booking</button></div>`;
+          drawerActions = `<div class="mt-20"><button class="btn btn-danger w-full" onclick="closeDrawer();openClientCancelRequestModal('${r.id}')">Cancel Event</button></div>`;
         } else {
           drawerActions = `<div class="mt-20"><button class="btn btn-ghost w-full" onclick="closeDrawer()">Close Drawer</button></div>`;
         }
@@ -7650,7 +7691,7 @@ eventRequests: [
       }
 
       const s = (request.status || '').toLowerCase();
-      if (['cancelled', 'withdrawn', 'rejected', 'expired'].includes(s)) {
+      if (['cancelled', 'withdrawn', 'rejected', 'expired', 'completed'].includes(s)) {
         toast(`This request has already been ${s}.`, 'warning');
         return;
       }
@@ -7701,7 +7742,7 @@ eventRequests: [
           </div>
         `, [
           { lbl: 'Keep Request', cls: 'btn-ghost', fn: 'closeModal()' },
-          { lbl: 'Confirm Withdrawal', cls: 'btn-danger', fn: `submitClientWithdrawal('${escapeHtml(request.id)}')` },
+          { lbl: 'Confirm Withdrawal', cls: 'btn-danger', fn: `submitClientWithdrawal('${escapeHtml(request.requestId || request.id)}')` },
         ], false);
         return;
       }
@@ -7709,46 +7750,69 @@ eventRequests: [
       // ─────────────────────────────────────────────────────────────────
       // CONFIRMED BOOKINGS: 2-STEP CANCELLATION MODAL WITH FEES & POLICY
       // ─────────────────────────────────────────────────────────────────
-      openModal('Cancel Event Booking', `
+      const effectiveRequestId = request.requestId || request.id;
+      openModal('Cancel Event', `
         <div style="padding:24px 0;text-align:center">
           <div class="small" style="color:var(--text2)">Loading cancellation details…</div>
         </div>
-      `, [{ lbl: 'Keep Booking', cls: 'btn-ghost', fn: 'closeModal()' }], false);
+      `, [{ lbl: 'Keep Event', cls: 'btn-ghost', fn: 'closeModal()' },
+        { lbl: 'Cancel Event', cls: 'btn-danger', fn: 'void 0', disabled: true, title: 'Loading cancellation details' }], false);
 
       try {
-        const res = await apiPreviewClientRequestCancellation(request.id);
+        const res = await apiPreviewClientRequestCancellation(effectiveRequestId);
         const preview = workflowPayload(res);
+        if (!preview || typeof preview.canCancel !== 'boolean') throw new Error('Unable to load the cancellation policy. Please try again.');
         _clientCancelPreview = preview;
 
-        const eventName = preview.eventName || request.title || 'Event Booking';
+        const eventName = preview.eventName || request.title || request.eventName || 'Event';
         const currentStatus = preview.status || request.status || 'Confirmed';
         const isPermitted = Boolean(preview.canCancel);
         const paidAmount = Number(preview.paidAmount || 0);
-        const feePercent = Number(preview.cancellationFeePercent || 10);
+        const feePercent = Number(preview.cancellationFeePercent ?? preview.policy?.cancellation?.feePercent ?? 0);
         const cancellationFee = Number(preview.cancellationFee || 0);
         const refundAmount = Number(preview.refundAmount || 0);
         const timeline = preview.refundProcessingTimeline || (paidAmount > 0 ? '5–7 business days (pending review)' : 'Not applicable (no payment charged)');
         const deadlineText = preview.cancellationDeadline ? workflowPolicyDate(preview.cancellationDeadline) : '14 days prior to event start';
+        const noticeDays = Number(preview.minimumNoticeDays ?? preview.policy?.cancellation?.minimumNoticeDays ?? 14);
+        if (!isPermitted) {
+          const unavailableReason = preview.unavailableReason || 'The cancellation window has closed.';
+          openModal('Cancel Event', `<div class="client-cancel-dialog">
+            <h3>${workflowHtml(eventName)}</h3>
+            <div class="client-cancel-unavailable" role="alert"><strong>Cancellation unavailable</strong><p>${workflowHtml(unavailableReason)}</p></div>
+            <p>Cancellation requires at least ${noticeDays} days' notice.</p>
+            ${preview.cancellationDeadline ? `<div class="info-row"><span class="info-label">Cancellation deadline</span><strong>${workflowHtml(deadlineText)}</strong></div>` : ''}
+            ${preview.paidAmount != null && Number.isFinite(paidAmount) ? `<div class="info-row"><span class="info-label">Amount already paid</span><strong>₹${paidAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div>` : ''}
+            <p>Your event has not been cancelled. No cancellation fee or refund has been applied.</p>
+            <p class="small">Contact your organizer if you need help with this event.</p>
+          </div>`, [
+            { lbl: 'Close', cls: 'btn-ghost', fn: 'closeModal()' },
+            { lbl: 'Cancel Event', cls: 'btn-danger', fn: 'void 0', disabled: true, title: unavailableReason },
+          ], false);
+          return;
+        }
+        if (!preview.policy?.version || !Number.isFinite(feePercent) || feePercent < 0 || feePercent > 100 || ['paidAmount', 'cancellationFee', 'refundAmount'].some(key =>
+          preview[key] == null || !Number.isFinite(Number(preview[key])) || Number(preview[key]) < 0)) {
+          throw new Error('The cancellation policy or payment amounts are unavailable. Please try again.');
+        }
 
         const modalBody = `
-          <div style="max-height:65vh;overflow-y:auto;padding-right:4px">
+          <div class="client-cancel-dialog">
             <div style="margin-bottom:14px">
               <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:4px">${workflowHtml(eventName)}</div>
               <div><span class="badge badge-${reqBadge(currentStatus)}">${workflowHtml(currentStatus)}</span></div>
+              <p class="small mt-8">You are cancelling this event as the client. The organizer will be notified after you confirm.</p>
             </div>
 
             <!-- CANCELLATION POLICY & WINDOW -->
             <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:14px;font-size:12.5px;line-height:1.6">
               <div style="font-weight:700;color:var(--text);margin-bottom:4px">Cancellation Policy & Window</div>
-              <div><strong>Notice window:</strong> At least ${preview.minimumNoticeDays || 14} days before scheduled event start.</div>
+              <div><strong>Notice window:</strong> At least ${noticeDays} days before scheduled event start.</div>
               <div><strong>Cancellation deadline:</strong> ${workflowHtml(deadlineText)}</div>
-              <div><strong>Policy terms:</strong> 10% fee applies to amount paid. 90% net refund. No fee if no payment was made.</div>
+              <div><strong>Policy terms:</strong> ${paidAmount > 0 ? `${feePercent}% fee applies to the amount actually paid. Any refund is recorded as pending review.` : 'No payment was made, so no cancellation fee or refund applies.'}</div>
             </div>
 
             <!-- PERMITTED STATUS -->
-            ${isPermitted
-              ? `<div style="padding:8px 12px;border-radius:6px;background:rgba(34,197,94,0.12);color:var(--green);font-size:13px;font-weight:600;margin-bottom:14px">✓ Cancellation is currently permitted.</div>`
-              : `<div style="padding:8px 12px;border-radius:6px;background:rgba(239,68,68,0.12);color:var(--red);font-size:13px;font-weight:600;margin-bottom:14px">✕ Cancellation prohibited: ${workflowHtml(preview.unavailableReason || 'Cancellation window closed.')}</div>`}
+            <div style="padding:8px 12px;border-radius:6px;background:rgba(34,197,94,0.12);color:var(--green);font-size:13px;font-weight:600;margin-bottom:14px">✓ You can cancel this event before the deadline shown above.</div>
 
             <!-- FINANCIAL BREAKDOWN -->
             <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px">
@@ -7780,15 +7844,14 @@ eventRequests: [
           </div>
         `;
 
-        const modalActions = isPermitted ? [
-          { lbl: 'Keep Booking', cls: 'btn-ghost', fn: 'closeModal()' },
-          { lbl: 'Continue to Cancel', cls: 'btn-danger', fn: `proceedClientCancelStep2('${escapeHtml(request.id)}')` },
-        ] : [
-          { lbl: 'Keep Booking', cls: 'btn-ghost', fn: 'closeModal()' },
+        const modalActions = [
+          { lbl: 'Keep Event', cls: 'btn-ghost', fn: 'closeModal()' },
+          { lbl: 'Cancel Event', cls: 'btn-danger', fn: `proceedClientCancelStep2('${escapeHtml(effectiveRequestId)}')` },
         ];
 
-        openModal('Cancel Event Booking', modalBody, modalActions, false);
+        openModal('Cancel Event', modalBody, modalActions, false);
       } catch (err) {
+        _clientCancelPreview = null;
         openModal('Cancellation Error', `
           <div style="padding:16px 0;color:var(--red)">
             <p>${workflowHtml(err.message || 'Unable to load cancellation details.')}</p>
@@ -7825,7 +7888,6 @@ eventRequests: [
         const payload = {
           reason,
           explanation,
-          policyAccepted: true,
         };
         await apiCancelClientRequest(effectiveReqId, payload);
         closeModal();
@@ -7875,13 +7937,13 @@ eventRequests: [
       const refundAmount = Number(preview.refundAmount || 0);
 
       const confirmBody = `
-        <div style="max-height:65vh;overflow-y:auto;padding-right:4px">
+          <div class="client-cancel-dialog">
           <div class="alert alert-warning mb-14" style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.4);border-radius:8px;padding:12px;color:var(--text);font-size:13px;line-height:1.5">
-            <strong>⚠️ Final Confirmation:</strong> Cancelling this confirmed event booking is permanent and cannot be undone.
+            <strong>Final confirmation:</strong> You are cancelling this event. This action cannot be undone.
           </div>
           <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:14px;font-size:13px;line-height:1.7">
             <div style="font-weight:700;color:var(--accent);text-transform:uppercase;font-size:11px;letter-spacing:0.05em;margin-bottom:6px">Summary of Consequences</div>
-            <div><strong>Event / Booking:</strong> ${workflowHtml(preview.eventName)}</div>
+            <div><strong>Event:</strong> ${workflowHtml(preview.eventName)}</div>
             <div><strong>Current Status:</strong> <span class="badge badge-${reqBadge(preview.status)}">${workflowHtml(preview.status)}</span></div>
             <div><strong>Selected Reason:</strong> ${workflowHtml(reason)}</div>
             ${explanation ? `<div><strong>Explanation:</strong> ${workflowHtml(explanation)}</div>` : ''}
@@ -7889,24 +7951,24 @@ eventRequests: [
               <div>Amount Actually Paid: <strong>₹${paidAmount.toFixed(2)}</strong></div>
               <div>Cancellation Fee Deducted: <strong>₹${cancellationFee.toFixed(2)}</strong></div>
               <div>Estimated Refund: <strong style="color:var(--green)">₹${refundAmount.toFixed(2)}</strong></div>
-              <div class="small" style="color:var(--text2);margin-top:4px">Refund Timeline: <em>${paidAmount > 0 ? '5–7 business days (pending review)' : 'No refund applicable (no payment charged)'}</em></div>
+              <div class="small" style="color:var(--text2);margin-top:4px">Refund Timeline: <em>${workflowHtml(preview.refundProcessingTimeline || (refundAmount > 0 ? 'Pending review' : 'No refund applicable'))}</em></div>
             </div>
           </div>
-          <p style="font-size:12.5px;color:var(--text2)">The organizer will be notified immediately upon cancellation.</p>
+          <p style="font-size:12.5px;color:var(--text2)">By confirming, you accept the cancellation fee and refund shown above. The organizer will be notified, and any refund due will be recorded as pending review.</p>
           <div id="client-cancel-final-error" role="alert" style="display:none;color:var(--red);font-size:12.5px;margin-top:8px"></div>
         </div>
       `;
 
-      openModal('Confirm Cancellation', confirmBody, [
-        { lbl: 'Keep Booking', cls: 'btn-ghost', fn: 'closeModal()' },
-        { lbl: 'Confirm Cancellation', cls: 'btn-danger', fn: `submitClientFinalCancellation('${escapeHtml(requestId)}')` },
+      openModal('Confirm Event Cancellation', confirmBody, [
+        { lbl: 'Keep Event', cls: 'btn-ghost', fn: 'closeModal()' },
+        { lbl: 'Yes, Cancel Event', cls: 'btn-danger', fn: `submitClientFinalCancellation('${escapeHtml(requestId)}')` },
       ], false);
     }
     if (typeof window !== "undefined") window.proceedClientCancelStep2 = proceedClientCancelStep2;
 
     async function submitClientFinalCancellation(requestId) {
       const preview = _clientCancelPreview;
-      if (_clientCancelSubmitting || !preview) return;
+      if (_clientCancelSubmitting || !preview?.canCancel) return;
 
       _clientCancelSubmitting = true;
       const buttons = g('modal-foot')?.querySelectorAll('button') || [];
@@ -7920,15 +7982,15 @@ eventRequests: [
           explanation: _clientCancelExplanation,
           expectedPaidAmount: preview.paidAmount,
           policyAccepted: true,
-          acceptedPolicyVersion: preview.policy?.version || '2026-10-17.1',
+          acceptedPolicyVersion: preview.policy.version,
         };
         const res = await apiCancelClientRequest(requestId, payload);
         _clientCancelPreview = null;
         closeModal();
         closeDrawer();
         const successMsg = res?.message || (preview.refundAmount > 0
-          ? `Event booking cancelled. Refund of ₹${preview.refundAmount.toFixed(2)} is pending review.`
-          : 'Event booking cancelled successfully.');
+          ? `Event cancelled. Refund of ₹${preview.refundAmount.toFixed(2)} is pending review.`
+          : 'Event cancelled successfully.');
         toast(successMsg, 'success');
         await syncClientEventRequests();
         await syncWorkflowData();
@@ -7936,10 +7998,10 @@ eventRequests: [
         renderPage(_currentPage);
       } catch (err) {
         if (errEl) {
-          errEl.textContent = err.message || 'Unable to cancel event booking. Please try again.';
+          errEl.textContent = err.message || 'Unable to cancel this event. Please try again.';
           errEl.style.display = 'block';
         }
-        toast(err.message || 'Unable to cancel event booking', 'error');
+        toast(err.message || 'Unable to cancel this event', 'error');
       } finally {
         _clientCancelSubmitting = false;
         buttons.forEach(b => { b.disabled = false; });
@@ -9514,7 +9576,7 @@ eventRequests: [
         actionsHtml = `
           <div class="flex gap-6" style="width:100%;justify-content:space-between;flex-wrap:wrap">
             <button class="btn btn-ghost btn-sm" onclick="viewWorkflowEventDetails('${workflowHtml(eventTargetId)}')">👁️ View Details</button>
-            ${item.requestId ? `<button class="btn btn-danger btn-sm" onclick="openClientCancelRequestModal('${workflowHtml(item.requestId)}')">Cancel Booking</button>` : ''}
+            ${item.requestId ? `<button class="btn btn-danger btn-sm" onclick="openClientCancelRequestModal('${workflowHtml(item.requestId)}')">Cancel Event</button>` : ''}
           </div>
         `;
       } else if (tab === 'ongoing') {
@@ -9588,7 +9650,7 @@ eventRequests: [
         return true;
       });
       if (showCancel && !hasDismiss) { const c = document.createElement('button'); c.className = 'btn btn-ghost'; c.textContent = 'Cancel'; c.onclick = closeModal; foot.appendChild(c); }
-      actions.forEach(b => { const btn = document.createElement('button'); btn.className = 'btn ' + b.cls; btn.textContent = b.lbl; btn.setAttribute('onclick', b.fn); foot.appendChild(btn); });
+      actions.forEach(b => { const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'btn ' + b.cls; btn.textContent = b.lbl; btn.disabled = Boolean(b.disabled); if (b.title) btn.title = b.title; btn.setAttribute('onclick', b.fn); foot.appendChild(btn); });
       if (!showCancel && !actions.length) foot.style.display = 'none'; else foot.style.display = '';
       const ov = g('modal-overlay');
       ov.classList.remove('hidden'); // ensure visible

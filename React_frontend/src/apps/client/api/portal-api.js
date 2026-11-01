@@ -291,6 +291,7 @@ async function apiPreviewClientRequestCancellation(id) {
   try {
     return await apiRequest(`/event-requests/${encodeURIComponent(id)}/cancellation-preview`);
   } catch (err) {
+    if (err.status !== 404) throw err;
     return await apiRequest(`/events/${encodeURIComponent(id)}/cancellation-preview`);
   }
 }
@@ -302,6 +303,7 @@ async function apiCancelClientRequest(id, payload) {
       body: JSON.stringify(payload),
     });
   } catch (err) {
+    if (err.status !== 404) throw err;
     return await apiRequest(`/events/${encodeURIComponent(id)}/cancel`, {
       method: 'POST',
       body: JSON.stringify(payload),

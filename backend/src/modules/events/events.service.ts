@@ -407,6 +407,8 @@ export class EventsService {
       const cancellationRecord: EventCancellation = {
         reason: dto.changeReason,
         cancelledBy: userId || 'organizer',
+        cancelledByRole: role,
+        cancelledByName: this.dataStore.findUserById(userId || '')?.name,
         cancelledAt: new Date(),
         policyVersion: '1.0',
         paidAmount: 0,
@@ -437,6 +439,8 @@ export class EventsService {
         request.cancellation = {
           reason: dto.changeReason,
           cancelledBy: userId!,
+          cancelledByRole: role,
+          cancelledByName: this.dataStore.findUserById(userId || '')?.name,
           cancelledAt: new Date(),
           policyVersion: '1.0',
           paidAmount,
@@ -459,7 +463,7 @@ export class EventsService {
           details: { reason: dto.changeReason, paidAmount, clientRefundAmount: paidAmount, organizerRefundAmount: 0 },
         });
         const client = this.dataStore.clients.find(item => item.clientId === request.clientId);
-        if (client) this.dataStore.notifications.push({ notificationId: this.dataStore.generateId('notif'), userId: client.userId, eventId, registrationId: undefined, paymentId: undefined, message: `The organizer cancelled "${event.name}". Your simulated refund of ₹${paidAmount.toFixed(2)} is ${paidAmount > 0 ? 'pending' : 'not applicable because no payment was collected'}.`, type: 'event_cancelled', read: false, dateTime: new Date(), createdAt: new Date() });
+        if (client) this.dataStore.notifications.push({ notificationId: this.dataStore.generateId('notif'), userId: client.userId, eventId, requestId: request.requestId, registrationId: undefined, paymentId: undefined, message: `The organizer cancelled "${event.name}". Reason: ${dto.changeReason}. Amount paid: ₹${paidAmount.toFixed(2)}. Cancellation fee: ₹0.00. Full refund due: ₹${paidAmount.toFixed(2)}${paidAmount > 0 ? ' (pending review)' : ' (no payment was collected)'}. No further booking payments are due.`, type: 'event_cancelled', read: false, dateTime: new Date(), createdAt: new Date() });
       }
     }
     this.dataStore.persist();
@@ -525,6 +529,7 @@ export class EventsService {
     const refundId = preview.refundAmount > 0 ? this.dataStore.generateId('ref-event') : undefined;
     const cancellation: EventCancellation = {
       reason, cancelledBy: userId!, cancelledAt: now, policyVersion: preview.policy.version,
+      cancelledByRole: role, cancelledByName: this.dataStore.findUserById(userId || '')?.name,
       paidAmount: preview.paidAmount, cancellationFeePercent: preview.cancellationFeePercent,
       cancellationFee: preview.cancellationFee, refundAmount: preview.refundAmount,
       refundStatus: refundId ? 'pending' : 'not_applicable', refundId,
@@ -555,11 +560,11 @@ export class EventsService {
     }
     this.dataStore.eventChanges.push({ changeId: this.dataStore.generateId('chg'), eventId, type: 'cancelled', summary: `Event cancelled by client: ${reason}`, createdAt: now });
     const notify = (recipient: string, message: string, registrationId?: string, paymentId?: string) => {
-      this.dataStore.notifications.push({ notificationId: this.dataStore.generateId('notif'), userId: recipient, eventId, registrationId, paymentId, message, type: 'event_cancelled', read: false, dateTime: now, createdAt: now });
+      this.dataStore.notifications.push({ notificationId: this.dataStore.generateId('notif'), userId: recipient, eventId, requestId: request?.requestId, registrationId, paymentId, message, type: 'event_cancelled', read: false, dateTime: now, createdAt: now });
     };
     const organizer = this.dataStore.organizers.find(item => item.organizerId === event.organizerId);
     if (organizer) notify(organizer.userId, `The client cancelled "${event.name}": ${reason}`);
-    notify(userId!, `You cancelled "${event.name}". Cancellation fee: ₹${cancellation.cancellationFee.toFixed(2)}. Refund due: ₹${cancellation.refundAmount.toFixed(2)}${refundId ? ' (pending review)' : ''}.`);
+    notify(userId!, `You cancelled "${event.name}". Reason: ${reason}. Amount paid: ₹${cancellation.paidAmount.toFixed(2)}. Cancellation fee: ₹${cancellation.cancellationFee.toFixed(2)}. Refund due: ₹${cancellation.refundAmount.toFixed(2)}${refundId ? ' (pending review)' : ' (no refund needed)'}. No further booking payments are due.`);
     for (const registration of this.dataStore.registrations.filter(item => item.eventId === eventId && ['pending_approval', 'registered', 'pending_payment', 'waitlisted'].includes(item.status))) {
       registration.status = 'cancelled';
       registration.cancellationReason = `Event cancelled by client: ${reason}`;

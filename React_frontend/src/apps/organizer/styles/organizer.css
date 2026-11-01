@@ -1401,6 +1401,17 @@
       color: var(--text2)
     }
 
+    .organizer-event-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      width: 100%;
+    }
+
+    .organizer-event-actions > .btn {
+      flex: 1 1 auto;
+    }
+
     .ev-footer {
       display: flex;
       align-items: center;

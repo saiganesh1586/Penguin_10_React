@@ -140,6 +140,38 @@ test('client and organizer complete the restored event workflow through the API'
     await call(client, 'POST', `/event-requests/${pending.requestId}/agreement`, { agreementStatus: 'agreed' }, 400);
   });
 
+  await t.test('an unpaid request can be withdrawn without a booking policy confirmation and both roles see the saved result', async () => {
+    for (const status of ['submitted', 'planning', 'awaiting_client']) {
+      const pending = await createRequest();
+      const saved = db.eventRequests.find(item => item.requestId === pending.requestId);
+      saved.status = status;
+      const url = `/event-requests/${pending.requestId}/cancel`;
+      const body = { reason: 'Changed Plans', explanation: 'Postponing to next fiscal year.' };
+      await call(otherClient, 'POST', url, body, 403);
+      await call(organizer, 'POST', url, body, 400);
+      await call(client, 'POST', url, { reason: '' }, 400);
+      assert.equal(saved.status, status);
+      const result = (await call(client, 'POST', url, body)).data;
+      assert.equal(result.request.status, 'withdrawn');
+      assert.equal(result.request.withdrawalReason, body.reason);
+      assert.equal(result.cancellation.explanation, body.explanation);
+      assert.equal(result.cancellation.paidAmount, 0);
+      assert.equal(result.cancellation.cancellationFee, 0);
+      assert.equal(result.cancellation.refundAmount, 0);
+      assert.equal(result.cancellation.refundStatus, 'not_applicable');
+      assert.equal(db.eventWorkflowRefunds.some(item => item.requestId === pending.requestId), false);
+      for (const token of [client, organizer]) {
+        const refreshed = await call(token, 'GET', `/event-requests/${pending.requestId}`);
+        assert.equal(refreshed.status, 'withdrawn');
+        assert.equal(refreshed.withdrawalReason, body.reason);
+      }
+      assert.ok(db.notifications.some(item => item.userId === 'usr-org-001' && item.type === 'request_withdrawn' && item.message.includes(pending.eventName)));
+      await call(client, 'POST', url, body, 409);
+      const disk = JSON.parse(fs.readFileSync(dataFile, 'utf8'));
+      assert.equal(disk.eventRequests.find(item => item.requestId === pending.requestId).status, 'withdrawn');
+    }
+  });
+
   await t.test('requests are shared between roles and acceptance starts planning without creating an event', async () => {
     const directory = await call(client, 'GET', '/event-requests/organizers');
     assert.ok(directory.some(item => item.organizerId === 'org-001'));
@@ -204,6 +236,12 @@ test('client and organizer complete the restored event workflow through the API'
     assert.equal(event.organizerId, 'org-001');
     assert.equal(liveRequest.paymentStatus, 'deposit_paid');
     assert.equal(liveRequest.agreementStatus, 'agreed');
+    const cancellationBody = { reason: 'Our plans have changed.', expectedPaidAmount: deposit.amountPaid };
+    const missingPolicy = await call(client, 'POST', `/event-requests/${request.requestId}/cancel`, cancellationBody, 400);
+    assert.match(missingPolicy.message, /Read and accept/);
+    await call(client, 'POST', `/event-requests/${request.requestId}/cancel`, { ...cancellationBody, ...acknowledgement, acceptedPolicyVersion: 'outdated' }, 400);
+    assert.equal(liveRequest.status, 'confirmed');
+    assert.equal(event.status, 'ongoing');
     for (const token of [client, organizer]) {
       const events = await call(token, 'GET', '/events');
       assert.ok(events.some(item => item.eventId === event.eventId && item.clientUserId === 'usr-client-001' && item.organizerUserId === 'usr-org-001'));
@@ -335,7 +373,7 @@ test('client and organizer complete the restored event workflow through the API'
     await call(client, 'POST', `/payments/events/${cancelledEvent.eventId}`, { paymentMethod: 'DEMO_PROVIDER' }, 201);
     await call(client, 'POST', url + '/cancel', body, 409);
     assert.equal(db.events.find(item => item.eventId === cancelledEvent.eventId).status, 'ongoing');
-    assert.equal(db.eventWorkflowRefunds.length, 0);
+    assert.equal(db.eventWorkflowRefunds.filter(item => item.eventId === cancelledEvent.eventId).length, 0);
   });
 
   await t.test('a paid cancellation records the 10% fee and net refund, notifies participants, and cannot be repeated or reopened', async () => {

@@ -577,6 +577,8 @@ test('EventFlow Client Workflow Buttons Test Suite', async (t) => {
     assert.ok(cancelCall, 'Must call backend apiCancelClientRequest');
     assert.equal(cancelCall.reqId, 'req-001', 'Must pass correct request ID');
     assert.equal(cancelCall.payload.reason, 'Changed Plans');
+    assert.equal(cancelCall.payload.explanation, 'Postponing to next fiscal year.');
+    assert.equal(cancelCall.payload.policyAccepted, undefined, 'Unpaid withdrawal does not claim booking-policy consent');
 
     // Verify request status transitioned to withdrawn
     const req = env.sandbox.window.DB.eventRequests.find(r => r.id === 'req-001');
@@ -598,4 +600,30 @@ test('EventFlow Client Workflow Buttons Test Suite', async (t) => {
     assert.equal(env.getLastToast()?.type, 'warning');
     assert.match(env.getLastToast()?.msg, /already been withdrawn/);
   });
+});
+
+test('withdrawal and cancellation preserve server errors and only fall back when a request is missing', async () => {
+  const runtime = portalSource('client');
+  const helpers = runtime.slice(runtime.indexOf('async function apiPreviewClientRequestCancellation('), runtime.indexOf('async function apiUpdateAgreementStatus('));
+  for (const name of ['apiPreviewClientRequestCancellation', 'apiCancelClientRequest']) {
+    for (const status of [0, 400, 401, 403, 409, 503]) {
+      const calls = [], error = Object.assign(new Error('Original server error'), { status });
+      const context = vm.createContext({ apiRequest: async endpoint => { calls.push(endpoint); throw error; } });
+      vm.runInContext(helpers, context);
+      await assert.rejects(context[name]('req-001', { reason: 'Changed Plans' }), err => err === error);
+      assert.equal(calls.length, 1, `${name} must preserve HTTP ${status}`);
+    }
+    const calls = [];
+    const context = vm.createContext({ apiRequest: async (endpoint, options) => {
+      calls.push({ endpoint, options });
+      if (calls.length === 1) throw Object.assign(new Error('Request missing'), { status: 404 });
+      return { success: true };
+    } });
+    vm.runInContext(helpers, context);
+    await context[name]('evt-legacy', { reason: 'Changed Plans' });
+    assert.equal(calls.length, 2);
+    assert.ok(calls[0].endpoint.startsWith('/event-requests/evt-legacy/'));
+    assert.ok(calls[1].endpoint.startsWith('/events/evt-legacy/'));
+    if (name === 'apiCancelClientRequest') assert.equal(calls[1].options.body, calls[0].options.body);
+  }
 });

@@ -40,8 +40,8 @@ function portalRuntimeDefinitions() {
         const venue = isPlanning ? (request?.venue || request?.location || 'Venue TBD') : (event?.location || event?.venue || 'Venue TBD');
         const category = isPlanning ? (request?.category || request?.eventType || 'Corporate') : (event?.category || 'Event');
 
-        const budgetAmount = isPlanning ? (request?.agreedPrice || request?.budget || (request?.proposals && request.proposals.length ? request.proposals[request.proposals.length - 1].totalPrice : 0)) : (event?.price != null && event.price > 0 ? event.price : (request?.agreedPrice || request?.budget || 0));
-        const priceBadge = budgetAmount ? (typeof budgetAmount === 'number' ? '₹' + budgetAmount.toLocaleString() : workflowMoney(budgetAmount)) : 'Free';
+        const budgetAmount = Number(request?.agreedPrice ?? request?.budget ?? (request?.proposals?.length ? request.proposals[request.proposals.length - 1].totalPrice : 0));
+        const priceBadge = budgetAmount > 0 ? '₹' + budgetAmount.toLocaleString('en-IN') : 'Budget not set';
 
         const capacity = isPlanning ? (request?.guestCount || request?.capacity || 0) : (event?.capacity || request?.guestCount || 0);
         const registered = isPlanning ? (request?.registered || request?.confirmedAttendees || 0) : (event?.registered || 0);
@@ -80,7 +80,7 @@ function portalRuntimeDefinitions() {
         <div class="prog"><div class="prog-fill" style="width:${pct}%"></div></div>
       </div>
       <div class="ev-footer">
-        <button class="btn btn-ghost btn-xs w-full" onclick="${details}" title="View event details">👁️ View Details</button>
+        ${!isPlanning && CU.role === 'organizer' ? renderOrganizerEventActions(event, request) : `<button class="btn btn-ghost btn-xs w-full" onclick="${details}" title="View event details">👁️ View Details</button>`}
       </div>
     </div>
   </div>`;

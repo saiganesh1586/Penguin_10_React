@@ -52,7 +52,7 @@ function portalRuntimeDefinitions() {
       const clientCancelBtn = (CU.role === 'client' && !['cancelled', 'withdrawn', 'rejected', 'completed'].includes(r.status) && !r.eventId)
         ? `<button class="btn btn-danger btn-sm" onclick="openClientCancelRequestModal('${r.id}')">Cancel Request</button>`
         : '';
-      const clientActions = r.status === 'changes_requested'
+      const clientActions = ['cancelled', 'withdrawn', 'rejected', 'expired', 'completed'].includes(r.status) ? '' : r.status === 'changes_requested'
         ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px"><button class="btn btn-success" onclick="respondToWorkflowChanges('${r.id}','accept_changes')">Accept Changes</button><button class="btn btn-danger" onclick="respondToWorkflowChanges('${r.id}','reject_changes')">Reject Changes</button><button class="btn btn-primary" onclick="openWorkflowCounterofferModal('${r.id}')">Send Counteroffer</button>${clientCancelBtn}</div>`
         : r.status === 'plan_submitted' && plan?.approvalStatus === 'pending'
         ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px"><button class="btn btn-success" onclick="openWorkflowPlanAcceptanceModal('${plan.eventPlanId}','${r.id}')">Accept Plan</button><button class="btn btn-primary" onclick="openWorkflowPlanRevisionModal('${plan.eventPlanId}','${r.id}')">Request Changes</button><button class="btn btn-danger" onclick="openWorkflowPlanRejectionModal('${plan.eventPlanId}','${r.id}')">Reject Plan</button></div>`
@@ -173,14 +173,14 @@ function portalRuntimeDefinitions() {
         <div class="form-group"><label class="form-label" for="workflow-review-comment">Written review</label><textarea class="form-control" id="workflow-review-comment" rows="3" required></textarea></div>
         <button class="btn btn-primary" onclick="submitClientOrganizerReview('${eventId}','${r.id}')">Submit Review</button>
       </div>` : submittedReview ? '<div style="margin-top:14px;color:var(--green);font-weight:600">Thank you. Your review has been published to the organizer profile.</div>' : '';
-      const lifecycleHtml = eventId && event ? `<section style="margin-top:18px;padding:16px;background:var(--surface2);border-radius:10px">
+      const lifecycleHtml = eventId && event && r.status !== 'cancelled' ? `<section style="margin-top:18px;padding:16px;background:var(--surface2);border-radius:10px">
         <h3 style="margin:0 0 10px">Ongoing Event Workflow</h3>
         <div class="info-row"><span class="info-label">Event status</span><span class="info-value">${workflowHtml(event.status)}</span></div>
         <div class="info-row"><span class="info-label">Payment status</span><span class="info-value" style="color:${isPaid ? 'var(--green)' : 'var(--yellow)'}">${isPaid ? 'Paid' : r.paymentStatus === 'deposit_paid' ? 'Deposit Paid' : 'Unpaid'}</span></div>
         ${event.status === 'ongoing' && !isPaid && bookingAmounts.remainingAmount > 0 ? `<div style="margin-top:10px"><strong>Final agreed amount: ₹${bookingAmounts.totalAmount.toLocaleString()}</strong><div style="margin-top:6px">Remaining amount: ₹${bookingAmounts.remainingAmount.toLocaleString()}</div><div style="display:flex;gap:10px;margin-top:8px"><button class="btn btn-primary" onclick="openClientPaymentModal('${escapeHtml(r.id)}', '${escapeHtml(eventId || '')}')">💳 Pay Remaining Amount</button></div></div>` : ''}
         ${isPaid ? `<div style="margin-top:10px"><button class="btn btn-ghost btn-sm" onclick="openClientPaymentModal('${escapeHtml(r.id)}', '${escapeHtml(eventId || '')}')">📜 View Payment Receipt & Transactions</button></div>` : ''}
         <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
-          ${event.status === 'ongoing' && CU.role === 'client' ? `<button class="btn btn-danger btn-sm" onclick="openWorkflowCancellation('${eventId}')">🚫 Cancel Event</button>` : ''}
+          ${event.status === 'ongoing' && CU.role === 'client' ? `<button class="btn btn-danger btn-sm" onclick="openClientCancelRequestModal('${workflowHtml(r.requestId || r.id)}')">Cancel Event</button>` : ''}
         </div>
         ${(r.eventModifications && r.eventModifications.length > 0) ? `
           <div style="background:var(--surface);border-radius:10px;padding:14px;border:1px solid var(--border);margin-top:14px">
@@ -198,7 +198,7 @@ function portalRuntimeDefinitions() {
             `).join('')}
           </div>
         ` : ''}
-        ${renderWorkflowCancellation(r.cancellation || event.cancellation)}
+        ${r.status !== 'cancelled' ? renderWorkflowCancellation(r.cancellation || event.cancellation, r) : ''}
         ${renderWorkflowFileReports(eventId)}
         ${completionReportHtml}
         ${reviewHtml}
@@ -224,6 +224,7 @@ function portalRuntimeDefinitions() {
           <div class="info-row"><span class="info-label">Event type</span><span class="info-value">${workflowHtml(r.eventType || r.type)}</span></div>
           <div class="info-row"><span class="info-label">Organizer</span><span class="info-value">${workflowHtml(organizer?.name || organizer?.businessName || r.organizerName || 'Assigned Organizer')}</span></div>
         </div>
+        ${r.status === 'cancelled' ? renderWorkflowCancellation(r.cancellation, r) : ''}
         <div style="margin:12px 0"><strong>Event details</strong><p style="white-space:pre-wrap;color:var(--text2);line-height:1.6">${workflowHtml(r.requirements || r.desc || '—')}</p></div>
         ${r.status === 'rejected' && r.rejectionReason ? `<div style="padding:12px;background:var(--red-dim);margin:12px 0;border-radius:8px"><strong style="color:var(--red)">&#10005; Reason for declining</strong><p style="margin:6px 0 0;white-space:pre-wrap;overflow-wrap:anywhere">${workflowHtml(r.rejectionReason)}</p>${r.rejectionComments ? `<p style="margin:6px 0 0;font-size:12px;color:var(--text2)"><strong>Additional comments:</strong> ${workflowHtml(r.rejectionComments)}</p>` : ''}</div>` : ''}
         ${currentChange ? `<div style="padding:12px;border-radius:8px;background:rgba(245,158,11,.1);margin:12px 0"><strong>Organizer requested changes</strong><div style="font-size:13px;margin-top:5px">${workflowHtml(currentChange.reason)}</div>${currentChange.budget ? `<div>Proposed budget: ₹${Number(currentChange.budget).toLocaleString()}</div>` : ''}${currentChange.eventDate ? `<div>Proposed date: ${workflowHtml(currentChange.eventDate)}</div>` : ''}</div>` : ''}

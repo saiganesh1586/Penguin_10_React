@@ -322,7 +322,7 @@ test('4. Confirmed Booking Cancellation: opens 2-step modal with policy, deadlin
   const m = getModal();
   assert.ok(m, 'Modal must open');
 
-  assert.equal(m.title, 'Cancel Event Booking');
+  assert.equal(m.title, 'Cancel Event');
   assert.match(m.html, /Cancellation Policy & Window/);
   assert.match(m.html, /Notice window:/);
   assert.match(m.html, /AMOUNT PAID/);
@@ -331,8 +331,8 @@ test('4. Confirmed Booking Cancellation: opens 2-step modal with policy, deadlin
   assert.match(m.html, /REFUND TIMELINE/);
 
   const btnLabels = m.buttons.map(b => b.lbl);
-  assert.ok(btnLabels.includes('Keep Booking'));
-  assert.ok(btnLabels.includes('Continue to Cancel'));
+  assert.ok(btnLabels.includes('Keep Event'));
+  assert.ok(btnLabels.includes('Cancel Event'));
 });
 
 test('5. Payment & Booking Confirmation: presents demo provider, terms agreement checkbox, and confirms booking upon deposit', async () => {

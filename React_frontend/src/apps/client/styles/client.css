@@ -2532,3 +2532,32 @@
 /* ===== Role-owned styling ===== */
 body[data-eventflow-role="client"] { --eventflow-role-scope: 'client'; }
 body[data-eventflow-role="client"] .role-owned-root { display: block; }
+
+body[data-eventflow-role="client"] #modal-box { display: flex; flex-direction: column; overflow: hidden; max-height: min(88vh, calc(100dvh - 24px)); }
+body[data-eventflow-role="client"] #modal-box .modal-head,
+body[data-eventflow-role="client"] #modal-box .modal-foot { flex-shrink: 0; background: var(--surface); }
+body[data-eventflow-role="client"] #modal-box .modal-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+body[data-eventflow-role="client"] #modal-foot .btn:disabled { opacity: .5; cursor: not-allowed; }
+.client-cancel-dialog > h3 { margin-top: 0; }
+.client-cancel-dialog > p { line-height: 1.6; }
+.client-cancel-unavailable { margin: 16px 0; padding: 14px; border: 1px solid var(--red); border-radius: 8px; background: var(--red-dim); color: var(--red); }
+.client-cancel-unavailable p { margin: 6px 0 0; line-height: 1.6; }
+
+.client-cancellation { margin-top: 16px; padding: 20px; border: 1px solid var(--border); border-left: 4px solid var(--orange, #f59e0b); border-radius: 12px; background: var(--surface2); color: var(--text); }
+.client-cancellation-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.client-cancellation h3 { margin: 0; font-size: 16px; }
+.client-cancellation-heading p { margin: 6px 0 0; color: var(--text2); font-size: 12px; }
+.client-cancellation-reason { margin-top: 16px; font-size: 13px; }
+.client-cancellation-reason p { margin: 5px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.6; }
+.client-cancellation-amounts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 16px 0; }
+.client-cancellation-amounts > div { padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+.client-cancellation-amounts span { display: block; color: var(--text2); font-size: 12px; margin-bottom: 6px; }
+.client-cancellation-amounts strong { display: block; font-size: 17px; overflow-wrap: anywhere; }
+.client-cancellation-progress { display: flex; flex-wrap: wrap; gap: 10px 20px; padding: 0; margin: 14px 0; list-style: none; font-size: 12px; }
+.client-cancellation-progress li::before { content: '●'; margin-right: 7px; }
+.client-cancellation-progress .complete { color: var(--green); }
+.client-cancellation-progress .pending { color: var(--yellow); }
+.client-cancellation-next { margin: 12px 0 0; color: var(--text2); font-size: 12px; line-height: 1.7; }
+.client-cancellation-next strong { color: var(--text); }
+.client-cancellation-compact { padding: 16px; }
+@media (max-width: 600px) { .client-cancellation-amounts { grid-template-columns: 1fr; } }

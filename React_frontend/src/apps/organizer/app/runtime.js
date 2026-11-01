@@ -4676,16 +4676,16 @@ window.EventFlowModules['shared'] = true;
         return `<div class="empty"><div class="empty-icon">🚫</div><div class="empty-title">Access Denied</div><p class="empty-desc">This page is not available for clients. Please use Find Organizers to request events.</p><button class="btn btn-primary mt-16" onclick="goNav('find-organizers')">Find Organizers</button></div>`;
       }
       const isOrg = CU.role === 'organizer';
-      const list = isOrg ? DB.events.filter(e => e.organizer === CU.id && !isCancelledWorkflowEvent(e)) : DB.events;
+      const list = isOrg ? DB.events.filter(e => ownsOrganizerEvent(e)) : DB.events;
       return `
   <div class="page-hd">
     <div class="page-hd-left"><div class="page-title">${isOrg ? 'My Events' : 'All Events'}</div><div class="page-sub">${list.length} event(s)</div></div>
-    <div class="page-hd-right">${CU.role === 'organizer' ? `<button class="btn btn-primary" onclick="openAddEventModal()">+ Create Event</button>` : ''}</div>
+    <div class="page-hd-right">${isOrg ? `<button class="btn btn-ghost" onclick="setWorkflowEventTab('cancelled')">Cancelled Events (${list.filter(isCancelledWorkflowEvent).length})</button><button class="btn btn-primary" onclick="openAddEventModal()">+ Create Event</button>` : ''}</div>
   </div>
   <div class="filter-row">
     <div class="search-box input-group"><span class="input-icon">🔍</span><input class="form-control" id="ev-q" placeholder="Search events…" oninput="refreshEvents()"></div>
     <select class="form-control filter-select" id="ev-st" onchange="refreshEvents()">
-      <option value="">All Status</option><option value="upcoming">Upcoming</option><option value="full">Full</option><option value="completed">Completed</option>
+      <option value="">All Status</option><option value="upcoming">Upcoming</option>${isOrg ? '<option value="ongoing">In Progress</option><option value="draft">Draft</option>' : ''}<option value="full">Full</option><option value="completed">Completed</option>${isOrg ? '<option value="cancelled">Cancelled</option>' : ''}
     </select>
     <select class="form-control filter-select" id="ev-cat" onchange="refreshEvents()">
       <option value="">All Categories</option><option>Conference</option><option>Corporate</option><option>Concert</option><option>Workshop</option><option>Networking</option>
@@ -4698,15 +4698,24 @@ window.EventFlowModules['shared'] = true;
       const st = (g('ev-st') || {}).value || '';
       const cat = (g('ev-cat') || {}).value || '';
       const isOrg = CU.role === 'organizer';
-      const list = (isOrg ? DB.events.filter(e => e.organizer === CU.id && !isCancelledWorkflowEvent(e)) : DB.events).filter(e => {
-        return (!q || e.title.toLowerCase().includes(q)) && (!st || e.status === st) && (!cat || e.category === cat);
+      const list = (isOrg ? DB.events.filter(e => ownsOrganizerEvent(e)) : DB.events).filter(e => {
+        const status = isOrg ? organizerEventCardStatus(e) : e.status;
+        const matchesStatus = !st || status === st || (st === 'full' && e.status === 'full' && !['completed', 'cancelled'].includes(status));
+        return (!q || String(e.title || e.name || '').toLowerCase().includes(q)) && matchesStatus && (!cat || e.category === cat);
       });
       g('ev-grid').innerHTML = list.map(e => evCard(e, CU.role)).join('') || `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔍</div><div class="empty-title">No events found</div></div>`;
     }
     function evCard(e, role, reg = null) {
-      const pct = Math.min(100, Math.round((e.registered / e.capacity) * 100));
+      const pct = e.capacity > 0 ? Math.min(100, Math.round(((e.registered || 0) / e.capacity) * 100)) : 0;
       const regForThis = reg || DB.registrations.find(r => String(r.attendeeId) === String(CU.id) && String(r.eventId) === String(e.id));
       const isCancelled = isCancelledWorkflowEvent(e);
+      const request = role === 'organizer' ? organizerEventRequest(e) : null;
+      const status = role === 'organizer' ? organizerEventCardStatus(e) : e.status;
+      const statusLabel = role === 'organizer' ? ({ upcoming: 'Upcoming', ongoing: 'Ongoing', completed: 'Completed', cancelled: 'Cancelled', draft: 'Draft' }[status] || status) : status;
+      const statusColor = role === 'organizer' ? ({ upcoming: 'blue', ongoing: 'green', completed: 'green', cancelled: 'red', draft: 'yellow' }[status] || evStatBadge(status)) : evStatBadge(status);
+      const budget = request ? Number(request.agreedPrice ?? request.budget ?? 0) : null;
+      const paymentLabel = request?.paymentStatus === 'fully_paid' ? 'Paid' : request?.paymentStatus === 'deposit_paid' ? 'Deposit Paid' : 'Unpaid';
+      const paymentColor = request?.paymentStatus === 'fully_paid' ? 'var(--green)' : request?.paymentStatus === 'deposit_paid' ? 'var(--blue)' : 'var(--yellow)';
       const bannerContent = e.image ? `
         <img src="${e.image}" alt="${e.title || 'Event'}" class="ev-banner-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
         <div class="ev-banner-fallback" style="display:none;align-items:center;justify-content:center;font-size:52px;width:100%;height:100%">${e.emoji || '📅'}</div>
@@ -4716,8 +4725,8 @@ window.EventFlowModules['shared'] = true;
       return `<div class="ev-card">
     <div class="ev-banner" style="background:${e.color || 'var(--accent)'}18">
       ${bannerContent}
-      <div class="ev-banner-tag"><span class="badge badge-${evStatBadge(e.status)}">${e.status}</span></div>
-      <div class="ev-banner-price">${e.price === 0 ? 'Free' : '₹' + e.price}</div>
+      <div class="ev-banner-tag"><span class="badge badge-${statusColor}">${escapeHtml(statusLabel)}</span></div>
+      <div class="ev-banner-price">${request ? (budget > 0 ? '₹' + budget.toLocaleString('en-IN') : 'Budget not set') : e.price === 0 ? 'Free' : '₹' + e.price}</div>
     </div>
     <div class="ev-body">
       <div class="ev-title">${e.title}</div>
@@ -4725,6 +4734,7 @@ window.EventFlowModules['shared'] = true;
         <div class="ev-meta-row"><span>📅</span>${e.date} · ${e.time}</div>
         <div class="ev-meta-row"><span>📍</span>${e.venue}</div>
         <div class="ev-meta-row"><span>🏷️</span>${e.category}</div>
+        ${request ? `<div class="ev-meta-row"><span>💳</span>Payment: <strong style="color:${paymentColor}">${paymentLabel}</strong></div>` : ''}
       </div>
       <div style="margin-bottom:12px">
         <div class="flex justify-between ev-cap mb-4"><span>${e.registered}/${e.capacity} registered</span><span>${pct}%</span></div>
@@ -4732,7 +4742,7 @@ window.EventFlowModules['shared'] = true;
       </div>
       <div class="ev-footer">
         ${role === 'attendee' ? `<div class="flex gap-6" style="width:100%;justify-content:space-between"><button class="btn btn-sm ${regForThis ? 'btn-ghost' : 'btn-primary'}" onclick="regForEvent('${e.id}')" ${(e.status === 'full' && !regForThis) || e.status === 'completed' || isCancelled ? 'disabled' : ''} style="${(e.status === 'full' && !regForThis) || e.status === 'completed' || isCancelled ? 'opacity:.5' : ''}">${isCancelled ? 'Event Cancelled' : regForThis ? '✓ Registered' : e.status === 'full' ? 'Event Full' : 'Register'}</button><button class="btn btn-ghost btn-xs" onclick="openViewEventDrawer('${e.id}')" title="View event details">View Details</button></div>` :
-          role === 'organizer' ? `<div class="actions"><button class="btn btn-ghost btn-xs" onclick="openViewEventDrawer('${e.id}')" title="View event details">👁️ View</button>${isCancelled ? `<button class="btn btn-ghost btn-xs" onclick="viewWorkflowEventDetails('${e.eventId || e.id}')">View Cancellation History</button>` : `<button class="btn btn-ghost btn-xs" onclick="openEditEventModal('${e.id}')">✏️ Edit</button><button class="btn btn-xs btn-danger" onclick="deleteEvent('${e.id}')">🗑️</button>`}</div>` :
+          role === 'organizer' ? renderOrganizerEventActions(e, request) :
             role === 'superuser' ? `<div class="actions"><button class="btn btn-ghost btn-xs w-full" onclick="openViewEventDrawer('${e.id}')" title="View event details">👁️ View</button></div>` :
               role === 'employee' || role === 'client' ? `<div class="flex gap-6"><button class="btn btn-ghost btn-xs w-full" onclick="openViewEventDrawer('${e.id}')" title="View event details">👁️ View Details</button></div>` :
                 `<button class="btn btn-ghost btn-xs" onclick="openViewEventDrawer('${e.id}')" title="View event details">👁️ Details</button>`}
@@ -6252,7 +6262,7 @@ window.EventFlowModules['shared'] = true;
       try {
         workflowResponsePolicy = await loadWorkflowEventPolicy(DB.eventRequests.find(item => String(item.id) === String(id)));
       } catch (error) { toast(error.message || 'Unable to load event policies', 'error'); return; }
-      openModal('Reject Request', `<div class="form-group"><label class="form-label">Choose a response</label><select class="form-control" id="workflow-reject-type" onchange="toggleWorkflowRejectFields()"><option value="budget">Budget Increase</option><option value="date">Date Change</option><option value="both">Both Budget and Date Change</option><option value="other">Other Reason</option><option value="permanent">Permanently Reject Request</option></select></div>
+      openModal('Reject Request', `<div class="form-group"><label class="form-label">Choose a response</label><select class="form-control" id="workflow-reject-type" onchange="toggleWorkflowRejectFields()"><option value="budget">Budget Increase</option><option value="date">Date Change</option><option value="both">Both Budget and Date Change</option><option value="other">Other Reason</option></select></div>
       <div class="form-group" id="workflow-reject-budget"><label class="form-label">New budget (must be higher)</label><input class="form-control" id="workflow-new-budget" type="number" min="1"></div>
       <div class="form-group" id="workflow-reject-date" style="display:none"><label class="form-label">New event date</label><input class="form-control" id="workflow-new-date" type="date"></div>
       <div class="form-group"><label class="form-label">Reason</label><textarea class="form-control" id="workflow-reject-reason" rows="3" required></textarea></div>
@@ -6269,8 +6279,6 @@ window.EventFlowModules['shared'] = true;
       const budget = g('workflow-reject-budget'), date = g('workflow-reject-date');
       if (budget) budget.style.display = ['budget', 'both'].includes(type) ? '' : 'none';
       if (date) date.style.display = ['date', 'both'].includes(type) ? '' : 'none';
-      const policy = g('workflow-reject-policy');
-      if (policy) policy.style.display = type === 'permanent' ? 'none' : '';
     }
 
     function submitWorkflowReject(id, permanent = false) {
@@ -9143,13 +9151,34 @@ window.EventFlowModules['shared'] = true;
     }
     function renderOrganizerReportFile(report) {
       const attachment = organizerReportAttachment(report);
-      if (!attachment) return `${escapeHtml(report.fileName || 'Report file')}<div class="small mt-4">No file saved with this older report.</div>`;
+      const downloadButton = `<button type="button" class="btn btn-primary btn-xs" onclick="openOrganizerReportFile('${escapeHtml(String(report.id))}', true)">Download Report</button>`;
+      if (!attachment) return `<div style="overflow-wrap:anywhere">${escapeHtml(report.fileName || report.reportTitle || 'Report file')}</div>
+        <div class="small mt-4">Original attachment unavailable. Download saved report details (TXT).</div>
+        <div style="margin-top:8px">${downloadButton}</div>`;
       const canView = /\.(pdf|html)$/i.test(attachment.name);
       return `<div style="overflow-wrap:anywhere">${escapeHtml(attachment.name)}${attachment.sample ? ' <span class="badge badge-gray">Sample</span>' : ''}</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
           ${canView ? `<button type="button" class="btn btn-ghost btn-xs" onclick="openOrganizerReportFile('${escapeHtml(String(report.id))}')">View File</button>` : ''}
-          <button type="button" class="btn btn-ghost btn-xs" onclick="openOrganizerReportFile('${escapeHtml(String(report.id))}', true)">Download</button>
+          ${downloadButton}
         </div>`;
+    }
+    function organizerReportDetailsFile(report) {
+      const event = DB.events.find(item => String(item.eventId || item.id) === String(report.eventId));
+      const recipient = DB.users.find(item => String(item.id || item.userId) === String(report.recipientId || report.clientUserId));
+      const title = report.reportTitle || report.fileName || 'Event Report';
+      const recipientEmail = recipient?.email || report.clientEmail;
+      const fileName = String(title).replace(/\.(pdf|docx?|xlsx?|html?|csv|txt)$/i, '').replace(/[<>:"/\\|?*\x00-\x1f]/g, '-').trim().slice(0, 120) || 'event-report';
+      const text = [
+        'EVENT REPORT', title, '',
+        `Event: ${event?.title || event?.name || report.eventId || 'Not recorded'}`,
+        `Submitted by: ${CU.name || 'Event Organizer'}`,
+        `Sent to: ${recipient?.name || report.clientName || 'Not recorded'}${recipientEmail ? ` (${recipientEmail})` : ''}`,
+        `Submitted at: ${report.submittedAt || report.createdAt || report.submissionDate || 'Not recorded'}`,
+        `Status: ${report.status || 'submitted'}`, '', 'Report details',
+        report.reportDetails || 'No additional report details were saved.', '',
+        'This file contains the saved report record. The original attachment was not stored.',
+      ].join('\n');
+      return { name: `${fileName}-details.txt`, blob: new Blob([text], { type: 'text/plain;charset=utf-8' }) };
     }
     async function openOrganizerReportFile(reportId, download = false) {
       const report = (DB.reports || []).find(item => String(item.id) === String(reportId));
@@ -9157,19 +9186,24 @@ window.EventFlowModules['shared'] = true;
         toast('This report is not available in your submitted reports.', 'error'); return;
       }
       const attachment = organizerReportAttachment(report);
-      if (!attachment) { toast('No file was saved for this older report. Upload the original report again.', 'error'); return; }
-      const canView = /\.(pdf|html)$/i.test(attachment.name);
+      const canView = attachment && /\.(pdf|html)$/i.test(attachment.name);
       const previewWindow = !download && canView ? window.open('about:blank', '_blank') : null;
       if (previewWindow) previewWindow.opener = null;
       try {
-        const response = await fetch(attachment.sample ? attachment.url : `${API_BASE_URL}/reports/events/${encodeURIComponent(report.eventReportId || report.id)}/file`,
-          attachment.sample ? {} : { headers: getAuthHeader() ? { Authorization: getAuthHeader() } : {} });
-        if (!response.ok) throw new Error('The submitted report file could not be loaded.');
-        const objectUrl = URL.createObjectURL(await response.blob());
+        let file;
+        if (attachment) {
+          const response = await fetch(attachment.sample ? attachment.url : `${API_BASE_URL}/reports/events/${encodeURIComponent(report.eventReportId || report.id)}/file`,
+            attachment.sample ? {} : { headers: getAuthHeader() ? { Authorization: getAuthHeader() } : {} });
+          if (!response.ok) throw new Error('The submitted report file could not be loaded.');
+          file = { name: attachment.name, blob: await response.blob() };
+        } else {
+          file = organizerReportDetailsFile(report);
+        }
+        const objectUrl = URL.createObjectURL(file.blob);
         if (previewWindow) previewWindow.location.href = objectUrl;
         else {
           const link = document.createElement('a');
-          link.href = objectUrl; link.download = attachment.name;
+          link.href = objectUrl; link.download = file.name;
           document.body.appendChild(link); link.click(); link.remove();
         }
         setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
@@ -9809,6 +9843,51 @@ window.EventFlowModules['shared'] = true;
         seenRequests.add(String(requestId));
       });
       return items;
+    }
+    function organizerEventRequest(event) {
+      const eventIds = new Set([event?.eventId, event?.id].filter(id => id != null).map(String));
+      return (DB.eventRequests || []).find(request =>
+        (request.eventId != null && eventIds.has(String(request.eventId))) ||
+        (event?.requestId != null && String(request.requestId || request.id) === String(event.requestId))) || null;
+    }
+    function ownsOrganizerEvent(event, request = organizerEventRequest(event)) {
+      if (CU?.role !== 'organizer') return false;
+      const ownerIds = new Set([CU.id, CU.userId, CU.organizerId].filter(id => id != null).map(String));
+      (DB.organizers || []).filter(profile => ownerIds.has(String(profile.userId))).forEach(profile => {
+        if (profile.organizerId != null) ownerIds.add(String(profile.organizerId));
+      });
+      return [event?.organizerUserId, event?.organizerId, event?.organizer,
+        request?.organizerUserId, request?.organizerId, request?.organizer]
+        .some(id => id != null && ownerIds.has(String(id)));
+    }
+    function organizerEventCardStatus(event) {
+      if (isCancelledWorkflowEvent(event)) return 'cancelled';
+      const status = String(event?.backendStatus || event?.status || '').toLowerCase();
+      return ['draft', 'pending'].includes(status) ? 'draft' : workflowEventPhase(event);
+    }
+    function renderOrganizerEventActions(event, request = organizerEventRequest(event)) {
+      const eventId = event?.eventId || event?.id;
+      const requestId = request?.requestId || request?.id || event?.requestId || '';
+      const status = organizerEventCardStatus(event);
+      const booked = Boolean(request || event?.clientId || event?.backendClientId);
+      const details = booked || status === 'cancelled' ? `viewWorkflowEventDetails('${escapeHtml(eventId)}')` : `openViewEventDrawer('${escapeHtml(eventId)}')`;
+      const buttons = [`<button type="button" class="btn btn-ghost btn-xs" onclick="${details}">${status === 'cancelled' ? 'View Cancellation History' : 'View Details'}</button>`];
+      const requestClosed = request?.cancellation || ['completed', 'cancelled', 'withdrawn', 'rejected', 'expired'].includes(String(request?.status || '').toLowerCase());
+      if (ownsOrganizerEvent(event, request) && !['completed', 'cancelled'].includes(status) && !requestClosed) {
+        if (!booked) buttons.push(`<button type="button" class="btn btn-ghost btn-xs" onclick="openEditEventModal('${escapeHtml(event.id || eventId)}')">Edit</button>`);
+        const eventIds = new Set([event?.id, eventId].filter(id => id != null).map(String));
+        const registrations = (DB.registrations || []).filter(reg => reg.eventId != null && eventIds.has(String(reg.eventId)));
+        const registrationIds = new Set(registrations.flatMap(reg => [reg.registrationId, reg.id]).filter(id => id != null).map(String));
+        const hasPayments = (DB.payments || []).concat(DB.eventWorkflowPayments || []).some(payment =>
+          (payment.eventId != null && eventIds.has(String(payment.eventId))) ||
+          (payment.registrationId != null && registrationIds.has(String(payment.registrationId))));
+        const deletableDraft = status === 'draft' && !booked && !Number(event.registered || 0) && !registrations.length && !hasPayments;
+        if (deletableDraft) buttons.push(`<button type="button" class="btn btn-danger btn-xs" onclick="handleOrganizerDeleteEvent('${escapeHtml(eventId)}')">Delete Draft</button>`);
+        else if (!request || ['confirmed', 'approved'].includes(String(request.status || '').toLowerCase())) {
+          buttons.push(`<button type="button" class="btn btn-danger btn-xs" onclick="openOrganizerEventCancellationModal('${escapeHtml(eventId)}', '${escapeHtml(requestId)}')">Cancel Event</button>`);
+        }
+      }
+      return `<div class="organizer-event-actions">${buttons.join('')}</div>`;
     }
     /* PORTAL_SECTION_pageWorkflowEvents */
 

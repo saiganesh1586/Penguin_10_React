@@ -300,7 +300,7 @@ test('4. Event cards content & actions by tab', () => {
 
   // Actions
   assert.match(html, /View Details/);
-  assert.match(html, /Cancel Booking/);
+  assert.match(html, /Cancel Event/);
 
   // Ongoing card actions
   const ongoingCard = sandbox.renderWorkflowEventCard({

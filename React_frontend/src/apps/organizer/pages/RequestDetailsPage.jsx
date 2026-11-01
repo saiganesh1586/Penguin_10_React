@@ -53,6 +53,7 @@ function portalRuntimeDefinitions() {
       const event = eventId && DB.events.find(item => String(item.eventId || item.id) === String(eventId));
       const completionReport = (DB.eventCompletionReports || []).find(item => item.eventId === eventId);
       const isPaid = r.paymentStatus === 'fully_paid';
+      const isDepositPaid = r.paymentStatus === 'deposit_paid';
       const eventDatePassed = new Date(`${r.eventDate || r.date}T23:59:59`) <= new Date();
       const reportPhotos = (completionReport?.photos || []).map(photo => `<button class="btn btn-ghost btn-xs" onclick="openEventCompletionPhoto('${eventId}','${encodeURIComponent(photo.fileName)}')">View ${workflowHtml(photo.originalName)}</button>`).join(' ');
       const completionReportHtml = completionReport ? `<div style="margin-top:16px;padding:16px;border:1px solid var(--border);border-radius:10px">
@@ -69,7 +70,7 @@ function portalRuntimeDefinitions() {
           ? eventDatePassed
             ? `<button class="btn btn-primary" style="margin-top:10px" onclick="completeWorkflowEvent('${eventId}','${r.id}')">Mark Event as Completed</button>`
             : '<p style="margin-top:10px;color:var(--text3)">Completion is available after the event date.</p>'
-          : '<p style="margin-top:10px;color:var(--yellow)">The client must complete full payment before the event can be marked completed.</p>'
+          : `<p style="margin-top:10px;color:var(--yellow)">${isDepositPaid ? 'Deposit received. The remaining balance must be paid before the event can be marked completed.' : 'The client must complete full payment before the event can be marked completed.'}</p>`
         : '';
       const completionReportAction = event?.status === 'completed' && !completionReport
         ? `<button class="btn btn-primary" style="margin-top:12px" onclick="openCompletionReportModal('${eventId}','${r.id}','${workflowHtml(r.title)}')">Create Event Completion Report</button>`
@@ -77,7 +78,7 @@ function portalRuntimeDefinitions() {
       const lifecycleHtml = eventId && event ? `<section style="margin-top:18px;padding:16px;background:var(--surface2);border-radius:10px">
         <h3 style="margin:0 0 10px">Ongoing Event Workflow</h3>
         <div class="info-row"><span class="info-label">Event status</span><span class="info-value">${workflowHtml(event.status)}</span></div>
-        <div class="info-row"><span class="info-label">Payment status</span><span class="info-value" style="color:${isPaid ? 'var(--green)' : 'var(--yellow)'}">${isPaid ? 'Paid' : 'Unpaid'}</span></div>
+        <div class="info-row"><span class="info-label">Payment status</span><span class="info-value" style="color:${isPaid ? 'var(--green)' : isDepositPaid ? 'var(--blue)' : 'var(--yellow)'}">${isPaid ? 'Paid' : isDepositPaid ? 'Deposit Paid' : 'Unpaid'}</span></div>
         ${lifecycleActions}${completionReportAction}${completionReportHtml}
         ${renderWorkflowFileReports(eventId)}
         ${renderWorkflowCancellation(r.cancellation || event.cancellation)}

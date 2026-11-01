@@ -213,7 +213,7 @@ test('both role editors refuse booked client events while public event editing r
 function loadOrganizerEventViews(h) {
   h.context._workflowEventTab = 'ongoing';
   h.context._currentPage = 'my-events';
-  vm.runInContext(section(sources.organizer, '    function getOngoingWorkflowItems(', '    function openModal('), h.context);
+  vm.runInContext(section(sources.organizer, '    function isCancelledWorkflowEvent(', '    function openModal('), h.context);
 }
 
 test('organizer ongoing events refresh to show client-accepted planning and open the existing plan workflow', async () => {
@@ -465,6 +465,10 @@ test('approved events show payment for the client and completion requirements fo
   assert.match(await client.render(), /Pay Remaining Amount/);
   assert.doesNotMatch(await organizer.render(), /onclick="payWorkflowEvent/);
   assert.match(organizer.content.innerHTML, /client must complete full payment/);
+  state.requests[0].paymentStatus = 'deposit_paid';
+  assert.match(await organizer.render(), /Payment status<\/span><span[^>]*>Deposit Paid<\/span>/);
+  assert.match(organizer.content.innerHTML, /Deposit received\. The remaining balance must be paid/);
+  assert.doesNotMatch(organizer.content.innerHTML, /Mark Event as Completed/);
   state.requests[0].paymentStatus = 'fully_paid';
   assert.doesNotMatch(await client.render(), /Pay Remaining Amount|Pay Now/);
   assert.match(await organizer.render(), /Completion is available after the event date/);
@@ -768,7 +772,7 @@ test('client cancellation previews the fee and refund, requires a reason and con
   const { state, preview } = cancellationFixture();
   const h = harness('client', state);
   const organizer = harness('organizer', state);
-  assert.match(await h.render(), /onclick="openWorkflowCancellation/);
+  assert.match(await h.render(), /onclick="openClientCancelRequestModal\('req-flow'\)/);
   assert.doesNotMatch(await organizer.render(), /onclick="openWorkflowCancellation/);
   let modal, actions, payload, visited;
   h.context.openModal = (title, body, buttons) => { modal = body; actions = buttons; };
@@ -802,7 +806,7 @@ test('client cancellation previews the fee and refund, requires a reason and con
     assert.match(html, /Our conference plans changed/);
     assert.match(html, /45,000.00/);
     assert.match(html, /Refund pending review/);
-    assert.doesNotMatch(html, /onclick="openWorkflowCancellation|Pay Remaining Amount|Pay Now/);
+    assert.doesNotMatch(html, /onclick="openWorkflowCancellation|onclick="openClientCancelRequestModal|Pay Remaining Amount|Pay Now/);
   }
 });
 
@@ -882,7 +886,9 @@ test('organizer submitted reports open real uploads and labeled sample files wit
   vm.runInContext(section(sources.organizer, '    const organizerReportSamples =', '    function reportContactHtml('), h.context);
   const sample = { id: 'rpt-org-001', submittedBy: 'usr-org-001', fileName: 'healthcare-innovation-forum-final-report.pdf' };
   const uploaded = { id: 'rpt-upload', eventReportId: 'rpt-upload', submittedBy: 'usr-org-001', documentName: 'uploaded-summary.pdf', documentFileName: 'stored.pdf' };
-  const missing = { id: 'rpt-legacy', submittedBy: 'usr-org-001', fileName: 'original-not-saved.pdf' };
+  const missing = { id: 'rpt-legacy', submittedBy: 'usr-org-001', eventId: 'evt-legacy', recipientId: 'usr-client-001',
+    fileName: 'original-not-saved.pdf', reportTitle: 'Tech Conference 2024 - Final Report',
+    reportDetails: 'Event was successful with 450 attendees. All sponsors satisfied.', submittedAt: '2024-06-20', status: 'submitted' };
   h.context.DB.reports = [sample, uploaded, missing];
   const sampleHtml = h.context.renderOrganizerReportFile(sample);
   assert.match(sampleHtml, /View File/);
@@ -892,13 +898,17 @@ test('organizer submitted reports open real uploads and labeled sample files wit
   assert.match(h.context.renderOrganizerReportFile(uploaded), /uploaded-summary.pdf/);
   assert.match(h.context.renderOrganizerReportFile(uploaded), /View File/);
   assert.doesNotMatch(h.context.renderOrganizerReportFile(uploaded), /Sample/);
-  assert.match(h.context.renderOrganizerReportFile(missing), /No file saved/);
-  assert.doesNotMatch(h.context.renderOrganizerReportFile(missing), /View File|Download/);
-  const calls = [], previews = [], links = [], errors = [];
+  assert.match(h.context.renderOrganizerReportFile(missing), /Download Report/);
+  assert.match(h.context.renderOrganizerReportFile(missing), /saved report details \(TXT\)/);
+  assert.doesNotMatch(h.context.renderOrganizerReportFile(missing), /View File/);
+  h.context.DB.events = [{ id: 'evt-legacy', title: 'India AI Leadership Summit' }];
+  h.context.DB.users = [{ id: 'usr-client-001', name: 'Michael Torres', email: 'client@example.com' }];
+  const calls = [], previews = [], links = [], errors = [], blobs = [];
   h.context.API_BASE_URL = 'http://localhost/api';
   h.context.getAuthHeader = () => 'Bearer test-token';
   h.context.window = { open() { const preview = { location: {}, close() { this.closed = true; } }; previews.push(preview); return preview; } };
-  h.context.URL = { createObjectURL: () => 'blob:report-file', revokeObjectURL() {} };
+  h.context.Blob = Blob;
+  h.context.URL = { createObjectURL: blob => { blobs.push(blob); return 'blob:report-file'; }, revokeObjectURL() {} };
   h.context.setTimeout = () => {};
   h.context.document = { body: { appendChild(link) { links.push(link); } }, createElement() { return { click() { this.clicked = true; }, remove() {} }; } };
   h.context.toast = message => errors.push(message);
@@ -915,6 +925,21 @@ test('organizer submitted reports open real uploads and labeled sample files wit
   assert.equal(calls[1][1].headers.Authorization, 'Bearer test-token');
   assert.equal(links[0].download, 'uploaded-summary.pdf');
   assert.equal(links[0].clicked, true);
+  await h.context.openOrganizerReportFile(missing.id, true);
+  assert.equal(calls.length, 2, 'Saved report details do not request a missing attachment');
+  assert.equal(links[1].download, 'Tech Conference 2024 - Final Report-details.txt');
+  assert.equal(links[1].clicked, true);
+  assert.equal(blobs[2].type, 'text/plain;charset=utf-8');
+  const details = await blobs[2].text();
+  assert.match(details, /India AI Leadership Summit/);
+  assert.match(details, /Michael Torres \(client@example.com\)/);
+  assert.match(details, /Event was successful with 450 attendees/);
+  assert.match(details, /original attachment was not stored/);
+  const unauthorized = { ...missing, id: 'rpt-other-organizer', submittedBy: 'usr-org-other' };
+  h.context.DB.reports.push(unauthorized);
+  await h.context.openOrganizerReportFile(unauthorized.id, true);
+  assert.equal(links.length, 2);
+  assert.match(errors.pop(), /not available/);
   h.context.fetch = async () => ({ ok: false });
   await h.context.openOrganizerReportFile(uploaded.id);
   assert.equal(previews[1].closed, true);

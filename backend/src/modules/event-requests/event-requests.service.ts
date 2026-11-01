@@ -128,6 +128,7 @@ export class EventRequestsService {
       notificationId: this.db.generateId('notif'),
       userId: client.userId,
       eventId: request.eventId,
+      requestId: request.requestId,
       registrationId: undefined,
       paymentId: undefined,
       message,
@@ -145,6 +146,7 @@ export class EventRequestsService {
       notificationId: this.db.generateId('notif'),
       userId: organizer.userId,
       eventId: request.eventId,
+      requestId: request.requestId,
       registrationId: undefined,
       paymentId: undefined,
       message,
@@ -2099,7 +2101,8 @@ export class EventRequestsService {
 
     const now = new Date();
     const policy = previewData.policy || request.policySnapshot || acceptedProposalFor(request)?.cancellationPolicy || getEventPolicy();
-    if (role === UserRole.CLIENT) assertEventPolicyAccepted(dto, policy);
+    // Unpaid withdrawals do not use the booking cancellation agreement.
+    if (role === UserRole.CLIENT && (isConfirmed || previewData.paidAmount > 0)) assertEventPolicyAccepted(dto, policy);
 
     // Related payments
     const workflowPayments = completedEventPayments(this.db.eventWorkflowPayments, request);
@@ -2116,8 +2119,11 @@ export class EventRequestsService {
       reason,
       explanation: dto.explanation || '',
       cancelledBy: userId!,
+      cancelledByRole: role,
+      cancelledByName: this.db.findUserById(userId || '')?.name,
       cancelledAt: now,
-      policyVersion: dto.acceptedPolicyVersion || policy.version,
+      policyVersion: policy.version,
+      cancellationDeadline: previewData.cancellationDeadline || '',
       paidAmount: previewData.paidAmount,
       cancellationFeePercent: previewData.cancellationFeePercent,
       cancellationFee: previewData.cancellationFee,
@@ -2167,14 +2173,13 @@ export class EventRequestsService {
         });
       }
 
-      // Notify party
-      if (role === UserRole.EVENT_ORGANIZER) {
-        this.notifyRequestClient(
-          request,
-          `The organizer cancelled the confirmed event booking "${request.eventName}": ${reason}`,
-          'booking_cancelled',
-        );
-      } else {
+      const financialSummary = `Amount paid: ₹${Number(cancellationRecord.paidAmount).toFixed(2)}. Cancellation fee: ₹${Number(cancellationRecord.cancellationFee).toFixed(2)}. Refund due: ₹${Number(cancellationRecord.refundAmount).toFixed(2)}${cancellationRecord.refundAmount > 0 ? ' (pending review)' : ' (no refund needed)'}. No further booking payments are due.`;
+      this.notifyRequestClient(
+        request,
+        `${role === UserRole.EVENT_ORGANIZER ? 'The organizer cancelled' : role === UserRole.CLIENT ? 'You cancelled' : 'An administrator cancelled'} "${request.eventName}". Reason: ${reason}${dto.explanation ? ` — ${dto.explanation}` : ''}. ${financialSummary}`,
+        role === UserRole.EVENT_ORGANIZER ? 'booking_cancelled' : 'request_cancelled',
+      );
+      if (role !== UserRole.EVENT_ORGANIZER) {
         this.notifyRequestOrganizer(
           request,
           `Client cancelled the confirmed event request "${request.eventName}". Reason: ${reason}`,
@@ -2200,7 +2205,7 @@ export class EventRequestsService {
     request.updatedAt = now;
 
     const message = isConfirmed
-      ? `Event booking cancelled. ${previewData.refundAmount > 0 ? `Refund of ₹${previewData.refundAmount.toFixed(2)} is pending review.` : 'No refund is applicable.'}`
+      ? `Event cancelled. ${previewData.refundAmount > 0 ? `Refund of ₹${previewData.refundAmount.toFixed(2)} is pending review.` : 'No refund is applicable.'}`
       : 'Event request withdrawn successfully.';
 
     return {

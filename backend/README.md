@@ -10,6 +10,25 @@ By default, the file is `backend/data/eventflow-store.json` (ignored by Git). Se
 
 Payments use the `DEMO_PROVIDER` only and are simulated. No card or bank details are accepted, and processed refunds are simulated as well.
 
+### Organizer attendee examples
+
+Active organizer demo events, including **Women in Engineering Conference**, have linked attendee profiles, registrations, ticket payments, and cancellation refunds. Open **Attendee Management** and select an event. Select **Engineering Leadership Roundtable (Demo)** to try private-event approvals and declines with reasons; the standard attendee account has a pending application there.
+
+### Cancellation workflow examples
+
+The standard client and organizer accounts share six events labeled `(Demo)`. Use **My Events → Upcoming Events** to try cancelling an active example and **Request Status → Cancelled** to inspect saved cancellation details. The organizer sees the same bookings in **Event Requests**.
+
+| Example | Amount paid | Cancellation fee | Refund due |
+| --- | ---: | ---: | ---: |
+| Deposit Paid - Cancel and Preview Refund | ₹30,000 | ₹3,000 | ₹27,000 |
+| Fully Paid - Cancel and Preview Refund | ₹1,20,000 | ₹12,000 | ₹1,08,000 |
+| No Payment - Cancel Without a Fee | ₹0 | ₹0 | ₹0 |
+| Deadline Passed - Cancellation Blocked | ₹27,000 | Cancellation unavailable within 14 days | — |
+| Client Cancelled - Refund Pending | ₹60,000 | ₹6,000 | ₹54,000 pending |
+| Organizer Cancelled - Full Refund Pending | ₹24,000 | ₹0 | ₹24,000 pending |
+
+Both sets of examples are added only outside production and preserve saved interactions on restart. Their additional profiles, payments, refunds, and dependent demo records are removed when restoring production data. Event dates are relative to the day each example is first added.
+
 ## 📋 Table of Contents
 
 - [Project Structure](#project-structure)
