@@ -41,6 +41,7 @@ export const organizerActions = {
   onOpenOrganizerRequests: (...args) => window.openOrganizerRequests(...args),
   onOpenSubmitOperationalReportModal: (...args) => window.openSubmitOperationalReportModal(...args),
   onOpenSubmitReportModal: (...args) => window.openSubmitReportModal(...args),
+  onUploadEventReport: (...args) => window.apiUploadEventReport(...args),
   onOpenViewEventDrawer: (...args) => window.openViewEventDrawer(...args),
   onOpenWorkflowCounterofferModal: (...args) => window.openWorkflowCounterofferModal(...args),
   onOpenWorkflowPlanModal: (...args) => window.openWorkflowPlanModal(...args),

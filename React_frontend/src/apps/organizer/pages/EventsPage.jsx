@@ -3,6 +3,7 @@ import { useOrganizerContext } from '../context/OrganizerContext.jsx';
 import PortalSelect from '../../../app/PortalSelect.jsx';
 import { EventCard } from '../components/EventCards.jsx';
 import { EventReportsOverview } from '../components/AnalyticsCharts.jsx';
+import { compareNewestFirst } from '../../../app/record-order.js';
 export default function EventsPage() {
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('');
@@ -42,21 +43,23 @@ export default function EventsPage() {
   const isOrg = currentUser.role === 'organizer';
   const list = (
     isOrg ? workspaceData.events.filter(event => ownsOrganizerEvent(event)) : workspaceData.events
-  ).filter(event => {
-    const displayedStatus = portalContext.organizerEventCardStatus(event);
-    return (
-      (!query ||
-        String(event.title || event.name || '')
-          .toLowerCase()
-          .includes(query.toLowerCase())) &&
-      (!status ||
-        displayedStatus === status ||
-        (status === 'full' &&
-          event.status === 'full' &&
-          !['completed', 'cancelled'].includes(displayedStatus))) &&
-      (!category || event.category === category)
-    );
-  });
+  )
+    .filter(event => {
+      const displayedStatus = portalContext.organizerEventCardStatus(event);
+      return (
+        (!query ||
+          String(event.title || event.name || '')
+            .toLowerCase()
+            .includes(query.toLowerCase())) &&
+        (!status ||
+          displayedStatus === status ||
+          (status === 'full' &&
+            event.status === 'full' &&
+            !['completed', 'cancelled'].includes(displayedStatus))) &&
+        (!category || event.category === category)
+      );
+    })
+    .sort(compareNewestFirst);
   return (
     <>
       <div className="page-hd">

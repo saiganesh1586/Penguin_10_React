@@ -1,3 +1,5 @@
+import { compareNewestFirst } from '../../../app/record-order.js';
+
 export function summarizeDashboard(events, registrations) {
   const now = new Date();
   const active = registrations.filter(registration => registration.status !== 'waitlisted');
@@ -57,18 +59,20 @@ export function summarizeDashboard(events, registrations) {
     .sort(
       (leftEvent, rightEvent) =>
         Number(hasCapacity(rightEvent)) - Number(hasCapacity(leftEvent)) ||
-        new Date(leftEvent.date || 0) - new Date(rightEvent.date || 0)
+        compareNewestFirst(leftEvent, rightEvent)
     )
     .slice(0, 4);
-  const upcoming = active.filter(registration => {
-    const event = eventFor(registration);
-    return (
-      ['confirmed', 'registered'].includes(registration.status) &&
-      !registration.checkedIn &&
-      event.date &&
-      new Date(`${event.date}T23:59:59`) >= now
-    );
-  });
+  const upcoming = active
+    .filter(registration => {
+      const event = eventFor(registration);
+      return (
+        ['confirmed', 'registered'].includes(registration.status) &&
+        !registration.checkedIn &&
+        event.date &&
+        new Date(`${event.date}T23:59:59`) >= now
+      );
+    })
+    .sort(compareNewestFirst);
   return {
     confirmed,
     awaiting,

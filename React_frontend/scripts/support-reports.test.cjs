@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const shared = fs.readFileSync(
-  path.join(__dirname, '../src/apps/support-executive/api/supportReports.js'),
+  path.join(__dirname, '../src/apps/customer-support/api/supportReports.js'),
   'utf8'
 );
 const runtime = portalSource('support-executive');

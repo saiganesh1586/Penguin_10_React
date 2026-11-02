@@ -8809,12 +8809,9 @@ function getRegisteredEventIdSet() {
   return set;
 }
 function newestBrowseEventFirst(a, b) {
-  const createdA = Date.parse(a.createdAt || a.created || a.updatedAt || '') || 0;
-  const createdB = Date.parse(b.createdAt || b.created || b.updatedAt || '') || 0;
-  return (
-    createdB - createdA ||
-    String(b.eventId || b.id || '').localeCompare(String(a.eventId || a.id || ''))
-  );
+  const createdA = Date.parse(a.createdAt || a.created || '') || 0;
+  const createdB = Date.parse(b.createdAt || b.created || '') || 0;
+  return createdB - createdA;
 }
 function pageBrowseEvents() {
   const now = new Date();
@@ -8933,7 +8930,7 @@ function filterMyTickets(filterVal) {
 }
 window.filterMyTickets = filterMyTickets;
 function sortMyTickets(sortVal) {
-  sessionStorage.setItem('ticket_sort', sortVal === 'earliest' ? 'earliest' : 'latest');
+  sessionStorage.setItem('ticket_sort', ['earliest', 'latest'].includes(sortVal) ? sortVal : 'newest');
   renderPage('my-tickets');
 }
 window.sortMyTickets = sortMyTickets;
@@ -8955,7 +8952,8 @@ function pageMyTickets() {
       ))
       ? 'all'
       : savedFilter;
-  const activeSort = sessionStorage.getItem('ticket_sort') === 'earliest' ? 'earliest' : 'latest';
+  const savedSort = sessionStorage.getItem('ticket_sort');
+  const activeSort = ['earliest', 'latest'].includes(savedSort) ? savedSort : 'newest';
   function ticketEvent(registration) {
     return (
       DB.events.find(
@@ -9050,6 +9048,12 @@ function pageMyTickets() {
     );
   }
   filtered = [...filtered].sort((a, b) => {
+    if (activeSort === 'newest') {
+      const created = registration => Date.parse(
+        registration.createdAt || registration.registrationDate || registration.date || ''
+      ) || 0;
+      return created(b) - created(a);
+    }
     const aDate = Date.parse(ticketEvent(a).date);
     const bDate = Date.parse(ticketEvent(b).date);
     if (Number.isNaN(aDate)) return Number.isNaN(bDate) ? 0 : 1;
@@ -9074,12 +9078,13 @@ function pageMyTickets() {
   } ticket(s) shown</div>
     </div>
     <div class="page-hd-right" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <label for="ticket-sort" class="small" style="font-weight:600;color:var(--text2);white-space:nowrap">Event Date:</label>
+      <label for="ticket-sort" class="small" style="font-weight:600;color:var(--text2);white-space:nowrap">Sort by:</label>
       <select class="form-control filter-select" id="ticket-sort" onchange="sortMyTickets(this.value)" style="min-width:160px">
-        <option value="latest" ${activeSort === 'latest' ? 'selected' : ''}>Latest first</option>
+        <option value="newest" ${activeSort === 'newest' ? 'selected' : ''}>Recently registered</option>
+        <option value="latest" ${activeSort === 'latest' ? 'selected' : ''}>Event date: latest first</option>
         <option value="earliest" ${
           activeSort === 'earliest' ? 'selected' : ''
-        }>Earliest first</option>
+        }>Event date: earliest first</option>
       </select>
       <label for="ticket-filter" class="small" style="font-weight:600;color:var(--text2);white-space:nowrap">Filter Tickets:</label>
       <select class="form-control filter-select" id="ticket-filter" onchange="filterMyTickets(this.value)" style="min-width:240px">

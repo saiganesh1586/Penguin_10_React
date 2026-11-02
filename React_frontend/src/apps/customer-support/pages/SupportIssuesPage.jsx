@@ -2,7 +2,7 @@ import { useCallback, useEffect } from 'react';
 import useSupportDialog from '../context/useSupportDialog.js';
 import { useSupportExecutiveContext } from '../context/SupportExecutiveContext.jsx';
 import useSupportQueue from '../context/useSupportQueue.js';
-import SupportTicketTable from '../../customer-support/components/SupportTicketTable.jsx';
+import SupportTicketTable from '../components/SupportTicketTable.jsx';
 export default function SupportIssuesPage() {
   const context = useSupportExecutiveContext();
   const user = context.CU;

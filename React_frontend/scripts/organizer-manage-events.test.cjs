@@ -20,7 +20,7 @@ test('Manage Events exposes all required backend-driven views and filter control
     'Cancelled',
     'Needs Attention',
     'Clear filters',
-    'Soonest first',
+    'Newest first',
   ]) {
     assert.match(source, new RegExp(label));
   }

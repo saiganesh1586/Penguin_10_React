@@ -4,7 +4,7 @@ import eventDateRulesSource from './event-date-rules.js?raw';
 import themeSource from './theme.js?raw';
 import scannerSource from '../apps/attendee/utils/ticket-scanner.js?raw';
 import supportSource from '../apps/customer-support/api/legacySupport.js?raw';
-import supportReportsSource from '../apps/support-executive/api/supportReports.js?raw';
+import supportReportsSource from '../apps/customer-support/api/supportReports.js?raw';
 import accountPolicySource from './account-policy.js?raw';
 import organizerRegSource from '../apps/organizer/utils/organizer-registration.js?raw';
 import paymentCheckoutSource from './paymentCheckout.js?raw';

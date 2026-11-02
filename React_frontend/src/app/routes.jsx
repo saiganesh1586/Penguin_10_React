@@ -6,7 +6,7 @@ const CustomerSupport = lazy(() => import('../apps/customer-support/app/App.jsx'
 const Admin = lazy(() => import('../apps/admin/app/App.jsx'));
 const Attendee = lazy(() => import('../apps/attendee/app/App.jsx'));
 const Client = lazy(() => import('../apps/client/app/App.jsx'));
-const SupportExecutive = lazy(() => import('../apps/support-executive/app/App.jsx'));
+const SupportExecutive = lazy(() => import('../apps/customer-support/app/SupportExecutiveApp.jsx'));
 const FinanceExecutive = lazy(() => import('../apps/finance-executive/app/App.jsx'));
 const Organizer = lazy(() => import('../apps/organizer/app/App.jsx'));
 

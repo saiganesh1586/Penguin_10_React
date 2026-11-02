@@ -1,4 +1,6 @@
 import { useOrganizerContext } from '../context/OrganizerContext.jsx';
+import { useState } from 'react';
+import OrganizerReportDialog from '../components/OrganizerReportDialog.jsx';
 import {
   EventOperationsReports,
   OperationalReports,
@@ -6,6 +8,7 @@ import {
   ReportContact,
 } from '../components/EventReports.jsx';
 export default function ReportsPage() {
+  const [reportEvent, setReportEvent] = useState(null);
   const portalContext = useOrganizerContext();
   const portalActions = portalContext.actions;
   const {
@@ -1590,18 +1593,14 @@ export default function ReportsPage() {
                 <ReportContact
                   users={portalContext.DB.users}
                   userId={recipient?.id}
-                  fallbackName={'No requesting client linked'}
+                  fallbackName={recipient?.name || 'No requesting client linked'}
                 />
               </div>
               <div className="flex gap-12">
                 <button
                   className="btn btn-primary"
-                  onClick={() => portalActions.onOpenSubmitReportModal(event.id)}
-                  {...(recipient
-                    ? {}
-                    : {
-                        disabled: true,
-                      })}
+                  type="button"
+                  onClick={() => setReportEvent(event)}
                   style={{
                     gap: '6px',
                     background: 'var(--accent)',
@@ -1740,6 +1739,29 @@ export default function ReportsPage() {
         </div>
       </div>
       {clientReportContent}
+      {reportEvent && (
+        <OrganizerReportDialog
+          key={reportEvent.eventId || reportEvent.id}
+          event={reportEvent}
+          recipient={getEventReportRecipients(reportEvent)[0]}
+          onClose={() => setReportEvent(null)}
+          onSubmit={file =>
+            portalActions.onUploadEventReport(reportEvent.eventId || reportEvent.id, file)
+          }
+          onSubmitted={async () => {
+            setReportEvent(null);
+            portalActions.onToast('Report sent to the requesting client.', 'success');
+            try {
+              await portalActions.onRenderPage('reports');
+            } catch {
+              portalActions.onToast(
+                'Report was saved. Refresh Reports to view the submitted file.',
+                'info'
+              );
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

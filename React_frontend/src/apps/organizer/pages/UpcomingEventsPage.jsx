@@ -1,4 +1,5 @@
 import { useOrganizerContext } from '../context/OrganizerContext.jsx';
+import { compareNewestFirst } from '../../../app/record-order.js';
 import { EventCard } from '../components/EventCards.jsx';
 export default function UpcomingEventsPage() {
   const portalContext = useOrganizerContext();
@@ -11,7 +12,7 @@ export default function UpcomingEventsPage() {
       const eDate = new Date(event.date);
       return eDate >= today && event.status === 'upcoming' && !isCancelledWorkflowEvent(event);
     })
-    .sort((leftEvent, rightEvent) => new Date(leftEvent.date) - new Date(rightEvent.date));
+    .sort(compareNewestFirst);
   return (
     <>
       <div className="page-hd">

@@ -8,7 +8,7 @@ import { financeExecutiveActions } from '../src/apps/finance-executive/api/finan
 import { ClientContext } from '../src/apps/client/context/ClientContext.jsx';
 import { OrganizerContext } from '../src/apps/organizer/context/OrganizerContext.jsx';
 import { AdminContext } from '../src/apps/admin/context/AdminContext.jsx';
-import { SupportExecutiveContext } from '../src/apps/support-executive/context/SupportExecutiveContext.jsx';
+import { SupportExecutiveContext } from '../src/apps/customer-support/context/SupportExecutiveContext.jsx';
 import { FinanceExecutiveContext } from '../src/apps/finance-executive/context/FinanceExecutiveContext.jsx';
 import fixtures from './role-fixtures.cjs';
 
@@ -20,7 +20,7 @@ const contexts = {
   'finance-executive': FinanceExecutiveContext,
 };
 const pages = import.meta.glob(
-  '../src/apps/{client,organizer,admin,support-executive,finance-executive}/pages/*.jsx',
+  '../src/apps/{client,organizer,admin,customer-support,finance-executive}/pages/*.jsx',
   { eager: true }
 );
 const renderers = {
@@ -53,8 +53,14 @@ const normalize = html => {
 
 describe('Role React pages', () => {
   for (const [file, module] of Object.entries(pages)) {
-    if (file.endsWith('/PublicHomePage.jsx') || file.endsWith('/SupportIssuesPage.jsx')) continue;
-    const role = file.split('/')[3];
+    if (
+      file.endsWith('/PublicHomePage.jsx') ||
+      file.endsWith('/SupportIssuesPage.jsx') ||
+      file.endsWith('/CustomerSupportPage.jsx') ||
+      file.endsWith('/TicketDetailsPage.jsx')
+    ) continue;
+    const folder = file.split('/')[3];
+    const role = folder === 'customer-support' ? 'support-executive' : folder;
     const name = file.split('/').at(-1);
     it(`${role}/${name} renders workspace records without HTML string artifacts`, async () => {
       sessionStorage.clear();
@@ -353,7 +359,7 @@ describe('Role React pages', () => {
     );
     const openTicket = vi.fn();
     vi.stubGlobal('EventFlowSupport', { bind: vi.fn(() => ({ openTicket, destroy: vi.fn() })) });
-    const Page = pages['../src/apps/support-executive/pages/SupportIssuesPage.jsx'].default;
+    const Page = pages['../src/apps/customer-support/pages/SupportIssuesPage.jsx'].default;
     render(
       <SupportExecutiveContext.Provider value={data}>
         <Page />

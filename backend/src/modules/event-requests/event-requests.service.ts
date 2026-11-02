@@ -18,6 +18,7 @@ import {
 import { allocatePaymentRefunds, completedEventPayments } from '../../common/utils/event-payments';
 import { acceptedProposalFor } from '../../common/utils/accepted-proposal';
 import { assertEventLeadTime } from '../../common/utils/event-date';
+import { newestRecords } from '../../common/utils/record-order';
 import {
   CreateEventRequestDto,
   UpdateEventRequestStatusDto,
@@ -402,23 +403,7 @@ export class EventRequestsService {
     } else if (role !== UserRole.SUPER_ADMIN) {
       throw new ForbiddenException('Access denied');
     }
-    const getRequestTimestamp = (r: any) => {
-      const u = r.updatedAt ? new Date(r.updatedAt).getTime() : 0;
-      const c = r.createdAt ? new Date(r.createdAt).getTime() : 0;
-      let p = 0;
-      if (Array.isArray(r.proposals) && r.proposals.length > 0) {
-        const latestProp = r.proposals[r.proposals.length - 1];
-        p = latestProp?.sentAt ? new Date(latestProp.sentAt).getTime() : 0;
-      }
-      return Math.max(u, c, p);
-    };
-    requests.sort((leftRequest, rightRequest) => {
-      const diff = getRequestTimestamp(rightRequest) - getRequestTimestamp(leftRequest);
-      if (diff !== 0) return diff;
-      return String(rightRequest.requestId || (rightRequest as any).id || '').localeCompare(
-        String(leftRequest.requestId || (leftRequest as any).id || '')
-      );
-    });
+    requests = newestRecords(requests);
     return requests.map(request => {
       const clientProfile = this.db.clients.find(client => client.clientId === request.clientId);
       const clientUser = clientProfile && this.db.findUserById(clientProfile.userId);

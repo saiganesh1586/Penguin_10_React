@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { listTickets } from '../../customer-support/api/supportApi.js';
+import { listTickets } from '../api/supportApi.js';
 
 export default function useSupportQueue(user, getOptions) {
   const [state, setState] = useState({ tickets: [], loading: true, error: '', request: null });

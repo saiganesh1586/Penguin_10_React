@@ -2,6 +2,7 @@ import DashboardUpcomingEvents from '../components/DashboardUpcomingEvents.jsx';
 import DashboardActivity from '../components/DashboardActivity.jsx';
 import { useClientContext } from '../context/ClientContext.jsx';
 import useClientActivity from '../context/useClientActivity.js';
+import { compareNewestFirst } from '../../../app/record-order.js';
 export default function DashboardPage() {
   const portalContext = useClientContext();
   const portalActions = portalContext.actions;
@@ -16,9 +17,7 @@ export default function DashboardPage() {
         !event.clientId &&
         new Date(`${event.date}T23:59:59`).getTime() >= Date.now()
     )
-    .sort((left, right) =>
-      `${left.date}T${left.time}`.localeCompare(`${right.date}T${right.time}`)
-    );
+    .sort(compareNewestFirst);
   const clientRequests = workspaceData.eventRequests.filter(
     request => String(request.clientId) === String(currentUser.id)
   );

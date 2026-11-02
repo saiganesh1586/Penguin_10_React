@@ -1,3 +1,4 @@
+import { newestRecords } from '../../common/utils/record-order';
 import {
   BadRequestException,
   ConflictException,
@@ -275,7 +276,7 @@ export class RegistrationsService {
       !(role === UserRole.EMPLOYEE && isSupportExecutive(this.db.findUserById(userId || '')))
     )
       throw new ForbiddenException('Access denied');
-    return registrations.map(registration => this.enrich(registration));
+    return newestRecords(registrations).map(registration => this.enrich(registration));
   }
   findOne(id: string, role: UserRole, userId?: string): any {
     const registration = this.db.registrations.find(

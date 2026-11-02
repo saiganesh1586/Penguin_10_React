@@ -1,6 +1,7 @@
 import { useClientContext } from '../context/ClientContext.jsx';
 import PortalSelect from '../../../app/PortalSelect.jsx';
 import { WorkflowCancellation } from '../components/WorkflowDetails.jsx';
+import { compareNewestFirst } from '../../../app/record-order.js';
 export default function RequestStatusPage() {
   const portalContext = useClientContext();
   const portalActions = portalContext.actions;
@@ -11,20 +12,7 @@ export default function RequestStatusPage() {
     const myOrgId = currentUser.id;
     const pendingReqs = workspaceData.eventRequests
       .filter(request => request.status === 'pending' || request.status === 'in_review')
-      .sort((leftRequest, rightRequest) => {
-        const tA = Math.max(
-          leftRequest.updatedAt ? new Date(leftRequest.updatedAt).getTime() : 0,
-          leftRequest.createdAt ? new Date(leftRequest.createdAt).getTime() : 0,
-          leftRequest.created ? new Date(leftRequest.created).getTime() : 0
-        );
-        const tB = Math.max(
-          rightRequest.updatedAt ? new Date(rightRequest.updatedAt).getTime() : 0,
-          rightRequest.createdAt ? new Date(rightRequest.createdAt).getTime() : 0,
-          rightRequest.created ? new Date(rightRequest.created).getTime() : 0
-        );
-        if (tB !== tA) return tB - tA;
-        return String(rightRequest.id || '').localeCompare(String(leftRequest.id || ''));
-      });
+      .sort(compareNewestFirst);
     const myEvents = workspaceData.events
       .filter(
         event =>
@@ -33,12 +21,7 @@ export default function RequestStatusPage() {
             event.status === 'ongoing' ||
             event.status === 'confirmed')
       )
-      .sort((leftEvent, rightEvent) => {
-        const tA = leftEvent.date ? new Date(leftEvent.date).getTime() : 0;
-        const tB = rightEvent.date ? new Date(rightEvent.date).getTime() : 0;
-        if (tB !== tA) return tB - tA;
-        return String(rightEvent.id || '').localeCompare(String(leftEvent.id || ''));
-      });
+      .sort(compareNewestFirst);
     const pendingHtml =
       pendingReqs.length === 0 ? (
         <div className="empty">
@@ -688,31 +671,9 @@ export default function RequestStatusPage() {
       }
       return '';
     }
-    function getReqTimestamp(item) {
-      const times = [
-        item.updatedAt ? new Date(item.updatedAt).getTime() : 0,
-        item.createdAt ? new Date(item.createdAt).getTime() : 0,
-        item.created ? new Date(item.created).getTime() : 0,
-        item.sentAt ? new Date(item.sentAt).getTime() : 0,
-      ];
-      if (Array.isArray(item.proposals) && item.proposals.length > 0) {
-        item.proposals.forEach(proposal => {
-          if (proposal.sentAt) times.push(new Date(proposal.sentAt).getTime());
-          if (proposal.createdAt) times.push(new Date(proposal.createdAt).getTime());
-          if (proposal.uploadedAt) times.push(new Date(proposal.uploadedAt).getTime());
-        });
-      }
-      return Math.max(...times.filter(t => !isNaN(t) && t > 0), 0);
-    }
     const allReqs = workspaceData.eventRequests
       .filter(request => String(request.clientId) === String(currentUser.id))
-      .sort((leftRequest, rightRequest) => {
-        const diff = getReqTimestamp(rightRequest) - getReqTimestamp(leftRequest);
-        if (diff !== 0) return diff;
-        return String(rightRequest.id || rightRequest.requestId || '').localeCompare(
-          String(leftRequest.id || leftRequest.requestId || '')
-        );
-      });
+      .sort(compareNewestFirst);
     const filterStatus = sessionStorage.getItem('client_req_filter') || 'all';
     const reqs =
       filterStatus === 'all'

@@ -52,9 +52,10 @@ test('extracted actor page components compile', async () => {
   });
   try {
     for (const actor of actors.filter(actor => actor !== 'attendee')) {
-      const pagesDirectory = path.join(__dirname, '../src/apps', actor, 'pages');
+      const folder = portalSource.folderFor(actor);
+      const pagesDirectory = path.join(__dirname, '../src/apps', folder, 'pages');
       for (const page of fs.readdirSync(pagesDirectory).filter(file => file.endsWith('.jsx'))) {
-        const component = await server.ssrLoadModule(`/src/apps/${actor}/pages/${page}`);
+        const component = await server.ssrLoadModule(`/src/apps/${folder}/pages/${page}`);
         assert.equal(typeof component.default, 'function', `${actor}/${page}`);
       }
     }

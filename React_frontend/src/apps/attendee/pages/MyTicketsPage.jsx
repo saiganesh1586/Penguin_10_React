@@ -23,7 +23,7 @@ function TicketControls({ tab, sort, filter, counts, onSortChange, onFilterChang
         className="small"
         style={{ fontWeight: 600, color: 'var(--text2)', whiteSpace: 'nowrap' }}
       >
-        Event Date:
+        Sort by:
       </label>
       <select
         className="form-control filter-select"
@@ -32,8 +32,9 @@ function TicketControls({ tab, sort, filter, counts, onSortChange, onFilterChang
         onChange={event => onSortChange(event.target.value)}
         style={{ minWidth: 160 }}
       >
-        <option value="latest">Latest first</option>
-        <option value="earliest">Earliest first</option>
+        <option value="newest">Recently registered</option>
+        <option value="latest">Event date: latest first</option>
+        <option value="earliest">Event date: earliest first</option>
       </select>
       <label
         htmlFor="ticket-filter"
@@ -83,9 +84,10 @@ export default function MyTicketsPage({
 }) {
   const [tab, setTab] = useState(() => (stored('ticket_tab') === 'other' ? 'other' : 'upcoming'));
   const [filter, setFilter] = useState(() => stored('ticket_filter') || 'all');
-  const [sort, setSort] = useState(() =>
-    stored('ticket_sort') === 'earliest' ? 'earliest' : 'latest'
-  );
+  const [sort, setSort] = useState(() => {
+    const saved = stored('ticket_sort');
+    return ['earliest', 'latest'].includes(saved) ? saved : 'newest';
+  });
   const data = useMemo(
     () => ticketView(registrations, events, tab, filter, sort),
     [registrations, events, tab, filter, sort]

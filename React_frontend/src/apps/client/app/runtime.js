@@ -13651,20 +13651,7 @@ function pageRequestStatus() {
       return '';
     }
     function getReqTimestamp(item) {
-      const times = [
-        item.updatedAt ? new Date(item.updatedAt).getTime() : 0,
-        item.createdAt ? new Date(item.createdAt).getTime() : 0,
-        item.created ? new Date(item.created).getTime() : 0,
-        item.sentAt ? new Date(item.sentAt).getTime() : 0,
-      ];
-      if (Array.isArray(item.proposals) && item.proposals.length > 0) {
-        item.proposals.forEach(proposal => {
-          if (proposal.sentAt) times.push(new Date(proposal.sentAt).getTime());
-          if (proposal.createdAt) times.push(new Date(proposal.createdAt).getTime());
-          if (proposal.uploadedAt) times.push(new Date(proposal.uploadedAt).getTime());
-        });
-      }
-      return Math.max(...times.filter(t => !isNaN(t) && t > 0), 0);
+      return Date.parse(item.createdAt || item.created || '') || 0;
     }
     const allReqs = DB.eventRequests
       .filter(request => String(request.clientId) === String(CU.id))
@@ -17813,21 +17800,13 @@ function getClientWorkflowEvents() {
       ongoing.push(item);
     }
   });
-  upcoming.sort(
-    (leftEvent, rightEvent) =>
-      new Date(`${leftEvent.date}T${leftEvent.time || '10:00'}`) -
-      new Date(`${rightEvent.date}T${rightEvent.time || '10:00'}`)
-  );
-  ongoing.sort(
-    (leftEvent, rightEvent) =>
-      new Date(`${leftEvent.date}T${leftEvent.time || '10:00'}`) -
-      new Date(`${rightEvent.date}T${rightEvent.time || '10:00'}`)
-  );
-  completed.sort(
-    (leftEvent, rightEvent) =>
-      new Date(`${rightEvent.date}T${rightEvent.time || '10:00'}`) -
-      new Date(`${leftEvent.date}T${leftEvent.time || '10:00'}`)
-  );
+  const createdTime = item => {
+    const source = item.rawEvent || item.rawRequest || item;
+    return Date.parse(source.createdAt || source.created || '') || 0;
+  };
+  for (const list of [upcoming, ongoing, completed]) {
+    list.sort((left, right) => createdTime(right) - createdTime(left));
+  }
   return {
     upcoming,
     ongoing,

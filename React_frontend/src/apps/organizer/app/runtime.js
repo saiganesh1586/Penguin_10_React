@@ -10962,17 +10962,7 @@ function pageEventRequests() {
       );
     });
   }
-  const getReqTime = request => {
-    const u = request.updatedAt ? new Date(request.updatedAt).getTime() : 0;
-    const c = request.createdAt ? new Date(request.createdAt).getTime() : 0;
-    const cr = request.created ? new Date(request.created).getTime() : 0;
-    let p = 0;
-    if (Array.isArray(request.proposals) && request.proposals.length > 0) {
-      const lastP = request.proposals[request.proposals.length - 1];
-      p = lastP?.sentAt ? new Date(lastP.sentAt).getTime() : 0;
-    }
-    return Math.max(u, c, cr, p);
-  };
+  const getReqTime = request => Date.parse(request.createdAt || request.created || '') || 0;
   filtered.sort((a, b) => {
     const diff = getReqTime(b) - getReqTime(a);
     if (diff !== 0) return diff;
@@ -17179,12 +17169,10 @@ function pageReports() {
                       </div>
           <div class="small mb-12"><strong>Send to:</strong> ${reportContactHtml(
             recipient?.id,
-            'No requesting client linked'
+            recipient?.name || 'No requesting client linked'
           )}</div>
           <div class="flex gap-12">
-            <button class="btn btn-primary" onclick="openSubmitReportModal('${event.id}')" ${
-            recipient ? '' : 'disabled'
-          } style="gap:6px; background:var(--accent); border-radius:8px">📤 Submit Report</button>
+            <button type="button" class="btn btn-primary" onclick="openSubmitReportModal('${event.id}')" style="gap:6px; background:var(--accent); border-radius:8px">📤 Submit Report</button>
             <button class="btn btn-ghost" onclick="openViewEventDrawer('${
               event.id
             }')" style="color:var(--accent);border-color:var(--accent-dim);background:var(--accent-dim);gap:6px; border-radius:8px">👁 View Event Details</button>
@@ -17244,33 +17232,42 @@ function switchReportTab(t) {
 }
 function getEventReportRecipients(event) {
   if (CU.role === 'organizer') {
+    const eventIds = new Set([event.eventId, event.id].filter(id => id != null).map(String));
     const request = (DB.eventRequests || []).find(
-      item => String(item.eventId) === String(event.eventId || event.id)
+      item => (item.eventId != null && eventIds.has(String(item.eventId))) ||
+        (event.requestId != null && String(item.requestId || item.id) === String(event.requestId))
     );
-    const ids = (
-      request
-        ? [request.clientUserId, request.clientId, request.backendClientId]
-        : [event.clientUserId, event.clientId]
-    ).filter(id => id != null);
+    const details = request?.clientDetails || {};
+    const requestIds = [request?.clientUserId, request?.clientId, request?.backendClientId, details.userId, details.clientId]
+      .filter(id => id != null && id !== '');
+    const ids = requestIds.length
+      ? requestIds
+      : [event.clientUserId, event.clientId, event.backendClientId].filter(id => id != null && id !== '');
     const client = DB.users.find(
       user =>
-        user.role === 'client' &&
-        ids.some(id => String(user.id) === String(id) || String(user.clientId) === String(id))
+        (user.role || user.userRole) === 'client' &&
+        ids.some(id => [user.id, user.userId, user.clientId].some(value => value != null && String(value) === String(id)))
     );
     if (client) return [client];
+    const profile = (DB.clients || []).find(item =>
+      ids.some(id => [item.clientId, item.userId].some(value => value != null && String(value) === String(id)))
+    );
     const userId =
       request?.clientUserId ||
+      details.userId ||
+      profile?.userId ||
       (!request || request.backendClientId === event.clientId || request.clientId === event.clientId
         ? event.clientUserId
         : null);
-    if (!userId) return [];
+    if (!userId && !ids.length) return [];
     const contact = {
       id: userId,
-      name: request?.clientName || event.clientName || 'Requesting client',
-      email: event.clientEmail || '',
+      clientId: profile?.clientId || request?.backendClientId || event.backendClientId,
+      name: details.name || request?.clientName || event.clientName || 'Requesting client',
+      email: details.email || event.clientEmail || '',
       role: 'client',
     };
-    DB.users.push(contact);
+    if (userId) DB.users.push(contact);
     return [contact];
   }
   const superuser = DB.users.find(user => user.role === 'superuser');
@@ -17286,13 +17283,13 @@ function getEventReportRecipients(event) {
     });
 }
 function openSubmitReportModal(eventId) {
-  const event = DB.events.find(currentEvent => currentEvent.id == eventId);
+  const event = DB.events.find(currentEvent => String(currentEvent.id) === String(eventId) || String(currentEvent.eventId) === String(eventId));
   if (!event) return;
   const recipients = getEventReportRecipients(event);
   if (recipients.length === 0) {
-    toast(
-      'This event has no requesting client linked to it. A client report cannot be submitted.',
-      'error'
+    openModal(
+      'Submit Event Report',
+      '<p role="alert">This event has no requesting client linked to it. Client reports are available for events created from a client request.</p>'
     );
     return;
   }
@@ -17330,7 +17327,7 @@ function openSubmitReportModal(eventId) {
 let submittingEventReport = false;
 async function submitEventReport(eventId) {
   if (submittingEventReport) return;
-  const event = DB.events.find(item => String(item.id) === String(eventId));
+  const event = DB.events.find(item => String(item.id) === String(eventId) || String(item.eventId) === String(eventId));
   if (!event) {
     toast('Event not found', 'error');
     return;
@@ -18393,7 +18390,12 @@ function getOngoingWorkflowItems() {
     });
     seenRequests.add(String(requestId));
   });
-  return items;
+  return items.sort((left, right) => {
+    const leftRecord = left.event || left.request;
+    const rightRecord = right.event || right.request;
+    return (Date.parse(rightRecord.createdAt || rightRecord.created || '') || 0) -
+      (Date.parse(leftRecord.createdAt || leftRecord.created || '') || 0);
+  });
 }
 function organizerEventRequest(event) {
   const eventIds = new Set([event?.eventId, event?.id].filter(id => id != null).map(String));
@@ -18539,7 +18541,7 @@ function pageWorkflowEvents() {
           <span>Completed (${completedCount})</span>
           <span>Cancelled (${cancelledCount})</span>
           <span>Needs Attention (${attentionCount})</span>
-          <span>Soonest first</span>
+          <span>Newest first</span>
           <button class="btn btn-ghost btn-xs" onclick="setOrganizerEventFilter('clear')">Clear filters</button>
         </div>
         <section aria-label="${

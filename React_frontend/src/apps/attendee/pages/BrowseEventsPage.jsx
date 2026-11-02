@@ -3,15 +3,7 @@ import EventCard from '../components/EventCard.jsx';
 import EventFilters from '../components/EventFilters.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import { EmptyState, ErrorState, LoadingState } from '../components/PageFeedback.jsx';
-
-const newestFirst = (a, b) => {
-  const created = event =>
-    Date.parse(event.createdAt || event.created || event.updatedAt || '') || 0;
-  return (
-    created(b) - created(a) ||
-    String(b.eventId || b.id || '').localeCompare(String(a.eventId || a.id || ''))
-  );
-};
+import { compareNewestFirst } from '../../../app/record-order.js';
 
 export default function BrowseEventsPage({
   events = [],
@@ -38,7 +30,7 @@ export default function BrowseEventsPage({
           new Date(`${item.date}T23:59:59`) >= new Date() &&
           !registered.has(String(item.id || item.eventId))
       )
-      .sort(newestFirst);
+      .sort(compareNewestFirst);
   }, [events, registrations]);
 
   const categories = useMemo(

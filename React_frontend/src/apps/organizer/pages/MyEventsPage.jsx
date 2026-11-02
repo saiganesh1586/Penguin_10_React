@@ -87,7 +87,7 @@ export default function MyEventsPage() {
         <span>Completed ({completedCount})</span>
         <span>Cancelled ({cancelledCount})</span>
         <span>Needs Attention ({attentionCount})</span>
-        <span>Soonest first</span>
+        <span>Newest first</span>
         <button
           className="btn btn-ghost btn-xs"
           onClick={() => portalActions.onSetOrganizerEventFilter('clear')}

@@ -12,6 +12,8 @@ The application uses a React frontend and a NestJS REST API. Role-specific works
 
 New events and client event requests must be scheduled at least seven calendar days from today in India time. A date exactly seven days ahead is allowed. Creation forms and server validation both enforce this rule.
 
+Event, registration and event-request lists show newly created records first, including after refresh. Ticket lists default to recently registered first, with event-date sorting available as an explicit option. Updating an older request does not move it ahead of a newly submitted request.
+
 This README describes the current implementation. Development limitations and possible extensions are listed separately at the end.
 
 Code formatting is configured in [`.prettierrc.json`](.prettierrc.json). For the portal rendering flow and the existing browser helper names, see [the frontend application guide](React_frontend/src/app/README.md). Backend controllers handle HTTP requests, DTO files validate inputs, services implement workflows, and `common/data-store.ts` handles persistence and development fixtures.

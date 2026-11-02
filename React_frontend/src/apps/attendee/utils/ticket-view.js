@@ -1,3 +1,5 @@
+import { compareNewestFirst } from '../../../app/record-order.js';
+
 export function ticketEvent(registration, events) {
   return (
     events.find(event => String(event.id || event.eventId) === String(registration.eventId)) ||
@@ -74,6 +76,7 @@ export function ticketView(registrations, events, tab, filter, sort) {
         : item.status === activeFilter)
   );
   filtered.sort((a, b) => {
+    if (sort !== 'earliest' && sort !== 'latest') return compareNewestFirst(a, b);
     const left = Date.parse(ticketEvent(a, events).date);
     const right = Date.parse(ticketEvent(b, events).date);
     if (Number.isNaN(left)) return Number.isNaN(right) ? 0 : 1;

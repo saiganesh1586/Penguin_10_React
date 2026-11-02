@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useClientContext } from '../context/ClientContext.jsx';
 import { WorkflowEventCard } from '../components/EventCards.jsx';
+import { newestRecords } from '../../../app/record-order.js';
 export default function MyEventsPage() {
   const portalContext = useClientContext();
   const savedTab = portalContext._workflowEventTab;
@@ -28,17 +29,17 @@ export default function MyEventsPage() {
   let emptyTitle = 'No upcoming events';
   let emptyDesc = 'Confirmed future bookings will appear here once finalized and scheduled.';
   if (activeTab === 'upcoming') {
-    activeList = data.upcoming;
+    activeList = newestRecords(data.upcoming);
     emptyIcon = '📅';
     emptyTitle = 'No upcoming events';
     emptyDesc = 'Confirmed bookings whose scheduled start time is in the future will appear here.';
   } else if (activeTab === 'ongoing') {
-    activeList = data.ongoing;
+    activeList = newestRecords(data.ongoing);
     emptyIcon = '⏱️';
     emptyTitle = 'No ongoing events';
     emptyDesc = 'Events in planning and confirmed events currently taking place will appear here.';
   } else {
-    activeList = data.completed;
+    activeList = newestRecords(data.completed);
     emptyIcon = '✅';
     emptyTitle = 'No completed events';
     emptyDesc = 'Events whose completion has been recorded and finalized will appear here.';

@@ -65,14 +65,27 @@ React_frontend/
         api/client.js
         api/supportApi.js
         api/legacySupport.js
+        api/supportReports.js
+        api/support-executive-api.js
+        api/portal-api.js
+        api/finance-data.js
         app/App.jsx
+        app/SupportExecutiveApp.jsx
+        app/SupportExecutivePageContainer.jsx
+        app/runtime.js
         components/
-        context/useStoredSession.js
-        context/useSupportRequests.js
+        context/
+        pages/DashboardPage.jsx
+        pages/UserEventManagementPage.jsx
+        pages/SupportIssuesPage.jsx
+        pages/ReportsAnalyticsPage.jsx
         pages/CustomerSupportPage.jsx
         pages/TicketDetailsPage.jsx
+        pages/
+        styles/support-executive.css
         utils/supportConfig.js
         utils/useAutoRefresh.js
+        README.md
       finance-executive/
         api/
         app/
@@ -86,13 +99,6 @@ React_frontend/
         pages/
         styles/
         utils/organizer-registration.js
-      support-executive/
-        api/supportReports.js
-        api/portal-api.js
-        app/
-        context/
-        pages/
-        styles/
     styles/global.css
 ```
 
@@ -101,18 +107,19 @@ React_frontend/
 - `src/app/` holds root routing, session/configuration, and modules reused by multiple portals, following the reference's common application helpers.
 - `src/apps/auth/pages/UnifiedAuthPage.jsx` is the common login entry. It selects the existing login markup for each workspace so credential labels, text, and handlers stay unchanged.
 - `src/apps/landing/app/App.jsx` is the landing portal entry. Its pages, catalog component and CSS live in `pages/`, `components/` and `styles/`.
-- Each remaining portal starts at `src/apps/<role>/app/App.jsx`. Its pages, styles, API modules, components, state, and utilities live inside that portal, as applicable to its implementation.
-- Customer Support owns its authenticated API client, ticket API and request/conversation hooks. Support Executive owns the existing report API adapter. Attendee owns ticket scanning; Organizer owns organizer registration utilities. Common consumers import these modules directly.
+- Each remaining portal starts at `src/apps/<role>/app/App.jsx`. Customer Support also has `app/SupportExecutiveApp.jsx` for its employee workspace. Pages, styles, API modules, components, state, and utilities live inside the owning module.
+- Customer Support owns the customer ticket entry and the Support Executive workspace, sharing ticket APIs, conversation components and report adapters. Its customer entry uses `/customer-support`; its employee entry retains `/employee` and `/employee1`. Finance remains a separate employee workspace at `/employee2`. Attendee owns ticket scanning; Organizer owns organizer registration utilities.
 - Automated checks live in `scripts/`. `npm test` runs the existing JavaScript workflow checks; `npm run test:react` runs the React tests. Run `npm run build` for production output in `build/`.
 - Event Staff remains removed. Browser routes, API endpoints, public assets, CSS classes, text, and workflows remain unchanged.
-- Signed-in attendee, client, organizer, admin, support-executive and finance-executive pages use React JSX, page containers, hooks, API adapters and reusable components. Customer Support retains its existing React pages and hooks. Navigation, modal actions, payment and cancellation workflows still use the preserved runtime handlers.
+- Signed-in attendee, client, organizer, admin, support employee and finance employee pages use React JSX, page containers, hooks, API adapters and reusable components. Customer requests and Support Executive pages now live together under `customer-support/`. Navigation, modal actions, payment and cancellation workflows still use the preserved runtime handlers.
 
 ## Reading a role workspace
 
 Follow `app/App.jsx` → `app/<Role>PageContainer.jsx` → `context/use<Role>Data.js` → `api/<role>-api.js`.
+For Support Executive, begin with `customer-support/app/SupportExecutiveApp.jsx` and follow `SupportExecutivePageContainer.jsx`, `useSupportExecutiveData.js` and `support-executive-api.js` in that same module.
 The container provides the loaded workspace data through `context/<Role>Context.jsx`. Pages render JSX and invoke named action callbacks; reusable UI lives in `components/`. The attendee workspace is the reference for this separation.
 
-`src/app/createPageBridge.jsx` connects existing navigation to React, while `src/app/usePortalData.js` handles loading, errors and retries. The runtime adapters preserve API endpoints, authorization, workflow decisions and existing modal handlers. CSS, backend schema and folder locations are unchanged.
+`src/app/createPageBridge.jsx` connects existing navigation to React, while `src/app/usePortalData.js` handles loading, errors and retries. The runtime adapters preserve API endpoints, authorization, workflow decisions and existing modal handlers. The Support Executive folder has been merged into Customer Support; CSS rules and backend schema are unchanged.
 
 ## React course concepts
 

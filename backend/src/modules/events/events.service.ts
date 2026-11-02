@@ -16,6 +16,7 @@ import {
 } from '../../common/utils/event-payments';
 import { isEventOpenForRegistration } from '../../common/utils/event-registration';
 import { assertEventLeadTime } from '../../common/utils/event-date';
+import { newestRecords } from '../../common/utils/record-order';
 @Injectable()
 export class EventsService {
   private dataStore: DataStore;
@@ -348,7 +349,7 @@ export class EventsService {
           new Date(`${event.date}T23:59:59`) >= new Date()
       );
     }
-    return events.map(event => this.mapEventToFrontend(event));
+    return newestRecords(events).map(event => this.mapEventToFrontend(event));
   }
 
   // Get all published events without role restriction (public endpoint)
@@ -363,7 +364,7 @@ export class EventsService {
           event.location.toLowerCase().includes(search.toLowerCase())
       );
     }
-    return events.map(event => this.mapEventToFrontend(event));
+    return newestRecords(events).map(event => this.mapEventToFrontend(event));
   }
 
   // Get all events (no role filter — for super_admin dashboard)
@@ -381,7 +382,7 @@ export class EventsService {
     if (status) {
       events = events.filter(event => event.status === status);
     }
-    return events.map(event => this.mapEventToFrontend(event));
+    return newestRecords(events).map(event => this.mapEventToFrontend(event));
   }
 
   // Get event by ID

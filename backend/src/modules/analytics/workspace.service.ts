@@ -9,6 +9,7 @@ import { UsersService } from '../users/users.service';
 import { UpdateUserDto } from '../users/dto/user.dto';
 import { UpdateEventDto } from '../events/dtos/event.dto';
 import { isEventOpenForRegistration } from '../../common/utils/event-registration';
+import { newestRecords } from '../../common/utils/record-order';
 @Injectable()
 export class WorkspaceService {
   private readonly db = DataStore.getInstance();
@@ -90,30 +91,13 @@ export class WorkspaceService {
               (isEventOpenForRegistration(event, this.db.eventRequests) &&
                 new Date(`${event.date}T23:59:59`) >= new Date())))
       );
-    const getRequestTimestamp = (r: any) => {
-      const u = r.updatedAt ? new Date(r.updatedAt).getTime() : 0;
-      const c = r.createdAt ? new Date(r.createdAt).getTime() : 0;
-      let p = 0;
-      if (Array.isArray(r.proposals) && r.proposals.length > 0) {
-        const lastProp = r.proposals[r.proposals.length - 1];
-        p = lastProp?.sentAt ? new Date(lastProp.sentAt).getTime() : 0;
-      }
-      return Math.max(u, c, p);
-    };
     const requests = this.db.eventRequests
       .filter(
         request =>
           operator ||
           (role === UserRole.CLIENT && request.clientId === client?.clientId) ||
           (role === UserRole.EVENT_ORGANIZER && request.organizerId === organizer?.organizerId)
-      )
-      .sort((leftRequest, rightRequest) => {
-        const diff = getRequestTimestamp(rightRequest) - getRequestTimestamp(leftRequest);
-        if (diff !== 0) return diff;
-        return String(rightRequest.requestId || (rightRequest as any).id || '').localeCompare(
-          String(leftRequest.requestId || (leftRequest as any).id || '')
-        );
-      });
+      );
     const relatedUserIds = new Set<string>([userId]);
     registrations.forEach(registration => {
       if (registration.attendee?.userId) relatedUserIds.add(registration.attendee.userId);
@@ -143,7 +127,7 @@ export class WorkspaceService {
       users,
       events,
       registrations,
-      eventRequests: requests.map(request => ({
+      eventRequests: newestRecords(requests).map(request => ({
         ...request,
         clientUserId: this.db.clients.find(profile => profile.clientId === request.clientId)
           ?.userId,

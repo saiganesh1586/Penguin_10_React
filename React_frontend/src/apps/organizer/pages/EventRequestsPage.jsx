@@ -3,6 +3,7 @@ import FilterInput from '../../../app/FilterInput.jsx';
 import { useOrganizerContext } from '../context/OrganizerContext.jsx';
 import PortalSelect from '../../../app/PortalSelect.jsx';
 import { OrganizerRowActions } from '../components/EventActions.jsx';
+import { compareNewestFirst } from '../../../app/record-order.js';
 export default function EventRequestsPage() {
   const portalContext = useOrganizerContext();
   const portalActions = portalContext.actions;
@@ -137,22 +138,7 @@ export default function EventRequestsPage() {
       );
     });
   }
-  const getReqTime = request => {
-    const u = request.updatedAt ? new Date(request.updatedAt).getTime() : 0;
-    const c = request.createdAt ? new Date(request.createdAt).getTime() : 0;
-    const cr = request.created ? new Date(request.created).getTime() : 0;
-    let p = 0;
-    if (Array.isArray(request.proposals) && request.proposals.length > 0) {
-      const lastP = request.proposals[request.proposals.length - 1];
-      p = lastP?.sentAt ? new Date(lastP.sentAt).getTime() : 0;
-    }
-    return Math.max(u, c, cr, p);
-  };
-  filtered.sort((a, b) => {
-    const diff = getReqTime(b) - getReqTime(a);
-    if (diff !== 0) return diff;
-    return String(b.id || b.requestId || '').localeCompare(String(a.id || a.requestId || ''));
-  });
+  filtered.sort(compareNewestFirst);
   return (
     <>
       <div className="page-hd">
