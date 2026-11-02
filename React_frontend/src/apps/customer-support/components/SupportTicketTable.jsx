@@ -1,11 +1,16 @@
 import { statusLabel, ticketDate } from '../utils/supportConfig.js';
 
-export default function SupportTicketTable({ tickets, onView }) {
+export default function SupportTicketTable({
+  tickets,
+  onView,
+  management = false,
+  title = 'My Support Requests',
+}) {
   return (
     <div className="support-history">
       <section className="card support-ticket-section">
         <div className="support-section-heading">
-          <h2>My Support Requests</h2>
+          <h2>{title}</h2>
           <span>{tickets.length}</span>
         </div>
         <div className="support-table-wrap">
@@ -27,6 +32,11 @@ export default function SupportTicketTable({ tickets, onView }) {
                       <strong>{ticket.concern}</strong>
                       <small>{ticket.ticketId}</small>
                       {ticket.eventTitle && <small>Event: {ticket.eventTitle}</small>}
+                      {management && (
+                        <small>
+                          {ticket.requesterName} · {ticket.requesterEmail || ''}
+                        </small>
+                      )}
                     </td>
                     <td>{ticket.requestType}</td>
                     <td>
@@ -45,7 +55,7 @@ export default function SupportTicketTable({ tickets, onView }) {
                         data-ticket-view={ticket.ticketId}
                         onClick={() => onView(ticket.ticketId)}
                       >
-                        View
+                        {management ? 'Review & Respond' : 'View'}
                       </button>
                     </td>
                   </tr>

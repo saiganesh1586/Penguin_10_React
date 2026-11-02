@@ -50,6 +50,7 @@ function renderUsersTable(containerId, users = null) {
       </tbody>
     </table>
   `;
+  globalThis.window?.EventFlowClientPages?.clear(container);
   container.innerHTML = html;
 }
 function renderEventsTable(containerId, events = null) {
@@ -97,6 +98,7 @@ function renderEventsTable(containerId, events = null) {
       </tbody>
     </table>
   `;
+  globalThis.window?.EventFlowClientPages?.clear(container);
   container.innerHTML = html;
 }
 function renderRegistrationsTable(containerId, registrations = null) {
@@ -148,6 +150,7 @@ function renderRegistrationsTable(containerId, registrations = null) {
       </tbody>
     </table>
   `;
+  globalThis.window?.EventFlowClientPages?.clear(container);
   container.innerHTML = html;
 }
 
@@ -227,6 +230,7 @@ function renderEventCards(containerId, events = null, isAttendee = false) {
         .join('')}
     </div>
   `;
+  globalThis.window?.EventFlowClientPages?.clear(container);
   container.innerHTML = html;
 }
 
@@ -273,6 +277,7 @@ function renderNotificationsPanel(containerId) {
       }
     </div>
   `;
+  globalThis.window?.EventFlowClientPages?.clear(container);
   container.innerHTML = html;
 
   // Update notification badge
@@ -647,6 +652,7 @@ function renderQRCanvas(registrationId, containerId) {
   ctx.font = '10px Arial';
   ctx.textAlign = 'center';
   ctx.fillText(String(registrationId).substring(0, 8), canvas.width / 2, canvas.height - 10);
+  globalThis.window?.EventFlowClientPages?.clear(container);
   container.innerHTML = '';
   container.appendChild(canvas);
 }
@@ -3380,6 +3386,7 @@ function initApp() {
   g('sb-name').textContent = isDepartmentEmployee() ? displayRole : CU.name;
   g('sb-role-lbl').textContent = isDepartmentEmployee() ? 'Employee workspace' : displayRole;
   if (CU.avatarImage) {
+    globalThis.window?.EventFlowClientPages?.clear(g('sb-av'));
     g('sb-av').innerHTML = `<img src="${CU.avatarImage}" alt="${
       CU.name
     }" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.parentElement.textContent='${
@@ -3464,6 +3471,7 @@ function buildEmployeeNav(employeeType) {
       ],
     }[employeeType] || [];
   const unread = visibleNotifications().filter(n => !n.read).length;
+  globalThis.window?.EventFlowClientPages?.clear(g('sb-nav'));
   g('sb-nav').innerHTML =
     `<div class="sb-section-lbl">Menu</div>` +
     nav
@@ -3510,6 +3518,7 @@ function sendContactMessage() {
 function buildNav(role) {
   const items = NAV[role] || [];
   const unread = DB.notifications.filter(notification => !notification.read).length;
+  globalThis.window?.EventFlowClientPages?.clear(g('sb-nav'));
   g('sb-nav').innerHTML =
     `<div class="sb-section-lbl">Menu</div>` +
     items
@@ -3635,6 +3644,7 @@ async function renderPageContent(pg) {
   const r = CU.role;
   if (pg === 'customer-support') {
     if (!window.EventFlowSupport.canRequestSupport(CU)) return renderPageContent('settings');
+    globalThis.window?.EventFlowClientPages?.clear(element);
     element.innerHTML = await window.EventFlowSupport.render(CU);
     window.EventFlowSupport.bind(element, CU, () => goNav('settings'));
     return;
@@ -3673,6 +3683,7 @@ async function renderPageContent(pg) {
         ],
       }[CU.employeeType] || [];
     if (!allowed.includes(pg)) {
+      globalThis.window?.EventFlowClientPages?.clear(element);
       element.innerHTML = `<div class="empty"><div class="empty-title">Access restricted</div><p class="empty-desc">This department does not have access to this area.</p></div>`;
       return;
     }
@@ -3681,15 +3692,19 @@ async function renderPageContent(pg) {
   // Restrict superuser to only the 3 analytical subpages
   if (r === 'superuser') {
     if (pg === 'dashboard') {
+      globalThis.window?.EventFlowClientPages?.clear(element);
       element.innerHTML = dashAdmin();
       return;
     } else if (pg === 'event-reports' || pg === 'events') {
+      globalThis.window?.EventFlowClientPages?.clear(element);
       element.innerHTML = pageEventReports();
       return;
     } else if (pg === 'revenue-reports' || pg === 'reports' || pg === 'employee-stats') {
+      globalThis.window?.EventFlowClientPages?.clear(element);
       element.innerHTML = pageRevenueReports();
       return;
     } else {
+      globalThis.window?.EventFlowClientPages?.clear(element);
       element.innerHTML = pageUserReports();
       return;
     }
@@ -3698,6 +3713,7 @@ async function renderPageContent(pg) {
     try {
       await syncOrganizerDirectory();
     } catch (error) {
+      globalThis.window?.EventFlowClientPages?.clear(element);
       element.innerHTML = `<div class="empty"><div class="empty-title">Organizer directory unavailable</div><p class="empty-desc">${error.message}</p><button class="btn btn-primary mt-16" onclick="renderPage('${pg}')">Try again</button></div>`;
       return;
     }
@@ -3719,12 +3735,22 @@ async function renderPageContent(pg) {
     try {
       await syncWorkflowData();
     } catch (error) {
+      globalThis.window?.EventFlowClientPages?.clear(element);
       element.innerHTML = `<div class="empty"><div class="empty-title">Workflow data unavailable</div><p class="empty-desc">${error.message}</p><button class="btn btn-primary mt-16" onclick="renderPage('${pg}')">Try again</button></div>`;
       return;
     }
   }
   switch (pg) {
     case 'dashboard':
+      if (r === 'client' && globalThis.window?.EventFlowClientPages?.hasPage('dashboard')) {
+        window.EventFlowClientPages.render(
+          element,
+          'dashboard',
+          window.EventFlowClientRuntime.snapshot()
+        );
+        break;
+      }
+      globalThis.window?.EventFlowClientPages?.clear(element);
       element.innerHTML = isDepartmentEmployee()
         ? dashDepartmentEmployee()
         : (
@@ -3740,27 +3766,32 @@ async function renderPageContent(pg) {
       }
       break;
     case 'registrations':
+      globalThis.window?.EventFlowClientPages?.clear(element);
       element.innerHTML = pageRegistrationsForEmployee();
       break;
     case 'events':
+      globalThis.window?.EventFlowClientPages?.clear(element);
       element.innerHTML =
         isDepartmentEmployee() && CU.employeeType === 'EVENT_OPERATIONS'
           ? pageEventOpsEvents()
           : pageEvents();
       break;
     case 'event-requests':
+      globalThis.window?.EventFlowClientPages?.clear(element);
       element.innerHTML =
         isDepartmentEmployee() && CU.employeeType === 'EVENT_OPERATIONS'
           ? pageEventOperationsWorkspace()
           : pageEventRequests();
       break;
     case 'support-center':
+      globalThis.window?.EventFlowClientPages?.clear(element);
       element.innerHTML =
         isDepartmentEmployee() && CU.employeeType === 'SUPPORT_FINANCE'
           ? pageSupportCenter()
           : pageEventRequests();
       break;
     case 'finance':
+      globalThis.window?.EventFlowClientPages?.clear(element);
       element.innerHTML =
         isDepartmentEmployee() && CU.employeeType === 'SUPPORT_FINANCE'
           ? pageFinanceCenter()
@@ -3774,21 +3805,34 @@ async function renderPageContent(pg) {
           console.error('Unable to refresh client event requests', error);
         }
       }
-      element.innerHTML = pageRequestStatus();
+      if (globalThis.window?.EventFlowClientPages?.hasPage('request-status')) {
+        window.EventFlowClientPages.render(
+          element,
+          'request-status',
+          window.EventFlowClientRuntime.snapshot({})
+        );
+      } else {
+        globalThis.window?.EventFlowClientPages?.clear(element);
+        globalThis.window?.EventFlowClientPages?.clear(element);
+        element.innerHTML = pageRequestStatus();
+      }
       break;
     case 'request-details':
       renderWorkflowRequestDetails(_workflowRequestId);
       break;
     case 'attendees':
+      globalThis.window?.EventFlowClientPages?.clear(element);
       element.innerHTML =
         isDepartmentEmployee() && CU.employeeType === 'REGISTRATION_VERIFICATION'
           ? pageUserManagement()
           : pageAttendees();
       break;
     case 'attendeeVerification':
+      globalThis.window?.EventFlowClientPages?.clear(element);
       element.innerHTML = pageAttendeeVerification();
       break;
     case 'reports':
+      globalThis.window?.EventFlowClientPages?.clear(element);
       element.innerHTML =
         isDepartmentEmployee() && CU.employeeType === 'REGISTRATION_VERIFICATION'
           ? pageRegVerificationReports()
@@ -3799,40 +3843,128 @@ async function renderPageContent(pg) {
           : pageReports();
       break;
     case 'browse-events':
+      globalThis.window?.EventFlowClientPages?.clear(element);
       element.innerHTML = pageBrowseEvents();
       break;
     case 'my-tickets':
+      globalThis.window?.EventFlowClientPages?.clear(element);
       element.innerHTML = pageMyTickets();
       break;
     case 'find-organizers':
-      element.innerHTML = pageFindOrganizers();
+      if (globalThis.window?.EventFlowClientPages?.hasPage('find-organizers')) {
+        window.EventFlowClientPages.render(
+          element,
+          'find-organizers',
+          window.EventFlowClientRuntime.snapshot({})
+        );
+      } else {
+        globalThis.window?.EventFlowClientPages?.clear(element);
+        globalThis.window?.EventFlowClientPages?.clear(element);
+        element.innerHTML = pageFindOrganizers();
+      }
       break;
     case 'upcoming-events':
-      element.innerHTML = pageUpcomingEvents();
+      if (globalThis.window?.EventFlowClientPages?.hasPage('upcoming-events')) {
+        window.EventFlowClientPages.render(
+          element,
+          'upcoming-events',
+          window.EventFlowClientRuntime.snapshot({})
+        );
+      } else {
+        globalThis.window?.EventFlowClientPages?.clear(element);
+        globalThis.window?.EventFlowClientPages?.clear(element);
+        element.innerHTML = pageUpcomingEvents();
+      }
       break;
     case 'my-events':
-      element.innerHTML = pageWorkflowEvents();
+      if (globalThis.window?.EventFlowClientPages?.hasPage('my-events')) {
+        window.EventFlowClientPages.render(
+          element,
+          'my-events',
+          window.EventFlowClientRuntime.snapshot({})
+        );
+      } else {
+        globalThis.window?.EventFlowClientPages?.clear(element);
+        globalThis.window?.EventFlowClientPages?.clear(element);
+        element.innerHTML = pageWorkflowEvents();
+      }
       break;
     case 'completed-events':
-      element.innerHTML = pageCompletedEvents();
+      if (globalThis.window?.EventFlowClientPages?.hasPage('completed-events')) {
+        window.EventFlowClientPages.render(
+          element,
+          'completed-events',
+          window.EventFlowClientRuntime.snapshot({
+            embedded: undefined,
+          })
+        );
+      } else {
+        globalThis.window?.EventFlowClientPages?.clear(element);
+        globalThis.window?.EventFlowClientPages?.clear(element);
+        element.innerHTML = pageCompletedEvents();
+      }
       break;
     case 'ongoing-events':
-      element.innerHTML = pageOngoingEvents();
+      if (globalThis.window?.EventFlowClientPages?.hasPage('ongoing-events')) {
+        window.EventFlowClientPages.render(
+          element,
+          'ongoing-events',
+          window.EventFlowClientRuntime.snapshot({
+            embedded: undefined,
+          })
+        );
+      } else {
+        globalThis.window?.EventFlowClientPages?.clear(element);
+        globalThis.window?.EventFlowClientPages?.clear(element);
+        element.innerHTML = pageOngoingEvents();
+      }
       break;
     case 'notifications':
-      element.innerHTML = pageNotifications();
+      if (globalThis.window?.EventFlowClientPages?.hasPage('notifications')) {
+        window.EventFlowClientPages.render(
+          element,
+          'notifications',
+          window.EventFlowClientRuntime.snapshot({})
+        );
+      } else {
+        globalThis.window?.EventFlowClientPages?.clear(element);
+        globalThis.window?.EventFlowClientPages?.clear(element);
+        element.innerHTML = pageNotifications();
+      }
       break;
     case 'profile':
-      element.innerHTML = pageProfile();
+      if (globalThis.window?.EventFlowClientPages?.hasPage('profile')) {
+        window.EventFlowClientPages.render(
+          element,
+          'profile',
+          window.EventFlowClientRuntime.snapshot({})
+        );
+      } else {
+        globalThis.window?.EventFlowClientPages?.clear(element);
+        globalThis.window?.EventFlowClientPages?.clear(element);
+        element.innerHTML = pageProfile();
+      }
       break;
     case 'settings':
-      element.innerHTML = pageSettings();
+      if (globalThis.window?.EventFlowClientPages?.hasPage('settings')) {
+        window.EventFlowClientPages.render(
+          element,
+          'settings',
+          window.EventFlowClientRuntime.snapshot({})
+        );
+      } else {
+        globalThis.window?.EventFlowClientPages?.clear(element);
+        globalThis.window?.EventFlowClientPages?.clear(element);
+        element.innerHTML = pageSettings();
+      }
       window.EventFlowSupport.addSettingsEntry(element, () => goNav('customer-support'), CU);
       break;
     case 'users':
+      globalThis.window?.EventFlowClientPages?.clear(element);
       element.innerHTML = pageUsers();
       break;
     default:
+      globalThis.window?.EventFlowClientPages?.clear(element);
       element.innerHTML = `<div class="empty"><div class="empty-icon">🚧</div><div class="empty-title">Page not found</div><p class="empty-desc">The requested page "${pg}" could not be loaded.</p></div>`;
   }
 }
@@ -6798,6 +6930,7 @@ window.handleRegReportFileSelect = function (input) {
   if (input.files && input.files[0]) {
     const f = input.files[0];
     if (preview) {
+      globalThis.window?.EventFlowClientPages?.clear(preview);
       preview.innerHTML = `
             <div class="flex items-center justify-between" style="background:var(--accent-dim);border-radius:8px;padding:10px 14px">
               <div style="font-weight:600;color:var(--accent);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📄 ${
@@ -6814,6 +6947,7 @@ window.resetRegReportFileSelect = function () {
   if (input) input.value = '';
   const preview = document.getElementById('rv-file-preview');
   if (preview) {
+    globalThis.window?.EventFlowClientPages?.clear(preview);
     preview.innerHTML = `
           <div style="font-size:24px;margin-bottom:6px">📁</div>
           <div style="font-weight:600;font-size:13.5px">Click to browse or upload report file</div>
@@ -6930,6 +7064,7 @@ function searchEmployeeChanges(query) {
         .includes(changesQuery)
     )
     .slice(0, 12);
+  globalThis.window?.EventFlowClientPages?.clear(g('employee-recent-changes'));
   g('employee-recent-changes').innerHTML = buildEmployeeChanges(changes);
 }
 function completeEmployeeChangeRequest(requestId) {
@@ -7004,9 +7139,49 @@ function searchOrganizerEvents(query) {
   sessionStorage.setItem('org_events_search', query);
   renderPage('dashboard');
 }
-
-/* PORTAL_SECTION_dashClient */
-
+function dashClient() {
+  const clientRequests = DB.eventRequests.filter(
+    request => String(request.clientId) === String(CU.id)
+  );
+  const approvedCount = clientRequests.filter(request => request.status === 'approved').length;
+  const inProgressCount = clientRequests.filter(request =>
+    ['pending', 'in_review'].includes(request.status)
+  ).length;
+  const proposalCount = clientRequests.filter(request => request.status === 'proposal_sent').length;
+  return `
+  <div class="page-hd">
+    <div class="page-hd-left"><div class="page-title">Client Dashboard</div><div class="page-sub">Track your event requests and upcoming events.</div></div>
+    <div class="page-hd-right"><button class="btn btn-primary" onclick="goNav('find-organizers')">+ New Request</button></div>
+  </div>
+  <div class="grid-3 mb-20">
+    <div class="stat-card"><div class="stat-icon" style="background:var(--accent-dim);color:var(--accent)">📋</div><div class="stat-value" style="color:var(--accent)">${
+      clientRequests.length
+    }</div><div class="stat-label">Total Requests</div></div>
+    <div class="stat-card"><div class="stat-icon" style="background:var(--green-dim);color:var(--green)">✅</div><div class="stat-value" style="color:var(--green)">${approvedCount}</div><div class="stat-label">Approved</div></div>
+    <div class="stat-card"><div class="stat-icon" style="background:var(--yellow-dim);color:var(--yellow)">⏳</div><div class="stat-value" style="color:var(--yellow)">${inProgressCount}</div><div class="stat-label">In Progress</div></div>
+  </div>
+  ${
+    proposalCount > 0
+      ? `
+  <div style="background:rgba(99,102,241,0.12);border:1px solid var(--accent);border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+    <div>
+      <div style="font-weight:700;font-size:15px;color:var(--text)">📝 Proposal Received!</div>
+      <div style="font-size:13px;color:var(--text2)">You have ${proposalCount} event proposal(s) awaiting your review.</div>
+    </div>
+    <button class="btn btn-primary" onclick="goNav('request-status')">Review Proposals</button>
+  </div>`
+      : ''
+  }
+  <div class="card" id="client-upcoming-events" aria-live="polite" style="margin-bottom:20px">
+    <div class="h4 mb-12">Upcoming Events</div>
+    <div class="small" style="color:var(--text3)">Loading your upcoming events…</div>
+  </div>
+  <div class="card" id="client-recent-activity" aria-live="polite">
+    <div class="h4 mb-12">Recent Activity</div>
+    <div class="small" style="color:var(--text3)">Loading your recent activity…</div>
+  </div>
+  `;
+}
 function clientActivityPage(target) {
   const resource = String(target.resource || '').toLowerCase();
   if (resource.includes('notification')) return ['notifications', 'View notifications'];
@@ -7022,6 +7197,7 @@ function clientUpcomingEventDate(event) {
   return `${formattedDate}${event.time ? ` · ${event.time}` : ''}`;
 }
 async function loadClientUpcomingEvents() {
+  if (globalThis.window?.EventFlowClientPages?.isCurrentPage('dashboard')) return;
   const container = g('client-upcoming-events');
   if (!container) return;
   try {
@@ -7039,9 +7215,11 @@ async function loadClientUpcomingEvents() {
       );
     if (!g('client-upcoming-events')) return;
     if (events.length === 0) {
+      globalThis.window?.EventFlowClientPages?.clear(container);
       container.innerHTML = `<div class="h4 mb-12">Upcoming Events</div><div class="empty" style="padding:20px 0"><div class="empty-title">No upcoming events</div><div class="empty-desc">Published future events will appear here.</div></div>`;
       return;
     }
+    globalThis.window?.EventFlowClientPages?.clear(container);
     container.innerHTML = `<div class="h4 mb-12">Upcoming Events</div><div style="display:flex;flex-direction:column;gap:0">${events
       .map(
         event =>
@@ -7058,6 +7236,7 @@ async function loadClientUpcomingEvents() {
       .join('')}</div>`;
   } catch (error) {
     if (!g('client-upcoming-events')) return;
+    globalThis.window?.EventFlowClientPages?.clear(container);
     container.innerHTML = `<div class="h4 mb-12">Upcoming Events</div><div class="empty" style="padding:20px 0"><div class="empty-title">Unable to load upcoming events</div><div class="empty-desc">Please try again.</div><button class="btn btn-ghost btn-sm mt-12" onclick="refreshClientUpcomingEvents()">Retry</button></div>`;
   }
 }
@@ -7213,10 +7392,12 @@ async function openClientRequestFromActivity(requestId) {
 if (typeof window !== 'undefined')
   window.openClientRequestFromActivity = openClientRequestFromActivity;
 async function loadClientRecentActivity() {
+  if (globalThis.window?.EventFlowClientPages?.isCurrentPage('dashboard')) return;
   const container = g('client-recent-activity');
   if (!container) return;
 
   // Show skeleton while loading
+  globalThis.window?.EventFlowClientPages?.clear(container);
   container.innerHTML =
     '<div class="h4 mb-12">Recent Activity</div><div style="display:flex;flex-direction:column;gap:0">' +
     [1, 2, 3]
@@ -7244,6 +7425,7 @@ async function loadClientRecentActivity() {
     });
     if (!g('client-recent-activity')) return;
     if (activities.length === 0) {
+      globalThis.window?.EventFlowClientPages?.clear(container);
       container.innerHTML =
         '<div class="h4 mb-12">Recent Activity</div><div class="empty" style="padding:20px 0"><div class="empty-icon">📭</div><div class="empty-title">No recent activity</div><div class="empty-desc">Updates to your event requests will appear here.</div></div>';
       return;
@@ -7306,12 +7488,14 @@ async function loadClientRecentActivity() {
         '</div>'
       );
     });
+    globalThis.window?.EventFlowClientPages?.clear(container);
     container.innerHTML =
       '<div class="h4 mb-12">Recent Activity</div><div style="display:flex;flex-direction:column;gap:0">' +
       rows.join('') +
       '</div>';
   } catch (error) {
     if (!g('client-recent-activity')) return;
+    globalThis.window?.EventFlowClientPages?.clear(container);
     container.innerHTML =
       '<div class="h4 mb-12">Recent Activity</div><div class="empty" style="padding:20px 0"><div class="empty-icon">⚠️</div><div class="empty-title">Unable to load activity</div><div class="empty-desc">Please try again later.</div><button class="btn btn-ghost btn-sm mt-12" onclick="refreshClientRecentActivity()">Retry</button></div>';
   }
@@ -8272,6 +8456,7 @@ function refreshDirectoryUserManagement() {
       );
     return u.role !== 'superuser' && matchesRole && matchesQuery;
   });
+  globalThis.window?.EventFlowClientPages?.clear(g('user-management-table'));
   g('user-management-table').innerHTML = buildUserManagementTable(users);
 }
 function openEditUserModal(userId) {
@@ -8432,6 +8617,7 @@ function refreshEvents() {
       );
     }
   );
+  globalThis.window?.EventFlowClientPages?.clear(g('ev-grid'));
   g('ev-grid').innerHTML =
     list.map(e => evCard(e, CU.role)).join('') ||
     `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔍</div><div class="empty-title">No events found</div></div>`;
@@ -9122,6 +9308,7 @@ function refreshBrowse() {
       (!city || event.city === city)
     );
   });
+  globalThis.window?.EventFlowClientPages?.clear(g('browse-grid'));
   g('browse-grid').innerHTML =
     list.map(e => evCard(e, 'attendee')).join('') ||
     `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔍</div><div class="empty-title">No events match</div><p class="empty-desc">Try adjusting your filters.</p></div>`;
@@ -9729,6 +9916,7 @@ function refreshAttendees() {
         (status === 'rejected' && registration.status === 'rejected');
       return matchesSearch && matchesStatus;
     });
+    globalThis.window?.EventFlowClientPages?.clear(g('attendees-tbl'));
     g('attendees-tbl').innerHTML = buildOrganizerAttendeesTbl(regs, selectedEvent, isPrivate);
   } else {
     const q = (g('at-q') || {}).value?.toLowerCase() || '';
@@ -9752,6 +9940,7 @@ function refreshAttendees() {
         (!ci || (ci === 'in' && r.checkedIn) || (ci === 'out' && !r.checkedIn))
       );
     });
+    globalThis.window?.EventFlowClientPages?.clear(g('attendees-tbl'));
     g('attendees-tbl').innerHTML = buildAttendeesTbl(regs);
   }
 }
@@ -10061,6 +10250,7 @@ function openWorkflowPolicyDocument(kind, version) {
   overlay.setAttribute('role', 'dialog');
   overlay.setAttribute('aria-modal', 'true');
   overlay.setAttribute('aria-labelledby', 'workflow-policy-title');
+  globalThis.window?.EventFlowClientPages?.clear(overlay);
   overlay.innerHTML = `<div class="modal-box" style="max-width:760px">
         <div class="modal-head"><span class="modal-title" id="workflow-policy-title">${workflowHtml(
           title
@@ -10668,14 +10858,14 @@ function payWorkflowEvent(eventId, requestId, amount) {
     onDone: () => viewClientPaidBooking(requestId),
   });
 }
-function submitClientOrganizerReview(eventId, requestId) {
-  const rating = Number(v('workflow-review-rating'));
-  const comment = v('workflow-review-comment');
-  if (!rating || rating < 1 || rating > 5 || !comment) {
+function submitClientOrganizerReview(eventId, requestId, review) {
+  const rating = Number(review ? review.rating : v('workflow-review-rating'));
+  const comment = String(review ? review.comment || '' : v('workflow-review-comment')).trim();
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5 || !comment) {
     toast('Choose a 1–5 star rating and enter a written review.', 'error');
     return;
   }
-  runWorkflowAction(
+  return runWorkflowAction(
     () =>
       apiSubmitPrivateOrganizerReview({
         eventId,
@@ -11132,6 +11322,7 @@ async function processClientDepositPayment(requestId, eventId, method) {
   // Show processing feedback
   const container = g('payment-modal-container') || g('modal-body');
   if (container) {
+    globalThis.window?.EventFlowClientPages?.clear(container);
     container.innerHTML = `
           <div style="padding:32px 16px;text-align:center">
             <div class="spinner" style="width:40px;height:40px;margin:0 auto 16px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite"></div>
@@ -11142,6 +11333,7 @@ async function processClientDepositPayment(requestId, eventId, method) {
   }
   const foot = g('modal-foot');
   if (foot) {
+    globalThis.window?.EventFlowClientPages?.clear(foot);
     foot.innerHTML = '';
     foot.style.display = '';
   }
@@ -11188,6 +11380,7 @@ async function processClientDepositPayment(requestId, eventId, method) {
     const txnId = resData?.paymentId || resData?.receipt?.receiptNumber || 'TXN-' + Date.now();
     const bkgId = resData?.bookingId || 'BKG-' + String(effectiveReqId).toUpperCase();
     if (container) {
+      globalThis.window?.EventFlowClientPages?.clear(container);
       container.innerHTML = `
             <div style="padding:16px 8px;text-align:center">
               <div style="width:52px;height:52px;background:rgba(34,197,94,0.12);color:var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 12px">✓</div>
@@ -11210,6 +11403,7 @@ async function processClientDepositPayment(requestId, eventId, method) {
           `;
     }
     if (foot) {
+      globalThis.window?.EventFlowClientPages?.clear(foot);
       foot.innerHTML = `
             <button class="btn btn-primary" onclick="viewClientPaidBooking('${escapeHtml(
               effectiveReqId
@@ -11220,6 +11414,7 @@ async function processClientDepositPayment(requestId, eventId, method) {
     toast('Deposit payment verified and booking confirmed!', 'success');
   } catch (err) {
     if (container) {
+      globalThis.window?.EventFlowClientPages?.clear(container);
       container.innerHTML = `
             <div style="padding:16px 8px;text-align:center">
               <div style="width:52px;height:52px;background:rgba(239,68,68,0.12);color:var(--red);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 12px">✕</div>
@@ -11234,6 +11429,7 @@ async function processClientDepositPayment(requestId, eventId, method) {
           `;
     }
     if (foot) {
+      globalThis.window?.EventFlowClientPages?.clear(foot);
       foot.innerHTML = `
             <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
             <button class="btn btn-primary" onclick="openClientPaymentModal('${escapeHtml(
@@ -11325,6 +11521,7 @@ function calculateModCostClient(oldCap, oldBudget) {
   if (!hint) return;
   if (newCap && oldCap && oldBudget) {
     const recalc = Math.round((oldBudget / oldCap) * newCap);
+    globalThis.window?.EventFlowClientPages?.clear(hint);
     hint.innerHTML = `Recalculated estimated cost: <strong>₹${recalc.toLocaleString()}</strong> (was ₹${oldBudget.toLocaleString()})`;
   }
 }
@@ -11455,9 +11652,661 @@ function viewWorkflowEventReport(eventId) {
     viewEventReport(eventId);
   }
 }
-
-/* PORTAL_SECTION_renderWorkflowRequestDetails */
-
+function renderWorkflowRequestDetails(id) {
+  if (globalThis.window?.EventFlowClientPages?.hasPage('request-details')) {
+    window.EventFlowClientPages.render(
+      g('page-content'),
+      'request-details',
+      window.EventFlowClientRuntime.snapshot({
+        id: id,
+      })
+    );
+    return;
+  }
+  const r = DB.eventRequests.find(
+    request =>
+      String(request.id) === String(id) ||
+      String(request.requestId) === String(id) ||
+      (request.eventId && String(request.eventId) === String(id))
+  );
+  if (r && CU && CU.role === 'client' && !isClientOwner(r, CU)) {
+    const el = g('page-content');
+    if (el) {
+      globalThis.window?.EventFlowClientPages?.clear(el);
+      el.innerHTML =
+        '<div class="alert alert-danger" style="margin:24px 0;padding:16px;border-radius:8px"><strong>Access Denied:</strong> You are not authorized to view the details of this event request.<br><button class="btn btn-primary mt-16" onclick="goNav(\'request-status\')">Back to requests</button></div>';
+    }
+    return;
+  }
+  const element = g('page-content');
+  if (!r || !element) {
+    if (element) {
+      globalThis.window?.EventFlowClientPages?.clear(element);
+      element.innerHTML =
+        '<div class="empty"><div class="empty-title">Request not found</div><button class="btn btn-primary mt-16" onclick="goNav(\'request-status\')">Back to requests</button></div>';
+    }
+    return;
+  }
+  const plan =
+    (DB.eventPlans || []).find(item => item.eventPlanId === r.activeEventPlanId) ||
+    (DB.eventPlans || [])
+      .filter(item => item.requestId === r.requestId)
+      .sort((a, b) => (b.revision || 0) - (a.revision || 0))[0];
+  const organizerRole = CU.role === 'organizer';
+  const isNegotiating =
+    ['counteroffer_received', 'changes_requested', 'plan_revision_requested'].includes(r.status) ||
+    (r.negotiations && r.negotiations.length > 0);
+  const isAccepted =
+    ['awaiting_client', 'confirmed', 'completed'].includes(r.status) ||
+    (r.proposals && r.proposals.some(proposal => proposal.status === 'accepted'));
+  const isPaymentPending =
+    ['awaiting_client'].includes(r.status) ||
+    r.paymentStatus === 'deposit_pending' ||
+    r.paymentStatus === 'deposit_paid';
+  const isConfirmed = ['confirmed', 'completed'].includes(r.status);
+  const isCompleted = r.status === 'completed';
+  const timeline = [
+    ['1. Submitted', true],
+    ['2. Under Review', !['submitted', 'pending'].includes(r.status)],
+    [
+      '3. Proposal Sent',
+      ['proposal_sent', 'planning', 'awaiting_client', 'confirmed', 'completed'].includes(
+        r.status
+      ) ||
+        (r.proposals && r.proposals.length > 0),
+    ],
+    ['4. Negotiation', isNegotiating],
+    ['5. Accepted', isAccepted],
+    ['6. Payment Pending', isPaymentPending || isConfirmed],
+    ['7. Confirmed', isConfirmed],
+    ['8. Completed', isCompleted],
+  ];
+  const currentChange = [...(r.negotiations || [])]
+    .reverse()
+    .find(item => item.action === 'changes_requested');
+  const plans = (DB.eventPlans || [])
+    .filter(item => item.requestId === r.requestId)
+    .sort((a, b) => (b.revision || 0) - (a.revision || 0));
+  const latestProposal =
+    r.proposals && r.proposals.length > 0 ? r.proposals[r.proposals.length - 1] : null;
+  const agreedProposal = getClientAcceptedProposal(r) || latestProposal;
+  const planDeposit = Number(
+    agreedProposal?.depositRequired ?? Math.round(Number(plan?.budget || r.budget || 0) * 0.3)
+  );
+  const planBalance = Math.max(
+    0,
+    Number(plan?.budget || agreedProposal?.amount || r.budget || 0) - planDeposit
+  );
+  const organizer =
+    (DB.organizers || []).find(
+      item => String(item.organizerId || item.id) === String(r.organizerId || r.organizer)
+    ) ||
+    (DB.users || []).find(
+      item => String(item.id || item.userId) === String(r.organizerId || r.organizer)
+    );
+  const organizerActions = ['submitted', 'pending', 'under_review', 'info_requested'].includes(
+    r.status
+  )
+    ? `<div style="display:flex;gap:10px;margin-top:16px"><button class="btn btn-success w-full" onclick="acceptWorkflowRequest('${r.id}')">Accept</button><button class="btn btn-danger w-full" onclick="openWorkflowRejectModal('${r.id}')">Reject</button></div>`
+    : r.status === 'counteroffer_received'
+    ? `<div style="display:flex;gap:10px;margin-top:16px"><button class="btn btn-success w-full" onclick="acceptWorkflowCounteroffer('${r.id}')">Accept Counteroffer</button><button class="btn btn-danger w-full" onclick="openWorkflowRejectModal('${r.id}')">Reject / Propose Changes</button></div>`
+    : ['planning', 'plan_revision_requested'].includes(r.status)
+    ? `<button class="btn btn-primary w-full" style="margin-top:16px" onclick="openWorkflowPlanModal('${
+        r.id
+      }')">${
+        r.status === 'plan_revision_requested' ? 'Edit and Resubmit Plan' : 'Create Event Plan'
+      }</button>`
+    : '';
+  const clientCancelBtn =
+    CU.role === 'client' &&
+    !['cancelled', 'withdrawn', 'rejected', 'completed'].includes(r.status) &&
+    !r.eventId
+      ? `<button class="btn btn-danger btn-sm" onclick="openClientCancelRequestModal('${r.id}')">Cancel Request</button>`
+      : '';
+  const clientActions = ['cancelled', 'withdrawn', 'rejected', 'expired', 'completed'].includes(
+    r.status
+  )
+    ? ''
+    : r.status === 'changes_requested'
+    ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px"><button class="btn btn-success" onclick="respondToWorkflowChanges('${r.id}','accept_changes')">Accept Changes</button><button class="btn btn-danger" onclick="respondToWorkflowChanges('${r.id}','reject_changes')">Reject Changes</button><button class="btn btn-primary" onclick="openWorkflowCounterofferModal('${r.id}')">Send Counteroffer</button>${clientCancelBtn}</div>`
+    : r.status === 'plan_submitted' && plan?.approvalStatus === 'pending'
+    ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px"><button class="btn btn-success" onclick="openWorkflowPlanAcceptanceModal('${plan.eventPlanId}','${r.id}')">Accept Plan</button><button class="btn btn-primary" onclick="openWorkflowPlanRevisionModal('${plan.eventPlanId}','${r.id}')">Request Changes</button><button class="btn btn-danger" onclick="openWorkflowPlanRejectionModal('${plan.eventPlanId}','${r.id}')">Reject Plan</button></div>`
+    : (r.status === 'awaiting_client' ||
+        (r.paymentStatus === 'deposit_pending' &&
+          (r.proposals || []).some(proposal => proposal.status === 'accepted'))) &&
+      (plan?.approvalStatus === 'approved' ||
+        (r.proposals || []).some(proposal => proposal.status === 'accepted'))
+    ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px"><button class="btn btn-success" onclick="openClientPaymentModal('${workflowHtml(
+        r.id
+      )}')">Proceed to Payment &amp; Confirmation</button>${clientCancelBtn}</div>`
+    : clientCancelBtn
+    ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px">${clientCancelBtn}</div>`
+    : '';
+  const negotiationHtml = (r.negotiations || [])
+    .map(
+      item =>
+        `<div style="padding:10px;border-left:3px solid var(--accent);background:var(--surface2);border-radius:6px;margin-top:8px"><strong>${workflowHtml(
+          String(item.action || '').replaceAll('_', ' ')
+        )}</strong><div style="font-size:12px;color:var(--text2);margin-top:4px">${workflowHtml(
+          item.reason
+        )}${item.budget ? ` · Budget ₹${Number(item.budget).toLocaleString()}` : ''}${
+          item.eventDate ? ` · Date ${workflowHtml(item.eventDate)}` : ''
+        }</div></div>`
+    )
+    .join('');
+  const planDocFileName = plan?.documentFileName || latestProposal?.documentFileName;
+  const planDocName = plan?.documentName || latestProposal?.documentName || planDocFileName;
+  const planDocType = plan?.documentType || latestProposal?.documentType || 'application/pdf';
+  const planDocSize = plan?.documentSize || latestProposal?.documentSize;
+  const planDocDate =
+    plan?.uploadedAt || latestProposal?.uploadedAt || plan?.createdAt || latestProposal?.sentAt;
+  const planDocUploader = plan?.uploaderName || latestProposal?.uploaderName || 'Organizer';
+  const planTargetId = plan?.eventPlanId || r.requestId || r.id;
+  const planDocCard = planDocFileName
+    ? `
+        <div style="margin-top:12px;padding:14px;border:1px solid var(--border);border-radius:8px;background:var(--surface)">
+          <div style="font-weight:700;font-size:13.5px;color:var(--text)">📎 ${escapeHtml(
+            planDocName || 'event-plan.pdf'
+          )}</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:4px">
+            <span>${escapeHtml(planDocType)}</span>${
+        planDocSize ? ` · ${(Number(planDocSize) / 1024).toFixed(1)} KB` : ''
+      } &middot;
+            <span>Uploaded ${
+              planDocDate ? new Date(planDocDate).toLocaleString() : 'Recently'
+            }</span> &middot;
+            <span>Revision ${plan?.revision || latestProposal?.version || 1}</span> &middot;
+            <span>By ${escapeHtml(planDocUploader)}</span>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button class="btn btn-ghost btn-sm" onclick="openEventPlanPdf('${planTargetId}','${encodeURIComponent(
+        planDocName || 'event-plan.pdf'
+      )}',true${
+        latestProposal?.version ? ',' + latestProposal.version : ''
+      })">👁️ View PDF / Preview</button>
+            <button class="btn btn-primary btn-sm" onclick="openEventPlanPdf('${planTargetId}','${encodeURIComponent(
+        planDocName || 'event-plan.pdf'
+      )}',false${
+        latestProposal?.version ? ',' + latestProposal.version : ''
+      })">⬇️ Download PDF</button>
+          </div>
+        </div>`
+    : `
+        <div style="margin-top:12px;padding:12px 14px;border:1px dashed var(--border);border-radius:8px;background:var(--surface2)">
+          <div style="font-size:12.5px;color:var(--text2)">📝 <strong>Text-only plan proposal</strong> — no file attached by organizer. Proposal deliverables and terms are detailed above.</div>
+        </div>`;
+  const planRevisionHistoryHtml =
+    plans.length > 1
+      ? `
+        <details style="margin-top:12px">
+          <summary style="cursor:pointer;font-weight:600;font-size:13px">Plan revision history (${
+            plans.length
+          } versions, newest first)</summary>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+            ${plans
+              .map(
+                item => `
+              <div style="font-size:12px;padding:8px 10px;background:var(--surface);border:1px solid var(--border);border-radius:6px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+                <div>
+                  <strong>Revision ${item.revision || 1}:</strong> ${workflowHtml(
+                  item.title
+                )} — <span class="badge badge-${
+                  item.approvalStatus === 'approved'
+                    ? 'green'
+                    : item.approvalStatus === 'revision_requested'
+                    ? 'yellow'
+                    : 'blue'
+                }">${workflowHtml(
+                  String(item.approvalStatus || 'pending').replaceAll('_', ' ')
+                )}</span>
+                  ${
+                    item.uploadedAt || item.createdAt
+                      ? `<div class="small" style="color:var(--text3)">Uploaded ${new Date(
+                          item.uploadedAt || item.createdAt
+                        ).toLocaleString()}</div>`
+                      : ''
+                  }
+                </div>
+                ${
+                  item.documentFileName
+                    ? `
+                  <div style="display:flex;gap:6px">
+                    <button class="btn btn-ghost btn-xs" onclick="openEventPlanPdf('${
+                      item.eventPlanId
+                    }','${encodeURIComponent(
+                        item.documentName || item.documentFileName
+                      )}',true)">Preview</button>
+                    <button class="btn btn-ghost btn-xs" onclick="openEventPlanPdf('${
+                      item.eventPlanId
+                    }','${encodeURIComponent(
+                        item.documentName || item.documentFileName
+                      )}',false)">Download</button>
+                  </div>
+                `
+                    : ''
+                }
+              </div>
+            `
+              )
+              .join('')}
+          </div>
+        </details>`
+      : r.proposals && r.proposals.length > 1
+      ? `
+        <details style="margin-top:12px">
+          <summary style="cursor:pointer;font-weight:600;font-size:13px">Proposal version history (${
+            r.proposals.length
+          } versions, newest first)</summary>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+            ${[...r.proposals]
+              .sort((proposal, b) => (b.version || 0) - (proposal.version || 0))
+              .map(
+                proposal => `
+              <div style="font-size:12px;padding:8px 10px;background:var(--surface);border:1px solid var(--border);border-radius:6px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+                <div>
+                  <strong>Version ${proposal.version || 1}:</strong> ₹${Number(
+                  proposal.amount || 0
+                ).toLocaleString()} — <span class="badge badge-gray">${escapeHtml(
+                  proposal.status || 'draft'
+                )}</span>
+                  ${
+                    proposal.uploadedAt || proposal.sentAt
+                      ? `<div class="small" style="color:var(--text3)">${new Date(
+                          proposal.uploadedAt || proposal.sentAt
+                        ).toLocaleString()}</div>`
+                      : ''
+                  }
+                </div>
+                ${
+                  proposal.documentFileName || proposal.documentName
+                    ? `
+                  <div style="display:flex;gap:6px">
+                    <button class="btn btn-ghost btn-xs" onclick="openEventPlanPdf('${
+                      r.requestId || r.id
+                    }','${encodeURIComponent(
+                        proposal.documentName || proposal.documentFileName
+                      )}',true,${proposal.version})">Preview</button>
+                    <button class="btn btn-ghost btn-xs" onclick="openEventPlanPdf('${
+                      r.requestId || r.id
+                    }','${encodeURIComponent(
+                        proposal.documentName || proposal.documentFileName
+                      )}',false,${proposal.version})">Download</button>
+                  </div>
+                `
+                    : ''
+                }
+              </div>
+            `
+              )
+              .join('')}
+          </div>
+        </details>`
+      : '';
+  const planHtml = plan
+    ? `<div style="margin-top:12px;padding:14px;background:var(--surface2);border-radius:10px">
+        <div style="display:flex;justify-content:space-between;gap:8px"><strong>${workflowHtml(
+          plan.title
+        )} · Revision ${plan.revision || 1}</strong><span class="badge badge-${
+        plan.approvalStatus === 'approved'
+          ? 'green'
+          : plan.approvalStatus === 'revision_requested'
+          ? 'yellow'
+          : 'blue'
+      }">${workflowHtml(String(plan.approvalStatus || 'pending').replaceAll('_', ' '))}</span></div>
+        <p style="font-size:13px;color:var(--text2);line-height:1.6">${workflowHtml(
+          plan.description
+        )}</p>
+        <div class="info-row"><span class="info-label">Total proposal amount</span><span class="info-value">₹${Number(
+          plan.budget || 0
+        ).toLocaleString()}</span></div>
+        <div class="info-row"><span class="info-label">Advance deposit</span><span class="info-value">₹${planDeposit.toLocaleString()}</span></div>
+        <div class="info-row"><span class="info-label">Remaining balance</span><span class="info-value">₹${planBalance.toLocaleString()}</span></div>
+        ${
+          plan.budgetBreakdown
+            ? `<div style="margin-top:10px"><strong>Itemized cost breakdown</strong><p style="white-space:pre-wrap;color:var(--text2)">${workflowHtml(
+                plan.budgetBreakdown
+              )}</p></div>`
+            : ''
+        }
+        ${
+          plan.services
+            ? `<div style="margin-top:10px"><strong>Proposed services & deliverables</strong><p style="white-space:pre-wrap;color:var(--text2)">${workflowHtml(
+                plan.services
+              )}</p></div>`
+            : ''
+        }
+        ${
+          plan.arrangements
+            ? `<div style="margin-top:10px"><strong>Venue & execution arrangements</strong><p style="white-space:pre-wrap;color:var(--text2)">${workflowHtml(
+                plan.arrangements
+              )}</p></div>`
+            : ''
+        }
+        ${
+          plan.schedule
+            ? `<div style="margin-top:10px"><strong>Event schedule & execution timeline</strong><p style="white-space:pre-wrap;color:var(--text2)">${workflowHtml(
+                plan.schedule
+              )}</p></div>`
+            : ''
+        }
+        <div style="margin-top:10px"><strong>Payment terms</strong><p style="color:var(--text2)">${workflowHtml(
+          agreedProposal?.paymentSchedule ||
+            agreedProposal?.paymentTerms ||
+            'Advance deposit payable now; remaining balance follows the accepted agreement.'
+        )}</p></div>
+        <div style="margin-top:10px"><strong>Cancellation policy</strong><p style="color:var(--text2)">${workflowHtml(
+          agreedProposal?.cancellationTerms ||
+            agreedProposal?.cancellationPolicy ||
+            'The event agreement cancellation policy applies.'
+        )}</p></div>
+        <div class="small" style="color:var(--text3);margin-top:8px">Submitted ${workflowPolicyDate(
+          plan.createdAt || plan.uploadedAt
+        )} · Revision ${plan.revision || 1}</div>
+        ${planDocCard}
+        ${
+          plan.revisionReason
+            ? `<div style="font-size:12px;color:var(--yellow);margin-top:8px">Requested revision: ${workflowHtml(
+                plan.revisionReason
+              )}</div>`
+            : ''
+        }
+        ${planRevisionHistoryHtml}
+      </div>`
+    : latestProposal
+    ? `<div style="margin-top:12px;padding:14px;background:var(--surface2);border-radius:10px">
+        <div style="display:flex;justify-content:space-between;gap:8px"><strong>Event Proposal · Version ${
+          latestProposal.version || 1
+        }</strong><span class="badge badge-blue">${workflowHtml(
+        String(latestProposal.status || 'pending_client').replaceAll('_', ' ')
+      )}</span></div>
+        <p style="font-size:13px;color:var(--text2);line-height:1.6;margin-top:6px">${workflowHtml(
+          latestProposal.eventPlan || latestProposal.terms || 'Event proposal details.'
+        )}</p>
+        <div class="info-row"><span class="info-label">Proposed Price</span><span class="info-value">₹${Number(
+          latestProposal.amount || 0
+        ).toLocaleString()}</span></div>
+        <div class="info-row"><span class="info-label">Advance Deposit</span><span class="info-value">₹${Number(
+          latestProposal.depositRequired || Math.round((latestProposal.amount || 0) * 0.3)
+        ).toLocaleString()}</span></div>
+        ${planDocCard}
+        ${planRevisionHistoryHtml}
+      </div>`
+    : `<p style="color:var(--text3);font-size:13px">The organizer has not submitted an event plan yet.</p>`;
+  const eventId = r.eventId;
+  const event =
+    eventId && DB.events.find(item => String(item.eventId || item.id) === String(eventId));
+  const completionReport = (DB.eventCompletionReports || []).find(item => item.eventId === eventId);
+  const submittedReview = (DB.clientOrganizerReviews || []).find(item => item.eventId === eventId);
+  const isPaid = r.paymentStatus === 'fully_paid';
+  const bookingAmounts = getClientBookingAmounts(r, plan);
+  const reportPhotos = (completionReport?.photos || [])
+    .map(
+      photo =>
+        `<button class="btn btn-ghost btn-xs" onclick="openEventCompletionPhoto('${eventId}','${encodeURIComponent(
+          photo.fileName
+        )}')">View ${workflowHtml(photo.originalName)}</button>`
+    )
+    .join(' ');
+  const completionReportHtml = completionReport
+    ? `<div style="margin-top:16px;padding:16px;border:1px solid var(--border);border-radius:10px">
+        <h3 style="margin:0 0 10px">Event Completion Report</h3>
+        <div class="info-row"><span class="info-label">Event</span><span class="info-value">${workflowHtml(
+          completionReport.eventName
+        )} · ${workflowHtml(completionReport.eventDate)}</span></div>
+        <div class="info-row"><span class="info-label">Venue</span><span class="info-value">${workflowHtml(
+          completionReport.venue || '—'
+        )}</span></div>
+        <div style="margin-top:10px"><strong>Services provided</strong><p style="white-space:pre-wrap;color:var(--text2)">${workflowHtml(
+          completionReport.servicesProvided
+        )}</p></div>
+        <div style="margin-top:10px"><strong>Expenses</strong><p style="white-space:pre-wrap;color:var(--text2)">${workflowHtml(
+          completionReport.expenses
+        )}</p></div>
+        <div style="margin-top:10px"><strong>Completion notes</strong><p style="white-space:pre-wrap;color:var(--text2)">${workflowHtml(
+          completionReport.completionNotes
+        )}</p></div>
+        ${
+          reportPhotos
+            ? `<div style="margin-top:10px"><strong>Photos</strong><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">${reportPhotos}</div></div>`
+            : ''
+        }
+      </div>`
+    : '';
+  const reviewHtml =
+    completionReport && !submittedReview
+      ? `<div style="margin-top:14px;padding:16px;background:var(--surface2);border-radius:10px">
+        <h3 style="margin:0 0 10px">Review the Organizer</h3>
+        <div class="form-group"><label class="form-label" for="workflow-review-rating">Rating</label><select class="form-control" id="workflow-review-rating"><option value="">Choose stars</option><option value="5">★★★★★ - Excellent</option><option value="4">★★★★ - Good</option><option value="3">★★★ - Average</option><option value="2">★★ - Poor</option><option value="1">★ - Very poor</option></select></div>
+        <div class="form-group"><label class="form-label" for="workflow-review-comment">Written review</label><textarea class="form-control" id="workflow-review-comment" rows="3" required></textarea></div>
+        <button class="btn btn-primary" onclick="submitClientOrganizerReview('${eventId}','${r.id}')">Submit Review</button>
+      </div>`
+      : submittedReview
+      ? '<div style="margin-top:14px;color:var(--green);font-weight:600">Thank you. Your review has been published to the organizer profile.</div>'
+      : '';
+  const lifecycleHtml =
+    eventId && event && r.status !== 'cancelled'
+      ? `<section style="margin-top:18px;padding:16px;background:var(--surface2);border-radius:10px">
+        <h3 style="margin:0 0 10px">Ongoing Event Workflow</h3>
+        <div class="info-row"><span class="info-label">Event status</span><span class="info-value">${workflowHtml(
+          event.status
+        )}</span></div>
+        <div class="info-row"><span class="info-label">Payment status</span><span class="info-value" style="color:${
+          isPaid ? 'var(--green)' : 'var(--yellow)'
+        }">${
+          isPaid ? 'Paid' : r.paymentStatus === 'deposit_paid' ? 'Deposit Paid' : 'Unpaid'
+        }</span></div>
+        ${
+          event.status === 'ongoing' && !isPaid && bookingAmounts.remainingAmount > 0
+            ? `<div style="margin-top:10px"><strong>Final agreed amount: ₹${bookingAmounts.totalAmount.toLocaleString()}</strong><div style="margin-top:6px">Remaining amount: ₹${bookingAmounts.remainingAmount.toLocaleString()}</div><div style="display:flex;gap:10px;margin-top:8px"><button class="btn btn-primary" onclick="openClientPaymentModal('${escapeHtml(
+                r.id
+              )}', '${escapeHtml(eventId || '')}')">💳 Pay Remaining Amount</button></div></div>`
+            : ''
+        }
+        ${
+          isPaid
+            ? `<div style="margin-top:10px"><button class="btn btn-ghost btn-sm" onclick="openClientPaymentModal('${escapeHtml(
+                r.id
+              )}', '${escapeHtml(
+                eventId || ''
+              )}')">📜 View Payment Receipt & Transactions</button></div>`
+            : ''
+        }
+        <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+          ${
+            event.status === 'ongoing' && CU.role === 'client'
+              ? `<button class="btn btn-danger btn-sm" onclick="openClientCancelRequestModal('${workflowHtml(
+                  r.requestId || r.id
+                )}')">Cancel Event</button>`
+              : ''
+          }
+        </div>
+        ${
+          r.eventModifications && r.eventModifications.length > 0
+            ? `
+          <div style="background:var(--surface);border-radius:10px;padding:14px;border:1px solid var(--border);margin-top:14px">
+            <div style="font-weight:700;font-size:13px;margin-bottom:8px">📝 Event Modifications (${
+              r.eventModifications.length
+            })</div>
+            ${r.eventModifications
+              .map(
+                mod => `
+              <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px;font-size:12px">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                  <span style="font-weight:600">Requested by ${
+                    mod.requesterRole === 'client' ? 'Client' : 'Organizer'
+                  }</span>
+                  <span class="badge badge-${
+                    mod.status === 'approved'
+                      ? 'green'
+                      : mod.status === 'rejected'
+                      ? 'red'
+                      : 'yellow'
+                  }">${mod.status.replace('_', ' ')}</span>
+                </div>
+                <div style="color:var(--text2);margin-bottom:4px"><strong>Reason:</strong> ${escapeHtml(
+                  mod.reason || '—'
+                )}</div>
+                <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Date: ${
+                  mod.newValues?.date || '—'
+                } · Capacity: ${mod.newValues?.capacity || '—'} · Budget: ₹${(
+                  mod.newValues?.budget || 0
+                ).toLocaleString()}</div>
+                ${
+                  mod.status === 'pending_approval'
+                    ? '<div style="font-size:11px;color:var(--text3)">Booked event details are locked.</div>'
+                    : ''
+                }
+              </div>
+            `
+              )
+              .join('')}
+          </div>
+        `
+            : ''
+        }
+        ${
+          r.status !== 'cancelled'
+            ? renderWorkflowCancellation(r.cancellation || event.cancellation, r)
+            : ''
+        }
+        ${renderWorkflowFileReports(eventId)}
+        ${completionReportHtml}
+        ${reviewHtml}
+      </section>`
+      : '';
+  globalThis.window?.EventFlowClientPages?.clear(element);
+  element.innerHTML = `<div class="page-hd">
+        <div class="page-hd-left"><button class="btn btn-ghost btn-sm" onclick="goNav('${_workflowReturnPage}')">← Back to ${
+    _workflowReturnPage === 'my-events'
+      ? 'Events'
+      : _workflowReturnPage === 'ongoing-events'
+      ? 'Ongoing Events'
+      : _workflowReturnPage === 'completed-events'
+      ? 'Completed Events'
+      : _workflowReturnPage === 'event-requests'
+      ? 'Event Requests'
+      : _workflowReturnPage === 'dashboard'
+      ? 'Dashboard'
+      : 'Request Status'
+  }</button><div class="page-title" style="margin-top:12px">${
+    r.status === 'plan_submitted' ? 'Event Plan Review — ' : ''
+  }${workflowHtml(
+    r.title
+  )}</div><div class="page-sub">Original request details, organizer submission, pricing, terms, attachment, and history</div></div>
+      </div>
+      <div class="card" style="max-width:1000px">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+          <span class="badge badge-${reqBadge(
+            r.status
+          )}" style="text-transform:capitalize">${String(r.status).replaceAll('_', ' ')}</span>
+          <span style="font-size:12px;color:var(--text3)">Request ID: ${workflowHtml(
+            r.requestId
+          )}</span>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin:16px 0">
+          ${timeline
+            .map(
+              ([label, complete]) =>
+                `<div style="flex:1;min-width:105px;padding:8px;border-radius:8px;background:${
+                  complete ? 'var(--accent-dim)' : 'var(--surface2)'
+                };color:${
+                  complete ? 'var(--accent)' : 'var(--text3)'
+                };font-size:11px;font-weight:600">${complete ? '✓ ' : '○ '}${label}</div>`
+            )
+            .join('')}
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="info-row"><span class="info-label">Event date</span><span class="info-value">${workflowHtml(
+            r.eventDate || r.date
+          )}</span></div>
+          <div class="info-row"><span class="info-label">Budget</span><span class="info-value">₹${Number(
+            r.budget || 0
+          ).toLocaleString()}</span></div>
+          <div class="info-row"><span class="info-label">Ticket price per attendee</span><span class="info-value">${
+            Number(r.ticketPrice || 0) === 0
+              ? 'Free'
+              : '₹' + Number(r.ticketPrice).toLocaleString('en-IN')
+          }</span></div>
+          <div class="info-row"><span class="info-label">Event access</span><span class="info-value">${
+            r.visibility === 'private'
+              ? 'Private — approval before payment'
+              : 'Public — direct registration'
+          }</span></div>
+          <div class="info-row"><span class="info-label">Guests</span><span class="info-value">${
+            r.capacity || r.guests
+          }</span></div>
+          <div class="info-row"><span class="info-label">Event type</span><span class="info-value">${workflowHtml(
+            r.eventType || r.type
+          )}</span></div>
+          <div class="info-row"><span class="info-label">Organizer</span><span class="info-value">${workflowHtml(
+            organizer?.name || organizer?.businessName || r.organizerName || 'Assigned Organizer'
+          )}</span></div>
+        </div>
+        ${r.status === 'cancelled' ? renderWorkflowCancellation(r.cancellation, r) : ''}
+        <div style="margin:12px 0"><strong>Event details</strong><p style="white-space:pre-wrap;color:var(--text2);line-height:1.6">${workflowHtml(
+          r.requirements || r.desc || '—'
+        )}</p></div>
+        ${
+          r.status === 'rejected' && r.rejectionReason
+            ? `<div style="padding:12px;background:var(--red-dim);margin:12px 0;border-radius:8px"><strong style="color:var(--red)">&#10005; Reason for declining</strong><p style="margin:6px 0 0;white-space:pre-wrap;overflow-wrap:anywhere">${workflowHtml(
+                r.rejectionReason
+              )}</p>${
+                r.rejectionComments
+                  ? `<p style="margin:6px 0 0;font-size:12px;color:var(--text2)"><strong>Additional comments:</strong> ${workflowHtml(
+                      r.rejectionComments
+                    )}</p>`
+                  : ''
+              }</div>`
+            : ''
+        }
+        ${
+          currentChange
+            ? `<div style="padding:12px;border-radius:8px;background:rgba(245,158,11,.1);margin:12px 0"><strong>Organizer requested changes</strong><div style="font-size:13px;margin-top:5px">${workflowHtml(
+                currentChange.reason
+              )}</div>${
+                currentChange.budget
+                  ? `<div>Proposed budget: ₹${Number(currentChange.budget).toLocaleString()}</div>`
+                  : ''
+              }${
+                currentChange.eventDate
+                  ? `<div>Proposed date: ${workflowHtml(currentChange.eventDate)}</div>`
+                  : ''
+              }</div>`
+            : ''
+        }
+        <div style="margin-top:16px"><strong>Event plan</strong>${planHtml}</div>
+        ${renderWorkflowEventPolicy(r.policySnapshot || workflowEventPolicy)}
+        <p class="small">Client acknowledgement: ${workflowHtml(
+          workflowPolicyDate(r.clientPolicyAcceptedAt)
+        )}<br>Organizer acknowledgement: ${workflowHtml(
+    workflowPolicyDate(r.organizerPolicyAcceptedAt)
+  )}</p>
+        ${organizerRole ? organizerActions : clientActions}
+        ${lifecycleHtml}
+        ${
+          negotiationHtml
+            ? `<div style="margin-top:18px"><strong>Negotiation history</strong>${negotiationHtml}</div>`
+            : ''
+        }
+        <div style="margin-top:18px"><strong>Progress history</strong>${
+          (r.auditHistory || [])
+            .slice()
+            .reverse()
+            .map(
+              entry =>
+                `<div style="padding:8px 0;border-bottom:1px solid var(--border2);font-size:12px"><strong>${workflowHtml(
+                  entry.action
+                )}</strong><div style="color:var(--text3)">${
+                  entry.timestamp
+                    ? workflowHtml(String(entry.timestamp).replace('T', ' ').slice(0, 16))
+                    : ''
+                } · ${workflowHtml(entry.role)}</div></div>`
+            )
+            .join('') ||
+          '<div style="font-size:12px;color:var(--text3)">No workflow actions yet.</div>'
+        }</div>
+      </div>`;
+}
 let workflowResponsePolicy = null;
 async function openWorkflowRejectModal(id) {
   try {
@@ -12492,8 +13341,407 @@ async function syncClientEventRequests() {
     created: request.createdAt,
   }));
 }
-
-/* PORTAL_SECTION_pageRequestStatus */
+function pageRequestStatus() {
+  const isOrganizer = CU.role === 'organizer';
+  if (isOrganizer) {
+    const tab = sessionStorage.getItem('reqstat_tab') || 'pending';
+    const myOrgId = CU.id;
+    const pendingReqs = DB.eventRequests
+      .filter(request => request.status === 'pending' || request.status === 'in_review')
+      .sort((leftRequest, rightRequest) => {
+        const tA = Math.max(
+          leftRequest.updatedAt ? new Date(leftRequest.updatedAt).getTime() : 0,
+          leftRequest.createdAt ? new Date(leftRequest.createdAt).getTime() : 0,
+          leftRequest.created ? new Date(leftRequest.created).getTime() : 0
+        );
+        const tB = Math.max(
+          rightRequest.updatedAt ? new Date(rightRequest.updatedAt).getTime() : 0,
+          rightRequest.createdAt ? new Date(rightRequest.createdAt).getTime() : 0,
+          rightRequest.created ? new Date(rightRequest.created).getTime() : 0
+        );
+        if (tB !== tA) return tB - tA;
+        return String(rightRequest.id || '').localeCompare(String(leftRequest.id || ''));
+      });
+    const myEvents = DB.events
+      .filter(
+        event =>
+          event.organizer === myOrgId &&
+          (event.status === 'upcoming' ||
+            event.status === 'ongoing' ||
+            event.status === 'confirmed')
+      )
+      .sort((leftEvent, rightEvent) => {
+        const tA = leftEvent.date ? new Date(leftEvent.date).getTime() : 0;
+        const tB = rightEvent.date ? new Date(rightEvent.date).getTime() : 0;
+        if (tB !== tA) return tB - tA;
+        return String(rightEvent.id || '').localeCompare(String(leftEvent.id || ''));
+      });
+    const pendingHtml =
+      pendingReqs.length === 0
+        ? '<div class="empty"><div class="empty-icon">&#128203;</div><div class="empty-title">No pending requests</div><p class="empty-desc">New client event requests will appear here.</p></div>'
+        : pendingReqs
+            .map(request => {
+              const cl = DB.users.find(user => String(user.id) === String(request.clientId)) ||
+                DB.users.find(user => user.role === 'client') || {
+                  name: 'Michael Torres',
+                };
+              return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 24px;display:flex;justify-content:space-between;align-items:center;gap:16px;border-left:4px solid var(--yellow)">
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+              <div style="font-size:17px;font-weight:700;color:var(--text)">${request.title}</div>
+              <span style="background:#FEF3C7;color:#92400E;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px">Pending</span>
+            </div>
+            <div style="display:flex;gap:24px;font-size:13px;color:var(--text2);flex-wrap:wrap">
+              <span>👤 ${cl.name}</span>
+              <span>📅 ${request.date}</span>
+              <span>📍 ${request.venue || 'TBD'}${request.city ? ', ' + request.city : ''}</span>
+              <span>👥 ${request.guests} expected attendees</span>
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="viewRequestDetail('${
+            request.id
+          }')" style="white-space:nowrap;border-radius:8px;padding:10px 20px">Review Request</button>
+        </div>`;
+            })
+            .join('');
+    const ongoingHtml =
+      myEvents.length === 0
+        ? '<div class="empty"><div class="empty-icon">&#128197;</div><div class="empty-title">No ongoing events</div><p class="empty-desc">Confirmed events will appear here once requests are approved.</p></div>'
+        : `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px">${myEvents
+            .map(event => {
+              const attendees = DB.registrations.filter(
+                registration => registration.eventId === event.id
+              ).length;
+              const isPrivate = event.access === 'private' || event.access === 'Private';
+              return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <span style="background:rgba(34,197,94,0.15);color:var(--green);font-size:11px;font-weight:600;padding:3px 10px;border-radius:6px">Confirmed</span>
+              ${
+                isPrivate
+                  ? '<span style="background:var(--surface2);color:var(--text2);font-size:11px;font-weight:600;padding:3px 10px;border-radius:6px">Private</span>'
+                  : ''
+              }
+            </div>
+            <div>
+              <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:3px">${
+                event.title
+              }</div>
+              <div style="font-size:12px;color:var(--text3)">${
+                event.type || event.category || 'Event'
+              }</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--text2)">
+              <span>&#128197; ${event.date}</span>
+              <span>&#128205; ${event.venue || event.location || 'TBD'}</span>
+              <span>&#128101; ${attendees || event.capacity || 0} attendees</span>
+            </div>
+            <button class="btn btn-ghost" onclick="viewOngoingEventDetail('${
+              event.id
+            }')" style="width:100%;justify-content:center;border-radius:8px;font-size:13px">&#128065; View Details</button>
+          </div>`;
+            })
+            .join('')}</div>`;
+    return `<div style="padding:28px;background:var(--bg)">
+      <div style="margin-bottom:28px">
+        <div style="font-size:22px;font-weight:700;color:var(--text);margin-bottom:4px">${
+          tab === 'pending' ? 'Pending Requests' : 'Ongoing Events'
+        }</div>
+        <div style="font-size:14px;color:var(--text2)">${
+          tab === 'pending'
+            ? 'Review and accept or decline incoming event requests.'
+            : 'Manage and track your confirmed and active events.'
+        }</div>
+      </div>
+      <div style="display:flex;gap:0;margin-bottom:28px;background:var(--surface2);border-radius:10px;padding:4px;width:fit-content">
+        <button onclick="switchReqStatTab('pending')" style="padding:8px 20px;border-radius:8px;border:none;font-size:13px;font-weight:600;cursor:pointer;background:${
+          tab === 'pending' ? 'var(--accent)' : 'transparent'
+        };color:${
+      tab === 'pending' ? '#fff' : 'var(--text2)'
+    }">Pending Requests <span style="background:${
+      tab === 'pending' ? 'rgba(255,255,255,0.25)' : 'var(--border2)'
+    };color:${
+      tab === 'pending' ? '#fff' : 'var(--text2)'
+    };padding:1px 7px;border-radius:10px;font-size:11px;margin-left:4px">${
+      pendingReqs.length
+    }</span></button>
+        <button onclick="switchReqStatTab('ongoing')" style="padding:8px 20px;border-radius:8px;border:none;font-size:13px;font-weight:600;cursor:pointer;background:${
+          tab === 'ongoing' ? 'var(--accent)' : 'transparent'
+        };color:${
+      tab === 'ongoing' ? '#fff' : 'var(--text2)'
+    }">Ongoing Events <span style="background:${
+      tab === 'ongoing' ? 'rgba(255,255,255,0.25)' : 'var(--border2)'
+    };color:${
+      tab === 'ongoing' ? '#fff' : 'var(--text2)'
+    };padding:1px 7px;border-radius:10px;font-size:11px;margin-left:4px">${
+      myEvents.length
+    }</span></button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px">
+        ${tab === 'pending' ? pendingHtml : ongoingHtml}
+      </div>
+    </div>`;
+  } else {
+    // CLIENT VIEW -- Status-filter dropdown
+    // ─ Label map (readable labels for all backend status values) ─────
+    const CLIENT_STATUS_LABELS = {
+      all: 'All',
+      submitted: 'Submitted / Pending',
+      pending: 'Submitted / Pending',
+      under_review: 'Under Review',
+      in_review: 'Under Review',
+      info_requested: 'Under Review',
+      proposal_sent: 'Awaiting Client Response',
+      awaiting_client: 'Awaiting Client Response',
+      changes_requested: 'Changes Requested / Counteroffer',
+      counteroffer_received: 'Changes Requested / Counteroffer',
+      confirmed: 'Confirmed',
+      approved: 'Confirmed',
+      withdrawn: 'Withdrawn',
+      cancelled: 'Cancelled',
+      rejected: 'Rejected',
+      expired: 'Expired',
+    };
+    const CLIENT_STATUS_GROUPS = [
+      {
+        value: 'all',
+        label: 'All Requests',
+      },
+      {
+        value: 'submitted',
+        label: 'Submitted / Pending',
+      },
+      {
+        value: 'under_review',
+        label: 'Under Review',
+      },
+      {
+        value: 'proposal_sent',
+        label: 'Awaiting Client Response',
+      },
+      {
+        value: 'changes_requested',
+        label: 'Changes Requested / Counteroffer',
+      },
+      {
+        value: 'confirmed',
+        label: 'Confirmed',
+      },
+      {
+        value: 'withdrawn',
+        label: 'Withdrawn',
+      },
+      {
+        value: 'cancelled',
+        label: 'Cancelled',
+      },
+      {
+        value: 'rejected',
+        label: 'Rejected',
+      },
+      {
+        value: 'expired',
+        label: 'Expired',
+      },
+    ];
+    function clientStatusGroup(status) {
+      const s = (status || '').toLowerCase();
+      if (['submitted', 'pending'].includes(s)) return 'submitted';
+      if (['under_review', 'in_review', 'info_requested'].includes(s)) return 'under_review';
+      if (['proposal_sent', 'awaiting_client'].includes(s)) return 'proposal_sent';
+      if (['changes_requested', 'counteroffer_received'].includes(s)) return 'changes_requested';
+      if (['confirmed', 'approved'].includes(s)) return 'confirmed';
+      return s || 'submitted';
+    }
+    function clientStatusReadable(status) {
+      return (
+        CLIENT_STATUS_LABELS[status] ||
+        (status || 'Unknown').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+      );
+    }
+    function clientRequestActions(r) {
+      const id = r.id;
+      const s = (r.status || '').toLowerCase();
+      const closed = ['cancelled', 'withdrawn', 'rejected', 'expired', 'completed'].includes(s);
+      const parts = [
+        s === 'cancelled'
+          ? `<button class="btn btn-primary btn-sm" onclick="viewWorkflowRequestDrawer('${id}')">View Cancellation Details</button>`
+          : `<button class="btn btn-ghost btn-sm" onclick="viewRequestDrawer('${id}')">View Details</button>`,
+      ];
+      if (['submitted', 'pending', 'under_review', 'in_review', 'info_requested'].includes(s))
+        parts.push(
+          `<button class="btn btn-danger btn-sm" onclick="openClientCancelRequestModal('${id}')">Withdraw Request</button>`
+        );
+      if (s === 'proposal_sent')
+        parts.push(
+          `<button class="btn btn-primary btn-sm" onclick="openClientPlanReview('${id}')">Review Plan</button>`
+        );
+      if (s === 'plan_submitted')
+        parts.push(
+          `<button class="btn btn-primary btn-sm" onclick="viewWorkflowRequestDrawer('${id}')">View Plan</button>`
+        );
+      if (
+        !closed &&
+        (s === 'awaiting_client' ||
+          (r.paymentStatus === 'deposit_pending' &&
+            (r.proposals || []).some(proposal => proposal.status === 'accepted')))
+      )
+        parts.push(
+          `<button class="btn btn-success btn-sm" onclick="openClientPaymentModal('${id}')">Proceed to Payment &amp; Confirmation</button>`
+        );
+      if (['changes_requested', 'counteroffer_received'].includes(s))
+        parts.push(
+          `<button class="btn btn-primary btn-sm" onclick="openClientPlanReview('${id}')">View &amp; Respond</button>`
+        );
+      if (['confirmed', 'approved'].includes(s))
+        parts.push(
+          `<button class="btn btn-danger btn-sm" onclick="openClientCancelRequestModal('${id}')">Cancel Event</button>`
+        );
+      return parts.join(' ');
+    }
+    function clientRequestHistory(r) {
+      const s = (r.status || '').toLowerCase();
+      if (s === 'rejected' && r.rejectionReason)
+        return `<div style="margin-top:8px;padding:8px 12px;background:var(--red-dim);border-radius:6px;font-size:12.5px"><strong style="color:var(--red)">Declined:</strong> ${escapeHtml(
+          r.rejectionReason
+        )}${
+          r.rejectionComments
+            ? `<div class="small mt-4" style="color:var(--text2)">${escapeHtml(
+                r.rejectionComments
+              )}</div>`
+            : ''
+        }</div>`;
+      if (s === 'withdrawn' && (r.withdrawalReason || r.withdrawReason))
+        return `<div style="margin-top:8px;padding:8px 12px;background:var(--surface2);border-radius:6px;font-size:12.5px"><strong>Withdrawn:</strong> ${escapeHtml(
+          r.withdrawalReason || r.withdrawReason
+        )}</div>`;
+      if (s === 'cancelled') return renderWorkflowCancellation(r.cancellation, r, true);
+      if (s === 'expired')
+        return `<div style="margin-top:8px;padding:8px 12px;background:var(--red-dim);border-radius:6px;font-size:12.5px"><strong style="color:var(--red)">Proposal Expired:</strong> The organizer's proposal was not accepted in time.</div>`;
+      if (['changes_requested', 'counteroffer_received'].includes(s) && r.clientFeedback)
+        return `<div style="margin-top:8px;padding:8px 12px;background:var(--yellow-dim);border-radius:6px;font-size:12.5px"><strong>Your feedback:</strong> ${escapeHtml(
+          r.clientFeedback
+        )}</div>`;
+      if (['confirmed', 'approved'].includes(s) && r.cancellationPolicy) {
+        const pol = r.cancellationPolicy;
+        return `<div style="margin-top:8px;padding:8px 12px;background:var(--green-dim);border-radius:6px;font-size:12.5px"><strong style="color:var(--green)">\u2713 Booking Confirmed</strong>${
+          r.depositAmount
+            ? ` \u00b7 Deposit paid \u20b9${Number(r.depositAmount).toLocaleString()}`
+            : ''
+        }${
+          pol.deadlineText
+            ? `<div class="small mt-4" style="color:var(--text2)">Cancellation deadline: ${escapeHtml(
+                pol.deadlineText
+              )}</div>`
+            : ''
+        }</div>`;
+      }
+      if (['proposal_sent', 'awaiting_client'].includes(s) && r.proposals && r.proposals.length) {
+        const p = r.proposals[r.proposals.length - 1];
+        return `<div style="margin-top:8px;padding:8px 12px;background:var(--accent-dim);border-radius:6px;font-size:12.5px"><strong style="color:var(--accent)">\ud83d\udcc4 Proposal v${
+          p.version || 1
+        }:</strong> \u20b9${Number(p.amount || 0).toLocaleString()} total${
+          p.validUntil ? ` &middot; Valid until ${escapeHtml(p.validUntil)}` : ''
+        }</div>`;
+      }
+      return '';
+    }
+    function getReqTimestamp(item) {
+      const times = [
+        item.updatedAt ? new Date(item.updatedAt).getTime() : 0,
+        item.createdAt ? new Date(item.createdAt).getTime() : 0,
+        item.created ? new Date(item.created).getTime() : 0,
+        item.sentAt ? new Date(item.sentAt).getTime() : 0,
+      ];
+      if (Array.isArray(item.proposals) && item.proposals.length > 0) {
+        item.proposals.forEach(proposal => {
+          if (proposal.sentAt) times.push(new Date(proposal.sentAt).getTime());
+          if (proposal.createdAt) times.push(new Date(proposal.createdAt).getTime());
+          if (proposal.uploadedAt) times.push(new Date(proposal.uploadedAt).getTime());
+        });
+      }
+      return Math.max(...times.filter(t => !isNaN(t) && t > 0), 0);
+    }
+    const allReqs = DB.eventRequests
+      .filter(request => String(request.clientId) === String(CU.id))
+      .sort((leftRequest, rightRequest) => {
+        const diff = getReqTimestamp(rightRequest) - getReqTimestamp(leftRequest);
+        if (diff !== 0) return diff;
+        return String(rightRequest.id || rightRequest.requestId || '').localeCompare(
+          String(leftRequest.id || leftRequest.requestId || '')
+        );
+      });
+    const filterStatus = sessionStorage.getItem('client_req_filter') || 'all';
+    const reqs =
+      filterStatus === 'all'
+        ? allReqs
+        : allReqs.filter(request => clientStatusGroup(request.status) === filterStatus);
+    const groupCounts = {};
+    allReqs.forEach(request => {
+      const eventRequest = clientStatusGroup(request.status);
+      groupCounts[eventRequest] = (groupCounts[eventRequest] || 0) + 1;
+    });
+    const dropdownOptions = CLIENT_STATUS_GROUPS.map(sg => {
+      const cnt = sg.value === 'all' ? allReqs.length : groupCounts[sg.value] || 0;
+      return `<option value="${sg.value}" ${filterStatus === sg.value ? 'selected' : ''}>${
+        sg.label
+      } (${cnt})</option>`;
+    }).join('');
+    return `
+    <div class="page-hd">
+      <div class="page-hd-left"><div class="page-title">Request Status</div><div class="page-sub">${
+        allReqs.length
+      } event request${allReqs.length !== 1 ? 's' : ''} total</div></div>
+      <div class="page-hd-right" style="display:flex;gap:10px;align-items:center">
+        <select id="client-req-status-filter" class="form-control" style="width:270px;font-size:13px" onchange="sessionStorage.setItem('client_req_filter',this.value);renderPage('request-status')" aria-label="Filter requests by status">${dropdownOptions}</select>
+        <button class="btn btn-primary" onclick="goNav('find-organizers')">+ New Request</button>
+      </div>
+    </div>
+    ${
+      reqs.length === 0
+        ? `<div class="empty"><div class="empty-icon">&#128203;</div><div class="empty-title">No requests${
+            filterStatus !== 'all' ? ' with this status' : ' yet'
+          }</div><p class="empty-desc">${
+            filterStatus === 'all'
+              ? 'Browse organizers and send them an event request to get started.'
+              : 'Try a different status filter or create a new request.'
+          }</p>${
+            filterStatus === 'all'
+              ? '<button class="btn btn-primary mt-16" onclick="goNav(\'find-organizers\')">Find Organizers</button>'
+              : "<button class=\"btn btn-ghost mt-16\" onclick=\"sessionStorage.setItem('client_req_filter','all');renderPage('request-status')\">Show All Requests</button>"
+          }</div>`
+        : `<div style="display:flex;flex-direction:column;gap:14px">${reqs
+            .map(
+              request => `<div class="card">
+      <div class="flex justify-between items-start">
+        <div style="flex:1">
+          <div style="font-size:16px;font-weight:700;margin-bottom:5px">${escapeHtml(
+            request.title
+          )}</div>
+          <div class="small mb-8">${escapeHtml(request.type || 'Event')} &middot; ${
+                request.guests
+              } guests &middot; ${request.date}</div>
+          <p style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:12px">${escapeHtml(
+            request.desc || ''
+          )}</p>
+          <span class="badge badge-${reqBadge(request.status)}">${clientStatusReadable(
+                request.status
+              )}</span>
+          ${clientRequestHistory(request)}
+        </div>
+        <div style="text-align:right;flex-shrink:0;margin-left:20px">
+          <div style="font-size:22px;font-weight:800;color:var(--green)">&#8377;${(
+            request.budget || 0
+          ).toLocaleString()}</div>
+          <div class="small">Budget</div>
+        </div>
+      </div>
+      <div class="flex gap-8 mt-14">${clientRequestActions(request)}</div>
+    </div>`
+            )
+            .join('')}</div>`
+    }`;
+  }
+}
 function openClientPlanReview(id) {
   const request = DB.eventRequests.find(
     item => String(item.id) === String(id) || String(item.requestId) === String(id)
@@ -13103,6 +14351,7 @@ function viewRequestDetail(reqId) {
     };
   const element = document.getElementById('page-content');
   if (!element) return;
+  globalThis.window?.EventFlowClientPages?.clear(element);
   element.innerHTML = `<div style="padding:28px;background:var(--bg);min-height:100vh">
     <button onclick="renderPage('request-status')" style="display:inline-flex;align-items:center;gap:6px;border:none;background:none;color:var(--text2);font-size:13px;cursor:pointer;margin-bottom:24px;padding:0">&larr; Back to Pending Requests</button>
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
@@ -13192,6 +14441,7 @@ function viewOngoingEventDetail(eventId) {
   );
   const element = document.getElementById('page-content');
   if (!element) return;
+  globalThis.window?.EventFlowClientPages?.clear(element);
   element.innerHTML = `<div style="padding:28px;background:var(--bg)">
     <button onclick="renderPage('request-status')" style="display:flex;align-items:center;gap:6px;border:none;background:none;color:var(--text2);font-size:13px;cursor:pointer;margin-bottom:20px;padding:0">â† Back to Ongoing Events</button>
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
@@ -14298,6 +15548,7 @@ window.handleReportFileSelect = function (input) {
   if (input.files && input.files[0]) {
     const f = input.files[0];
     if (preview) {
+      globalThis.window?.EventFlowClientPages?.clear(preview);
       preview.innerHTML = `
             <div class="flex items-center justify-between" style="background:var(--accent-dim);border-radius:8px;padding:10px 14px">
               <div style="font-weight:600;color:var(--accent);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📄 ${
@@ -14314,6 +15565,7 @@ window.resetReportFileSelect = function () {
   if (input) input.value = '';
   const preview = document.getElementById('eor-file-preview');
   if (preview) {
+    globalThis.window?.EventFlowClientPages?.clear(preview);
     preview.innerHTML = `
           <div style="font-size:24px;margin-bottom:6px">📁</div>
           <div style="font-weight:600;font-size:13.5px">Click to browse or upload report file</div>
@@ -15182,7 +16434,60 @@ function visibleNotifications() {
     return String(b.id || '').localeCompare(String(a.id || ''));
   });
 }
-/* PORTAL_SECTION_pageNotifications */
+function pageNotifications() {
+  const notifications = visibleNotifications();
+  const unread = notifications.filter(notification => !notification.read).length;
+  return `
+  <div class="page-hd">
+    <div class="page-hd-left"><div class="page-title">Notifications</div><div class="page-sub">${unread} unread notification${
+    unread !== 1 ? 's' : ''
+  }</div></div>
+    <div class="page-hd-right"><button class="btn btn-ghost btn-sm" onclick="markAllRead()">✓ Mark All Read</button></div>
+  </div>
+  <div class="card p-0 notif-panel">
+    ${
+      notifications.length === 0
+        ? `<div class="empty"><div class="empty-icon">🔔</div><div class="empty-title">All caught up!</div></div>`
+        : `
+    ${notifications
+      .map(
+        notification => `
+      <div class="notif-item${notification.read ? '' : ' unread'}" onclick="markNotifRead('${
+          notification.id
+        }')">
+        <div class="notif-icon" style="background:${
+          notification.type === 'success'
+            ? 'var(--green-dim)'
+            : notification.type === 'warning'
+            ? 'var(--yellow-dim)'
+            : notification.type === 'error'
+            ? 'var(--red-dim)'
+            : 'var(--accent-dim)'
+        }">${notification.icon || '🔔'}</div>
+        <div class="notif-content">
+          <div class="notif-title" style="${
+            notification.read ? '' : 'font-weight:600'
+          }">${escapeHtml(notification.title || 'Notification')}</div>
+          <div class="notif-msg">${escapeHtml(notification.msg || notification.message || '')}</div>
+          <div class="notif-time">${escapeHtml(notification.time || '')}</div>
+          ${
+            ['event_cancelled', 'booking_cancelled', 'request_cancelled'].includes(
+              notification.notificationType || notification.type
+            ) &&
+            (notification.requestId || notification.eventId)
+              ? `<button type="button" class="btn btn-ghost btn-sm mt-8" onclick="event.stopPropagation();openClientCancellationNotification('${escapeHtml(
+                  String(notification.id)
+                )}')">View Cancellation Details</button>`
+              : ''
+          }
+        </div>
+        ${!notification.read ? `<div class="unread-dot"></div>` : ''}
+      </div>`
+      )
+      .join('')}`
+    }
+  </div>`;
+}
 function markNotifRead(id) {
   const n = DB.notifications.find(notification => notification.id == id);
   if (!n) return;
@@ -15371,13 +16676,184 @@ function pageDepartmentEmployeeProfile() {
     </div>
   </div>`;
 }
-
-/* PORTAL_SECTION_pageProfile */
+function pageProfile() {
+  if (isDepartmentEmployee()) return pageDepartmentEmployeeProfile();
+  const regs =
+    CU.role === 'attendee'
+      ? DB.registrations.filter(registration => registration.attendeeId === CU.id)
+      : [];
+  const myEvs = CU.role === 'organizer' ? DB.events.filter(event => event.organizer === CU.id) : [];
+  const isSF = CU.role === 'employee' && CU.employeeType === 'SUPPORT_FINANCE';
+  const sfSupportHandled = (DB.supportRequests || []).length;
+  const sfResolved = (DB.supportRequests || []).filter(
+    r => r.status === 'Resolved' || r.status === 'Closed'
+  ).length;
+  const sfTxnsReviewed = (DB.financeTransactions || []).length;
+  const sfReportsSubmitted = (DB.operationalReports || []).filter(
+    r => r.status === 'Submitted' || r.status === 'Reviewed'
+  ).length;
+  return `
+  <div class="page-hd"><div class="page-hd-left"><div class="page-title">My Profile</div></div><div class="page-hd-right"><button class="btn btn-ghost" onclick="goNav('settings')">✏️ Edit Profile</button></div></div>
+  <div class="profile-banner">
+    ${
+      CU.avatarImage
+        ? `<div class="av av-xl"><img src="${CU.avatarImage}" alt="${
+            CU.name
+          }" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span style="display:none">${
+            CU.avatar || CU.name[0]
+          }</span></div>`
+        : `<div class="av av-xl">${CU.avatar || CU.name[0]}</div>`
+    }
+    <div class="profile-info">
+      <div class="profile-name">${CU.name}</div>
+      <div class="profile-role-tag">${
+        isSF ? 'Customer Support &amp; Finance Executive' : ROLE_LABELS[CU.role]
+      }</div>
+      ${CU.company ? `<div class="small mt-4">${CU.company}</div>` : ''}
+      ${
+        CU.specialization
+          ? `<div class="small mt-4">Specialization: ${CU.specialization}</div>`
+          : ''
+      }
+      ${CU.service ? `<div class="small mt-4">Service: ${CU.service}</div>` : ''}
+      <span class="badge badge-green mt-8">Active Account</span>
+    </div>
+  </div>
+  <div class="grid-2" style="align-items:start;gap:20px">
+    <div class="card">
+      <div class="h4 mb-14">Contact Information</div>
+      <div class="info-row"><span class="info-label">Email</span><span class="info-value">${
+        CU.email
+      }</span></div>
+      <div class="info-row"><span class="info-label">Phone</span><span class="info-value">${
+        CU.phone || 'Not set'
+      }</span></div>
+      <div class="info-row"><span class="info-label">Member Since</span><span class="info-value">${
+        CU.joined || '—'
+      }</span></div>
+      <div class="info-row"><span class="info-label">Role</span><span class="info-value"><span class="badge badge-${
+        ROLE_COLORS[CU.role]
+      }">${isSF ? 'Customer Support &amp; Finance Executive' : CU.role}</span></span></div>
+      ${
+        CU.bio
+          ? `<div class="mt-14"><div class="label mb-8">Bio</div><p style="font-size:13.5px;color:var(--text2);line-height:1.7">${CU.bio}</p></div>`
+          : ''
+      }
+    </div>
+    <div>
+      ${
+        isSF
+          ? `<div class="card mb-16">
+        <div class="h4 mb-14">Work Summary</div>
+        <div class="info-row"><span class="info-label">Support Requests Handled</span><span class="info-value" style="color:var(--accent);font-weight:700">${sfSupportHandled}</span></div>
+        <div class="info-row"><span class="info-label">Issues Resolved</span><span class="info-value" style="color:var(--green);font-weight:700">${sfResolved}</span></div>
+        <div class="info-row"><span class="info-label">Transactions Reviewed</span><span class="info-value" style="color:var(--blue);font-weight:700">${sfTxnsReviewed}</span></div>
+        <div class="info-row"><span class="info-label">Reports Submitted</span><span class="info-value" style="color:var(--purple);font-weight:700">${sfReportsSubmitted}</span></div>
+      </div>`
+          : CU.role === 'attendee'
+          ? `<div class="card mb-16">
+        <div class="h4 mb-14">Activity Summary</div>
+        <div class="info-row"><span class="info-label">Events Registered</span><span class="info-value">${
+          regs.length
+        }</span></div>
+        <div class="info-row"><span class="info-label">Upcoming Events</span><span class="info-value" style="color:var(--accent)">${
+          regs.filter(registration => {
+            const event = DB.events.find(currentEvent => currentEvent.id === registration.eventId);
+            return event && event.status === 'upcoming';
+          }).length
+        }</span></div>
+        <div class="info-row"><span class="info-label">Events Attended</span><span class="info-value" style="color:var(--green)">${
+          regs.filter(registration => registration.checkedIn).length
+        }</span></div>
+        <div class="info-row"><span class="info-label">Total Spent</span><span class="info-value" style="color:var(--green);font-weight:700">₹${regs.reduce(
+          (total, registration) => total + registration.amount,
+          0
+        )}</span></div>
+      </div>`
+          : CU.role === 'organizer'
+          ? `<div class="card mb-16">
+        <div class="h4 mb-14">Event Summary</div>
+        <div class="info-row"><span class="info-label">Total Events</span><span class="info-value">${
+          myEvs.length
+        }</span></div>
+        <div class="info-row"><span class="info-label">Upcoming</span><span class="info-value" style="color:var(--accent)">${
+          myEvs.filter(e => e.status === 'upcoming').length
+        }</span></div>
+        <div class="info-row"><span class="info-label">Completed</span><span class="info-value" style="color:var(--green)">${
+          myEvs.filter(e => e.status === 'completed').length
+        }</span></div>
+      </div>`
+          : ''
+      }
+      <div class="card">
+        <div class="h4 mb-14">Quick Actions</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button class="btn btn-ghost w-full" onclick="goNav('settings')">⚙️ Account Settings</button>
+          <button class="btn btn-danger w-full" onclick="doLogout()">🚪 Sign Out</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
 
 // ════════════════════════════════════════════════
 //  SETTINGS
 // ════════════════════════════════════════════════
-/* PORTAL_SECTION_pageSettings */
+
+function pageSettings() {
+  return `
+  <div class="page-hd"><div class="page-hd-left"><div class="page-title">Account Settings</div><div class="page-sub">Manage your personal information and account preferences.</div></div></div>
+  <div class="grid-2" style="align-items:start;gap:20px">
+    <div class="card card-lg">
+      <div class="h4 mb-20">Personal Information</div>
+      <div class="profile-banner" style="margin-bottom:20px;padding:18px">
+        ${
+          CU.avatarImage
+            ? `<div class="av av-lg"><img src="${CU.avatarImage}" alt="${
+                CU.name
+              }" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span style="display:none">${
+                CU.avatar || CU.name[0]
+              }</span></div>`
+            : `<div class="av av-lg">${CU.avatar || CU.name[0]}</div>`
+        }
+        <div><div style="font-weight:700">${CU.name}</div><div class="small">${
+    ROLE_LABELS[CU.role]
+  }</div></div>
+      </div>
+      <div class="form-group"><label class="form-label">Full Name</label><input class="form-control" id="st-name" value="${
+        CU.name
+      }"></div>
+      <div class="form-group"><label class="form-label">Email Address</label><input class="form-control" id="st-email" value="${
+        CU.email
+      }"></div>
+      <div class="form-group"><label class="form-label">Phone Number</label><input class="form-control" id="st-phone" value="${
+        CU.phone || ''
+      }"></div>
+      <div class="form-group"><label class="form-label">Bio</label><textarea class="form-control" id="st-bio">${
+        CU.bio || ''
+      }</textarea></div>
+      <button class="btn btn-primary w-full" onclick="saveSettings()" style="justify-content:center">Save Changes</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div class="card card-lg">
+        <div class="h4 mb-20">Change Password</div>
+        <div class="form-group"><label class="form-label">Current Password</label><input class="form-control" id="st-cur" type="password" placeholder="Enter current password"></div>
+        <div class="form-group"><label class="form-label">New Password</label><input class="form-control" id="st-new" type="password" placeholder="Min 6 characters"></div>
+        <div class="form-group"><label class="form-label">Confirm New Password</label><input class="form-control" id="st-conf" type="password" placeholder="Re-enter new password"></div>
+        <button class="btn btn-primary w-full" onclick="changePass()" style="justify-content:center">Update Password</button>
+      </div>
+      <div class="card">
+        <div class="h4 mb-16">Preferences</div>
+        <div class="info-row"><span class="info-label">Email Notifications</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+        <div class="info-row"><span class="info-label">SMS Reminders</span><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
+        <div class="info-row"><span class="info-label">Event Recommendations</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+      </div>
+      <div class="card">
+        <button class="btn btn-danger w-full mb-8" onclick="doLogout()" style="justify-content:center">Sign Out</button>
+      </div>
+    </div>
+  </div>`;
+}
 function saveSettings() {
   const name = v('st-name');
   const email = v('st-email');
@@ -15453,8 +16929,185 @@ function changePass() {
 // ════════════════════════════════════════════════
 //  CLIENT PAGES
 // ════════════════════════════════════════════════
-/* PORTAL_SECTION_pageFindOrganizers */
 
+function pageFindOrganizers() {
+  const q = (sessionStorage.getItem('search_org_q') || '').trim().toLowerCase();
+  const rating = sessionStorage.getItem('search_org_rating') || 'all';
+  const category = sessionStorage.getItem('search_org_category') || 'all';
+  const city = sessionStorage.getItem('search_org_city') || 'all';
+  const pricing = sessionStorage.getItem('search_org_pricing') || 'all';
+  let organizers = DB.users.filter(user => user.role === 'organizer');
+  if (q) {
+    organizers = organizers.filter(organizer =>
+      [
+        organizer.name,
+        organizer.service,
+        organizer.specialization,
+        organizer.category,
+        organizer.city,
+        organizer.location,
+      ]
+        .filter(Boolean)
+        .some(value => String(value).toLowerCase().includes(q))
+    );
+  }
+  if (category !== 'all') {
+    organizers = organizers.filter(
+      organizer =>
+        organizer.service === category ||
+        organizer.eventTypes?.includes(category) ||
+        (organizer.specializations && organizer.specializations.includes(category))
+    );
+  }
+  if (city !== 'all') {
+    organizers = organizers.filter(
+      organizer =>
+        (organizer.city || '').toLowerCase() === city.toLowerCase() ||
+        (organizer.location || '').toLowerCase() === city.toLowerCase()
+    );
+  }
+  if (rating !== 'all') {
+    const minRating = parseFloat(rating);
+    organizers = organizers.filter(organizer => (organizer.rating || 0) >= minRating);
+  }
+  if (pricing !== 'all') {
+    organizers = organizers.filter(organizer => {
+      const prices = (organizer.packages || [])
+        .map(p => Number(String(p.price || '').replace(/[^0-9]/g, '')))
+        .filter(n => !isNaN(n) && n > 0);
+      const minPrice = prices.length ? Math.min(...prices) : 35000;
+      if (pricing === 'under_50k') return minPrice < 50000;
+      if (pricing === '50k_100k') return minPrice >= 50000 && minPrice <= 100000;
+      if (pricing === '100k_250k') return minPrice >= 100000 && minPrice <= 250000;
+      if (pricing === 'above_250k') return minPrice >= 250000;
+      return true;
+    });
+  }
+  return `
+  <div class="page-hd">
+    <div class="page-hd-left">
+      <div class="page-title">Find Event Organisers</div>
+      <div class="page-sub">Discover and connect with top-rated event organizers across India</div>
+    </div>
+  </div>
+  
+  <div class="filter-row" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+    <div class="search-box input-group" style="flex:1;min-width:240px;max-width:320px">
+      <span class="input-icon">🔍</span>
+      <input class="form-control" id="search-org-q" placeholder="Search by organizer or specialty..." value="${q}" oninput="searchOrganizers(this.value)">
+    </div>
+    <select class="form-control filter-select" id="search-org-category" onchange="filterOrganizers()">
+      <option value="all">All Categories</option>
+      <option ${category === 'Corporate Events' ? 'selected' : ''}>Corporate Events</option>
+      <option ${category === 'Conferences' ? 'selected' : ''}>Conferences</option>
+      <option ${
+        category === 'Weddings & Social Events' ? 'selected' : ''
+      }>Weddings & Social Events</option>
+      <option ${category === 'Workshops' ? 'selected' : ''}>Workshops</option>
+      <option ${category === 'Product Launches' ? 'selected' : ''}>Product Launches</option>
+    </select>
+    <select class="form-control filter-select" id="search-org-city" onchange="filterOrganizers()">
+      <option value="all">All Locations</option>
+      <option ${city === 'Mumbai' ? 'selected' : ''}>Mumbai</option>
+      <option ${city === 'New Delhi' ? 'selected' : ''}>New Delhi</option>
+      <option ${city === 'Bangalore' ? 'selected' : ''}>Bangalore</option>
+      <option ${city === 'Hyderabad' ? 'selected' : ''}>Hyderabad</option>
+      <option ${city === 'Chennai' ? 'selected' : ''}>Chennai</option>
+    </select>
+    <select class="form-control filter-select" id="search-org-rating" onchange="filterOrganizers()">
+      <option value="all">All Ratings</option>
+      <option value="4.5" ${rating === '4.5' ? 'selected' : ''}>4.5+ stars</option>
+      <option value="4" ${rating === '4' ? 'selected' : ''}>4+ stars</option>
+      <option value="3.5" ${rating === '3.5' ? 'selected' : ''}>3.5+ stars</option>
+    </select>
+    <select class="form-control filter-select" id="search-org-pricing" onchange="filterOrganizers()">
+      <option value="all">All Pricing</option>
+      <option value="under_50k" ${pricing === 'under_50k' ? 'selected' : ''}>Under ₹50,000</option>
+      <option value="50k_100k" ${
+        pricing === '50k_100k' ? 'selected' : ''
+      }>₹50,000 – ₹1,00,000</option>
+      <option value="100k_250k" ${
+        pricing === '100k_250k' ? 'selected' : ''
+      }>₹1,00,000 – ₹2,50,000</option>
+      <option value="above_250k" ${pricing === 'above_250k' ? 'selected' : ''}>₹2,50,000+</option>
+    </select>
+  </div>
+  
+  <div style="margin-bottom:16px;color:var(--text2);font-size:13px">Showing ${
+    organizers.length
+  } event organiser${organizers.length !== 1 ? 's' : ''}</div>
+  
+  <div class="grid-3" style="gap:16px">
+    ${
+      organizers.length === 0
+        ? `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔍</div><div class="empty-title">No organizers found</div><p>Try adjusting your search filters</p></div>`
+        : organizers
+            .map(organizer => {
+              const rt = Number(organizer.rating) || 0;
+              const rv = Number(organizer.reviewCount) || 0;
+              const prices = (organizer.packages || [])
+                .map(p => Number(String(p.price || '').replace(/[^0-9]/g, '')))
+                .filter(n => !isNaN(n) && n > 0);
+              const startPrice = prices.length ? Math.min(...prices) : 35000;
+              const orgAv = organizer.avatarImage
+                ? `
+          <div style="width:56px;height:56px;border-radius:50%;overflow:hidden;flex-shrink:0;border:2px solid ${
+            organizer.color || 'var(--accent)'
+          }40;position:relative">
+            <img src="${organizer.avatarImage}" alt="${
+                    organizer.name
+                  }" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+            <div style="display:none;width:100%;height:100%;align-items:center;justify-content:center;background:${
+              organizer.color || 'var(--accent)'
+            }20;font-size:20px;font-weight:700;color:${organizer.color || 'var(--accent)'}">${
+                    organizer.avatar || organizer.name[0]
+                  }</div>
+          </div>
+        `
+                : `<div style="width:56px;height:56px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:${
+                    organizer.color || 'var(--accent)'
+                  }15;font-size:20px;font-weight:700;color:${
+                    organizer.color || 'var(--accent)'
+                  };border:2px solid ${organizer.color || 'var(--accent)'}30">${
+                    organizer.avatar || organizer.name[0]
+                  }</div>`;
+              return `
+      <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:12px;transition:transform .18s,box-shadow .18s;cursor:pointer" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 28px rgba(0,0,0,0.12)'" onmouseout="this.style.transform='';this.style.boxShadow=''" onclick="viewOrganizerProfile('${
+        organizer.id
+      }')">
+        <div style="display:flex;align-items:center;gap:12px">
+          ${orgAv}
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+              <span style="font-weight:700;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${
+                organizer.name
+              }</span>
+              <span style="background:var(--yellow);color:#1a1400;padding:1px 7px;border-radius:10px;font-size:10.5px;font-weight:700;flex-shrink:0">⭐ ${
+                rt ? rt.toFixed(1) : '—'
+              }</span>
+            </div>
+            <div style="font-size:12px;color:var(--accent);font-weight:500;margin-bottom:2px">${
+              organizer.service || 'Event Organizer'
+            }</div>
+            <div style="font-size:11.5px;color:var(--text3)">📍 ${organizer.city || 'India'}</div>
+          </div>
+        </div>
+        <p style="font-size:12px;color:var(--text2);line-height:1.5;margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${
+          organizer.bio || 'Professional event organizer with extensive industry experience.'
+        }</p>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap">
+          <span style="background:var(--surface3);padding:3px 10px;border-radius:6px;font-size:11px;color:var(--text2)"><strong style="color:var(--text)">${rv}</strong> reviews</span>
+          <span style="background:rgba(16,185,129,0.12);color:var(--green);padding:3px 10px;border-radius:6px;font-size:11.5px;font-weight:700">Starts at ₹${startPrice.toLocaleString()}</span>
+        </div>
+        <button class="btn btn-primary btn-sm w-full" onclick="event.stopPropagation();viewOrganizerProfile('${
+          organizer.id
+        }')" style="justify-content:center;padding:8px;font-size:12.5px">View Profile & Request Event</button>
+      </div>`;
+            })
+            .join('')
+    }
+  </div>`;
+}
 function searchOrganizers(q) {
   sessionStorage.setItem('search_org_q', q);
   renderPage('find-organizers');
@@ -15910,9 +17563,28 @@ async function submitEventRequest(organizerId) {
     isSubmittingEventRequest = false;
   }
 }
-
-/* PORTAL_SECTION_pageUpcomingEvents */
-
+function pageUpcomingEvents() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const upcoming = DB.events
+    .filter(event => {
+      const eDate = new Date(event.date);
+      return eDate >= today && event.status === 'upcoming';
+    })
+    .sort((leftEvent, rightEvent) => new Date(leftEvent.date) - new Date(rightEvent.date));
+  return `
+  <div class="page-hd">
+    <div class="page-hd-left">
+      <div class="page-title">Upcoming Events</div>
+      <div class="page-sub">Events happening soon that you might be interested in</div>
+    </div>
+  </div>
+  <div class="events-grid">${
+    upcoming.length === 0
+      ? `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">📅</div><div class="empty-title">No upcoming events</div></div>`
+      : upcoming.map(event => evCard(event, CU.role === 'client' ? 'client' : 'attendee')).join('')
+  }</div>`;
+}
 function getClientWorkflowEvents() {
   if (!CU || CU.role !== 'client') {
     const publicList = (DB.events || []).filter(event => event.status !== 'cancelled');
@@ -16293,24 +17965,238 @@ function renderWorkflowEventCard(item, tab) {
         </div>
       </div>`;
 }
-
-/* PORTAL_SECTION_pageWorkflowEvents */
-
+function pageWorkflowEvents() {
+  if (!['upcoming', 'ongoing', 'completed'].includes(_workflowEventTab)) {
+    _workflowEventTab = 'upcoming';
+  }
+  const data = getClientWorkflowEvents();
+  const upcomingCount = data.upcoming.length;
+  const ongoingCount = data.ongoing.length;
+  const completedCount = data.completed.length;
+  let activeList = [];
+  let emptyIcon = '📅';
+  let emptyTitle = 'No upcoming events';
+  let emptyDesc = 'Confirmed future bookings will appear here once finalized and scheduled.';
+  if (_workflowEventTab === 'upcoming') {
+    activeList = data.upcoming;
+    emptyIcon = '📅';
+    emptyTitle = 'No upcoming events';
+    emptyDesc = 'Confirmed bookings whose scheduled start time is in the future will appear here.';
+  } else if (_workflowEventTab === 'ongoing') {
+    activeList = data.ongoing;
+    emptyIcon = '⏱️';
+    emptyTitle = 'No ongoing events';
+    emptyDesc = 'Events in planning and confirmed events currently taking place will appear here.';
+  } else {
+    activeList = data.completed;
+    emptyIcon = '✅';
+    emptyTitle = 'No completed events';
+    emptyDesc = 'Events whose completion has been recorded and finalized will appear here.';
+  }
+  return `
+      <div class="page-hd">
+        <div class="page-hd-left">
+          <div class="page-title">My Events</div>
+          <div class="page-sub">Track your upcoming, ongoing, and completed events and reports.</div>
+        </div>
+      </div>
+      <div class="grid-3" style="gap:16px;margin-bottom:24px">
+        <div class="stat-card" style="cursor:pointer;border-left:3px solid var(--accent)" onclick="setWorkflowEventTab('upcoming')">
+          <div class="stat-icon">📅</div>
+          <div class="stat-value" style="color:var(--accent)">${upcomingCount}</div>
+          <div class="stat-label">Upcoming Events</div>
+          <div class="stat-sub neutral">Future confirmed bookings</div>
+        </div>
+        <div class="stat-card" style="cursor:pointer;border-left:3px solid var(--blue)" onclick="setWorkflowEventTab('ongoing')">
+          <div class="stat-icon">⏱️</div>
+          <div class="stat-value" style="color:var(--blue)">${ongoingCount}</div>
+          <div class="stat-label">Ongoing Events</div>
+          <div class="stat-sub neutral">Planning and events in progress</div>
+        </div>
+        <div class="stat-card" style="cursor:pointer;border-left:3px solid var(--green)" onclick="setWorkflowEventTab('completed')">
+          <div class="stat-icon">✅</div>
+          <div class="stat-value" style="color:var(--green)">${completedCount}</div>
+          <div class="stat-label">Completed Events</div>
+          <div class="stat-sub neutral">Recorded event reports</div>
+        </div>
+      </div>
+      <nav aria-label="Event subpages" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;border-bottom:1px solid var(--border);padding-bottom:12px">
+        <button type="button" class="btn ${
+          _workflowEventTab === 'upcoming' ? 'btn-primary' : 'btn-ghost'
+        }" aria-pressed="${
+    _workflowEventTab === 'upcoming'
+  }" onclick="setWorkflowEventTab('upcoming')">📅 Upcoming Events <span style="background:rgba(255,255,255,.18);padding:1px 7px;border-radius:10px;font-size:11px;margin-left:4px">${upcomingCount}</span></button>
+        <button type="button" class="btn ${
+          _workflowEventTab === 'ongoing' ? 'btn-primary' : 'btn-ghost'
+        }" aria-pressed="${
+    _workflowEventTab === 'ongoing'
+  }" onclick="setWorkflowEventTab('ongoing')">⏱️ Ongoing Events <span style="background:rgba(255,255,255,.18);padding:1px 7px;border-radius:10px;font-size:11px;margin-left:4px">${ongoingCount}</span></button>
+        <button type="button" class="btn ${
+          _workflowEventTab === 'completed' ? 'btn-primary' : 'btn-ghost'
+        }" aria-pressed="${
+    _workflowEventTab === 'completed'
+  }" onclick="setWorkflowEventTab('completed')">✅ Completed Events <span style="background:rgba(255,255,255,.18);padding:1px 7px;border-radius:10px;font-size:11px;margin-left:4px">${completedCount}</span></button>
+      </nav>
+      <section aria-label="${
+        _workflowEventTab === 'upcoming'
+          ? 'Upcoming Events'
+          : _workflowEventTab === 'ongoing'
+          ? 'Ongoing Events'
+          : 'Completed Events'
+      }">
+        <div class="events-grid">
+          ${
+            activeList.length === 0
+              ? `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">${emptyIcon}</div><div class="empty-title">${emptyTitle}</div><div class="empty-desc">${emptyDesc}</div></div>`
+              : activeList.map(item => renderWorkflowEventCard(item, _workflowEventTab)).join('')
+          }
+        </div>
+      </section>`;
+}
 window.getClientWorkflowEvents = getClientWorkflowEvents;
 window.setWorkflowEventTab = setWorkflowEventTab;
 window.pageWorkflowEvents = pageWorkflowEvents;
-
-/* PORTAL_SECTION_pageCompletedEvents */
-
-/* PORTAL_SECTION_pageOngoingEvents */
+function pageCompletedEvents(embedded = false) {
+  const completed = DB.events
+    .filter(event => event.status === 'completed')
+    .sort((leftEvent, rightEvent) => new Date(rightEvent.date) - new Date(leftEvent.date));
+  return `${
+    embedded
+      ? ''
+      : `
+  <div class="page-hd">
+    <div class="page-hd-left">
+      <div class="page-title">Completed Events</div>
+      <div class="page-sub">Events that have been successfully completed</div>
+    </div>
+  </div>`
+  }
+  <div class="events-grid">${
+    completed.length === 0
+      ? `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">✅</div><div class="empty-title">No completed events</div></div>`
+      : completed
+          .map(event => {
+            const bannerContent = event.image
+              ? `
+          <img src="${event.image}" alt="${
+                  event.title || 'Event'
+                }" class="ev-banner-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+          <div class="ev-banner-fallback" style="display:none;align-items:center;justify-content:center;font-size:52px;width:100%;height:100%">${
+            event.emoji || '📅'
+          }</div>
+          <div class="ev-banner-overlay"></div>
+        `
+              : `<span style="font-size:52px">${event.emoji || '📅'}</span>`;
+            return `<div class="ev-card">
+    <div class="ev-banner" style="background:${event.color || 'var(--accent)'}18">
+      ${bannerContent}
+      <div class="ev-banner-tag"><span class="badge badge-green">✓ Completed</span></div>
+      <div class="ev-banner-price">${event.price === 0 ? 'Free' : '₹' + event.price}</div>
+    </div>
+    <div class="ev-body">
+      <div class="ev-title">${event.title}</div>
+      <div class="ev-meta">
+        <div class="ev-meta-row"><span>📅</span>${event.date} · ${event.time}</div>
+        <div class="ev-meta-row"><span>📍</span>${event.venue}</div>
+        <div class="ev-meta-row"><span>🏷️</span>${event.category}</div>
+      </div>
+      <div style="margin-bottom:12px">
+        <div class="flex justify-between ev-cap mb-4"><span>${event.registered}/${
+              event.capacity
+            } attended</span></div>
+        <div style="font-size:12px;color:var(--green);margin-top:8px">✓ Event Successfully Completed</div>
+      </div>
+      <div class="ev-footer">
+        <div class="flex gap-6" style="width:100%;justify-content:space-between">
+          <button class="btn btn-ghost btn-xs w-full" onclick="viewWorkflowEventDetails('${
+            event.id
+          }')" title="View event details">👁️ View Details</button>
+          <button class="btn btn-primary btn-xs" onclick="viewWorkflowEventReport('${
+            event.id
+          }')" title="View completion report">📊 View Report</button>
+        </div>
+        <div class="tag-list" style="flex:1;justify-content:flex-end">${(event.tags || [])
+          .slice(0, 2)
+          .map(tag => `<span class="tag">${tag}</span>`)
+          .join('')}</div>
+      </div>
+    </div>
+  </div>`;
+          })
+          .join('')
+  }</div>`;
+}
+function pageOngoingEvents(embedded = false) {
+  if (!['client', 'organizer'].includes(CU.role)) {
+    const publicOngoing = DB.events.filter(event => event.status === 'ongoing');
+    return `<div class="page-hd"><div class="page-hd-left"><div class="page-title">Ongoing Events</div><div class="page-sub">Events currently happening right now</div></div></div><div class="events-grid">${
+      publicOngoing.length
+        ? publicOngoing.map(event => evCard(event, 'attendee')).join('')
+        : '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">⏱️</div><div class="empty-title">No ongoing events</div></div>'
+    }</div>`;
+  }
+  const ongoing = DB.events.filter(
+    event =>
+      event.status === 'ongoing' &&
+      DB.eventRequests.some(
+        request => String(request.eventId) === String(event.eventId || event.id)
+      )
+  );
+  return `${
+    embedded
+      ? ''
+      : `
+  <div class="page-hd">
+    <div class="page-hd-left">
+      <div class="page-title">Ongoing Events</div>
+      <div class="page-sub">Track your approved client–organizer events, payment, and completion reports</div>
+    </div>
+  </div>`
+  }
+  <div class="events-grid">${
+    ongoing.length === 0
+      ? `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">⏱️</div><div class="empty-title">No ongoing events</div></div>`
+      : ongoing
+          .map(event => {
+            const request = DB.eventRequests.find(
+              item => String(item.eventId) === String(event.eventId || event.id)
+            );
+            const paid = request?.paymentStatus === 'fully_paid';
+            return `<div class="card">
+          <div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><strong>${workflowHtml(
+            event.name || event.title
+          )}</strong><span class="badge badge-blue">Ongoing</span></div>
+          <div style="margin-top:10px;color:var(--text2);font-size:13px">📅 ${workflowHtml(
+            event.date
+          )} · 📍 ${workflowHtml(event.location || event.venue || '—')}</div>
+          <div style="margin-top:10px;font-size:13px">Payment: <strong style="color:${
+            paid ? 'var(--green)' : 'var(--yellow)'
+          }">${paid ? 'Paid' : 'Unpaid'}</strong></div>
+          <button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="viewWorkflowEventDetails('${workflowHtml(
+            event.eventId || event.id
+          )}')">View Details</button>
+          ${
+            CU.role === 'client'
+              ? `<button class="btn btn-danger btn-sm" style="margin-top:12px" onclick="openWorkflowCancellation('${workflowHtml(
+                  event.eventId || event.id
+                )}')">Cancel Event</button>`
+              : ''
+          }
+        </div>`;
+          })
+          .join('')
+  }</div>`;
+}
 
 // ════════════════════════════════════════════════
 //  MODAL SYSTEM
 // ════════════════════════════════════════════════
 function openModal(title, body, btns = [], showCancel = true) {
   g('modal-title').textContent = title;
+  globalThis.window?.EventFlowClientPages?.clear(g('modal-body'));
   g('modal-body').innerHTML = body;
   const foot = g('modal-foot');
+  globalThis.window?.EventFlowClientPages?.clear(foot);
   foot.innerHTML = '';
   let hasDismiss = false;
   const handlers = new Set();
@@ -16365,6 +18251,7 @@ function closeModalOnBg(e) {
 // DRAWER
 function openDrawer(title, body) {
   g('drawer-title').textContent = title;
+  globalThis.window?.EventFlowClientPages?.clear(g('drawer-body'));
   g('drawer-body').innerHTML = body;
   g('drawer-overlay').classList.add('open');
   g('drawer').classList.add('open');
@@ -16405,6 +18292,7 @@ function toast(msg, type = 'info') {
   };
   const element = document.createElement('div');
   element.className = `toast ${type}`;
+  globalThis.window?.EventFlowClientPages?.clear(element);
   element.innerHTML = `<span class="toast-icon">${icons[type]}</span><span class="toast-msg">${msg}</span>`;
   g('toasts').appendChild(element);
   setTimeout(() => {
@@ -16830,4 +18718,56 @@ document.addEventListener('DOMContentLoaded', () => {
 window.EventFlowRole = {
   key: 'client',
   label: 'Client',
+};
+
+// React pages read the same normalized data and keep the existing workflow action entry points.
+window.EventFlowClientRuntime = {
+  snapshot(pageProps = {}) {
+    return {
+      CU: typeof CU === 'undefined' ? undefined : CU,
+      DB: typeof DB === 'undefined' ? undefined : DB,
+      EMPLOYEE_TYPE_LABELS:
+        typeof EMPLOYEE_TYPE_LABELS === 'undefined' ? undefined : EMPLOYEE_TYPE_LABELS,
+      ROLE_COLORS: typeof ROLE_COLORS === 'undefined' ? undefined : ROLE_COLORS,
+      ROLE_LABELS: typeof ROLE_LABELS === 'undefined' ? undefined : ROLE_LABELS,
+      get _workflowEventTab() {
+        return _workflowEventTab;
+      },
+      set _workflowEventTab(value) {
+        _workflowEventTab = value;
+      },
+      _workflowReturnPage:
+        typeof _workflowReturnPage === 'undefined' ? undefined : _workflowReturnPage,
+      evStatBadge: typeof evStatBadge === 'undefined' ? undefined : evStatBadge,
+      g: typeof g === 'undefined' ? undefined : g,
+      getClientAcceptedProposal:
+        typeof getClientAcceptedProposal === 'undefined' ? undefined : getClientAcceptedProposal,
+      getClientBookingAmounts:
+        typeof getClientBookingAmounts === 'undefined' ? undefined : getClientBookingAmounts,
+      getClientWorkflowEvents:
+        typeof getClientWorkflowEvents === 'undefined' ? undefined : getClientWorkflowEvents,
+      isClientOwner: typeof isClientOwner === 'undefined' ? undefined : isClientOwner,
+      isDepartmentEmployee:
+        typeof isDepartmentEmployee === 'undefined' ? undefined : isDepartmentEmployee,
+      reqBadge: typeof reqBadge === 'undefined' ? undefined : reqBadge,
+      visibleNotifications:
+        typeof visibleNotifications === 'undefined' ? undefined : visibleNotifications,
+      workflowEventPolicy:
+        typeof workflowEventPolicy === 'undefined' ? undefined : workflowEventPolicy,
+      workflowMoney: typeof workflowMoney === 'undefined' ? undefined : workflowMoney,
+      workflowPolicyDate:
+        typeof workflowPolicyDate === 'undefined' ? undefined : workflowPolicyDate,
+      workflowPolicyDocuments:
+        typeof workflowPolicyDocuments === 'undefined' ? undefined : workflowPolicyDocuments,
+      clientActivityLabel:
+        typeof clientActivityLabel === 'undefined' ? undefined : clientActivityLabel,
+      clientActivityIcon:
+        typeof clientActivityIcon === 'undefined' ? undefined : clientActivityIcon,
+      clientActivityTime:
+        typeof clientActivityTime === 'undefined' ? undefined : clientActivityTime,
+      clientUpcomingEventDate:
+        typeof clientUpcomingEventDate === 'undefined' ? undefined : clientUpcomingEventDate,
+      pageProps,
+    };
+  },
 };

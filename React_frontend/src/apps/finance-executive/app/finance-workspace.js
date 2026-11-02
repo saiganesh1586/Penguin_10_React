@@ -507,6 +507,16 @@ function financeDemoPage() {
   );
 }
 async function financeRender(page) {
+  if (globalThis.window?.EventFlowFinanceExecutivePages?.hasPage(page)) {
+    window.EventFlowFinanceExecutivePages.render(
+      g('page-content'),
+      page,
+      window.EventFlowFinanceExecutiveRuntime.snapshot({
+        page,
+      })
+    );
+    return;
+  }
   const element = g('page-content');
   const id = ++financeRequestId;
   element.innerHTML = `<div class="finance-loading"><div class="finance-skeleton"></div><div class="finance-skeleton"></div><div class="finance-skeleton"></div></div>`;

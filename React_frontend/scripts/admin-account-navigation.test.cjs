@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const parser = require('@babel/parser');
 
 const source = portalSource('admin');
 const component = fs.readFileSync(path.join(__dirname, '../src/apps/admin/app/App.jsx'), 'utf8');
@@ -86,11 +87,30 @@ test('admin Profile opens the actual account profile instead of User Reports', a
 
 test('the admin account button and Edit Profile open Settings without Customer Support', async () => {
   const h = harness();
-  const accountAction = component.match(
-    /className="sb-user" onClick=\{event => legacyEvent\("goNav\('([^']+)'\)"/
-  );
+  let accountAction;
+  function findAccountAction(node) {
+    if (!node || typeof node !== 'object') return;
+    if (
+      node.type === 'JSXOpeningElement' &&
+      node.attributes.some(
+        attribute => attribute.name?.name === 'className' && attribute.value?.value === 'sb-user'
+      )
+    )
+      accountAction = node.attributes.find(attribute => attribute.name?.name === 'onClick')?.value
+        ?.expression;
+    for (const value of Object.values(node)) {
+      if (Array.isArray(value)) value.forEach(findAccountAction);
+      else if (value && typeof value === 'object') findAccountAction(value);
+    }
+  }
+  findAccountAction(parser.parse(component, { sourceType: 'module', plugins: ['jsx'] }));
   assert.ok(accountAction, 'The account button must have a navigation action');
-  await h.context.renderPageContent(accountAction[1]);
+  h.context.window.goNav = page => h.context.renderPageContent(page);
+  const clickAccount = vm.runInContext(
+    `(${component.slice(accountAction.start, accountAction.end)})`,
+    h.context
+  );
+  await clickAccount();
   assert.match(h.content.innerHTML, /Account Settings/);
   assert.match(h.content.innerHTML, /Personal Information/);
   assert.match(h.content.innerHTML, /value="Alex Johnson"/);

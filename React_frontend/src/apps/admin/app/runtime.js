@@ -50,6 +50,7 @@ function renderUsersTable(containerId, users = null) {
       </tbody>
     </table>
   `;
+  globalThis.window?.EventFlowAdminPages?.clear(container);
   container.innerHTML = html;
 }
 function renderEventsTable(containerId, events = null) {
@@ -97,6 +98,7 @@ function renderEventsTable(containerId, events = null) {
       </tbody>
     </table>
   `;
+  globalThis.window?.EventFlowAdminPages?.clear(container);
   container.innerHTML = html;
 }
 function renderRegistrationsTable(containerId, registrations = null) {
@@ -148,6 +150,7 @@ function renderRegistrationsTable(containerId, registrations = null) {
       </tbody>
     </table>
   `;
+  globalThis.window?.EventFlowAdminPages?.clear(container);
   container.innerHTML = html;
 }
 
@@ -227,6 +230,7 @@ function renderEventCards(containerId, events = null, isAttendee = false) {
         .join('')}
     </div>
   `;
+  globalThis.window?.EventFlowAdminPages?.clear(container);
   container.innerHTML = html;
 }
 
@@ -273,6 +277,7 @@ function renderNotificationsPanel(containerId) {
       }
     </div>
   `;
+  globalThis.window?.EventFlowAdminPages?.clear(container);
   container.innerHTML = html;
 
   // Update notification badge
@@ -644,6 +649,7 @@ function renderQRCanvas(registrationId, containerId) {
   ctx.font = '10px Arial';
   ctx.textAlign = 'center';
   ctx.fillText(String(registrationId).substring(0, 8), canvas.width / 2, canvas.height - 10);
+  globalThis.window?.EventFlowAdminPages?.clear(container);
   container.innerHTML = '';
   container.appendChild(canvas);
 }
@@ -3313,6 +3319,7 @@ function initApp() {
   g('sb-name').textContent = isDepartmentEmployee() ? displayRole : CU.name;
   g('sb-role-lbl').textContent = isDepartmentEmployee() ? 'Employee workspace' : displayRole;
   if (CU.avatarImage) {
+    globalThis.window?.EventFlowAdminPages?.clear(g('sb-av'));
     g('sb-av').innerHTML = `<img src="${CU.avatarImage}" alt="${
       CU.name
     }" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.parentElement.textContent='${
@@ -3397,6 +3404,7 @@ function buildEmployeeNav(employeeType) {
       ],
     }[employeeType] || [];
   const unread = visibleNotifications().filter(n => !n.read).length;
+  globalThis.window?.EventFlowAdminPages?.clear(g('sb-nav'));
   g('sb-nav').innerHTML =
     `<div class="sb-section-lbl">Menu</div>` +
     nav
@@ -3443,6 +3451,7 @@ function sendContactMessage() {
 function buildNav(role) {
   const items = NAV[role] || [];
   const unread = DB.notifications.filter(notification => !notification.read).length;
+  globalThis.window?.EventFlowAdminPages?.clear(g('sb-nav'));
   g('sb-nav').innerHTML =
     `<div class="sb-section-lbl">Menu</div>` +
     items
@@ -3549,9 +3558,20 @@ async function renderPageContent(pg) {
   const r = CU.role;
   if (pg === 'customer-support') {
     if (!window.EventFlowSupport.canRequestSupport(CU)) {
-      element.innerHTML = pageSettings();
+      if (globalThis.window?.EventFlowAdminPages?.hasPage('settings')) {
+        window.EventFlowAdminPages.render(
+          element,
+          'settings',
+          window.EventFlowAdminRuntime.snapshot({})
+        );
+      } else {
+        globalThis.window?.EventFlowAdminPages?.clear(element);
+        globalThis.window?.EventFlowAdminPages?.clear(element);
+        element.innerHTML = pageSettings();
+      }
       return;
     }
+    globalThis.window?.EventFlowAdminPages?.clear(element);
     element.innerHTML = await window.EventFlowSupport.render(CU);
     window.EventFlowSupport.bind(element, CU, () => goNav('settings'));
     return;
@@ -3590,6 +3610,7 @@ async function renderPageContent(pg) {
         ],
       }[CU.employeeType] || [];
     if (!allowed.includes(pg)) {
+      globalThis.window?.EventFlowAdminPages?.clear(element);
       element.innerHTML = `<div class="empty"><div class="empty-title">Access restricted</div><p class="empty-desc">This department does not have access to this area.</p></div>`;
       return;
     }
@@ -3598,12 +3619,47 @@ async function renderPageContent(pg) {
   // Super Admin keeps the Finance inbox, support reports, analytics, and account pages.
   if (r === 'superuser') {
     if (pg === 'dashboard') {
-      element.innerHTML = dashAdmin();
+      if (globalThis.window?.EventFlowAdminPages?.hasPage('dashboard')) {
+        window.EventFlowAdminPages.render(
+          element,
+          'dashboard',
+          window.EventFlowAdminRuntime.snapshot({})
+        );
+      } else {
+        globalThis.window?.EventFlowAdminPages?.clear(element);
+        globalThis.window?.EventFlowAdminPages?.clear(element);
+        element.innerHTML = dashAdmin();
+      }
       return;
     } else if (pg === 'settings' || pg === 'profile') {
-      element.innerHTML = pg === 'profile' ? pageProfile() : pageSettings();
+      if (pg === 'profile') {
+        if (globalThis.window?.EventFlowAdminPages?.hasPage('profile')) {
+          window.EventFlowAdminPages.render(
+            element,
+            'profile',
+            window.EventFlowAdminRuntime.snapshot({})
+          );
+        } else {
+          globalThis.window?.EventFlowAdminPages?.clear(element);
+          globalThis.window?.EventFlowAdminPages?.clear(element);
+          element.innerHTML = pageProfile();
+        }
+      } else {
+        if (globalThis.window?.EventFlowAdminPages?.hasPage('settings')) {
+          window.EventFlowAdminPages.render(
+            element,
+            'settings',
+            window.EventFlowAdminRuntime.snapshot({})
+          );
+        } else {
+          globalThis.window?.EventFlowAdminPages?.clear(element);
+          globalThis.window?.EventFlowAdminPages?.clear(element);
+          element.innerHTML = pageSettings();
+        }
+      }
       return;
     } else if (pg === 'employee-reports') {
+      globalThis.window?.EventFlowAdminPages?.clear(element);
       element.innerHTML = '<div class="card">Loading employee reports…</div>';
       if (CU.token) {
         try {
@@ -3613,24 +3669,65 @@ async function renderPageContent(pg) {
           financeInboxReports = [];
         }
       }
-      element.innerHTML = pageEmployeeReports();
+      if (globalThis.window?.EventFlowAdminPages?.hasPage('employee-reports')) {
+        window.EventFlowAdminPages.render(
+          element,
+          'employee-reports',
+          window.EventFlowAdminRuntime.snapshot({})
+        );
+      } else {
+        globalThis.window?.EventFlowAdminPages?.clear(element);
+        globalThis.window?.EventFlowAdminPages?.clear(element);
+        element.innerHTML = pageEmployeeReports();
+      }
       return;
     } else if (pg === 'reports') {
       await window.EventFlowSupportReports.renderAdmin(element, CU);
       return;
     } else if (pg === 'event-reports' || pg === 'events') {
-      element.innerHTML = pageEventReports();
+      if (globalThis.window?.EventFlowAdminPages?.hasPage('event-reports')) {
+        window.EventFlowAdminPages.render(
+          element,
+          'event-reports',
+          window.EventFlowAdminRuntime.snapshot({})
+        );
+      } else {
+        globalThis.window?.EventFlowAdminPages?.clear(element);
+        globalThis.window?.EventFlowAdminPages?.clear(element);
+        element.innerHTML = pageEventReports();
+      }
       return;
     } else if (pg === 'revenue-reports' || pg === 'employee-stats') {
-      element.innerHTML = pageRevenueReports();
+      if (globalThis.window?.EventFlowAdminPages?.hasPage('revenue-reports')) {
+        window.EventFlowAdminPages.render(
+          element,
+          'revenue-reports',
+          window.EventFlowAdminRuntime.snapshot({})
+        );
+      } else {
+        globalThis.window?.EventFlowAdminPages?.clear(element);
+        globalThis.window?.EventFlowAdminPages?.clear(element);
+        element.innerHTML = pageRevenueReports();
+      }
       return;
     } else {
-      element.innerHTML = pageUserReports();
+      if (globalThis.window?.EventFlowAdminPages?.hasPage('user-reports')) {
+        window.EventFlowAdminPages.render(
+          element,
+          'user-reports',
+          window.EventFlowAdminRuntime.snapshot({})
+        );
+      } else {
+        globalThis.window?.EventFlowAdminPages?.clear(element);
+        globalThis.window?.EventFlowAdminPages?.clear(element);
+        element.innerHTML = pageUserReports();
+      }
       return;
     }
   }
   switch (pg) {
     case 'dashboard':
+      globalThis.window?.EventFlowAdminPages?.clear(element);
       element.innerHTML = isDepartmentEmployee()
         ? dashDepartmentEmployee()
         : (
@@ -3642,45 +3739,65 @@ async function renderPageContent(pg) {
           )();
       break;
     case 'registrations':
+      globalThis.window?.EventFlowAdminPages?.clear(element);
       element.innerHTML = pageRegistrationsForEmployee();
       break;
     case 'events':
+      globalThis.window?.EventFlowAdminPages?.clear(element);
       element.innerHTML =
         isDepartmentEmployee() && CU.employeeType === 'EVENT_OPERATIONS'
           ? pageEventOpsEvents()
           : pageEvents();
       break;
     case 'event-requests':
+      globalThis.window?.EventFlowAdminPages?.clear(element);
       element.innerHTML =
         isDepartmentEmployee() && CU.employeeType === 'EVENT_OPERATIONS'
           ? pageEventOperationsWorkspace()
           : pageEventRequests();
       break;
     case 'support-center':
+      globalThis.window?.EventFlowAdminPages?.clear(element);
       element.innerHTML =
         isDepartmentEmployee() && CU.employeeType === 'SUPPORT_FINANCE'
           ? pageSupportCenter()
           : pageEventRequests();
       break;
     case 'finance':
-      element.innerHTML =
-        isDepartmentEmployee() && CU.employeeType === 'SUPPORT_FINANCE'
-          ? pageFinanceCenter()
-          : pageRevenueReports();
+      if (isDepartmentEmployee() && CU.employeeType === 'SUPPORT_FINANCE') {
+        globalThis.window?.EventFlowAdminPages?.clear(element);
+        element.innerHTML = pageFinanceCenter();
+      } else {
+        if (globalThis.window?.EventFlowAdminPages?.hasPage('revenue-reports')) {
+          window.EventFlowAdminPages.render(
+            element,
+            'revenue-reports',
+            window.EventFlowAdminRuntime.snapshot({})
+          );
+        } else {
+          globalThis.window?.EventFlowAdminPages?.clear(element);
+          globalThis.window?.EventFlowAdminPages?.clear(element);
+          element.innerHTML = pageRevenueReports();
+        }
+      }
       break;
     case 'request-status':
+      globalThis.window?.EventFlowAdminPages?.clear(element);
       element.innerHTML = pageRequestStatus();
       break;
     case 'attendees':
+      globalThis.window?.EventFlowAdminPages?.clear(element);
       element.innerHTML =
         isDepartmentEmployee() && CU.employeeType === 'REGISTRATION_VERIFICATION'
           ? pageUserManagement()
           : pageAttendees();
       break;
     case 'attendeeVerification':
+      globalThis.window?.EventFlowAdminPages?.clear(element);
       element.innerHTML = pageAttendeeVerification();
       break;
     case 'reports':
+      globalThis.window?.EventFlowAdminPages?.clear(element);
       element.innerHTML =
         isDepartmentEmployee() && CU.employeeType === 'REGISTRATION_VERIFICATION'
           ? pageRegVerificationReports()
@@ -3691,37 +3808,66 @@ async function renderPageContent(pg) {
           : pageReports();
       break;
     case 'browse-events':
+      globalThis.window?.EventFlowAdminPages?.clear(element);
       element.innerHTML = pageBrowseEvents();
       break;
     case 'my-tickets':
+      globalThis.window?.EventFlowAdminPages?.clear(element);
       element.innerHTML = pageMyTickets();
       break;
     case 'find-organizers':
+      globalThis.window?.EventFlowAdminPages?.clear(element);
       element.innerHTML = pageFindOrganizers();
       break;
     case 'upcoming-events':
+      globalThis.window?.EventFlowAdminPages?.clear(element);
       element.innerHTML = pageUpcomingEvents();
       break;
     case 'completed-events':
+      globalThis.window?.EventFlowAdminPages?.clear(element);
       element.innerHTML = pageCompletedEvents();
       break;
     case 'ongoing-events':
+      globalThis.window?.EventFlowAdminPages?.clear(element);
       element.innerHTML = pageOngoingEvents();
       break;
     case 'notifications':
+      globalThis.window?.EventFlowAdminPages?.clear(element);
       element.innerHTML = pageNotifications();
       break;
     case 'profile':
-      element.innerHTML = pageProfile();
+      if (globalThis.window?.EventFlowAdminPages?.hasPage('profile')) {
+        window.EventFlowAdminPages.render(
+          element,
+          'profile',
+          window.EventFlowAdminRuntime.snapshot({})
+        );
+      } else {
+        globalThis.window?.EventFlowAdminPages?.clear(element);
+        globalThis.window?.EventFlowAdminPages?.clear(element);
+        element.innerHTML = pageProfile();
+      }
       break;
     case 'settings':
-      element.innerHTML = pageSettings();
+      if (globalThis.window?.EventFlowAdminPages?.hasPage('settings')) {
+        window.EventFlowAdminPages.render(
+          element,
+          'settings',
+          window.EventFlowAdminRuntime.snapshot({})
+        );
+      } else {
+        globalThis.window?.EventFlowAdminPages?.clear(element);
+        globalThis.window?.EventFlowAdminPages?.clear(element);
+        element.innerHTML = pageSettings();
+      }
       window.EventFlowSupport.addSettingsEntry(element, () => goNav('customer-support'), CU);
       break;
     case 'users':
+      globalThis.window?.EventFlowAdminPages?.clear(element);
       element.innerHTML = pageUsers();
       break;
     default:
+      globalThis.window?.EventFlowAdminPages?.clear(element);
       element.innerHTML = `<div class="empty"><div class="empty-icon">🚧</div><div class="empty-title">Page not found</div><p class="empty-desc">The requested page "${pg}" could not be loaded.</p></div>`;
   }
 }
@@ -3729,8 +3875,297 @@ async function renderPageContent(pg) {
 // ════════════════════════════════════════════════
 //  DASHBOARDS
 // ════════════════════════════════════════════════
-/* PORTAL_SECTION_dashAdmin */
 
+function dashAdmin() {
+  const totalUsers = DB.users.length;
+  const totalEvents = DB.events.length;
+  const totalRegs = DB.registrations.length;
+  const revenue = (DB.financeTransactions || [])
+    .filter(payment => payment.status === 'Successful')
+    .reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+  const pendingReqs = DB.eventRequests.filter(request =>
+    [
+      'pending',
+      'submitted',
+      'planning',
+      'changes_requested',
+      'counteroffered',
+      'plan_submitted',
+      'plan_revision_requested',
+    ].includes(request.status)
+  ).length;
+  const roleCounts = {
+    employee: DB.users.filter(user => user.role === 'employee').length,
+    superuser: DB.users.filter(user => user.role === 'superuser').length,
+    organizer: DB.users.filter(user => user.role === 'organizer').length,
+    client: DB.users.filter(user => user.role === 'client').length,
+    attendee: DB.users.filter(user => user.role === 'attendee').length,
+  };
+  const eventStatusCounts = {
+    upcoming: DB.events.filter(event => event.status === 'upcoming' || event.status === 'published')
+      .length,
+    ongoing: DB.events.filter(event => event.status === 'ongoing').length,
+    completed: DB.events.filter(event => event.status === 'completed').length,
+    draft: DB.events.filter(event => event.status === 'draft').length,
+  };
+  const requestStatusCounts = {
+    pending: DB.eventRequests.filter(request =>
+      [
+        'pending',
+        'submitted',
+        'planning',
+        'changes_requested',
+        'counteroffered',
+        'plan_submitted',
+        'plan_revision_requested',
+      ].includes(request.status)
+    ).length,
+    approved: DB.eventRequests.filter(request =>
+      ['approved', 'confirmed', 'completed'].includes(request.status)
+    ).length,
+    rejected: DB.eventRequests.filter(request => request.status === 'rejected').length,
+  };
+  const activeEvents = eventStatusCounts.upcoming + eventStatusCounts.ongoing;
+  const paidRegistrations = DB.registrations.filter(
+    registration => Number(registration.amount) > 0
+  ).length;
+  const months = Array.from(
+    {
+      length: 6,
+    },
+    (_, index) => {
+      const date = new Date();
+      date.setDate(1);
+      date.setMonth(date.getMonth() - (5 - index));
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      const records = DB.registrations.filter(
+        registration =>
+          String(registration.date || registration.createdAt || '').slice(0, 7) === key
+      );
+      return {
+        label: date.toLocaleString('en-IN', {
+          month: 'short',
+        }),
+        registrations: records.length,
+        revenue: records.reduce((sum, r) => sum + (Number(r.amount) || 0), 0),
+      };
+    }
+  );
+
+  // Refresh the overview as one set so headline figures and breakdowns agree.
+  apiGetDashboard()
+    .then(function (resp) {
+      const d = resp && resp.data ? resp.data : resp;
+      if (!d || !d.users || !d.events || !d.registrations) return;
+      const patch = [
+        ['adm-stat-users', d.users.total],
+        ['adm-stat-events', d.events.total],
+        ['adm-stat-regs', d.registrations.total],
+        ['adm-stat-rev', '₹' + ((d.payments?.totalRevenue || 0) / 1000).toFixed(1) + 'K'],
+        [
+          'adm-users-detail',
+          `${d.users.byRole?.attendee || 0} attendees · ${
+            d.users.byRole?.event_organizer || 0
+          } organizers`,
+        ],
+        [
+          'adm-events-detail',
+          `${(d.events.published || 0) + (d.events.ongoing || 0)} published or ongoing`,
+        ],
+        ['adm-regs-detail', 'Total registration records'],
+        ['adm-snapshot-events', (d.events.published || 0) + (d.events.ongoing || 0)],
+        ['adm-snapshot-requests', d.eventRequests?.pending || 0],
+        ['adm-request-total', `${d.eventRequests?.total || 0} event requests`],
+      ];
+      patch.forEach(([id, val]) => {
+        const element = document.getElementById(id);
+        if (element) element.textContent = val;
+      });
+      const pending = document.getElementById('adm-stat-pending');
+      if (pending) pending.textContent = (d.eventRequests?.pending || 0) + ' requests pending';
+      const roleChart = document.getElementById('adm-role-chart');
+      if (roleChart) {
+        globalThis.window?.EventFlowAdminPages?.clear(roleChart);
+        roleChart.innerHTML = buildAnalyticsBars(
+          [
+            {
+              label: 'Admins',
+              value: d.users.byRole?.super_admin || 0,
+            },
+            {
+              label: 'Organizers',
+              value: d.users.byRole?.event_organizer || 0,
+            },
+            {
+              label: 'Clients',
+              value: d.users.byRole?.client || 0,
+            },
+            {
+              label: 'Employees',
+              value: d.users.byRole?.employee || 0,
+            },
+            {
+              label: 'Attendees',
+              value: d.users.byRole?.attendee || 0,
+            },
+          ],
+          175
+        );
+      }
+      const requestsChart = document.getElementById('adm-requests-chart');
+      if (requestsChart) {
+        globalThis.window?.EventFlowAdminPages?.clear(requestsChart);
+        requestsChart.innerHTML = buildAnalyticsProgress([
+          {
+            label: 'Pending',
+            value: d.eventRequests?.pending || 0,
+            color: 'var(--yellow)',
+          },
+          {
+            label: 'Approved',
+            value: d.eventRequests?.approved || 0,
+            color: 'var(--green)',
+          },
+          {
+            label: 'Rejected',
+            value: d.eventRequests?.rejected || 0,
+            color: 'var(--red)',
+          },
+        ]);
+      }
+      const eventChart = document.getElementById('adm-events-chart');
+      if (eventChart) {
+        globalThis.window?.EventFlowAdminPages?.clear(eventChart);
+        eventChart.innerHTML = buildAnalyticsBars(
+          [
+            {
+              label: 'Published',
+              value: d.events.published || 0,
+            },
+            {
+              label: 'Ongoing',
+              value: d.events.ongoing || 0,
+            },
+            {
+              label: 'Completed',
+              value: d.events.completed || 0,
+            },
+            {
+              label: 'Draft',
+              value: d.events.draft || 0,
+            },
+          ],
+          175
+        );
+      }
+    })
+    .catch(function () {
+      /* silently keep local stats */
+    });
+  return `
+  <div class="admin-overview">
+    <div class="page-hd admin-overview-head">
+      <div class="page-hd-left"><div class="admin-eyebrow">EVENTFLOW / CONTROL CENTER</div><div class="page-title">Platform overview</div><div class="page-sub">Welcome back, ${adminChartText(
+        CU.name
+      )}. A clear view of activity across your platform.</div></div>
+      <div class="page-hd-right"><button class="btn btn-ghost" onclick="goNav('user-reports')">View user reports</button><button class="btn btn-primary" onclick="goNav('revenue-reports')">Open reports ↗</button></div>
+    </div>
+    <div class="admin-overview-kpis">
+      <div class="card admin-kpi"><div class="admin-kpi-top"><span class="admin-kpi-icon">👥</span><span class="admin-kpi-tag">AUDIENCE</span></div><div class="admin-kpi-label">Total users</div><div class="admin-kpi-value" id="adm-stat-users">${totalUsers}</div><div class="admin-kpi-foot" id="adm-users-detail">${
+    roleCounts.attendee
+  } attendees · ${roleCounts.organizer} organizers</div></div>
+      <div class="card admin-kpi"><div class="admin-kpi-top"><span class="admin-kpi-icon admin-kpi-icon--green">▣</span><span class="admin-kpi-tag">EVENTS</span></div><div class="admin-kpi-label">Total events</div><div class="admin-kpi-value" id="adm-stat-events">${totalEvents}</div><div class="admin-kpi-foot" id="adm-events-detail">${activeEvents} published or ongoing</div></div>
+      <div class="card admin-kpi"><div class="admin-kpi-top"><span class="admin-kpi-icon admin-kpi-icon--amber">◎</span><span class="admin-kpi-tag">ACTIVITY</span></div><div class="admin-kpi-label">Registrations</div><div class="admin-kpi-value" id="adm-stat-regs">${totalRegs}</div><div class="admin-kpi-foot" id="adm-regs-detail">${paidRegistrations} with recorded amount</div></div>
+      <div class="card admin-kpi"><div class="admin-kpi-top"><span class="admin-kpi-icon admin-kpi-icon--violet">₹</span><span class="admin-kpi-tag">REVENUE</span></div><div class="admin-kpi-label">Recorded revenue</div><div class="admin-kpi-value" id="adm-stat-rev">₹${(
+        revenue / 1000
+      ).toFixed(1)}K</div><div class="admin-kpi-foot" id="adm-stat-pending">${pendingReqs} request${
+    pendingReqs === 1 ? '' : 's'
+  } pending</div></div>
+    </div>
+    <div class="admin-overview-main">
+      <div class="card admin-overview-trend"><div class="admin-panel-head"><div><div class="h4">Registration trend</div><div class="small">Recorded registrations in the last six months</div></div><span class="admin-panel-chip">6 months</span></div>${buildAnalyticsLine(
+        months.map(row => ({
+          label: row.label,
+          value: row.registrations,
+        })),
+        280,
+        {
+          label: 'Registrations',
+        }
+      )}</div>
+      <div class="card admin-overview-snapshot"><div class="admin-panel-head"><div><div class="h4">Platform snapshot</div><div class="small">Current records</div></div></div><div class="admin-snapshot-row"><span class="admin-snapshot-mark">▣</span><span>Active events<small>Published and ongoing</small></span><strong id="adm-snapshot-events">${activeEvents}</strong></div><div class="admin-snapshot-row"><span class="admin-snapshot-mark admin-snapshot-mark--amber">◷</span><span>Pending requests<small>Awaiting review</small></span><strong id="adm-snapshot-requests">${
+    requestStatusCounts.pending
+  }</strong></div><button class="admin-panel-link" onclick="goNav('event-reports')">Explore event reports <span>→</span></button></div>
+    </div>
+    <div class="admin-overview-lower">
+      <div class="card"><div class="admin-panel-head"><div><div class="h4">User mix</div><div class="small">Accounts by platform role</div></div><button class="admin-panel-link" onclick="goNav('user-reports')">View details →</button></div><div id="adm-role-chart">${buildAnalyticsBars(
+        [
+          {
+            label: 'Admins',
+            value: roleCounts.superuser,
+          },
+          {
+            label: 'Organizers',
+            value: roleCounts.organizer,
+          },
+          {
+            label: 'Clients',
+            value: roleCounts.client,
+          },
+          {
+            label: 'Employees',
+            value: roleCounts.employee,
+          },
+          {
+            label: 'Attendees',
+            value: roleCounts.attendee,
+          },
+        ],
+        175
+      )}</div></div>
+      <div class="card"><div class="admin-panel-head"><div><div class="h4">Request pipeline</div><div class="small" id="adm-request-total">${
+        requestStatusCounts.pending + requestStatusCounts.approved + requestStatusCounts.rejected
+      } event requests</div></div></div><div id="adm-requests-chart">${buildAnalyticsProgress([
+    {
+      label: 'Pending',
+      value: requestStatusCounts.pending,
+      color: 'var(--yellow)',
+    },
+    {
+      label: 'Approved',
+      value: requestStatusCounts.approved,
+      color: 'var(--green)',
+    },
+    {
+      label: 'Rejected',
+      value: requestStatusCounts.rejected,
+      color: 'var(--red)',
+    },
+  ])}</div></div>
+      <div class="card"><div class="admin-panel-head"><div><div class="h4">Event coverage</div><div class="small">Events by current status</div></div></div><div id="adm-events-chart">${buildAnalyticsBars(
+        [
+          {
+            label: 'Published',
+            value: eventStatusCounts.upcoming,
+          },
+          {
+            label: 'Ongoing',
+            value: eventStatusCounts.ongoing,
+          },
+          {
+            label: 'Completed',
+            value: eventStatusCounts.completed,
+          },
+          {
+            label: 'Draft',
+            value: eventStatusCounts.draft,
+          },
+        ],
+        175
+      )}</div></div>
+    </div>
+  </div>`;
+}
 let employeeReportFilter = 'all';
 let financeInboxReports = [];
 function receivedEmployeeReports() {
@@ -3769,7 +4204,59 @@ function setEmployeeReportFilter(value) {
   employeeReportFilter = ['all', 'open', 'reviewed'].includes(value) ? value : 'all';
   renderPage('employee-reports');
 }
-/* PORTAL_SECTION_pageEmployeeReports */
+function pageEmployeeReports() {
+  const reports = receivedEmployeeReports();
+  const open = reports.filter(item => item.report.status !== 'Reviewed').length;
+  const visible = reports
+    .map((item, index) => ({
+      ...item,
+      index,
+    }))
+    .filter(
+      item =>
+        employeeReportFilter === 'all' ||
+        (employeeReportFilter === 'reviewed'
+          ? item.report.status === 'Reviewed'
+          : item.report.status !== 'Reviewed')
+    );
+  return `<div class="page-hd"><div class="page-hd-left"><div class="page-title">Employee Reports</div><div class="page-sub">Reports submitted by registration, event operations, support, and finance employees.</div></div></div>
+        <div class="grid-3 mb-20">
+          <div class="stat-card"><div class="stat-icon" style="background:var(--accent-dim);color:var(--accent)">📥</div><div class="stat-value">${
+            reports.length
+          }</div><div class="stat-label">Received Reports</div></div>
+          <div class="stat-card"><div class="stat-icon" style="background:var(--yellow-dim);color:var(--yellow)">◷</div><div class="stat-value">${open}</div><div class="stat-label">Awaiting Review</div></div>
+          <div class="stat-card"><div class="stat-icon" style="background:var(--green-dim);color:var(--green)">✓</div><div class="stat-value">${
+            reports.length - open
+          }</div><div class="stat-label">Reviewed</div></div>
+        </div>
+        <div class="card"><div class="flex justify-between items-center mb-16"><div class="h4">Received submissions</div><select class="form-control" style="width:auto" aria-label="Filter employee reports" onchange="setEmployeeReportFilter(this.value)"><option value="all" ${
+          employeeReportFilter === 'all' ? 'selected' : ''
+        }>All reports</option><option value="open" ${
+    employeeReportFilter === 'open' ? 'selected' : ''
+  }>Awaiting review</option><option value="reviewed" ${
+    employeeReportFilter === 'reviewed' ? 'selected' : ''
+  }>Reviewed</option></select></div>
+          ${
+            visible.length
+              ? `<div class="table-wrap"><table><thead><tr><th>Report</th><th>Employee</th><th>Department</th><th>Status</th><th>Updated</th><th></th></tr></thead><tbody>${visible
+                  .map(
+                    ({ report, department, index }) =>
+                      `<tr><td><strong>${adminChartText(
+                        report.title || report.type || 'Untitled report'
+                      )}</strong><div class="small">${adminChartText(
+                        report.type || report.category || report.id || ''
+                      )}</div></td><td>${adminChartText(
+                        report.owner || report.author || 'Employee'
+                      )}</td><td>${adminChartText(department)}</td><td><span class="badge badge-${
+                        report.status === 'Reviewed' ? 'green' : 'purple'
+                      }">${adminChartText(report.status)}</span></td><td>${adminChartText(
+                        report.updated || report.submittedAt || '—'
+                      )}</td><td><button class="btn btn-ghost btn-xs" onclick="viewEmployeeReport(${index})">View report</button></td></tr>`
+                  )
+                  .join('')}</tbody></table></div>`
+              : '<div class="empty"><div class="empty-icon">📭</div><div class="empty-title">No reports in this view</div><div class="empty-desc">Submitted employee reports will appear here.</div></div>'
+          }</div>`;
+}
 function viewEmployeeReport(index) {
   const item = receivedEmployeeReports()[index];
   if (!item) return;
@@ -6625,6 +7112,7 @@ window.handleRegReportFileSelect = function (input) {
   if (input.files && input.files[0]) {
     const f = input.files[0];
     if (preview) {
+      globalThis.window?.EventFlowAdminPages?.clear(preview);
       preview.innerHTML = `
             <div class="flex items-center justify-between" style="background:var(--accent-dim);border-radius:8px;padding:10px 14px">
               <div style="font-weight:600;color:var(--accent);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📄 ${
@@ -6641,6 +7129,7 @@ window.resetRegReportFileSelect = function () {
   if (input) input.value = '';
   const preview = document.getElementById('rv-file-preview');
   if (preview) {
+    globalThis.window?.EventFlowAdminPages?.clear(preview);
     preview.innerHTML = `
           <div style="font-size:24px;margin-bottom:6px">📁</div>
           <div style="font-weight:600;font-size:13.5px">Click to browse or upload report file</div>
@@ -6757,6 +7246,7 @@ function searchEmployeeChanges(query) {
         .includes(changesQuery)
     )
     .slice(0, 12);
+  globalThis.window?.EventFlowAdminPages?.clear(g('employee-recent-changes'));
   g('employee-recent-changes').innerHTML = buildEmployeeChanges(changes);
 }
 function completeEmployeeChangeRequest(requestId) {
@@ -6982,8 +7472,237 @@ function filterUserReports(role) {
   sessionStorage.setItem('admin_user_filter_role', role);
   renderPage('user-reports');
 }
+function pageUserReports() {
+  const selectedRole = sessionStorage.getItem('admin_user_filter_role') || 'all';
+  const allUsers = DB.users;
+  const usersToAnalyze =
+    selectedRole === 'all' ? allUsers : allUsers.filter(u => u.role === selectedRole);
+  const totalUsers = usersToAnalyze.length;
+  const activeUsers = usersToAnalyze.filter(u => u.status === 'active').length;
+  const inactiveUsers = totalUsers - activeUsers;
+  const activeRate = totalUsers > 0 ? Math.round((activeUsers / totalUsers) * 100) : 0;
+  const inactiveRate = totalUsers > 0 ? Math.round((inactiveUsers / totalUsers) * 100) : 0;
+  const roles = ['attendee', 'employee', 'client', 'organizer', 'superuser'];
+  const roleBreakdown = roles.map(role => {
+    const list = allUsers.filter(u => u.role === role);
+    const active = list.filter(u => u.status === 'active').length;
+    const inactive = list.length - active;
+    return {
+      role,
+      label: ROLE_LABELS[role] || role,
+      total: list.length,
+      active,
+      inactive,
+      activePct: list.length > 0 ? Math.round((active / list.length) * 100) : 0,
+    };
+  });
 
-/* PORTAL_SECTION_pageUserReports */
+  // 1. Monthly Joining Trends Bar Graph (Past 6 months)
+  const monthNames = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  const monthlyBuckets = {};
+  const now = new Date();
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    monthlyBuckets[key] = {
+      label: monthNames[d.getMonth()],
+      count: 0,
+    };
+  }
+  usersToAnalyze.forEach(u => {
+    const joinedStr = (u.joined || u.createdAt || '').toString();
+    const match = joinedStr.match(/(\d{4}-\d{2})/);
+    if (match && monthlyBuckets[match[1]]) {
+      monthlyBuckets[match[1]].count++;
+    }
+  });
+  const monthBars = Object.values(monthlyBuckets).map((m, index) => ({
+    label: m.label,
+    value: m.count,
+    color: [
+      'linear-gradient(180deg, #22c55e, #15803d)',
+      'linear-gradient(180deg, #3b82f6, #1d4ed8)',
+      'linear-gradient(180deg, #8b5cf6, #7c3aed)',
+      'linear-gradient(180deg, #f59e0b, #d97706)',
+      'linear-gradient(180deg, #06b6d4, #0891b2)',
+      'linear-gradient(180deg, #ec4899, #be185d)',
+    ][index % 6],
+  }));
+
+  // 2. Grouped Active vs Inactive Bar Graph by Role
+  const activeInactiveGroups = roleBreakdown.map(r => ({
+    label: r.label,
+    bars: [
+      {
+        label: 'Active',
+        value: r.active,
+        color: 'linear-gradient(180deg, #22c55e, #15803d)',
+      },
+      {
+        label: 'Inactive',
+        value: r.inactive,
+        color: 'linear-gradient(180deg, #ef4444, #b91c1c)',
+      },
+    ],
+  }));
+
+  // 3. User Role Distribution Bar Graph
+  const roleBars = [
+    {
+      label: 'Attendees',
+      value: allUsers.filter(u => u.role === 'attendee').length,
+      color: 'linear-gradient(180deg, #8b5cf6, #7c3aed)',
+    },
+    {
+      label: 'Employees',
+      value: allUsers.filter(u => u.role === 'employee').length,
+      color: 'linear-gradient(180deg, #22c55e, #15803d)',
+    },
+    {
+      label: 'Clients',
+      value: allUsers.filter(u => u.role === 'client').length,
+      color: 'linear-gradient(180deg, #f59e0b, #d97706)',
+    },
+    {
+      label: 'Organizers',
+      value: allUsers.filter(u => u.role === 'organizer').length,
+      color: 'linear-gradient(180deg, #3b82f6, #1d4ed8)',
+    },
+    {
+      label: 'Admins',
+      value: allUsers.filter(u => u.role === 'superuser').length,
+      color: 'linear-gradient(180deg, #ef4444, #b91c1c)',
+    },
+  ];
+
+  // 4. Role Activity Rate % Bar Graph
+  const activityRateBars = roleBreakdown.map((r, index) => ({
+    label: r.label,
+    value: r.activePct,
+    color: [
+      'linear-gradient(180deg, #8b5cf6, #7c3aed)',
+      'linear-gradient(180deg, #22c55e, #15803d)',
+      'linear-gradient(180deg, #f59e0b, #d97706)',
+      'linear-gradient(180deg, #3b82f6, #1d4ed8)',
+      'linear-gradient(180deg, #ef4444, #b91c1c)',
+    ][index % 5],
+  }));
+  return `
+  <div class="page-hd">
+    <div class="page-hd-left">
+      <div class="page-title">User Reports & Analytics</div>
+      <div class="page-sub">Monthly registrations, account activity, and user role distribution.</div>
+    </div>
+    <div class="page-hd-right">
+      <div style="display:flex;gap:6px;background:var(--surface2);padding:4px;border-radius:10px;border:1px solid var(--border)">
+        <button class="btn btn-xs ${
+          selectedRole === 'all' ? 'btn-primary' : 'btn-ghost'
+        }" onclick="filterUserReports('all')">All Roles</button>
+        <button class="btn btn-xs ${
+          selectedRole === 'attendee' ? 'btn-primary' : 'btn-ghost'
+        }" onclick="filterUserReports('attendee')">Attendees</button>
+        <button class="btn btn-xs ${
+          selectedRole === 'employee' ? 'btn-primary' : 'btn-ghost'
+        }" onclick="filterUserReports('employee')">Employees</button>
+        <button class="btn btn-xs ${
+          selectedRole === 'client' ? 'btn-primary' : 'btn-ghost'
+        }" onclick="filterUserReports('client')">Clients</button>
+        <button class="btn btn-xs ${
+          selectedRole === 'organizer' ? 'btn-primary' : 'btn-ghost'
+        }" onclick="filterUserReports('organizer')">Organizers</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Key Metric Summary Cards -->
+  <div class="grid-4 mb-20">
+    <div class="stat-card">
+      <div class="glow" style="background:var(--accent)"></div>
+      <div class="stat-icon" style="background:var(--accent-dim);color:var(--accent)">👥</div>
+      <div class="stat-value" style="color:var(--accent)">${totalUsers}</div>
+      <div class="stat-label">Total ${
+        selectedRole === 'all' ? 'Users' : ROLE_LABELS[selectedRole]
+      }</div>
+      <div class="stat-sub neutral">${
+        selectedRole === 'all' ? 'Across all roles' : 'Filtered role view'
+      }</div>
+    </div>
+    <div class="stat-card">
+      <div class="glow" style="background:var(--green)"></div>
+      <div class="stat-icon" style="background:var(--green-dim);color:var(--green)">✅</div>
+      <div class="stat-value" style="color:var(--green)">${activeUsers}</div>
+      <div class="stat-label">Active Users</div>
+      <div class="stat-sub up">↑ ${activeRate}% active rate</div>
+    </div>
+    <div class="stat-card">
+      <div class="glow" style="background:var(--red)"></div>
+      <div class="stat-icon" style="background:var(--red-dim);color:var(--red)">⏸️</div>
+      <div class="stat-value" style="color:var(--red)">${inactiveUsers}</div>
+      <div class="stat-label">Inactive Users</div>
+      <div class="stat-sub neutral">${inactiveRate}% inactive rate</div>
+    </div>
+    <div class="stat-card">
+      <div class="glow" style="background:var(--yellow)"></div>
+      <div class="stat-icon" style="background:var(--yellow-dim);color:var(--yellow)">📈</div>
+      <div class="stat-value" style="color:var(--yellow)">${
+        monthBars[monthBars.length - 1] ? monthBars[monthBars.length - 1].value : 0
+      }</div>
+      <div class="stat-label">New Joins This Month</div>
+      <div class="stat-sub neutral">Recent registrations</div>
+    </div>
+  </div>
+
+  <!-- Bar Graphs Row 1: Monthly Joins & Active vs Inactive Grouped Bar Chart -->
+  <div class="grid-2 mb-20" style="gap:20px;align-items:start">
+    <div class="card">
+      <div class="h4 mb-12">Monthly Registrations</div>
+      ${buildAnalyticsLine(monthBars, 180, {
+        label: 'New users',
+      })}
+    </div>
+    <div class="card">
+      <div class="h4 mb-12">Active & Inactive Users</div>
+      ${buildGroupedAnalyticsBars(activeInactiveGroups, 145, [
+        {
+          label: 'Active Users',
+          color: 'linear-gradient(180deg, #22c55e, #15803d)',
+        },
+        {
+          label: 'Inactive Users',
+          color: 'linear-gradient(180deg, #ef4444, #b91c1c)',
+        },
+      ])}
+    </div>
+  </div>
+
+  <!-- Bar Graphs Row 2: Platform Role Breakdown & Activity Rate % -->
+  <div class="grid-2" style="gap:20px;align-items:start">
+    <div class="card">
+      <div class="h4 mb-12">Users by Role</div>
+      ${buildAnalyticsBars(roleBars, 145)}
+    </div>
+    <div class="card">
+      <div class="h4 mb-12">Activity Rate by Role</div>
+      ${buildAnalyticsRings(activityRateBars)}
+      <div style="margin-top:12px;text-align:center;font-size:11.5px;color:var(--text2)">
+        Percentage of accounts actively participating in each role category.
+      </div>
+    </div>
+  </div>`;
+}
 
 // ════════════════════════════════════════════════
 //  ADMIN SUBPAGE 2: EVENT REPORTS (BAR GRAPHS)
@@ -6992,8 +7711,296 @@ function filterEventReportsStage(stage) {
   sessionStorage.setItem('admin_event_reports_stage', stage);
   return renderPage('event-reports');
 }
+function pageEventReports() {
+  const selectedStage = sessionStorage.getItem('admin_event_reports_stage') || 'all';
+  const allEvents = DB.events;
+  const ongoingEvents = allEvents.filter(event => event.status === 'ongoing');
+  const upcomingEvents = allEvents.filter(
+    event => event.status === 'upcoming' || event.status === 'published' || event.status === 'full'
+  );
+  const completedEvents = allEvents.filter(event => event.status === 'completed');
+  const draftEvents = allEvents.filter(event => ['draft', 'pending'].includes(event.status));
+  let eventsToAnalyze = allEvents;
+  if (selectedStage === 'ongoing') eventsToAnalyze = ongoingEvents;
+  else if (selectedStage === 'upcoming') eventsToAnalyze = upcomingEvents;
+  else if (selectedStage === 'completed') eventsToAnalyze = completedEvents;
+  const totalEvents = eventsToAnalyze.length;
 
-/* PORTAL_SECTION_pageEventReports */
+  // 1. Lifecycle Stage Bar Graph
+  const lifecycleBars = [
+    {
+      label: 'Ongoing (Now)',
+      value: ongoingEvents.length,
+      color: 'linear-gradient(180deg, #3b82f6, #1d4ed8)',
+    },
+    {
+      label: 'About to Happen',
+      value: upcomingEvents.length,
+      color: 'linear-gradient(180deg, #22c55e, #15803d)',
+    },
+    {
+      label: 'Completed',
+      value: completedEvents.length,
+      color: 'linear-gradient(180deg, #8b5cf6, #7c3aed)',
+    },
+    {
+      label: 'Draft / Planning',
+      value: draftEvents.length,
+      color: 'linear-gradient(180deg, #64748b, #475569)',
+    },
+  ];
+
+  // 2. Monthly Timeline Bar Graph
+  const monthNames = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  const monthlyBuckets = {};
+  const now = new Date();
+  for (let i = -2; i <= 3; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    monthlyBuckets[key] = {
+      label: monthNames[d.getMonth()],
+      count: 0,
+      isPast: i < 0,
+      isCurrent: i === 0,
+    };
+  }
+  eventsToAnalyze.forEach(e => {
+    const dateStr = (e.date || '').toString();
+    const match = dateStr.match(/(\d{4}-\d{2})/);
+    if (match && monthlyBuckets[match[1]]) {
+      monthlyBuckets[match[1]].count++;
+    }
+  });
+  const monthlyBars = Object.values(monthlyBuckets).map(m => ({
+    label: m.label + (m.isCurrent ? ' (Now)' : ''),
+    value: m.count,
+    color: m.isCurrent
+      ? 'linear-gradient(180deg, #3b82f6, #1d4ed8)'
+      : m.isPast
+      ? 'linear-gradient(180deg, #8b5cf6, #7c3aed)'
+      : 'linear-gradient(180deg, #22c55e, #15803d)',
+  }));
+
+  // 3. Category Distribution Bar Graph
+  const catCounts = {};
+  eventsToAnalyze.forEach(e => {
+    const c = e.category || 'Other';
+    catCounts[c] = (catCounts[c] || 0) + 1;
+  });
+  const catBars = Object.entries(catCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6)
+    .map(([label, value], i) => ({
+      label,
+      value,
+      color: [
+        'linear-gradient(180deg, #3b82f6, #1d4ed8)',
+        'linear-gradient(180deg, #22c55e, #15803d)',
+        'linear-gradient(180deg, #f59e0b, #d97706)',
+        'linear-gradient(180deg, #8b5cf6, #7c3aed)',
+        'linear-gradient(180deg, #ec4899, #be185d)',
+        'linear-gradient(180deg, #14b8a6, #0f766e)',
+      ][i % 6],
+    }));
+
+  // 4. Grouped Capacity vs Registered Bar Graph by Event Stage
+  const capacityOccupancyGroups = [
+    {
+      label: 'Ongoing',
+      bars: [
+        {
+          label: 'Registered',
+          value: ongoingEvents.reduce(
+            (total, currentEvent) => total + (currentEvent.registered || 0),
+            0
+          ),
+          color: 'linear-gradient(180deg, #22c55e, #15803d)',
+        },
+        {
+          label: 'Capacity',
+          value: ongoingEvents.reduce(
+            (total, currentEvent) => total + (currentEvent.capacity || 0),
+            0
+          ),
+          color: 'linear-gradient(180deg, #3b82f6, #1d4ed8)',
+        },
+      ],
+    },
+    {
+      label: 'About to Happen',
+      bars: [
+        {
+          label: 'Registered',
+          value: upcomingEvents.reduce(
+            (total, currentEvent) => total + (currentEvent.registered || 0),
+            0
+          ),
+          color: 'linear-gradient(180deg, #22c55e, #15803d)',
+        },
+        {
+          label: 'Capacity',
+          value: upcomingEvents.reduce(
+            (total, currentEvent) => total + (currentEvent.capacity || 0),
+            0
+          ),
+          color: 'linear-gradient(180deg, #3b82f6, #1d4ed8)',
+        },
+      ],
+    },
+    {
+      label: 'Completed',
+      bars: [
+        {
+          label: 'Registered',
+          value: completedEvents.reduce(
+            (total, currentEvent) => total + (currentEvent.registered || 0),
+            0
+          ),
+          color: 'linear-gradient(180deg, #22c55e, #15803d)',
+        },
+        {
+          label: 'Capacity',
+          value: completedEvents.reduce(
+            (total, currentEvent) => total + (currentEvent.capacity || 0),
+            0
+          ),
+          color: 'linear-gradient(180deg, #3b82f6, #1d4ed8)',
+        },
+      ],
+    },
+  ];
+  return `
+  <div class="page-hd">
+    <div class="page-hd-left">
+      <div class="page-title">Event Reports & Analytics</div>
+      <div class="page-sub">Event activity, category breakdowns, and registration trends.</div>
+    </div>
+    <div class="page-hd-right">
+      <div style="display:flex;gap:6px;background:var(--surface2);padding:4px;border-radius:10px;border:1px solid var(--border)">
+        <button class="btn btn-xs ${
+          selectedStage === 'all' ? 'btn-primary' : 'btn-ghost'
+        }" onclick="filterEventReportsStage('all')">All Stages</button>
+        <button class="btn btn-xs ${
+          selectedStage === 'ongoing' ? 'btn-primary' : 'btn-ghost'
+        }" onclick="filterEventReportsStage('ongoing')">▶️ Ongoing</button>
+        <button class="btn btn-xs ${
+          selectedStage === 'upcoming' ? 'btn-primary' : 'btn-ghost'
+        }" onclick="filterEventReportsStage('upcoming')">⏳ About to Happen</button>
+        <button class="btn btn-xs ${
+          selectedStage === 'completed' ? 'btn-primary' : 'btn-ghost'
+        }" onclick="filterEventReportsStage('completed')">✅ Completed</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3 Event Stage Highlight Cards -->
+  <div class="grid-3 mb-20" style="gap:16px">
+    <div class="stat-card" style="border-left:4px solid var(--blue)">
+      <div class="glow" style="background:var(--blue)"></div>
+      <div class="flex justify-between items-center mb-6">
+        <span style="font-size:12px;font-weight:700;color:var(--blue);text-transform:uppercase">▶️ Ongoing Events</span>
+        <span class="badge badge-blue">Happening Now</span>
+      </div>
+      <div class="stat-value" style="color:var(--blue);font-size:32px">${ongoingEvents.length}</div>
+      <div class="stat-label">Currently in Progress</div>
+      <div class="stat-sub neutral" style="margin-top:6px">${ongoingEvents.reduce(
+        (total, currentEvent) => total + (currentEvent.registered || 0),
+        0
+      )} live attendees participating</div>
+    </div>
+
+    <div class="stat-card" style="border-left:4px solid var(--green)">
+      <div class="glow" style="background:var(--green)"></div>
+      <div class="flex justify-between items-center mb-6">
+        <span style="font-size:12px;font-weight:700;color:var(--green);text-transform:uppercase">⏳ About to Happen</span>
+        <span class="badge badge-green">Scheduled</span>
+      </div>
+      <div class="stat-value" style="color:var(--green);font-size:32px">${
+        upcomingEvents.length
+      }</div>
+      <div class="stat-label">Upcoming & Scheduled</div>
+      <div class="stat-sub up" style="margin-top:6px">${upcomingEvents.reduce(
+        (total, currentEvent) => total + (currentEvent.registered || 0),
+        0
+      )} reservations confirmed</div>
+    </div>
+
+    <div class="stat-card" style="border-left:4px solid var(--purple)">
+      <div class="glow" style="background:var(--purple)"></div>
+      <div class="flex justify-between items-center mb-6">
+        <span style="font-size:12px;font-weight:700;color:var(--purple);text-transform:uppercase">✅ Completed Events</span>
+        <span class="badge badge-purple">Finished</span>
+      </div>
+      <div class="stat-value" style="color:var(--purple);font-size:32px">${
+        completedEvents.length
+      }</div>
+      <div class="stat-label">Concluded Events</div>
+      <div class="stat-sub neutral" style="margin-top:6px">${completedEvents.reduce(
+        (total, currentEvent) => total + (currentEvent.registered || 0),
+        0
+      )} past attendees reached</div>
+    </div>
+  </div>
+
+  <!-- Bar Graphs Row 1: Lifecycle Stages Comparison & Category Breakdown -->
+  <div class="grid-2 mb-20" style="gap:20px">
+    <div class="card">
+      <div class="h4 mb-12">Event Lifecycle</div>
+      ${buildAnalyticsBars(lifecycleBars, 215)}
+    </div>
+    <div class="card">
+      <div class="h4 mb-12">Event Categories</div>
+      ${buildAnalyticsBars(
+        catBars.length
+          ? catBars
+          : [
+              {
+                label: 'No Events',
+                value: 0,
+                color: 'linear-gradient(180deg, #64748b, #475569)',
+              },
+            ],
+        215
+      )}
+    </div>
+  </div>
+
+  <!-- Bar Graphs Row 2: Monthly Timeline & Grouped Capacity vs Registrations -->
+  <div class="grid-2" style="gap:20px">
+    <div class="card">
+      <div class="h4 mb-12">Monthly Event Timeline</div>
+      ${buildAnalyticsLine(monthlyBars, 215, {
+        label: 'Events',
+      })}
+    </div>
+    <div class="card">
+      <div class="h4 mb-12">Booked Seats & Capacity</div>
+      ${buildGroupedAnalyticsBars(capacityOccupancyGroups, 215, [
+        {
+          label: 'Booked Seats',
+          color: 'linear-gradient(180deg, #22c55e, #15803d)',
+        },
+        {
+          label: 'Total Capacity',
+          color: 'linear-gradient(180deg, #3b82f6, #1d4ed8)',
+        },
+      ])}
+    </div>
+  </div>`;
+}
 
 // ════════════════════════════════════════════════
 //  ADMIN SUBPAGE 3: REVENUE REPORTS (BAR GRAPHS)
@@ -7002,8 +8009,245 @@ function filterRevenueTimeframe(tf) {
   sessionStorage.setItem('admin_revenue_timeframe', tf);
   renderPage('revenue-reports');
 }
+function pageRevenueReports() {
+  const timeframe = sessionStorage.getItem('admin_revenue_timeframe') || '6m';
+  const allEvents = DB.events;
+  const allRegs = DB.registrations;
+  const ticketPayments = (DB.financeTransactions || []).filter(
+    payment => payment.kind !== 'event' && payment.status === 'Successful'
+  );
+  const eventPayments = (DB.eventWorkflowPayments || []).filter(
+    payment => payment.status === 'completed'
+  );
+  const actualPayments = [...ticketPayments, ...eventPayments];
+  const regRevenue = ticketPayments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+  const eventRevenue = eventPayments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+  const totalRevenue = regRevenue + eventRevenue;
+  const paidEvents = allEvents.filter(event => event.price > 0);
+  const freeEvents = allEvents.filter(event => !event.price || event.price === 0);
+  const totalPaidSeats = paidEvents.reduce(
+    (total, currentEvent) => total + (currentEvent.registered || 0),
+    0
+  );
+  const avgTicketPrice =
+    paidEvents.length > 0
+      ? Math.round(
+          paidEvents.reduce((total, currentEvent) => total + (currentEvent.price || 0), 0) /
+            paidEvents.length
+        )
+      : 0;
+  const projectedPipeline = allEvents
+    .filter(event => event.status === 'upcoming' || event.status === 'ongoing')
+    .reduce(
+      (total, currentEvent) => total + (currentEvent.capacity || 0) * (currentEvent.price || 0),
+      0
+    );
 
-/* PORTAL_SECTION_pageRevenueReports */
+  // 1. Monthly Revenue Bar Graph over time (in ₹ Thousands)
+  const monthNames = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  const monthlyRevenueMap = {};
+  const numMonths = timeframe === '12m' ? 12 : 6;
+  const now = new Date();
+  for (let i = numMonths - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    monthlyRevenueMap[key] = {
+      label: monthNames[d.getMonth()],
+      amount: 0,
+    };
+  }
+  actualPayments.forEach(payment => {
+    const month = String(payment.paymentDate || payment.date || '').slice(0, 7);
+    if (monthlyRevenueMap[month]) monthlyRevenueMap[month].amount += Number(payment.amount || 0);
+  });
+  const revenueBars = Object.values(monthlyRevenueMap).map((m, index) => ({
+    label: m.label,
+    value: Number((m.amount / 1000).toFixed(2)),
+    color: [
+      'linear-gradient(180deg, #22c55e, #15803d)',
+      'linear-gradient(180deg, #10b981, #047857)',
+      'linear-gradient(180deg, #3b82f6, #1d4ed8)',
+      'linear-gradient(180deg, #6366f1, #4338ca)',
+      'linear-gradient(180deg, #8b5cf6, #7c3aed)',
+      'linear-gradient(180deg, #f59e0b, #d97706)',
+    ][index % 6],
+  }));
+
+  // 2. Category Revenue Bar Graph
+  const catRevenueMap = {};
+  actualPayments.forEach(payment => {
+    const category =
+      allEvents.find(event => String(event.id) === String(payment.eventId))?.category || 'General';
+    catRevenueMap[category] = (catRevenueMap[category] || 0) + Number(payment.amount || 0);
+  });
+  const catRevenueBars = Object.entries(catRevenueMap)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6)
+    .map(([label, value], index) => ({
+      label,
+      value: Number((value / 1000).toFixed(2)),
+      color: [
+        'linear-gradient(180deg, #22c55e, #15803d)',
+        'linear-gradient(180deg, #3b82f6, #1d4ed8)',
+        'linear-gradient(180deg, #f59e0b, #d97706)',
+        'linear-gradient(180deg, #8b5cf6, #7c3aed)',
+        'linear-gradient(180deg, #ec4899, #be185d)',
+        'linear-gradient(180deg, #14b8a6, #0f766e)',
+      ][index % 6],
+    }));
+
+  // 3. Ticket Pricing Tiers Bar Graph
+  const pricingTierBars = [
+    {
+      label: 'Free (₹0)',
+      value: freeEvents.length,
+      color: 'linear-gradient(180deg, #14b8a6, #0f766e)',
+    },
+    {
+      label: 'Budget (₹1–₹99)',
+      value: allEvents.filter(event => event.price > 0 && event.price < 100).length,
+      color: 'linear-gradient(180deg, #3b82f6, #1d4ed8)',
+    },
+    {
+      label: 'Mid-Tier (₹100–₹199)',
+      value: allEvents.filter(event => event.price >= 100 && event.price < 200).length,
+      color: 'linear-gradient(180deg, #f59e0b, #d97706)',
+    },
+    {
+      label: 'Premium (₹200+)',
+      value: allEvents.filter(event => event.price >= 200).length,
+      color: 'linear-gradient(180deg, #8b5cf6, #7c3aed)',
+    },
+  ];
+
+  // 4. Revenue Streams Contribution Bar Graph
+  const streamBars = [
+    {
+      label: 'Ticket Sales',
+      value: Number((regRevenue / 1000).toFixed(2)),
+      color: 'linear-gradient(180deg, #22c55e, #15803d)',
+    },
+    {
+      label: 'Client Event Payments',
+      value: Number((eventRevenue / 1000).toFixed(2)),
+      color: 'linear-gradient(180deg, #3b82f6, #1d4ed8)',
+    },
+  ];
+  return `
+  <div class="page-hd">
+    <div class="page-hd-left">
+      <div class="page-title">Revenue Reports & Analytics</div>
+      <div class="page-sub">Revenue trends, ticket pricing, and income by event category.</div>
+    </div>
+    <div class="page-hd-right">
+      <div style="display:flex;gap:6px;background:var(--surface2);padding:4px;border-radius:10px;border:1px solid var(--border)">
+        <button class="btn btn-xs ${
+          timeframe === '6m' ? 'btn-primary' : 'btn-ghost'
+        }" onclick="filterRevenueTimeframe('6m')">Last 6 Months</button>
+        <button class="btn btn-xs ${
+          timeframe === '12m' ? 'btn-primary' : 'btn-ghost'
+        }" onclick="filterRevenueTimeframe('12m')">Last 12 Months</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Key Revenue Metric Cards -->
+  <div class="grid-4 mb-20">
+    <div class="stat-card">
+      <div class="glow" style="background:var(--green)"></div>
+      <div class="stat-icon" style="background:var(--green-dim);color:var(--green)">💰</div>
+      <div class="stat-value" style="color:var(--green)">₹${(totalRevenue / 1000).toFixed(1)}K</div>
+      <div class="stat-label">Total Platform Revenue</div>
+      <div class="stat-sub neutral">Recorded payment revenue</div>
+    </div>
+    <div class="stat-card">
+      <div class="glow" style="background:var(--accent)"></div>
+      <div class="stat-icon" style="background:var(--accent-dim);color:var(--accent)">📈</div>
+      <div class="stat-value" style="color:var(--accent)">₹${avgTicketPrice}</div>
+      <div class="stat-label">Average Ticket Price</div>
+      <div class="stat-sub neutral">Across ${paidEvents.length} paid events</div>
+    </div>
+    <div class="stat-card">
+      <div class="glow" style="background:var(--yellow)"></div>
+      <div class="stat-icon" style="background:var(--yellow-dim);color:var(--yellow)">🎟️</div>
+      <div class="stat-value" style="color:var(--yellow)">${totalPaidSeats}</div>
+      <div class="stat-label">Paid Ticket Registrations</div>
+      <div class="stat-sub neutral">Paid registrations recorded</div>
+    </div>
+    <div class="stat-card">
+      <div class="glow" style="background:var(--blue)"></div>
+      <div class="stat-icon" style="background:var(--blue-dim);color:var(--blue)">📊</div>
+      <div class="stat-value" style="color:var(--blue)">₹${(projectedPipeline / 1000).toFixed(
+        1
+      )}K</div>
+      <div class="stat-label">Projected Pipeline</div>
+      <div class="stat-sub neutral">Upcoming capacity value</div>
+    </div>
+  </div>
+
+  <!-- Bar Graphs Row 1: Revenue Over Time & Revenue by Category -->
+  <div class="grid-2 mb-20" style="gap:20px">
+    <div class="card">
+      <div class="flex justify-between items-center mb-12">
+        <span class="h4">Platform Revenue</span>
+        <span class="badge badge-green">${numMonths} Months Trend</span>
+      </div>
+      ${buildAnalyticsLine(revenueBars, 215, {
+        label: 'Revenue',
+        prefix: '₹',
+        suffix: 'K',
+      })}
+      <div style="margin-top:12px;font-size:11.5px;color:var(--text2);text-align:center">
+        Monthly revenue performance trajectory in thousands (₹K).
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="flex justify-between items-center mb-12">
+        <span class="h4">Revenue by Category</span>
+      </div>
+      ${buildAnalyticsBars(catRevenueBars, 215, {
+        label: 'Revenue',
+        prefix: '₹',
+        suffix: 'K',
+      })}
+      <div style="margin-top:12px;font-size:11.5px;color:var(--text2);text-align:center">
+        Revenue breakdown by event category.
+      </div>
+    </div>
+  </div>
+
+  <!-- Bar Graphs Row 2: Ticket Pricing Tiers & Revenue Streams -->
+  <div class="grid-2" style="gap:20px">
+    <div class="card">
+      <div class="h4 mb-12">Events by Ticket Price</div>
+      ${buildAnalyticsBars(pricingTierBars, 215)}
+    </div>
+
+    <div class="card">
+      <div class="h4 mb-12">Revenue Sources</div>
+      ${buildAnalyticsBars(streamBars, 215, {
+        label: 'Revenue',
+        prefix: '₹',
+        suffix: 'K',
+      })}
+    </div>
+  </div>`;
+}
+
 // ════════════════════════════════════════════════
 //  NON-ADMIN PAGES (ORGANIZER / CLIENT / ATTENDEE)
 // ════════════════════════════════════════════════
@@ -7093,6 +8337,7 @@ function refreshDirectoryUserManagement() {
       );
     return u.role !== 'superuser' && matchesRole && matchesQuery;
   });
+  globalThis.window?.EventFlowAdminPages?.clear(g('user-management-table'));
   g('user-management-table').innerHTML = buildUserManagementTable(users);
 }
 function openEditUserModal(userId) {
@@ -7253,6 +8498,7 @@ function refreshEvents() {
       );
     }
   );
+  globalThis.window?.EventFlowAdminPages?.clear(g('ev-grid'));
   g('ev-grid').innerHTML =
     list.map(e => evCard(e, CU.role)).join('') ||
     `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔍</div><div class="empty-title">No events found</div></div>`;
@@ -7900,6 +9146,7 @@ function refreshBrowse() {
       (!city || event.city === city)
     );
   });
+  globalThis.window?.EventFlowAdminPages?.clear(g('browse-grid'));
   g('browse-grid').innerHTML =
     list.map(e => evCard(e, 'attendee')).join('') ||
     `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔍</div><div class="empty-title">No events match</div><p class="empty-desc">Try adjusting your filters.</p></div>`;
@@ -8507,6 +9754,7 @@ function refreshAttendees() {
         (status === 'rejected' && registration.status === 'rejected');
       return matchesSearch && matchesStatus;
     });
+    globalThis.window?.EventFlowAdminPages?.clear(g('attendees-tbl'));
     g('attendees-tbl').innerHTML = buildOrganizerAttendeesTbl(regs, selectedEvent, isPrivate);
   } else {
     const q = (g('at-q') || {}).value?.toLowerCase() || '';
@@ -8530,6 +9778,7 @@ function refreshAttendees() {
         (!ci || (ci === 'in' && r.checkedIn) || (ci === 'out' && !r.checkedIn))
       );
     });
+    globalThis.window?.EventFlowAdminPages?.clear(g('attendees-tbl'));
     g('attendees-tbl').innerHTML = buildAttendeesTbl(regs);
   }
 }
@@ -8972,6 +10221,7 @@ function viewRequestDetail(reqId) {
     };
   const element = document.getElementById('page-content');
   if (!element) return;
+  globalThis.window?.EventFlowAdminPages?.clear(element);
   element.innerHTML = `<div style="padding:28px;background:var(--bg);min-height:100vh">
     <button onclick="renderPage('request-status')" style="display:inline-flex;align-items:center;gap:6px;border:none;background:none;color:var(--text2);font-size:13px;cursor:pointer;margin-bottom:24px;padding:0">&larr; Back to Pending Requests</button>
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
@@ -9061,6 +10311,7 @@ function viewOngoingEventDetail(eventId) {
   );
   const element = document.getElementById('page-content');
   if (!element) return;
+  globalThis.window?.EventFlowAdminPages?.clear(element);
   element.innerHTML = `<div style="padding:28px;background:var(--bg)">
     <button onclick="renderPage('request-status')" style="display:flex;align-items:center;gap:6px;border:none;background:none;color:var(--text2);font-size:13px;cursor:pointer;margin-bottom:20px;padding:0">â† Back to Ongoing Events</button>
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
@@ -9596,6 +10847,7 @@ window.handleReportFileSelect = function (input) {
   if (input.files && input.files[0]) {
     const f = input.files[0];
     if (preview) {
+      globalThis.window?.EventFlowAdminPages?.clear(preview);
       preview.innerHTML = `
             <div class="flex items-center justify-between" style="background:var(--accent-dim);border-radius:8px;padding:10px 14px">
               <div style="font-weight:600;color:var(--accent);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📄 ${
@@ -9612,6 +10864,7 @@ window.resetReportFileSelect = function () {
   if (input) input.value = '';
   const preview = document.getElementById('eor-file-preview');
   if (preview) {
+    globalThis.window?.EventFlowAdminPages?.clear(preview);
     preview.innerHTML = `
           <div style="font-size:24px;margin-bottom:6px">📁</div>
           <div style="font-weight:600;font-size:13.5px">Click to browse or upload report file</div>
@@ -11075,8 +12328,10 @@ function pageOngoingEvents() {
 // ════════════════════════════════════════════════
 function openModal(title, body, btns = [], showCancel = true) {
   g('modal-title').textContent = title;
+  globalThis.window?.EventFlowAdminPages?.clear(g('modal-body'));
   g('modal-body').innerHTML = body;
   const foot = g('modal-foot');
+  globalThis.window?.EventFlowAdminPages?.clear(foot);
   foot.innerHTML = '';
   let hasDismiss = false;
   const handlers = new Set();
@@ -11128,6 +12383,7 @@ function closeModalOnBg(e) {
 // DRAWER
 function openDrawer(title, body) {
   g('drawer-title').textContent = title;
+  globalThis.window?.EventFlowAdminPages?.clear(g('drawer-body'));
   g('drawer-body').innerHTML = body;
   g('drawer-overlay').classList.add('open');
   g('drawer').classList.add('open');
@@ -11168,6 +12424,7 @@ function toast(msg, type = 'info') {
   };
   const element = document.createElement('div');
   element.className = `toast ${type}`;
+  globalThis.window?.EventFlowAdminPages?.clear(element);
   element.innerHTML = `<span class="toast-icon">${icons[type]}</span><span class="toast-msg">${msg}</span>`;
   g('toasts').appendChild(element);
   setTimeout(() => {
@@ -11579,4 +12836,36 @@ document.addEventListener('DOMContentLoaded', () => {
 window.EventFlowRole = {
   key: 'super-admin',
   label: 'Super Admin',
+};
+
+// React pages read the same normalized data and keep the existing workflow action entry points.
+window.EventFlowAdminRuntime = {
+  snapshot(pageProps = {}) {
+    return {
+      ADMIN_CHART_COLORS:
+        typeof ADMIN_CHART_COLORS === 'undefined' ? undefined : ADMIN_CHART_COLORS,
+      CU: typeof CU === 'undefined' ? undefined : CU,
+      DB: typeof DB === 'undefined' ? undefined : DB,
+      EMPLOYEE_TYPE_LABELS:
+        typeof EMPLOYEE_TYPE_LABELS === 'undefined' ? undefined : EMPLOYEE_TYPE_LABELS,
+      ROLE_COLORS: typeof ROLE_COLORS === 'undefined' ? undefined : ROLE_COLORS,
+      ROLE_LABELS: typeof ROLE_LABELS === 'undefined' ? undefined : ROLE_LABELS,
+      adminChartLine: typeof adminChartLine === 'undefined' ? undefined : adminChartLine,
+      adminChartNumber: typeof adminChartNumber === 'undefined' ? undefined : adminChartNumber,
+      get adminChartSequence() {
+        return adminChartSequence;
+      },
+      set adminChartSequence(value) {
+        adminChartSequence = value;
+      },
+      apiGetDashboard: typeof apiGetDashboard === 'undefined' ? undefined : apiGetDashboard,
+      employeeReportFilter:
+        typeof employeeReportFilter === 'undefined' ? undefined : employeeReportFilter,
+      isDepartmentEmployee:
+        typeof isDepartmentEmployee === 'undefined' ? undefined : isDepartmentEmployee,
+      receivedEmployeeReports:
+        typeof receivedEmployeeReports === 'undefined' ? undefined : receivedEmployeeReports,
+      pageProps,
+    };
+  },
 };

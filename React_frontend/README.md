@@ -12,4 +12,4 @@ This frontend uses the DineTime Devs application-per-role folder structure. See 
 
 Run `npm run dev`, `npm test`, `npm run test:react` or `npm run build` here. The backend API remains `http://localhost:3001/api`; backend setup and demo accounts are documented in [the project README](../README.md).
 
-The folder change preserves existing behavior. Customer Support is React-managed; other dashboards still use the existing runtime loader while their React migration is unfinished.
+Signed-in role pages use React page containers, Context, custom Hooks and reusable components. Existing navigation and some modal workflows still use compatibility runtime handlers. See [the React concepts review](REACT_CONCEPTS.md) for examples of the requested course concepts and the changes made during the review.

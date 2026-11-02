@@ -9,57 +9,22 @@ import AboutPage from '../../landing/pages/AboutPage.jsx';
 import ContactPage from '../../landing/pages/ContactPage.jsx';
 import React from 'react';
 import LegacyRuntime from '../../../app/LegacyRuntime.jsx';
-import { legacyEvent } from '../../../app/legacyEvents.js';
 import runtime from './runtime.js?raw';
 import portalApi from '../api/portal-api.js?raw';
 import portalState from '../context/portal-state.js?raw';
-import rawDashboardPage from '../pages/DashboardPage.jsx?raw';
-import rawEventRequestsPage from '../pages/EventRequestsPage.jsx?raw';
-import rawRequestDetailsPage from '../pages/RequestDetailsPage.jsx?raw';
-import rawAttendeesPage from '../pages/AttendeesPage.jsx?raw';
-import rawReportsPage from '../pages/ReportsPage.jsx?raw';
-import rawMyEventsPage from '../pages/MyEventsPage.jsx?raw';
-import rawUpcomingEventsPage from '../pages/UpcomingEventsPage.jsx?raw';
-import rawCompletedEventsPage from '../pages/CompletedEventsPage.jsx?raw';
-import rawOngoingEventsPage from '../pages/OngoingEventsPage.jsx?raw';
-import rawNotificationsPage from '../pages/NotificationsPage.jsx?raw';
-import rawProfilePage from '../pages/ProfilePage.jsx?raw';
-import rawSettingsPage from '../pages/SettingsPage.jsx?raw';
 import ToastHost from '../../../app/ToastHost.jsx';
 import '../styles/organizer.css';
-// Page components retain their existing HTML renderers inside these markers.
-// Extract only that block so imports and the React wrapper stay out of the browser script.
-function pageRuntime(pageSource) {
-  const startMarker = '/* PORTAL_RUNTIME_START */';
-  const endMarker = '/* PORTAL_RUNTIME_END */';
-  const startIndex = pageSource.indexOf(startMarker);
-  const endIndex = pageSource.indexOf(endMarker);
-  if (startIndex < 0 || endIndex < startIndex) {
-    throw new Error('Portal page source is incomplete');
-  }
-  return pageSource.slice(startIndex + startMarker.length, endIndex);
-}
-const source = Object.entries({
-  api: portalApi,
-  state: portalState,
-  dashOrganizer: pageRuntime(rawDashboardPage),
-  pageEventRequests: pageRuntime(rawEventRequestsPage),
-  renderWorkflowRequestDetails: pageRuntime(rawRequestDetailsPage),
-  pageAttendees: pageRuntime(rawAttendeesPage),
-  pageReports: pageRuntime(rawReportsPage),
-  pageWorkflowEvents: pageRuntime(rawMyEventsPage),
-  pageUpcomingEvents: pageRuntime(rawUpcomingEventsPage),
-  pageCompletedEvents: pageRuntime(rawCompletedEventsPage),
-  pageOngoingEvents: pageRuntime(rawOngoingEventsPage),
-  pageNotifications: pageRuntime(rawNotificationsPage),
-  pageProfile: pageRuntime(rawProfilePage),
-  pageSettings: pageRuntime(rawSettingsPage),
-}).reduce((code, [name, section]) => {
-  const marker = `/* PORTAL_SECTION_${name} */`;
-  if (!code.includes(marker)) throw new Error(`Missing portal section: ${name}`);
-  return code.replace(marker, section);
-}, runtime);
+import OrganizerPageContainer, { organizerPageNames } from './OrganizerPageContainer.jsx';
+import createPageBridge from '../../../app/createPageBridge.jsx';
+const organizerPages = createPageBridge(OrganizerPageContainer, organizerPageNames);
+const source = runtime
+  .replace('/* PORTAL_SECTION_api */', () => portalApi)
+  .replace('/* PORTAL_SECTION_state */', () => portalState);
 export default function OrganizerWorkspace() {
+  if (typeof window !== 'undefined') {
+    window.EventFlowOrganizerPages = organizerPages;
+    window.EventFlowReactPages = organizerPages;
+  }
   return (
     <>
       <PublicHomePage />
@@ -94,7 +59,7 @@ export default function OrganizerWorkspace() {
             </div>
             <nav className="sb-nav" id="sb-nav"></nav>
             <div className="sb-bottom">
-              <div className="sb-user" onClick={event => legacyEvent("goNav('settings')", event)}>
+              <div className="sb-user" onClick={() => window.goNav('settings')}>
                 <div className="av" id="sb-av">
                   ?
                 </div>
@@ -124,16 +89,10 @@ export default function OrganizerWorkspace() {
               User
             </div>
             <div className="topbar-right">
-              <button
-                className="notif-trigger"
-                onClick={event => legacyEvent("goNav('notifications')", event)}
-              >
+              <button className="notif-trigger" onClick={() => window.goNav('notifications')}>
                 🔔<span className="notif-badge" id="notif-count-dot"></span>
               </button>
-              <button
-                className="btn btn-ghost btn-sm"
-                onClick={event => legacyEvent('doLogout()', event)}
-              >
+              <button className="btn btn-ghost btn-sm" onClick={() => window.doLogout()}>
                 Sign Out
               </button>
             </div>
@@ -141,18 +100,11 @@ export default function OrganizerWorkspace() {
         }
       />
 
-      <div
-        className="overlay"
-        id="modal-overlay"
-        onClick={event => legacyEvent('closeModalOnBg(event)', event)}
-      >
+      <div className="overlay" id="modal-overlay" onClick={event => window.closeModalOnBg(event)}>
         <div className="modal-box" id="modal-box">
           <div className="modal-head">
             <span className="modal-title" id="modal-title"></span>
-            <button
-              className="modal-close-btn"
-              onClick={event => legacyEvent('closeModal()', event)}
-            >
+            <button className="modal-close-btn" onClick={() => window.closeModal()}>
               ✕
             </button>
           </div>
@@ -164,7 +116,7 @@ export default function OrganizerWorkspace() {
       <div
         className="overlay"
         id="confirm-overlay"
-        onClick={event => legacyEvent('closeConfirmOnBg(event)', event)}
+        onClick={event => window.closeConfirmOnBg(event)}
       >
         <div
           className="modal-box"
@@ -176,10 +128,7 @@ export default function OrganizerWorkspace() {
             <span className="modal-title" id="confirm-title">
               Confirm Action
             </span>
-            <button
-              className="modal-close-btn"
-              onClick={event => legacyEvent('closeConfirm()', event)}
-            >
+            <button className="modal-close-btn" onClick={() => window.closeConfirm()}>
               ✕
             </button>
           </div>
@@ -194,17 +143,10 @@ export default function OrganizerWorkspace() {
             ></p>
           </div>
           <div className="modal-foot">
-            <button
-              className="btn btn-ghost"
-              onClick={event => legacyEvent('closeConfirm()', event)}
-            >
+            <button className="btn btn-ghost" onClick={() => window.closeConfirm()}>
               Cancel
             </button>
-            <button
-              className="btn btn-danger"
-              id="confirm-ok"
-              onClick={event => legacyEvent('runConfirm()', event)}
-            >
+            <button className="btn btn-danger" id="confirm-ok" onClick={() => window.runConfirm()}>
               Confirm
             </button>
           </div>
@@ -214,7 +156,7 @@ export default function OrganizerWorkspace() {
       <div
         className="drawer-overlay"
         id="drawer-overlay"
-        onClick={event => legacyEvent('closeDrawer()', event)}
+        onClick={() => window.closeDrawer()}
       ></div>
 
       <div className="drawer" id="drawer">
@@ -222,10 +164,7 @@ export default function OrganizerWorkspace() {
           <span className="h4" id="drawer-title">
             Details
           </span>
-          <button
-            className="modal-close-btn"
-            onClick={event => legacyEvent('closeDrawer()', event)}
-          >
+          <button className="modal-close-btn" onClick={() => window.closeDrawer()}>
             ✕
           </button>
         </div>

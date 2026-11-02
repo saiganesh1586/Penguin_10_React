@@ -50,6 +50,7 @@ function renderUsersTable(containerId, users = null) {
       </tbody>
     </table>
   `;
+  globalThis.window?.EventFlowOrganizerPages?.clear(container);
   container.innerHTML = html;
 }
 function renderEventsTable(containerId, events = null) {
@@ -97,6 +98,7 @@ function renderEventsTable(containerId, events = null) {
       </tbody>
     </table>
   `;
+  globalThis.window?.EventFlowOrganizerPages?.clear(container);
   container.innerHTML = html;
 }
 function renderRegistrationsTable(containerId, registrations = null) {
@@ -148,6 +150,7 @@ function renderRegistrationsTable(containerId, registrations = null) {
       </tbody>
     </table>
   `;
+  globalThis.window?.EventFlowOrganizerPages?.clear(container);
   container.innerHTML = html;
 }
 
@@ -227,6 +230,7 @@ function renderEventCards(containerId, events = null, isAttendee = false) {
         .join('')}
     </div>
   `;
+  globalThis.window?.EventFlowOrganizerPages?.clear(container);
   container.innerHTML = html;
 }
 
@@ -273,6 +277,7 @@ function renderNotificationsPanel(containerId) {
       }
     </div>
   `;
+  globalThis.window?.EventFlowOrganizerPages?.clear(container);
   container.innerHTML = html;
 
   // Update notification badge
@@ -644,6 +649,7 @@ function renderQRCanvas(registrationId, containerId) {
   ctx.font = '10px Arial';
   ctx.textAlign = 'center';
   ctx.fillText(String(registrationId).substring(0, 8), canvas.width / 2, canvas.height - 10);
+  globalThis.window?.EventFlowOrganizerPages?.clear(container);
   container.innerHTML = '';
   container.appendChild(canvas);
 }
@@ -3368,6 +3374,7 @@ function initApp() {
   g('sb-name').textContent = isDepartmentEmployee() ? displayRole : CU.name;
   g('sb-role-lbl').textContent = isDepartmentEmployee() ? 'Employee workspace' : displayRole;
   if (CU.avatarImage) {
+    globalThis.window?.EventFlowOrganizerPages?.clear(g('sb-av'));
     g('sb-av').innerHTML = `<img src="${CU.avatarImage}" alt="${
       CU.name
     }" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.parentElement.textContent='${
@@ -3452,6 +3459,7 @@ function buildEmployeeNav(employeeType) {
       ],
     }[employeeType] || [];
   const unread = visibleNotifications().filter(n => !n.read).length;
+  globalThis.window?.EventFlowOrganizerPages?.clear(g('sb-nav'));
   g('sb-nav').innerHTML =
     `<div class="sb-section-lbl">Menu</div>` +
     nav
@@ -3498,6 +3506,7 @@ function sendContactMessage() {
 function buildNav(role) {
   const items = NAV[role] || [];
   const unread = DB.notifications.filter(notification => !notification.read).length;
+  globalThis.window?.EventFlowOrganizerPages?.clear(g('sb-nav'));
   g('sb-nav').innerHTML =
     `<div class="sb-section-lbl">Menu</div>` +
     items
@@ -3622,6 +3631,7 @@ async function renderPageContent(pg) {
   const r = CU.role;
   if (pg === 'customer-support') {
     if (!window.EventFlowSupport.canRequestSupport(CU)) return renderPageContent('settings');
+    globalThis.window?.EventFlowOrganizerPages?.clear(element);
     element.innerHTML = await window.EventFlowSupport.render(CU);
     window.EventFlowSupport.bind(element, CU, () => goNav('settings'));
     return;
@@ -3660,6 +3670,7 @@ async function renderPageContent(pg) {
         ],
       }[CU.employeeType] || [];
     if (!allowed.includes(pg)) {
+      globalThis.window?.EventFlowOrganizerPages?.clear(element);
       element.innerHTML = `<div class="empty"><div class="empty-title">Access restricted</div><p class="empty-desc">This department does not have access to this area.</p></div>`;
       return;
     }
@@ -3668,15 +3679,19 @@ async function renderPageContent(pg) {
   // Restrict superuser to only the 3 analytical subpages
   if (r === 'superuser') {
     if (pg === 'dashboard') {
+      globalThis.window?.EventFlowOrganizerPages?.clear(element);
       element.innerHTML = dashAdmin();
       return;
     } else if (pg === 'event-reports' || pg === 'events') {
+      globalThis.window?.EventFlowOrganizerPages?.clear(element);
       element.innerHTML = pageEventReports();
       return;
     } else if (pg === 'revenue-reports' || pg === 'reports' || pg === 'employee-stats') {
+      globalThis.window?.EventFlowOrganizerPages?.clear(element);
       element.innerHTML = pageRevenueReports();
       return;
     } else {
+      globalThis.window?.EventFlowOrganizerPages?.clear(element);
       element.innerHTML = pageUserReports();
       return;
     }
@@ -3698,12 +3713,22 @@ async function renderPageContent(pg) {
     try {
       await syncWorkflowData();
     } catch (error) {
+      globalThis.window?.EventFlowOrganizerPages?.clear(element);
       element.innerHTML = `<div class="empty"><div class="empty-title">Workflow data unavailable</div><p class="empty-desc">${error.message}</p><button class="btn btn-primary mt-16" onclick="renderPage('${pg}')">Try again</button></div>`;
       return;
     }
   }
   switch (pg) {
     case 'dashboard':
+      if (r === 'organizer' && globalThis.window?.EventFlowOrganizerPages?.hasPage('dashboard')) {
+        window.EventFlowOrganizerPages.render(
+          element,
+          'dashboard',
+          window.EventFlowOrganizerRuntime.snapshot()
+        );
+        break;
+      }
+      globalThis.window?.EventFlowOrganizerPages?.clear(element);
       element.innerHTML = isDepartmentEmployee()
         ? dashDepartmentEmployee()
         : (
@@ -3715,15 +3740,40 @@ async function renderPageContent(pg) {
           )();
       break;
     case 'registrations':
+      globalThis.window?.EventFlowOrganizerPages?.clear(element);
       element.innerHTML = pageRegistrationsForEmployee();
       break;
     case 'events':
-      element.innerHTML =
-        CU.role === 'organizer'
-          ? dashOrganizer()
-          : isDepartmentEmployee() && CU.employeeType === 'EVENT_OPERATIONS'
-          ? pageEventOpsEvents()
-          : pageEvents();
+      if (CU.role === 'organizer') {
+        if (globalThis.window?.EventFlowOrganizerPages?.hasPage('dashboard')) {
+          window.EventFlowOrganizerPages.render(
+            element,
+            'dashboard',
+            window.EventFlowOrganizerRuntime.snapshot({})
+          );
+        } else {
+          globalThis.window?.EventFlowOrganizerPages?.clear(element);
+          globalThis.window?.EventFlowOrganizerPages?.clear(element);
+          element.innerHTML = dashOrganizer();
+        }
+      } else {
+        if (isDepartmentEmployee() && CU.employeeType === 'EVENT_OPERATIONS') {
+          globalThis.window?.EventFlowOrganizerPages?.clear(element);
+          element.innerHTML = pageEventOpsEvents();
+        } else {
+          if (globalThis.window?.EventFlowOrganizerPages?.hasPage('events')) {
+            window.EventFlowOrganizerPages.render(
+              element,
+              'events',
+              window.EventFlowOrganizerRuntime.snapshot({})
+            );
+          } else {
+            globalThis.window?.EventFlowOrganizerPages?.clear(element);
+            globalThis.window?.EventFlowOrganizerPages?.clear(element);
+            element.innerHTML = pageEvents();
+          }
+        }
+      }
       break;
     case 'event-requests':
       if (r === 'organizer') {
@@ -3733,24 +3783,50 @@ async function renderPageContent(pg) {
           console.error('Unable to refresh organizer event requests', error);
         }
       }
-      element.innerHTML =
-        isDepartmentEmployee() && CU.employeeType === 'EVENT_OPERATIONS'
-          ? pageEventOperationsWorkspace()
-          : pageEventRequests();
+      if (isDepartmentEmployee() && CU.employeeType === 'EVENT_OPERATIONS') {
+        globalThis.window?.EventFlowOrganizerPages?.clear(element);
+        element.innerHTML = pageEventOperationsWorkspace();
+      } else {
+        if (globalThis.window?.EventFlowOrganizerPages?.hasPage('event-requests')) {
+          window.EventFlowOrganizerPages.render(
+            element,
+            'event-requests',
+            window.EventFlowOrganizerRuntime.snapshot({})
+          );
+        } else {
+          globalThis.window?.EventFlowOrganizerPages?.clear(element);
+          globalThis.window?.EventFlowOrganizerPages?.clear(element);
+          element.innerHTML = pageEventRequests();
+        }
+      }
       break;
     case 'support-center':
-      element.innerHTML =
-        isDepartmentEmployee() && CU.employeeType === 'SUPPORT_FINANCE'
-          ? pageSupportCenter()
-          : pageEventRequests();
+      if (isDepartmentEmployee() && CU.employeeType === 'SUPPORT_FINANCE') {
+        globalThis.window?.EventFlowOrganizerPages?.clear(element);
+        element.innerHTML = pageSupportCenter();
+      } else {
+        if (globalThis.window?.EventFlowOrganizerPages?.hasPage('event-requests')) {
+          window.EventFlowOrganizerPages.render(
+            element,
+            'event-requests',
+            window.EventFlowOrganizerRuntime.snapshot({})
+          );
+        } else {
+          globalThis.window?.EventFlowOrganizerPages?.clear(element);
+          globalThis.window?.EventFlowOrganizerPages?.clear(element);
+          element.innerHTML = pageEventRequests();
+        }
+      }
       break;
     case 'finance':
+      globalThis.window?.EventFlowOrganizerPages?.clear(element);
       element.innerHTML =
         isDepartmentEmployee() && CU.employeeType === 'SUPPORT_FINANCE'
           ? pageFinanceCenter()
           : pageRevenueReports();
       break;
     case 'request-status':
+      globalThis.window?.EventFlowOrganizerPages?.clear(element);
       element.innerHTML = pageRequestStatus();
       break;
     case 'request-details':
@@ -3758,69 +3834,181 @@ async function renderPageContent(pg) {
       break;
     case 'attendees':
       if (r === 'organizer') {
+        globalThis.window?.EventFlowOrganizerPages?.clear(element);
         element.innerHTML = `<div class="org-attendees"><div class="page-hd"><div class="page-hd-left"><div class="page-title">Attendee Management</div><div class="page-sub">Loading your events and registrations…</div></div></div><div class="org-attendee-skeleton" aria-label="Loading attendees"><div></div><div></div><div></div></div></div>`;
         try {
           await syncOrganizerAttendees();
         } catch (error) {
+          globalThis.window?.EventFlowOrganizerPages?.clear(element);
           element.innerHTML = `<div class="org-attendees card"><div class="empty" role="alert"><div class="empty-icon">⚠️</div><div class="empty-title">Registrations could not be loaded</div><p class="empty-desc">${escapeHtml(
             error.message || 'Please try again.'
           )}</p><button class="btn btn-primary mt-16" onclick="renderPage('attendees')">Try Again</button></div></div>`;
           break;
         }
       }
-      element.innerHTML =
-        isDepartmentEmployee() && CU.employeeType === 'REGISTRATION_VERIFICATION'
-          ? pageUserManagement()
-          : pageAttendees();
+      if (isDepartmentEmployee() && CU.employeeType === 'REGISTRATION_VERIFICATION') {
+        globalThis.window?.EventFlowOrganizerPages?.clear(element);
+        element.innerHTML = pageUserManagement();
+      } else {
+        if (globalThis.window?.EventFlowOrganizerPages?.hasPage('attendees')) {
+          window.EventFlowOrganizerPages.render(
+            element,
+            'attendees',
+            window.EventFlowOrganizerRuntime.snapshot({})
+          );
+        } else {
+          globalThis.window?.EventFlowOrganizerPages?.clear(element);
+          globalThis.window?.EventFlowOrganizerPages?.clear(element);
+          element.innerHTML = pageAttendees();
+        }
+      }
       break;
     case 'attendeeVerification':
+      globalThis.window?.EventFlowOrganizerPages?.clear(element);
       element.innerHTML = pageAttendeeVerification();
       break;
     case 'reports':
-      element.innerHTML =
-        isDepartmentEmployee() && CU.employeeType === 'REGISTRATION_VERIFICATION'
-          ? pageRegVerificationReports()
-          : isDepartmentEmployee() && CU.employeeType === 'EVENT_OPERATIONS'
-          ? pageEventOpsReports()
-          : isDepartmentEmployee() && CU.employeeType === 'SUPPORT_FINANCE'
-          ? pageOperationalReports()
-          : pageReports();
+      if (isDepartmentEmployee() && CU.employeeType === 'REGISTRATION_VERIFICATION') {
+        globalThis.window?.EventFlowOrganizerPages?.clear(element);
+        element.innerHTML = pageRegVerificationReports();
+      } else {
+        if (isDepartmentEmployee() && CU.employeeType === 'EVENT_OPERATIONS') {
+          globalThis.window?.EventFlowOrganizerPages?.clear(element);
+          element.innerHTML = pageEventOpsReports();
+        } else {
+          if (isDepartmentEmployee() && CU.employeeType === 'SUPPORT_FINANCE') {
+            globalThis.window?.EventFlowOrganizerPages?.clear(element);
+            element.innerHTML = pageOperationalReports();
+          } else {
+            if (globalThis.window?.EventFlowOrganizerPages?.hasPage('reports')) {
+              window.EventFlowOrganizerPages.render(
+                element,
+                'reports',
+                window.EventFlowOrganizerRuntime.snapshot({})
+              );
+            } else {
+              globalThis.window?.EventFlowOrganizerPages?.clear(element);
+              globalThis.window?.EventFlowOrganizerPages?.clear(element);
+              element.innerHTML = pageReports();
+            }
+          }
+        }
+      }
       break;
     case 'browse-events':
+      globalThis.window?.EventFlowOrganizerPages?.clear(element);
       element.innerHTML = pageBrowseEvents();
       break;
     case 'my-tickets':
+      globalThis.window?.EventFlowOrganizerPages?.clear(element);
       element.innerHTML = pageMyTickets();
       break;
     case 'find-organizers':
+      globalThis.window?.EventFlowOrganizerPages?.clear(element);
       element.innerHTML = pageFindOrganizers();
       break;
     case 'upcoming-events':
-      element.innerHTML = pageUpcomingEvents();
+      if (globalThis.window?.EventFlowOrganizerPages?.hasPage('upcoming-events')) {
+        window.EventFlowOrganizerPages.render(
+          element,
+          'upcoming-events',
+          window.EventFlowOrganizerRuntime.snapshot({})
+        );
+      } else {
+        globalThis.window?.EventFlowOrganizerPages?.clear(element);
+        globalThis.window?.EventFlowOrganizerPages?.clear(element);
+        element.innerHTML = pageUpcomingEvents();
+      }
       break;
     case 'my-events':
-      element.innerHTML = pageWorkflowEvents();
+      if (globalThis.window?.EventFlowOrganizerPages?.hasPage('my-events')) {
+        window.EventFlowOrganizerPages.render(
+          element,
+          'my-events',
+          window.EventFlowOrganizerRuntime.snapshot({})
+        );
+      } else {
+        globalThis.window?.EventFlowOrganizerPages?.clear(element);
+        globalThis.window?.EventFlowOrganizerPages?.clear(element);
+        element.innerHTML = pageWorkflowEvents();
+      }
       break;
     case 'completed-events':
-      element.innerHTML = pageCompletedEvents();
+      if (globalThis.window?.EventFlowOrganizerPages?.hasPage('completed-events')) {
+        window.EventFlowOrganizerPages.render(
+          element,
+          'completed-events',
+          window.EventFlowOrganizerRuntime.snapshot({
+            embedded: undefined,
+          })
+        );
+      } else {
+        globalThis.window?.EventFlowOrganizerPages?.clear(element);
+        globalThis.window?.EventFlowOrganizerPages?.clear(element);
+        element.innerHTML = pageCompletedEvents();
+      }
       break;
     case 'ongoing-events':
-      element.innerHTML = pageOngoingEvents();
+      if (globalThis.window?.EventFlowOrganizerPages?.hasPage('ongoing-events')) {
+        window.EventFlowOrganizerPages.render(
+          element,
+          'ongoing-events',
+          window.EventFlowOrganizerRuntime.snapshot({
+            embedded: undefined,
+          })
+        );
+      } else {
+        globalThis.window?.EventFlowOrganizerPages?.clear(element);
+        globalThis.window?.EventFlowOrganizerPages?.clear(element);
+        element.innerHTML = pageOngoingEvents();
+      }
       break;
     case 'notifications':
-      element.innerHTML = pageNotifications();
+      if (globalThis.window?.EventFlowOrganizerPages?.hasPage('notifications')) {
+        window.EventFlowOrganizerPages.render(
+          element,
+          'notifications',
+          window.EventFlowOrganizerRuntime.snapshot({})
+        );
+      } else {
+        globalThis.window?.EventFlowOrganizerPages?.clear(element);
+        globalThis.window?.EventFlowOrganizerPages?.clear(element);
+        element.innerHTML = pageNotifications();
+      }
       break;
     case 'profile':
-      element.innerHTML = pageProfile();
+      if (globalThis.window?.EventFlowOrganizerPages?.hasPage('profile')) {
+        window.EventFlowOrganizerPages.render(
+          element,
+          'profile',
+          window.EventFlowOrganizerRuntime.snapshot({})
+        );
+      } else {
+        globalThis.window?.EventFlowOrganizerPages?.clear(element);
+        globalThis.window?.EventFlowOrganizerPages?.clear(element);
+        element.innerHTML = pageProfile();
+      }
       break;
     case 'settings':
-      element.innerHTML = pageSettings();
+      if (globalThis.window?.EventFlowOrganizerPages?.hasPage('settings')) {
+        window.EventFlowOrganizerPages.render(
+          element,
+          'settings',
+          window.EventFlowOrganizerRuntime.snapshot({})
+        );
+      } else {
+        globalThis.window?.EventFlowOrganizerPages?.clear(element);
+        globalThis.window?.EventFlowOrganizerPages?.clear(element);
+        element.innerHTML = pageSettings();
+      }
       window.EventFlowSupport.addSettingsEntry(element, () => goNav('customer-support'), CU);
       break;
     case 'users':
+      globalThis.window?.EventFlowOrganizerPages?.clear(element);
       element.innerHTML = pageUsers();
       break;
     default:
+      globalThis.window?.EventFlowOrganizerPages?.clear(element);
       element.innerHTML = `<div class="empty"><div class="empty-icon">🚧</div><div class="empty-title">Page not found</div><p class="empty-desc">The requested page "${pg}" could not be loaded.</p></div>`;
   }
 }
@@ -6784,6 +6972,7 @@ window.handleRegReportFileSelect = function (input) {
   if (input.files && input.files[0]) {
     const f = input.files[0];
     if (preview) {
+      globalThis.window?.EventFlowOrganizerPages?.clear(preview);
       preview.innerHTML = `
             <div class="flex items-center justify-between" style="background:var(--accent-dim);border-radius:8px;padding:10px 14px">
               <div style="font-weight:600;color:var(--accent);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📄 ${
@@ -6800,6 +6989,7 @@ window.resetRegReportFileSelect = function () {
   if (input) input.value = '';
   const preview = document.getElementById('rv-file-preview');
   if (preview) {
+    globalThis.window?.EventFlowOrganizerPages?.clear(preview);
     preview.innerHTML = `
           <div style="font-size:24px;margin-bottom:6px">📁</div>
           <div style="font-weight:600;font-size:13.5px">Click to browse or upload report file</div>
@@ -6916,6 +7106,7 @@ function searchEmployeeChanges(query) {
         .includes(changesQuery)
     )
     .slice(0, 12);
+  globalThis.window?.EventFlowOrganizerPages?.clear(g('employee-recent-changes'));
   g('employee-recent-changes').innerHTML = buildEmployeeChanges(changes);
 }
 function completeEmployeeChangeRequest(requestId) {
@@ -6929,9 +7120,225 @@ function completeEmployeeChangeRequest(requestId) {
   renderPage('dashboard');
   toast('Change request marked as done', 'success');
 }
+function dashOrganizer() {
+  const esc =
+    typeof escapeHtml === 'function'
+      ? escapeHtml
+      : typeof workflowHtml === 'function'
+      ? workflowHtml
+      : String;
+  if (typeof organizerDashboardData !== 'undefined' && organizerDashboardData) {
+    const d = organizerDashboardData;
+    const counts = d.eventStatusCounts || {};
+    const attentionCount =
+      d.eventsNeedingAttention !== undefined
+        ? d.eventsNeedingAttention
+        : d.attentionEventIds?.length ?? 0;
+    const actions = Array.isArray(d.priorityActions) ? d.priorityActions : [];
+    const upcomingList = Array.isArray(d.upcomingSchedule) ? d.upcomingSchedule : [];
+    return `
+  <div class="page-hd">
+    <div class="page-hd-left"><div class="page-title">Organizer Dashboard</div><div class="page-sub">Hello ${
+      (CU && CU.name) || 'Organizer'
+    }, manage your events.</div></div>
+    <div class="page-hd-right"><button class="btn btn-primary" onclick="openAddEventModal()">+ Create Event</button></div>
+  </div>
+  <div class="grid-4 mb-20">
+    <div class="stat-card" onclick="openOrganizerEvents('all')" style="cursor:pointer">
+      <div class="stat-icon" style="background:var(--accent-dim);color:var(--accent)">🗓️</div>
+      <div class="stat-value" style="color:var(--accent)">${
+        d.totalEvents ?? (DB.events || []).length
+      }</div>
+      <div class="stat-label">My Events</div>
+      <div class="stat-sub neutral" style="display:flex;flex-wrap:wrap;gap:6px;font-size:11px;margin-top:4px">
+        <span>Upcoming <strong>${counts.upcoming ?? 0}</strong></span>
+        <span>In Progress <strong>${counts.inProgress ?? 0}</strong></span>
+        <span>Completed <strong>${counts.completed ?? 0}</strong></span>
+        <span>Cancelled <strong>${counts.cancelled ?? 0}</strong></span>
+        <span>Needs Attention <strong>${counts.needsAttention ?? 0}</strong></span>
+      </div>
+    </div>
+    <div class="stat-card" onclick="openOrganizerRequests()" style="cursor:pointer">
+      <div class="stat-icon" style="background:var(--blue-dim);color:var(--blue)">📋</div>
+      <div class="stat-value" style="color:var(--blue)">${d.pendingRequests ?? 0}</div>
+      <div class="stat-label">Pending Event Requests</div>
+      <div class="stat-sub neutral">Review client proposals</div>
+    </div>
+    <div class="stat-card" onclick="pageOrganizerFinancialRecords()" style="cursor:pointer">
+      <div class="stat-icon" style="background:var(--green-dim);color:var(--green)">💰</div>
+      <div class="stat-value" style="color:var(--green)">₹${Number(
+        d.totalRevenue ?? 0
+      ).toLocaleString()}</div>
+      <div class="stat-label">Event Revenue</div>
+      <div class="stat-sub neutral">Gross: ₹${Number(
+        d.grossRevenue ?? d.totalRevenue ?? 0
+      ).toLocaleString()}${
+      d.refundedAmount ? ` (Refunded: ₹${Number(d.refundedAmount).toLocaleString()})` : ''
+    }</div>
+    </div>
+    <div class="stat-card" onclick="openOrganizerEvents('attention')" style="cursor:pointer">
+      <div class="stat-icon" style="background:var(--yellow-dim);color:var(--yellow)">⚠️</div>
+      <div class="stat-value" style="color:var(--yellow)">${attentionCount}</div>
+      <div class="stat-label">Events Needing Attention</div>
+      <div class="stat-sub neutral">Requires immediate action</div>
+    </div>
+  </div>
 
-/* PORTAL_SECTION_dashOrganizer */
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
+    <div class="card">
+      <div style="font-size:16px;font-weight:700;margin-bottom:12px">Priority Actions</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        ${
+          actions.length === 0
+            ? '<div class="small text-muted">No pending priority actions.</div>'
+            : actions
+                .map(
+                  act => `
+          <div style="padding:10px;background:var(--surface2);border-radius:8px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="${
+            act.type === 'preparation'
+              ? `organizerEventSection('${act.eventId || act.id}','preparation')`
+              : act.type === 'request'
+              ? `viewWorkflowRequestDrawer('${act.id}')`
+              : `openOrganizerIssue('${act.id}')`
+          }">
+            <div>
+              <div style="font-weight:600;font-size:13.5px">${esc(act.title)}</div>
+              <div class="small text-muted">${esc(act.detail || '')}</div>
+            </div>
+            <span class="badge badge-${
+              act.type === 'preparation' ? 'yellow' : act.type === 'request' ? 'blue' : 'red'
+            }">${act.type}</span>
+          </div>
+        `
+                )
+                .join('')
+        }
+      </div>
+    </div>
 
+    <div class="card">
+      <div style="font-size:16px;font-weight:700;margin-bottom:12px">Upcoming Schedule</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        ${
+          upcomingList.length === 0
+            ? '<div class="small text-muted">No upcoming events scheduled.</div>'
+            : upcomingList
+                .map(
+                  event => `
+          <div style="padding:10px;background:var(--surface2);border-radius:8px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="openViewEventDrawer('${
+            event.eventId || event.id
+          }')">
+            <div>
+              <div style="font-weight:600;font-size:13.5px">${esc(event.title)}</div>
+              <div class="small text-muted">📅 ${esc(event.date || '')} ${esc(
+                    event.time || ''
+                  )} · 📍 ${esc(event.location || '')}</div>
+            </div>
+            <span class="badge badge-green">${esc(event.status || 'published')}</span>
+          </div>
+        `
+                )
+                .join('')
+        }
+      </div>
+    </div>
+  </div>`;
+  }
+  const myEventsList = (DB && DB.events) || [];
+  const myEv = myEventsList.filter(e => String(e.organizer) === String(CU.id));
+  const activeEvents = myEv.filter(e => !isCancelledWorkflowEvent(e));
+  const upcoming = activeEvents.filter(event => workflowEventPhase(event) === 'upcoming');
+  const allRegs = (DB && DB.registrations) || [];
+  const totalAttendees = allRegs.filter(registration =>
+    myEv.some(e => String(e.id) === String(registration.eventId))
+  ).length;
+  const allReqs = (DB && DB.eventRequests) || [];
+  const inReviewCount = allReqs.filter(
+    request =>
+      String(request.organizer) === String(CU.id) &&
+      request.status === 'plan_submitted' &&
+      (DB.eventPlans || []).some(
+        plan =>
+          String(plan.eventPlanId) === String(request.activeEventPlanId) &&
+          plan.approvalStatus === 'pending'
+      )
+  ).length;
+  const weeklyAttendees = allRegs.filter(
+    registration =>
+      myEv.some(e => String(e.id) === String(registration.eventId)) &&
+      new Date(
+        registration.registrationDate || registration.createdAt || registration.date
+      ).getTime() >=
+        Date.now() - 7 * 86400000
+  ).length;
+  const searchQuery = (sessionStorage.getItem('org_events_search') || '').toLowerCase();
+  const statusFilter = sessionStorage.getItem('org_events_status') || '';
+  const categoryFilter = sessionStorage.getItem('org_events_category') || '';
+  const filteredEvents = filterOrganizerDashboardEvents(
+    activeEvents,
+    searchQuery,
+    statusFilter,
+    categoryFilter
+  );
+  return `
+  <div class="page-hd">
+    <div class="page-hd-left"><div class="page-title">Organizer Dashboard</div><div class="page-sub">Hello ${
+      (CU && CU.name) || 'Organizer'
+    }, manage your events.</div></div>
+    <div class="page-hd-right"><button class="btn btn-primary" onclick="openAddEventModal()">+ Create Event</button></div>
+  </div>
+  <div class="grid-4 mb-20">
+    <div class="stat-card"><div class="stat-icon" style="background:var(--accent-dim);color:var(--accent)">🗓️</div><div class="stat-value" style="color:var(--accent)">${
+      myEv.length
+    }</div><div class="stat-label">My Events</div><div class="stat-sub neutral">${
+    upcoming.length
+  } upcoming</div></div>
+    <div class="stat-card"><div class="stat-icon" style="background:var(--green-dim);color:var(--green)">👥</div><div class="stat-value" style="color:var(--green)">${totalAttendees}</div><div class="stat-label">Total Attendees</div><div class="stat-sub up">↑ ${weeklyAttendees} this week</div></div>
+    <div class="stat-card"><div class="stat-icon" style="background:var(--blue-dim);color:var(--blue)">📋</div><div class="stat-value" style="color:var(--blue)">${inReviewCount}</div><div class="stat-label">Plans in Review</div><div class="stat-sub neutral">With clients</div></div>
+  </div>
+  <div class="mb-16">
+    <div class="mb-12 flex justify-between items-center"><span class="h4">My Events</span><button class="btn btn-ghost btn-sm" onclick="openOrganizerEvents('cancelled')">Cancelled Events</button></div>
+    <div class="search-box input-group" style="margin-bottom:16px"><span class="input-icon">🔍</span><input class="form-control" id="org-events-search" placeholder="Search by event name or city..." value="${searchQuery}" oninput="searchOrganizerEvents(this.value)"></div>
+    <div class="filter-row" style="margin-bottom:16px">
+      <select class="form-control filter-select" id="org-events-status" onchange="filterOrganizerDashboardEventsFromControls()">
+        <option value="" ${statusFilter === '' ? 'selected' : ''}>All Status</option>
+        <option value="upcoming" ${statusFilter === 'upcoming' ? 'selected' : ''}>Upcoming</option>
+        <option value="ongoing" ${statusFilter === 'ongoing' ? 'selected' : ''}>Ongoing</option>
+        <option value="full" ${statusFilter === 'full' ? 'selected' : ''}>Full</option>
+        <option value="completed" ${
+          statusFilter === 'completed' ? 'selected' : ''
+        }>Completed</option>
+      </select>
+      <select class="form-control filter-select" id="org-events-category" onchange="filterOrganizerDashboardEventsFromControls()">
+        <option value="" ${categoryFilter === '' ? 'selected' : ''}>All Categories</option>
+        ${[...new Set(myEv.map(e => e.category).filter(Boolean))]
+          .sort()
+          .map(
+            category =>
+              `<option value="${esc(category)}" ${
+                categoryFilter === category ? 'selected' : ''
+              }>${esc(category)}</option>`
+          )
+          .join('')}
+      </select>
+    </div>
+    <div class="events-grid" id="org-events-grid">${
+      filteredEvents.length > 0
+        ? filteredEvents.map(event => evCard(event, 'organizer')).join('')
+        : activeEvents.length > 0
+        ? `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔍</div><div class="empty-title">No events match</div><p>Try adjusting your filters</p></div>`
+        : myEv.length > 0
+        ? `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">📁</div><div class="empty-title">No active events</div><button class="btn btn-ghost mt-16" onclick="openOrganizerEvents('cancelled')">View Cancelled Events</button></div>`
+        : `<div class="ev-card" style="display:flex;align-items:center;justify-content:center;min-height:240px;border-style:dashed;cursor:pointer" onclick="openAddEventModal()"><div class="text-center" style="color:var(--text3)"><div style="font-size:32px;margin-bottom:8px">➕</div><div style="font-size:13px">Create Your First Event</div></div></div>`
+    }
+      ${
+        myEv.length > 0
+          ? `<div class="ev-card" style="display:flex;align-items:center;justify-content:center;min-height:240px;border-style:dashed;cursor:pointer" onclick="openAddEventModal()"><div class="text-center" style="color:var(--text3)"><div style="font-size:32px;margin-bottom:8px">➕</div><div style="font-size:13px">Create New Event</div></div></div>`
+          : ''
+      }
+    </div>
+  </div>`;
+}
 function openOrganizerRequests() {
   sessionStorage.setItem('org_reqs_tab', 'actionable');
   goNav('event-requests');
@@ -6992,6 +7399,7 @@ function refreshOrganizerDashboardEvents() {
   const filtered = filterOrganizerDashboardEvents(myEvents, query, status, category);
   const grid = g('org-events-grid');
   if (!grid) return;
+  globalThis.window?.EventFlowOrganizerPages?.clear(grid);
   grid.innerHTML =
     filtered.map(event => evCard(event, 'organizer')).join('') ||
     `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔍</div><div class="empty-title">No events match</div><p>Try adjusting your filters</p></div>`;
@@ -7995,6 +8403,7 @@ function refreshDirectoryUserManagement() {
       );
     return u.role !== 'superuser' && matchesRole && matchesQuery;
   });
+  globalThis.window?.EventFlowOrganizerPages?.clear(g('user-management-table'));
   g('user-management-table').innerHTML = buildUserManagementTable(users);
 }
 function openEditUserModal(userId) {
@@ -8150,6 +8559,14 @@ function pageEvents() {
   <div class="events-grid" id="ev-grid">${list.map(e => evCard(e, CU.role)).join('')}</div>`;
 }
 function refreshEvents() {
+  if (globalThis.window?.EventFlowOrganizerPages?.isCurrentPage('events')) {
+    window.EventFlowOrganizerPages.render(
+      g('page-content'),
+      'events',
+      window.EventFlowOrganizerRuntime.snapshot()
+    );
+    return;
+  }
   const q = (g('ev-q') || {}).value?.toLowerCase() || '';
   const st = (g('ev-st') || {}).value || '';
   const cat = (g('ev-cat') || {}).value || '';
@@ -8171,6 +8588,7 @@ function refreshEvents() {
       );
     }
   );
+  globalThis.window?.EventFlowOrganizerPages?.clear(g('ev-grid'));
   g('ev-grid').innerHTML =
     list.map(e => evCard(e, CU.role)).join('') ||
     `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔍</div><div class="empty-title">No events found</div></div>`;
@@ -9099,6 +9517,7 @@ function refreshBrowse() {
       (!city || event.city === city)
     );
   });
+  globalThis.window?.EventFlowOrganizerPages?.clear(g('browse-grid'));
   g('browse-grid').innerHTML =
     list.map(e => evCard(e, 'attendee')).join('') ||
     `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔍</div><div class="empty-title">No events match</div><p class="empty-desc">Try adjusting your filters.</p></div>`;
@@ -9529,9 +9948,148 @@ function canReviewOrganizerRegistration(registration, event) {
     new Date(`${event.date}T23:59:59`) >= new Date()
   );
 }
-
-/* PORTAL_SECTION_pageAttendees */
-
+function pageAttendees() {
+  const myEvents =
+    CU.role === 'organizer'
+      ? organizerRegistrationEvents
+      : DB.events.filter(event => event.organizer === CU.id);
+  const savedEventId = sessionStorage.getItem('org_attendees_event');
+  const selectedEvent =
+    myEvents.find(event => String(event.id) === savedEventId) ||
+    myEvents.find(event =>
+      DB.registrations.some(
+        registration =>
+          String(registration.eventId) === String(event.id) &&
+          canReviewOrganizerRegistration(registration, event)
+      )
+    ) ||
+    myEvents[0];
+  const selectedEventId = selectedEvent?.id;
+  if (selectedEventId) sessionStorage.setItem('org_attendees_event', String(selectedEventId));
+  const isPrivateEvent = selectedEvent?.visibility === 'private';
+  const regs =
+    CU.role === 'organizer'
+      ? DB.registrations.filter(
+          registration =>
+            registration.organizerManaged &&
+            selectedEventId &&
+            String(registration.eventId) === String(selectedEventId)
+        )
+      : CU.role === 'superuser'
+      ? DB.registrations
+      : DB.registrations.filter(registration => {
+          const event = DB.events.find(currentEvent => currentEvent.id === registration.eventId);
+          return event && event.organizer === CU.id;
+        });
+  if (CU.role === 'organizer' && !myEvents.length)
+    return '<div class="org-attendees card"><div class="empty"><div class="empty-icon">📅</div><div class="empty-title">No events to manage</div><p class="empty-desc">Create an event to start managing attendee registrations.</p><button class="btn btn-primary mt-16" onclick="openAddEventModal()">Create Event</button></div></div>';
+  if (CU.role === 'organizer' && myEvents.length > 0) {
+    const approvedCount = regs.filter(registration =>
+      ['Approved', 'No Approval Required', 'Attended'].includes(
+        organizerRegistrationStatus(registration)
+      )
+    ).length;
+    const pendingCount = regs.filter(registration =>
+      ['Pending', 'Payment Pending'].includes(organizerRegistrationStatus(registration))
+    ).length;
+    const rejectedCount = regs.filter(
+      registration => organizerRegistrationStatus(registration) === 'Declined'
+    ).length;
+    const eventStatus =
+      selectedEvent.status === 'published'
+        ? 'Published'
+        : selectedEvent.status === 'draft'
+        ? 'Draft'
+        : selectedEvent.status || 'Event';
+    return `
+    <div class="org-attendees">
+    <div class="page-hd org-attendees-heading">
+      <div class="page-hd-left"><div class="page-title">Attendee Management</div><div class="page-sub">${
+        regs.length
+      } attendees · ${approvedCount} approved · ${pendingCount} pending</div></div>
+    </div>
+    <div class="card org-attendee-event-card">
+      <div><div class="label mb-8">SELECT EVENT</div><div class="small">Choose an event to view its registrations</div></div>
+      <details class="org-event-picker">
+        <summary><span><strong>${escapeHtml(selectedEvent.title)}</strong><small>${escapeHtml(
+      eventStatus
+    )} · ${
+      Number(selectedEvent.registered) || 0
+    } registered</small></span><span aria-hidden="true">⌄</span></summary>
+        <div class="org-event-options"><div class="search-box input-group"><span class="input-icon">🔍</span><input class="form-control" aria-label="Search your events" placeholder="Search events…" oninput="filterOrganizerEventOptions(this.value)"></div>
+          <div class="org-event-option-list" role="listbox" aria-label="Your events">${myEvents
+            .map(
+              event =>
+                `<button type="button" role="option" aria-selected="${
+                  String(event.id) === String(selectedEventId)
+                }" data-event-name="${escapeHtml(
+                  event.title
+                )}" onclick="switchOrganizerEvent('${escapeHtml(
+                  event.id
+                )}')"><span><strong>${escapeHtml(event.title)}</strong><small>${escapeHtml(
+                  event.status === 'published' ? 'Published' : event.status || 'Event'
+                )}</small></span><span class="org-event-option-count">${
+                  Number(event.registered) || 0
+                } registered</span></button>`
+            )
+            .join('')}</div>
+          <div class="org-event-no-match" hidden>No matching events</div>
+        </div>
+      </details>
+      ${isPrivateEvent ? `<span class="badge badge-blue">🔒 Private Event</span>` : ''}
+    </div>
+    <div class="org-attendee-stats">
+      <div class="card"><span>Total Attendees</span><strong>${
+        regs.length
+      }</strong><small>For this event</small></div>
+      <div class="card"><span>Approved</span><strong>${approvedCount}</strong><small>Confirmed or attended</small></div>
+      <div class="card"><span>Pending</span><strong>${pendingCount}</strong><small>Awaiting review or payment</small></div>
+      <div class="card"><span>Rejected</span><strong>${rejectedCount}</strong><small>Declined registrations</small></div>
+    </div>
+    <div class="card org-attendee-list-card">
+    <div class="org-attendee-list-heading"><div><div class="h4">Attendees</div><div class="small">${escapeHtml(
+      selectedEvent.title
+    )} · ${regs.length} registrations</div></div></div>
+    <div class="filter-row org-attendee-filters">
+      <div class="search-box input-group"><span class="input-icon">🔍</span><input class="form-control" id="at-q" aria-label="Search attendees" placeholder="Search name, email or ticket ID…" oninput="refreshAttendees()"></div>
+      <select class="form-control filter-select" id="at-status" aria-label="Filter attendee status" onchange="refreshAttendees()">
+        <option value="">All Status</option>
+        ${
+          selectedEvent?.visibility === 'public'
+            ? '<option value="no approval required">No Approval Required</option><option value="payment pending">Payment Pending</option>'
+            : '<option value="approved">Approved</option><option value="pending">Pending Review</option>'
+        }
+        <option value="rejected">Declined</option>
+        <option value="cancelled">Cancelled</option>
+        <option value="attended">Attended</option>
+      </select>
+    </div>
+    <div id="attendees-tbl">${buildOrganizerAttendeesTbl(regs, selectedEvent, isPrivateEvent)}</div>
+    </div></div>
+    `;
+  }
+  const checkedIn2 = regs.filter(registration => registration.checkedIn).length;
+  return `
+  <div class="page-hd">
+    <div class="page-hd-left"><div class="page-title">Attendee Management</div><div class="page-sub">${
+      regs.length
+    } total · ${checkedIn2} checked in</div></div>
+    <div class="page-hd-right">
+      <button class="btn btn-ghost" onclick="toast('Exported to CSV','success')">📥 Export CSV</button>
+    </div>
+  </div>
+  <div class="filter-row">
+    <div class="search-box input-group"><span class="input-icon">🔍</span><input class="form-control" id="at-q" placeholder="Search attendees…" oninput="refreshAttendees()"></div>
+    <select class="form-control filter-select" id="at-ev" onchange="refreshAttendees()">
+      <option value="">All Events</option>
+      ${DB.events.map(event => `<option value="${event.id}">${event.title}</option>`).join('')}
+    </select>
+    <select class="form-control filter-select" id="at-ci" onchange="refreshAttendees()">
+      <option value="">All</option><option value="in">Checked In</option><option value="out">Not Checked In</option>
+    </select>
+  </div>
+  <div id="attendees-tbl">${buildAttendeesTbl(regs)}</div>`;
+}
 function switchOrganizerEvent(eventId) {
   sessionStorage.setItem('org_attendees_event', eventId);
   renderPage('attendees');
@@ -9887,6 +10445,14 @@ function buildAttendeesTbl(registrations) {
   </table></div>`;
 }
 function refreshAttendees() {
+  if (globalThis.window?.EventFlowOrganizerPages?.isCurrentPage('attendees')) {
+    window.EventFlowOrganizerPages.render(
+      g('page-content'),
+      'attendees',
+      window.EventFlowOrganizerRuntime.snapshot()
+    );
+    return;
+  }
   if (CU.role === 'organizer') {
     const selectedEventId = sessionStorage.getItem('org_attendees_event') || '';
     const selectedEvent = organizerRegistrationEvents.find(
@@ -9896,6 +10462,7 @@ function refreshAttendees() {
       registration =>
         registration.organizerManaged && String(registration.eventId) === selectedEventId
     );
+    globalThis.window?.EventFlowOrganizerPages?.clear(g('attendees-tbl'));
     g('attendees-tbl').innerHTML = buildOrganizerAttendeesTbl(
       regs,
       selectedEvent,
@@ -9923,6 +10490,7 @@ function refreshAttendees() {
         (!ci || (ci === 'in' && r.checkedIn) || (ci === 'out' && !r.checkedIn))
       );
     });
+    globalThis.window?.EventFlowOrganizerPages?.clear(g('attendees-tbl'));
     g('attendees-tbl').innerHTML = buildAttendeesTbl(regs);
   }
 }
@@ -10268,8 +10836,304 @@ function renderOrganizerRowActions(r) {
   const viewDetailsBtn = `<button class="btn btn-ghost btn-xs" onclick="viewWorkflowRequestDrawer('${r.id}')" style="white-space:nowrap">View Details</button>`;
   return `<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">${viewDetailsBtn}${actionBtn}</div>`;
 }
+function pageEventRequests() {
+  // Normalize all requests
+  DB.eventRequests.forEach(normalizeEventRequest);
+  const filterTab = sessionStorage.getItem('org_reqs_tab') || 'all';
+  const search = (sessionStorage.getItem('org_reqs_search') || '').toLowerCase().trim();
 
-/* PORTAL_SECTION_pageEventRequests */
+  // Show requests relevant to this organizer (or all for superuser)
+  const myReqs = DB.eventRequests.filter(request => {
+    if (CU.role === 'superuser') return true;
+    return (
+      String(request.organizer) === String(CU.id) ||
+      String(request.organizerId) === String(CU.id) ||
+      String(request.organizerUserId) === String(CU.id) ||
+      !request.organizer
+    );
+  });
+
+  // 5 functional status groups per specification:
+  // 1. All Requests: All requests
+  // 2. Action Required: Submitted/pending requests, proposals awaiting client response, and counteroffers/requested changes requiring action
+  const actionRequiredStatuses = [
+    'submitted',
+    'pending',
+    'proposal_sent',
+    'awaiting_client',
+    'changes_requested',
+    'counteroffer_received',
+    'planning',
+    'plan_submitted',
+    'plan_revision_requested',
+  ];
+  // 3. Under Review: Requests currently being reviewed by the organizer
+  const underReviewStatuses = ['under_review', 'in_review', 'info_requested'];
+  // 4. Confirmed Bookings: Successfully confirmed bookings only
+  const confirmedStatuses = ['confirmed', 'approved'];
+  // 5. Closed Requests: Withdrawn, cancelled, rejected, and expired requests
+  const closedStatuses = ['withdrawn', 'cancelled', 'rejected', 'expired', 'completed'];
+  const allCount = myReqs.length;
+  const actionRequiredCount = myReqs.filter(request =>
+    actionRequiredStatuses.includes(request.status)
+  ).length;
+  const underReviewCount = myReqs.filter(request =>
+    underReviewStatuses.includes(request.status)
+  ).length;
+  const confirmedCount = myReqs.filter(request =>
+    confirmedStatuses.includes(request.status)
+  ).length;
+  const closedCount = myReqs.filter(request => closedStatuses.includes(request.status)).length;
+  const actionableLegacyCount = myReqs.filter(request =>
+    [
+      'submitted',
+      'pending',
+      'changes_requested',
+      'counteroffer_received',
+      'planning',
+      'plan_submitted',
+      'plan_revision_requested',
+    ].includes(request.status)
+  ).length;
+  const needsReviewLegacyCount = myReqs.filter(request =>
+    ['submitted', 'pending', 'under_review', 'info_requested'].includes(request.status)
+  ).length;
+  const proposalsLegacyCount = myReqs.filter(request =>
+    ['proposal_sent', 'awaiting_client'].includes(request.status)
+  ).length;
+  let filtered = myReqs.filter(request => {
+    if (
+      filterTab === 'action_required' ||
+      filterTab === 'actionable' ||
+      filterTab === 'needs_review' ||
+      filterTab === 'proposals'
+    ) {
+      return actionRequiredStatuses.includes(request.status);
+    }
+    if (filterTab === 'under_review') {
+      return underReviewStatuses.includes(request.status);
+    }
+    if (filterTab === 'confirmed') {
+      return confirmedStatuses.includes(request.status);
+    }
+    if (filterTab === 'closed') {
+      return closedStatuses.includes(request.status);
+    }
+    return true;
+  });
+  const reqStatusFilter = sessionStorage.getItem('org_reqs_status');
+  const reqTypeFilter = sessionStorage.getItem('org_reqs_type');
+  const reqPaymentFilter = sessionStorage.getItem('org_reqs_payment');
+  const reqDateFrom = sessionStorage.getItem('org_reqs_date_from');
+  const reqDateTo = sessionStorage.getItem('org_reqs_date_to');
+  if (reqStatusFilter) {
+    filtered = filtered.filter(r => r.status === reqStatusFilter);
+  }
+  if (reqTypeFilter) {
+    filtered = filtered.filter(r => (r.type || r.eventType) === reqTypeFilter);
+  }
+  if (reqPaymentFilter) {
+    filtered = filtered.filter(r => r.paymentStatus === reqPaymentFilter);
+  }
+  if (reqDateFrom) {
+    filtered = filtered.filter(r => (r.date || r.eventDate) >= reqDateFrom);
+  }
+  if (reqDateTo) {
+    filtered = filtered.filter(r => (r.date || r.eventDate) <= reqDateTo);
+  }
+  if (search) {
+    filtered = filtered.filter(r => {
+      const cl = (DB.users && DB.users.find(user => String(user.id) === String(r.clientId))) || {};
+      const clientDetails = r.clientDetails || {};
+      return (
+        (r.title && r.title.toLowerCase().includes(search)) ||
+        (r.type && r.type.toLowerCase().includes(search)) ||
+        (r.eventType && r.eventType.toLowerCase().includes(search)) ||
+        (cl.name && cl.name.toLowerCase().includes(search)) ||
+        (cl.email && cl.email.toLowerCase().includes(search)) ||
+        (clientDetails.name && clientDetails.name.toLowerCase().includes(search)) ||
+        (clientDetails.email && clientDetails.email.toLowerCase().includes(search)) ||
+        (clientDetails.companyName && clientDetails.companyName.toLowerCase().includes(search))
+      );
+    });
+  }
+  const getReqTime = request => {
+    const u = request.updatedAt ? new Date(request.updatedAt).getTime() : 0;
+    const c = request.createdAt ? new Date(request.createdAt).getTime() : 0;
+    const cr = request.created ? new Date(request.created).getTime() : 0;
+    let p = 0;
+    if (Array.isArray(request.proposals) && request.proposals.length > 0) {
+      const lastP = request.proposals[request.proposals.length - 1];
+      p = lastP?.sentAt ? new Date(lastP.sentAt).getTime() : 0;
+    }
+    return Math.max(u, c, cr, p);
+  };
+  filtered.sort((a, b) => {
+    const diff = getReqTime(b) - getReqTime(a);
+    if (diff !== 0) return diff;
+    return String(b.id || b.requestId || '').localeCompare(String(a.id || a.requestId || ''));
+  });
+  return `
+  <div class="page-hd">
+    <div class="page-hd-left">
+      <div class="page-title">Event Requests</div>
+      <div class="page-sub">Review incoming requests and track negotiation, event plans, and client approval.</div>
+    </div>
+    <div class="page-hd-right" style="display:flex;gap:10px;align-items:center">
+      <div class="input-group" style="width:240px">
+        <span class="input-icon">🔍</span>
+        <input class="form-control" placeholder="Search requests..." value="${escapeHtml(
+          search
+        )}" oninput="sessionStorage.setItem('org_reqs_search', this.value);renderPage('event-requests')">
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap;align-items:center;justify-content:space-between">
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button onclick="sessionStorage.setItem('org_reqs_tab','all');renderPage('event-requests')" class="btn btn-sm ${
+        filterTab === 'all' || !filterTab ? 'btn-primary' : 'btn-ghost'
+      }">All Requests (${allCount})</button>
+      <button onclick="sessionStorage.setItem('org_reqs_tab','action_required');renderPage('event-requests')" class="btn btn-sm ${
+        filterTab === 'action_required' || filterTab === 'actionable' ? 'btn-primary' : 'btn-ghost'
+      }">Action Required (${actionRequiredCount})</button>
+      <button onclick="sessionStorage.setItem('org_reqs_tab','under_review');renderPage('event-requests')" class="btn btn-sm ${
+        filterTab === 'under_review' ? 'btn-primary' : 'btn-ghost'
+      }">Under Review (${underReviewCount})</button>
+      <button onclick="sessionStorage.setItem('org_reqs_tab','confirmed');renderPage('event-requests')" class="btn btn-sm ${
+        filterTab === 'confirmed' ? 'btn-primary' : 'btn-ghost'
+      }">Confirmed Bookings (${confirmedCount})</button>
+      <button onclick="sessionStorage.setItem('org_reqs_tab','closed');renderPage('event-requests')" class="btn btn-sm ${
+        filterTab === 'closed' ? 'btn-primary' : 'btn-ghost'
+      }">Closed Requests (${closedCount})</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <label for="org-filter-dropdown" style="font-size:12px;font-weight:600;color:var(--text3)">Filter by Status:</label>
+      <select id="org-filter-dropdown" class="form-control" style="width:auto;height:32px;padding:4px 8px;font-size:12.5px" onchange="sessionStorage.setItem('org_reqs_tab', this.value);renderPage('event-requests')">
+        <option value="all" ${
+          filterTab === 'all' || !filterTab ? 'selected' : ''
+        }>All Requests (${allCount})</option>
+        <option value="action_required" ${
+          filterTab === 'action_required' || filterTab === 'actionable' ? 'selected' : ''
+        }>Action Required (${actionRequiredCount})</option>
+        <option value="under_review" ${
+          filterTab === 'under_review' ? 'selected' : ''
+        }>Under Review (${underReviewCount})</option>
+        <option value="confirmed" ${
+          filterTab === 'confirmed' ? 'selected' : ''
+        }>Confirmed Bookings (${confirmedCount})</option>
+        <option value="closed" ${
+          filterTab === 'closed' ? 'selected' : ''
+        }>Closed Requests (${closedCount})</option>
+      </select>
+    </div>
+  </div>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;font-size:13px;color:var(--text3)">
+    <span>Showing ${filtered.length} of ${myReqs.length} requests</span>
+    <span style="display:none">Actionable (${actionableLegacyCount}) Needs Review (${needsReviewLegacyCount}) Proposals & Client (${proposalsLegacyCount}) DEMO DATA</span>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Client</th>
+          <th>Event Details</th>
+          <th>Requested Date</th>
+          <th>Budget</th>
+          <th>Lifecycle Status</th>
+          <th>Agreement</th>
+          <th>Deposit / Payment</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${
+          filtered.length === 0
+            ? `<tr><td colspan="8" style="text-align:center;padding:36px;color:var(--text3)">No event requests match the selected view.</td></tr>`
+            : ''
+        }
+        ${filtered
+          .map(r => {
+            const cl = (DB.users &&
+              DB.users.find(user => String(user.id) === String(r.clientId))) ||
+              (DB.users && DB.users.find(user => user.role === 'client')) ||
+              r.clientDetails || {
+                name: 'Michael Torres',
+                avatar: 'MT',
+                avatarImage: '/assets/images/avatars/user-michael-torres.jpg',
+              };
+            const clientAv = cl.avatarImage
+              ? `
+            <div class="av av-xs">
+              <img src="${cl.avatarImage}" alt="${
+                  cl.name
+                }" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+              <span style="display:none">${cl.avatar || cl.name?.[0] || 'C'}</span>
+            </div>
+          `
+              : `<div class="av av-xs">${cl.avatar || cl.name?.[0] || 'C'}</div>`;
+            const ag = agreementBadgeInfo(r.agreementStatus);
+            const pay = paymentBadgeInfo(r.paymentStatus);
+            const stBadge = typeof reqBadgeColor === 'function' ? reqBadgeColor(r.status) : 'gray';
+            return `<tr>
+            <td>
+              <div class="flex items-center gap-8">
+                ${clientAv}
+                <div>
+                  <div style="font-weight:600;font-size:13.5px">${escapeHtml(
+                    cl.name || 'Client'
+                  )}</div>
+                  <div class="small text-muted">${escapeHtml(
+                    cl.company || cl.companyName || cl.email || ''
+                  )}</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div style="font-weight:700;font-size:14px;color:var(--text)">${escapeHtml(
+                r.title || r.eventName || 'Event'
+              )}${
+              r.demoScenario
+                ? ' <span class="badge badge-warning" style="font-size:10px">DEMO DATA</span>'
+                : ''
+            }</div>
+              <div class="small text-muted">${escapeHtml(
+                r.type || r.eventType || 'Corporate'
+              )} &middot; ${r.guests || r.capacity || 100} guests</div>
+            </td>
+            <td>
+              <div style="font-weight:600;font-size:13px;margin-bottom:3px">${escapeHtml(
+                r.date || r.eventDate || ''
+              )}</div>
+            </td>
+            <td>
+              <span style="color:var(--green);font-weight:700;font-size:14px">₹${(
+                Number(r.budget) || 0
+              ).toLocaleString()}</span>
+            </td>
+            <td>
+              <span class="badge badge-${stBadge}" style="text-transform:capitalize">${escapeHtml(
+              (r.status || 'submitted').replace(/_/g, ' ')
+            )}</span>
+            </td>
+            <td>
+              <span class="badge badge-${ag.cls}">${escapeHtml(ag.lbl)}</span>
+            </td>
+            <td>
+              <span class="badge badge-${pay.cls}">${escapeHtml(pay.lbl)}</span>
+            </td>
+            <td>
+              ${renderOrganizerRowActions(r)}
+            </td>
+          </tr>`;
+          })
+          .join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
 function workflowPayload(response) {
   return response && Object.prototype.hasOwnProperty.call(response, 'data')
     ? response.data
@@ -10407,6 +11271,7 @@ function openWorkflowPolicyDocument(kind, version) {
   overlay.setAttribute('role', 'dialog');
   overlay.setAttribute('aria-modal', 'true');
   overlay.setAttribute('aria-labelledby', 'workflow-policy-title');
+  globalThis.window?.EventFlowOrganizerPages?.clear(overlay);
   overlay.innerHTML = `<div class="modal-box" style="max-width:760px">
         <div class="modal-head"><span class="modal-title" id="workflow-policy-title">${workflowHtml(
           title
@@ -10754,9 +11619,393 @@ function viewWorkflowEventReport(eventId) {
     viewEventReport(eventId);
   }
 }
-
-/* PORTAL_SECTION_renderWorkflowRequestDetails */
-
+function renderWorkflowRequestDetails(id) {
+  if (globalThis.window?.EventFlowOrganizerPages?.hasPage('request-details')) {
+    window.EventFlowOrganizerPages.render(
+      g('page-content'),
+      'request-details',
+      window.EventFlowOrganizerRuntime.snapshot({
+        id: id,
+      })
+    );
+    return;
+  }
+  const r = DB.eventRequests.find(request => String(request.id) === String(id));
+  const element = g('page-content');
+  if (!r || !element) {
+    if (element) {
+      globalThis.window?.EventFlowOrganizerPages?.clear(element);
+      element.innerHTML =
+        '<div class="empty"><div class="empty-title">Request not found</div><button class="btn btn-primary mt-16" onclick="goNav(\'request-status\')">Back to requests</button></div>';
+    }
+    return;
+  }
+  const plan =
+    (DB.eventPlans || []).find(item => item.eventPlanId === r.activeEventPlanId) ||
+    (DB.eventPlans || [])
+      .filter(item => item.requestId === r.requestId)
+      .sort((a, b) => (b.revision || 0) - (a.revision || 0))[0];
+  const organizerRole = CU.role === 'organizer';
+  const timeline = [
+    ['Request sent', true],
+    ['Organizer review', !['submitted', 'pending'].includes(r.status)],
+    [
+      'Budget and date agreed',
+      ['planning', 'plan_submitted', 'plan_revision_requested', 'confirmed'].includes(r.status),
+    ],
+    [
+      'Event plan submitted',
+      ['plan_submitted', 'plan_revision_requested', 'confirmed'].includes(r.status),
+    ],
+    ['Plan approved', ['confirmed', 'approved', 'completed'].includes(r.status)],
+    ['Ongoing event', ['confirmed', 'approved', 'completed'].includes(r.status)],
+    ['Event completed', r.status === 'completed'],
+  ];
+  const currentChange = [...(r.negotiations || [])]
+    .reverse()
+    .find(item => item.action === 'changes_requested');
+  const pendingCounteroffer = [...(r.negotiations || [])]
+    .reverse()
+    .find(item => item.action === 'counteroffer');
+  const plans = (DB.eventPlans || [])
+    .filter(item => item.requestId === r.requestId)
+    .sort((a, b) => (a.revision || 0) - (b.revision || 0));
+  const organizerActions = ['submitted', 'pending', 'under_review', 'info_requested'].includes(
+    r.status
+  )
+    ? `<div style="display:flex;gap:10px;margin-top:16px"><button class="btn btn-success w-full" onclick="acceptWorkflowRequest('${r.id}')">Accept</button><button class="btn btn-danger w-full" onclick="openWorkflowRejectModal('${r.id}')">Reject</button></div>`
+    : r.status === 'counteroffer_received'
+    ? `<div style="display:flex;gap:10px;margin-top:16px"><button class="btn btn-success w-full" onclick="acceptWorkflowCounteroffer('${r.id}')">Accept Counteroffer</button><button class="btn btn-danger w-full" onclick="openWorkflowRejectModal('${r.id}')">Reject / Propose Changes</button></div>`
+    : ['planning', 'plan_revision_requested'].includes(r.status)
+    ? `<button class="btn btn-primary w-full" style="margin-top:16px" onclick="openWorkflowPlanModal('${
+        r.id
+      }')">${
+        r.status === 'plan_revision_requested' ? 'Edit and Resubmit Plan' : 'Create Event Plan'
+      }</button>`
+    : '';
+  const clientActions =
+    r.status === 'changes_requested'
+      ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px"><button class="btn btn-success" onclick="respondToWorkflowChanges('${r.id}','accept_changes')">Accept Changes</button><button class="btn btn-danger" onclick="respondToWorkflowChanges('${r.id}','reject_changes')">Reject Changes</button><button class="btn btn-primary" onclick="openWorkflowCounterofferModal('${r.id}')">Send Counteroffer</button></div>`
+      : r.status === 'plan_submitted' && plan?.approvalStatus === 'pending'
+      ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px"><button class="btn btn-success" onclick="reviewWorkflowPlan('${plan.eventPlanId}','approved','${r.id}')">Accept Plan</button><button class="btn btn-primary" onclick="openWorkflowPlanRevisionModal('${plan.eventPlanId}','${r.id}')">Request New Plan</button></div>`
+      : '';
+  const negotiationHtml = (r.negotiations || [])
+    .map(
+      item =>
+        `<div style="padding:10px;border-left:3px solid var(--accent);background:var(--surface2);border-radius:6px;margin-top:8px"><strong>${workflowHtml(
+          String(item.action || '').replaceAll('_', ' ')
+        )}</strong><div style="font-size:12px;color:var(--text2);margin-top:4px">${workflowHtml(
+          item.reason
+        )}${item.budget ? ` · Budget ₹${Number(item.budget).toLocaleString()}` : ''}${
+          item.eventDate ? ` · Date ${workflowHtml(item.eventDate)}` : ''
+        }</div></div>`
+    )
+    .join('');
+  const planHtml = plan
+    ? `<div style="margin-top:12px;padding:14px;background:var(--surface2);border-radius:10px">
+        <div style="display:flex;justify-content:space-between;gap:8px"><strong>${workflowHtml(
+          plan.title
+        )} · Revision ${plan.revision || 1}</strong><span class="badge badge-${
+        plan.approvalStatus === 'approved'
+          ? 'green'
+          : plan.approvalStatus === 'revision_requested'
+          ? 'yellow'
+          : 'blue'
+      }">${workflowHtml(String(plan.approvalStatus || 'pending').replaceAll('_', ' '))}</span></div>
+        <p style="font-size:13px;color:var(--text2);line-height:1.6">${workflowHtml(
+          plan.description
+        )}</p>
+        <div class="info-row"><span class="info-label">Budget</span><span class="info-value">₹${Number(
+          plan.budget || 0
+        ).toLocaleString()}</span></div>
+        <div style="margin-top:12px;padding:14px;border:1px solid var(--border);border-radius:8px">
+          <strong>Event plan document</strong>
+          ${
+            plan.documentFileName
+              ? `<div style="margin-top:6px;color:var(--text2)">${workflowHtml(
+                  plan.documentName || 'Event plan PDF'
+                )}</div><div style="display:flex;gap:8px;margin-top:10px"><button class="btn btn-ghost btn-sm" onclick="openEventPlanPdf('${
+                  plan.eventPlanId
+                }','${encodeURIComponent(
+                  plan.documentName || 'event-plan.pdf'
+                )}',true)">View PDF</button><button class="btn btn-primary btn-sm" onclick="openEventPlanPdf('${
+                  plan.eventPlanId
+                }','${encodeURIComponent(
+                  plan.documentName || 'event-plan.pdf'
+                )}',false)">Download PDF</button></div>`
+              : '<p style="font-size:13px;color:var(--text3)">No PDF was attached to this plan.</p>'
+          }
+        </div>
+        ${
+          plan.revisionReason
+            ? `<div style="font-size:12px;color:var(--yellow);margin-top:8px">Requested revision: ${workflowHtml(
+                plan.revisionReason
+              )}</div>`
+            : ''
+        }
+        ${
+          plans.length > 1
+            ? `<details style="margin-top:10px"><summary>Plan revision history (${
+                plans.length
+              })</summary>${plans
+                .map(
+                  item =>
+                    `<div style="font-size:12px;padding:6px 0;border-bottom:1px solid var(--border2)">Revision ${
+                      item.revision || 1
+                    }: ${workflowHtml(item.title)} — ${workflowHtml(
+                      String(item.approvalStatus).replaceAll('_', ' ')
+                    )}</div>`
+                )
+                .join('')}</details>`
+            : ''
+        }
+      </div>`
+    : `<p style="color:var(--text3);font-size:13px">The organizer has not submitted an event plan yet.</p>`;
+  const eventId = r.eventId;
+  const event =
+    eventId && DB.events.find(item => String(item.eventId || item.id) === String(eventId));
+  const completionReport = (DB.eventCompletionReports || []).find(item => item.eventId === eventId);
+  const isPaid = r.paymentStatus === 'fully_paid';
+  const isDepositPaid = r.paymentStatus === 'deposit_paid';
+  const eventDatePassed = new Date(`${r.eventDate || r.date}T23:59:59`) <= new Date();
+  const reportPhotos = (completionReport?.photos || [])
+    .map(
+      photo =>
+        `<button class="btn btn-ghost btn-xs" onclick="openEventCompletionPhoto('${eventId}','${encodeURIComponent(
+          photo.fileName
+        )}')">View ${workflowHtml(photo.originalName)}</button>`
+    )
+    .join(' ');
+  const completionReportHtml = completionReport
+    ? `<div style="margin-top:16px;padding:16px;border:1px solid var(--border);border-radius:10px">
+        <h3 style="margin:0 0 10px">Event Completion Report</h3>
+        <div class="info-row"><span class="info-label">Event</span><span class="info-value">${workflowHtml(
+          completionReport.eventName
+        )} · ${workflowHtml(completionReport.eventDate)}</span></div>
+        <div class="info-row"><span class="info-label">Venue</span><span class="info-value">${workflowHtml(
+          completionReport.venue || '—'
+        )}</span></div>
+        <div style="margin-top:10px"><strong>Services provided</strong><p style="white-space:pre-wrap;color:var(--text2)">${workflowHtml(
+          completionReport.servicesProvided
+        )}</p></div>
+        <div style="margin-top:10px"><strong>Expenses</strong><p style="white-space:pre-wrap;color:var(--text2)">${workflowHtml(
+          completionReport.expenses
+        )}</p></div>
+        <div style="margin-top:10px"><strong>Completion notes</strong><p style="white-space:pre-wrap;color:var(--text2)">${workflowHtml(
+          completionReport.completionNotes
+        )}</p></div>
+        ${
+          reportPhotos
+            ? `<div style="margin-top:10px"><strong>Photos</strong><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">${reportPhotos}</div></div>`
+            : ''
+        }
+      </div>`
+    : '';
+  const lifecycleActions =
+    event?.status === 'ongoing'
+      ? isPaid
+        ? eventDatePassed
+          ? `<button class="btn btn-primary" style="margin-top:10px" onclick="completeWorkflowEvent('${eventId}','${r.id}')">Mark Event as Completed</button>`
+          : '<p style="margin-top:10px;color:var(--text3)">Completion is available after the event date.</p>'
+        : `<p style="margin-top:10px;color:var(--yellow)">${
+            isDepositPaid
+              ? 'Deposit received. The remaining balance must be paid before the event can be marked completed.'
+              : 'The client must complete full payment before the event can be marked completed.'
+          }</p>`
+      : '';
+  const completionReportAction =
+    event?.status === 'completed' && !completionReport
+      ? `<button class="btn btn-primary" style="margin-top:12px" onclick="openCompletionReportModal('${eventId}','${
+          r.id
+        }','${workflowHtml(r.title)}')">Create Event Completion Report</button>`
+      : '';
+  const lifecycleHtml =
+    eventId && event
+      ? `<section style="margin-top:18px;padding:16px;background:var(--surface2);border-radius:10px">
+        <h3 style="margin:0 0 10px">Ongoing Event Workflow</h3>
+        <div class="info-row"><span class="info-label">Event status</span><span class="info-value">${workflowHtml(
+          event.status
+        )}</span></div>
+        <div class="info-row"><span class="info-label">Payment status</span><span class="info-value" style="color:${
+          isPaid ? 'var(--green)' : isDepositPaid ? 'var(--blue)' : 'var(--yellow)'
+        }">${isPaid ? 'Paid' : isDepositPaid ? 'Deposit Paid' : 'Unpaid'}</span></div>
+        ${lifecycleActions}${completionReportAction}${completionReportHtml}
+        ${renderWorkflowFileReports(eventId)}
+        ${renderWorkflowCancellation(r.cancellation || event.cancellation)}
+      </section>`
+      : '';
+  globalThis.window?.EventFlowOrganizerPages?.clear(element);
+  element.innerHTML = `<div class="page-hd">
+        <div class="page-hd-left"><button class="btn btn-ghost btn-sm" onclick="goNav('${_workflowReturnPage}')">← Back to ${
+    _workflowReturnPage === 'my-events'
+      ? 'Events'
+      : _workflowReturnPage === 'ongoing-events'
+      ? 'Ongoing Events'
+      : _workflowReturnPage === 'completed-events'
+      ? 'Completed Events'
+      : _workflowReturnPage === 'event-requests'
+      ? 'Event Requests'
+      : _workflowReturnPage === 'dashboard'
+      ? 'Dashboard'
+      : 'Request Status'
+  }</button><div class="page-title" style="margin-top:12px">${workflowHtml(
+    r.title
+  )}</div><div class="page-sub">Request details, workflow progress, negotiation, and event plan</div></div>
+      </div>
+      <div class="card" style="max-width:1000px">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+          <span class="badge badge-${reqBadge(
+            r.status
+          )}" style="text-transform:capitalize">${String(r.status).replaceAll('_', ' ')}</span>
+          <span style="font-size:12px;color:var(--text3)">Request ID: ${workflowHtml(
+            r.requestId
+          )}</span>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin:16px 0">
+          ${timeline
+            .map(
+              ([label, complete]) =>
+                `<div style="flex:1;min-width:105px;padding:8px;border-radius:8px;background:${
+                  complete ? 'var(--accent-dim)' : 'var(--surface2)'
+                };color:${
+                  complete ? 'var(--accent)' : 'var(--text3)'
+                };font-size:11px;font-weight:600">${complete ? '✓ ' : '○ '}${label}</div>`
+            )
+            .join('')}
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="info-row"><span class="info-label">Event date</span><span class="info-value">${workflowHtml(
+            r.eventDate || r.date
+          )}</span></div>
+          <div class="info-row"><span class="info-label">Budget</span><span class="info-value">₹${Number(
+            r.budget || 0
+          ).toLocaleString()}</span></div>
+          <div class="info-row"><span class="info-label">Ticket price per attendee</span><span class="info-value">${
+            Number(r.ticketPrice || 0) === 0
+              ? 'Free'
+              : '₹' + Number(r.ticketPrice).toLocaleString('en-IN')
+          }</span></div>
+          <div class="info-row"><span class="info-label">Event access</span><span class="info-value">${
+            r.visibility === 'private'
+              ? 'Private — approval before payment'
+              : 'Public — direct registration'
+          }</span></div>
+          <div class="info-row"><span class="info-label">Guests</span><span class="info-value">${
+            r.capacity || r.guests
+          }</span></div>
+          <div class="info-row"><span class="info-label">Event type</span><span class="info-value">${workflowHtml(
+            r.eventType || r.type
+          )}</span></div>
+        </div>
+        <div style="margin:12px 0"><strong>Event details</strong><p style="white-space:pre-wrap;color:var(--text2);line-height:1.6">${workflowHtml(
+          r.requirements || r.desc || '—'
+        )}</p></div>
+        ${
+          r.status === 'rejected' && r.rejectionReason
+            ? `<div style="padding:12px;background:var(--red-dim);margin:12px 0"><strong>Reason for declining</strong><p style="margin:6px 0 0;white-space:pre-wrap;overflow-wrap:anywhere">${workflowHtml(
+                r.rejectionReason
+              )}</p></div>`
+            : ''
+        }
+        ${
+          currentChange
+            ? `<div style="padding:12px;border-radius:8px;background:rgba(245,158,11,.1);margin:12px 0"><strong>Organizer requested changes</strong><div style="font-size:13px;margin-top:5px">${workflowHtml(
+                currentChange.reason
+              )}</div>${
+                currentChange.budget
+                  ? `<div>Proposed budget: ₹${Number(currentChange.budget).toLocaleString()}</div>`
+                  : ''
+              }${
+                currentChange.eventDate
+                  ? `<div>Proposed date: ${workflowHtml(currentChange.eventDate)}</div>`
+                  : ''
+              }</div>`
+            : ''
+        }
+        ${
+          r.status === 'counteroffer_received' && pendingCounteroffer
+            ? `<div style="padding:12px;border-radius:8px;background:rgba(124,111,247,.1);margin:12px 0"><strong>Client counteroffer — review proposed event details</strong>${
+                pendingCounteroffer.reason
+                  ? `<div style="font-size:13px;margin-top:5px">${workflowHtml(
+                      pendingCounteroffer.reason
+                    )}</div>`
+                  : ''
+              }<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;font-size:13px">${
+                pendingCounteroffer.eventName
+                  ? `<div><strong>Event:</strong> ${workflowHtml(
+                      pendingCounteroffer.eventName
+                    )}</div>`
+                  : ''
+              }${
+                pendingCounteroffer.eventType
+                  ? `<div><strong>Type:</strong> ${workflowHtml(
+                      pendingCounteroffer.eventType
+                    )}</div>`
+                  : ''
+              }${
+                pendingCounteroffer.eventDate
+                  ? `<div><strong>Date:</strong> ${workflowHtml(
+                      pendingCounteroffer.eventDate
+                    )}</div>`
+                  : ''
+              }${
+                pendingCounteroffer.budget
+                  ? `<div><strong>Budget:</strong> ₹${Number(
+                      pendingCounteroffer.budget
+                    ).toLocaleString()}</div>`
+                  : ''
+              }${
+                pendingCounteroffer.capacity !== undefined
+                  ? `<div><strong>Guests:</strong> ${pendingCounteroffer.capacity}</div>`
+                  : ''
+              }${
+                pendingCounteroffer.venue !== undefined
+                  ? `<div><strong>Venue:</strong> ${workflowHtml(
+                      pendingCounteroffer.venue || 'Not specified'
+                    )}</div>`
+                  : ''
+              }</div>${
+                pendingCounteroffer.requirements !== undefined
+                  ? `<div style="margin-top:8px"><strong>Requirements:</strong><div style="white-space:pre-wrap">${workflowHtml(
+                      pendingCounteroffer.requirements || 'Not specified'
+                    )}</div></div>`
+                  : ''
+              }</div>`
+            : ''
+        }
+        <div style="margin-top:16px"><strong>Event plan</strong>${planHtml}</div>
+        ${renderWorkflowEventPolicy(r.policySnapshot || workflowEventPolicy)}
+        <p class="small">Client acknowledgement: ${workflowHtml(
+          workflowPolicyDate(r.clientPolicyAcceptedAt)
+        )}<br>Organizer acknowledgement: ${workflowHtml(
+    workflowPolicyDate(r.organizerPolicyAcceptedAt)
+  )}</p>
+        ${organizerRole ? organizerActions : clientActions}
+        ${lifecycleHtml}
+        ${
+          negotiationHtml
+            ? `<div style="margin-top:18px"><strong>Negotiation history</strong>${negotiationHtml}</div>`
+            : ''
+        }
+        <div style="margin-top:18px"><strong>Progress history</strong>${
+          (r.auditHistory || [])
+            .slice()
+            .reverse()
+            .map(
+              entry =>
+                `<div style="padding:8px 0;border-bottom:1px solid var(--border2);font-size:12px"><strong>${workflowHtml(
+                  entry.action
+                )}</strong><div style="color:var(--text3)">${
+                  entry.timestamp
+                    ? workflowHtml(String(entry.timestamp).replace('T', ' ').slice(0, 16))
+                    : ''
+                } · ${workflowHtml(entry.role)}</div></div>`
+            )
+            .join('') ||
+          '<div style="font-size:12px;color:var(--text3)">No workflow actions yet.</div>'
+        }</div>
+      </div>`;
+}
 let workflowResponsePolicy = null;
 async function openWorkflowRejectModal(id) {
   try {
@@ -12765,6 +14014,7 @@ function calculateModCost(oldCap, oldBudget) {
   if (!hint) return;
   if (newCap && oldCap && oldBudget) {
     const recalc = Math.round((oldBudget / oldCap) * newCap);
+    globalThis.window?.EventFlowOrganizerPages?.clear(hint);
     hint.innerHTML = `Recalculated estimated cost: <strong>₹${recalc.toLocaleString()}</strong> (was ₹${oldBudget.toLocaleString()})`;
   }
 }
@@ -14244,6 +15494,7 @@ function viewRequestDetail(reqId) {
   // Latest proposal if any
   const activeProposal =
     r.proposals && r.proposals.length > 0 ? r.proposals[r.proposals.length - 1] : null;
+  globalThis.window?.EventFlowOrganizerPages?.clear(element);
   element.innerHTML = `<div style="padding:28px;background:var(--bg);min-height:100vh">
     <button onclick="goNav('${returnPage}')" style="display:inline-flex;align-items:center;gap:6px;border:none;background:none;color:var(--text2);font-size:13px;cursor:pointer;margin-bottom:24px;padding:0">&larr; Back to ${
     returnPage === 'event-requests'
@@ -14565,6 +15816,7 @@ function viewOngoingEventDetail(eventId) {
   );
   const element = document.getElementById('page-content');
   if (!element) return;
+  globalThis.window?.EventFlowOrganizerPages?.clear(element);
   element.innerHTML = `<div style="padding:28px;background:var(--bg)">
     <button onclick="renderPage('request-status')" style="display:flex;align-items:center;gap:6px;border:none;background:none;color:var(--text2);font-size:13px;cursor:pointer;margin-bottom:20px;padding:0">â† Back to Ongoing Events</button>
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
@@ -15100,6 +16352,7 @@ window.handleReportFileSelect = function (input) {
   if (input.files && input.files[0]) {
     const f = input.files[0];
     if (preview) {
+      globalThis.window?.EventFlowOrganizerPages?.clear(preview);
       preview.innerHTML = `
             <div class="flex items-center justify-between" style="background:var(--accent-dim);border-radius:8px;padding:10px 14px">
               <div style="font-weight:600;color:var(--accent);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📄 ${
@@ -15116,6 +16369,7 @@ window.resetReportFileSelect = function () {
   if (input) input.value = '';
   const preview = document.getElementById('eor-file-preview');
   if (preview) {
+    globalThis.window?.EventFlowOrganizerPages?.clear(preview);
     preview.innerHTML = `
           <div style="font-size:24px;margin-bottom:6px">📁</div>
           <div style="font-weight:600;font-size:13.5px">Click to browse or upload report file</div>
@@ -15372,9 +16626,612 @@ function reportContactHtml(userId, fallbackName = 'Not recorded') {
     user?.email ? `<div class="small muted">${escapeHtml(user.email)}</div>` : ''
   }`;
 }
+function pageReports() {
+  if (!DB.reports) DB.reports = [];
+  if (CU.role === 'employee' && CU.employeeType === 'SUPPORT_FINANCE')
+    return pageOperationalReports();
+  if (CU.role === 'employee' && CU.employeeType === 'EVENT_OPERATIONS')
+    return pageEventOpsReports();
 
-/* PORTAL_SECTION_pageReports */
+  // Super Admin gets dedicated analytics dashboard
+  if (CU.role === 'superuser') {
+    const tab = sessionStorage.getItem('admin_reports_tab') || 'users';
 
+    // ── USER STATISTICS DATA ──────────────────────────────
+    const allUsers = DB.users;
+    const activeUsers = allUsers.filter(u => u.status === 'active').length;
+    const inactiveUsers = allUsers.filter(u => u.status !== 'active').length;
+    const attendees = allUsers.filter(u => u.role === 'attendee').length;
+    const organizers = allUsers.filter(u => u.role === 'organizer').length;
+    const clients = allUsers.filter(u => u.role === 'client').length;
+    const employeeCount = allUsers.filter(u => u.role === 'employee').length;
+    const admins = allUsers.filter(u => u.role === 'superuser').length;
+
+    // Monthly registrations (last 6 months based on joinedAt / joined)
+    const now = new Date();
+    const monthNames = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    const monthData = {};
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      monthData[key] = {
+        label: monthNames[d.getMonth()],
+        count: 0,
+      };
+    }
+    allUsers
+      .filter(u => u.role === 'attendee')
+      .forEach(u => {
+        const joined = u.joined || u.joinedAt || '';
+        const key = joined.slice(0, 7);
+        if (monthData[key]) monthData[key].count++;
+      });
+    const months = Object.values(monthData);
+    const maxMonthCount = Math.max(...months.map(m => m.count), 1);
+
+    // Role breakdown bar widths
+    const maxRole = Math.max(attendees, organizers, clients, employeeCount, admins, 1);
+    const roleBar = n => Math.round((n / maxRole) * 100);
+    const userStatsContent = `
+  <div class="grid-4 mb-24" style="gap:14px">
+    <div class="stat-card" style="border-left:4px solid var(--accent)">
+      <div class="stat-icon" style="background:var(--accent-dim);color:var(--accent)">👥</div>
+      <div class="stat-value" style="color:var(--accent)">${allUsers.length}</div>
+      <div class="stat-label">Total Users</div>
+      <div class="stat-sub neutral">Platform-wide</div>
+    </div>
+    <div class="stat-card" style="border-left:4px solid var(--green)">
+      <div class="stat-icon" style="background:var(--green-dim);color:var(--green)">✅</div>
+      <div class="stat-value" style="color:var(--green)">${activeUsers}</div>
+      <div class="stat-label">Active Users</div>
+      <div class="stat-sub up">↑ ${Math.round(
+        (activeUsers / Math.max(allUsers.length, 1)) * 100
+      )}% active rate</div>
+    </div>
+    <div class="stat-card" style="border-left:4px solid var(--red)">
+      <div class="stat-icon" style="background:var(--red-dim);color:var(--red)">⚠️</div>
+      <div class="stat-value" style="color:var(--red)">${inactiveUsers}</div>
+      <div class="stat-label">Inactive Users</div>
+      <div class="stat-sub neutral">Need attention</div>
+    </div>
+    <div class="stat-card" style="border-left:4px solid var(--blue)">
+      <div class="stat-icon" style="background:var(--blue-dim);color:var(--blue)">🎟️</div>
+      <div class="stat-value" style="color:var(--blue)">${attendees}</div>
+      <div class="stat-label">Attendees</div>
+      <div class="stat-sub neutral">Registered attendees</div>
+    </div>
+  </div>
+
+  <div class="grid-2 mb-24" style="gap:20px">
+    <!-- Role Breakdown Card -->
+    <div class="card card-lg">
+      <div style="font-family:var(--font-head);font-size:16px;font-weight:700;margin-bottom:20px;display:flex;align-items:center;gap:8px">
+        <span style="background:var(--accent-dim);color:var(--accent);padding:6px 8px;border-radius:8px;font-size:14px">🏷️</span>
+        User Role Breakdown
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        ${[
+          {
+            role: 'Attendees',
+            count: attendees,
+            color: 'var(--blue)',
+            icon: '🎟️',
+          },
+          {
+            role: 'Organizers',
+            count: organizers,
+            color: 'var(--accent)',
+            icon: '🎯',
+          },
+          {
+            role: 'Clients',
+            count: clients,
+            color: 'var(--yellow)',
+            icon: '💼',
+          },
+          {
+            role: 'Employees',
+            count: employeeCount,
+            color: 'var(--green)',
+            icon: '👷',
+          },
+          {
+            role: 'Super Admins',
+            count: admins,
+            color: 'var(--red)',
+            icon: '🛡️',
+          },
+        ]
+          .map(
+            r => `
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px">
+            <span style="display:flex;align-items:center;gap:6px"><span>${
+              r.icon
+            }</span><span style="font-weight:500">${r.role}</span></span>
+            <span style="font-weight:700;color:${r.color}">${r.count}</span>
+          </div>
+          <div style="height:8px;background:var(--surface3);border-radius:99px;overflow:hidden">
+            <div style="height:100%;width:${roleBar(r.count)}%;background:${
+              r.color
+            };border-radius:99px;transition:width 0.6s ease"></div>
+          </div>
+        </div>`
+          )
+          .join('')}
+      </div>
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-size:20px;font-weight:800;color:var(--green)">${activeUsers}</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:2px">Active</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-size:20px;font-weight:800;color:var(--red)">${inactiveUsers}</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:2px">Inactive</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Monthly Registrations Chart -->
+    <div class="card card-lg">
+      <div style="font-family:var(--font-head);font-size:16px;font-weight:700;margin-bottom:20px;display:flex;align-items:center;gap:8px">
+        <span style="background:var(--green-dim);color:var(--green);padding:6px 8px;border-radius:8px;font-size:14px">📅</span>
+        Monthly Attendee Registrations
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:8px;height:160px;padding-bottom:4px">
+        ${months
+          .map(
+            m => `
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end">
+          <div style="font-size:11px;font-weight:700;color:var(--green)">${m.count || ''}</div>
+          <div style="width:100%;background:linear-gradient(180deg,var(--green),var(--accent));border-radius:6px 6px 0 0;height:${
+            m.count ? Math.max(Math.round((m.count / maxMonthCount) * 130), 8) : 4
+          }px;opacity:${m.count ? 1 : 0.2};transition:height 0.5s ease"></div>
+          <div style="font-size:10px;color:var(--text3);font-weight:600">${m.label}</div>
+        </div>`
+          )
+          .join('')}
+      </div>
+      <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);font-size:12px;color:var(--text2)">
+        Total attendees registered: <strong style="color:var(--green)">${attendees}</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- All Users Table -->
+  <div class="card">
+    <div style="font-family:var(--font-head);font-size:15px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:8px"><span style="background:var(--blue-dim);color:var(--blue);padding:5px 7px;border-radius:8px">📋</span> All Users Overview</div>
+      <span class="badge badge-blue">${allUsers.length} total</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>User</th><th>Role</th><th>Status</th><th>Joined</th></tr></thead>
+        <tbody>
+          ${allUsers
+            .map(
+              u => `<tr>
+            <td><div class="flex items-center gap-10"><div class="av av-sm">${
+              u.avatar || u.name[0]
+            }</div><div><div style="font-weight:500">${u.name}</div><div class="small">${
+                u.email
+              }</div></div></div></td>
+            <td><span class="badge badge-${ROLE_COLORS[u.role]}">${u.role}</span></td>
+            <td><span class="badge badge-${u.status === 'active' ? 'green' : 'red'}">${
+                u.status || 'active'
+              }</span></td>
+            <td class="small">${u.joined || u.joinedAt || '—'}</td>
+          </tr>`
+            )
+            .join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+
+    // ── EVENT STATISTICS DATA ──────────────────────────────
+    const allEvents = DB.events;
+    const allRegs = DB.registrations;
+    const totalRevenue = allRegs.reduce(
+      (total, registration) => total + (registration.amount || 0),
+      0
+    );
+    const checkedIn = allRegs.filter(registration => registration.checkedIn).length;
+    const upcomingEvs = allEvents.filter(event => event.status === 'upcoming').length;
+    const completedEvs = allEvents.filter(event => event.status === 'completed').length;
+
+    // Category breakdown
+    const catMap = {};
+    allEvents.forEach(event => {
+      if (!catMap[event.category])
+        catMap[event.category] = {
+          count: 0,
+          regs: 0,
+          revenue: 0,
+        };
+      catMap[event.category].count++;
+      const registrations = allRegs.filter(registration => registration.eventId === event.id);
+      catMap[event.category].regs += registrations.length;
+      catMap[event.category].revenue += registrations.reduce(
+        (total, registration) => total + (registration.amount || 0),
+        0
+      );
+    });
+    const cats = Object.entries(catMap).sort((a, b) => b[1].regs - a[1].regs);
+    const maxCatRegs = Math.max(...cats.map(c => c[1].regs), 1);
+    const catColors = [
+      'var(--accent)',
+      'var(--green)',
+      'var(--blue)',
+      'var(--yellow)',
+      'var(--orange)',
+      'var(--red)',
+    ];
+
+    // Top events by registration
+    const topEvents = [...allEvents]
+      .sort((leftEvent, rightEvent) => rightEvent.registered - leftEvent.registered)
+      .slice(0, 5);
+
+    // Monthly revenue (last 6 months)
+    const revMonthData = {};
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      revMonthData[key] = {
+        label: monthNames[d.getMonth()],
+        revenue: 0,
+        regs: 0,
+      };
+    }
+    allRegs.forEach(registration => {
+      const key = (registration.date || '').slice(0, 7);
+      if (revMonthData[key]) {
+        revMonthData[key].revenue += registration.amount || 0;
+        revMonthData[key].regs++;
+      }
+    });
+    const revMonths = Object.values(revMonthData);
+    const maxRev = Math.max(...revMonths.map(m => m.revenue), 1);
+    const eventStatsContent = `
+  <div class="grid-4 mb-24" style="gap:14px">
+    <div class="stat-card" style="border-left:4px solid var(--green)">
+      <div class="stat-icon" style="background:var(--green-dim);color:var(--green)">💰</div>
+      <div class="stat-value" style="color:var(--green)">₹${totalRevenue.toLocaleString()}</div>
+      <div class="stat-label">Total Revenue</div>
+      <div class="stat-sub up">From all ticket sales</div>
+    </div>
+    <div class="stat-card" style="border-left:4px solid var(--accent)">
+      <div class="stat-icon" style="background:var(--accent-dim);color:var(--accent)">🗓️</div>
+      <div class="stat-value" style="color:var(--accent)">${allEvents.length}</div>
+      <div class="stat-label">Total Events</div>
+      <div class="stat-sub neutral">${upcomingEvs} upcoming · ${completedEvs} completed</div>
+    </div>
+    <div class="stat-card" style="border-left:4px solid var(--blue)">
+      <div class="stat-icon" style="background:var(--blue-dim);color:var(--blue)">🎟️</div>
+      <div class="stat-value" style="color:var(--blue)">${allRegs.length}</div>
+      <div class="stat-label">Total Registrations</div>
+      <div class="stat-sub neutral">Across all events</div>
+    </div>
+    <div class="stat-card" style="border-left:4px solid var(--yellow)">
+      <div class="stat-icon" style="background:var(--yellow-dim);color:var(--yellow)">✅</div>
+      <div class="stat-value" style="color:var(--yellow)">${checkedIn}</div>
+      <div class="stat-label">Checked In</div>
+      <div class="stat-sub up">${Math.round(
+        (checkedIn / Math.max(allRegs.length, 1)) * 100
+      )}% attendance rate</div>
+    </div>
+  </div>
+
+  <div class="grid-2 mb-24" style="gap:20px">
+    <!-- Revenue Bar Chart -->
+    <div class="card card-lg">
+      <div style="font-family:var(--font-head);font-size:16px;font-weight:700;margin-bottom:20px;display:flex;align-items:center;gap:8px">
+        <span style="background:var(--green-dim);color:var(--green);padding:6px 8px;border-radius:8px;font-size:14px">📈</span>
+        Monthly Revenue (₹)
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:8px;height:160px;padding-bottom:4px">
+        ${revMonths
+          .map(
+            m => `
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end">
+          <div style="font-size:10px;font-weight:700;color:var(--green)">${
+            m.revenue > 0 ? '₹' + m.revenue : ''
+          }</div>
+          <div style="width:100%;background:linear-gradient(180deg,#22d3a5,#4299e1);border-radius:6px 6px 0 0;height:${
+            m.revenue ? Math.max(Math.round((m.revenue / maxRev) * 130), 8) : 4
+          }px;opacity:${m.revenue ? 1 : 0.2}"></div>
+          <div style="font-size:10px;color:var(--text3);font-weight:600">${m.label}</div>
+        </div>`
+          )
+          .join('')}
+      </div>
+      <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);font-size:12px;color:var(--text2)">
+        Total platform revenue: <strong style="color:var(--green)">₹${totalRevenue.toLocaleString()}</strong>
+      </div>
+    </div>
+
+    <!-- Category Popularity -->
+    <div class="card card-lg">
+      <div style="font-family:var(--font-head);font-size:16px;font-weight:700;margin-bottom:20px;display:flex;align-items:center;gap:8px">
+        <span style="background:var(--accent-dim);color:var(--accent);padding:6px 8px;border-radius:8px;font-size:14px">🏆</span>
+        Popular Event Categories
+      </div>
+      ${
+        cats.length === 0
+          ? `<div class="empty"><div class="empty-icon">📊</div><div class="empty-title">No data yet</div></div>`
+          : `<div style="display:flex;flex-direction:column;gap:14px">
+        ${cats
+          .map(
+            ([cat, data], i) => `
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px">
+            <span style="font-weight:600;color:${catColors[i % catColors.length]}">${cat}</span>
+            <span style="display:flex;gap:12px">
+              <span style="color:var(--text2)">${data.regs} attendees</span>
+              <span style="color:var(--green);font-weight:600">₹${data.revenue.toLocaleString()}</span>
+            </span>
+          </div>
+          <div style="height:8px;background:var(--surface3);border-radius:99px;overflow:hidden">
+            <div style="height:100%;width:${Math.round(
+              (data.regs / maxCatRegs) * 100
+            )}%;background:${catColors[i % catColors.length]};border-radius:99px"></div>
+          </div>
+        </div>`
+          )
+          .join('')}
+      </div>`
+      }
+    </div>
+  </div>
+
+  <!-- Top Events Table -->
+  <div class="card mb-24">
+    <div style="font-family:var(--font-head);font-size:15px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px">
+      <span style="background:var(--yellow-dim);color:var(--yellow);padding:5px 7px;border-radius:8px">🏅</span> Top Events by Attendance
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Event</th><th>Category</th><th>Registered</th><th>Capacity</th><th>Revenue</th><th>Status</th></tr></thead>
+        <tbody>
+          ${topEvents
+            .map((event, index) => {
+              const evRev = allRegs
+                .filter(registration => registration.eventId === event.id)
+                .reduce((total, registration) => total + (registration.amount || 0), 0);
+              return `<tr>
+              <td><span style="font-weight:700;color:var(--text3)">${index + 1}</span></td>
+              <td><div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">${
+                event.emoji || '🎪'
+              }</span><div><div style="font-weight:600;font-size:13.5px">${
+                event.title
+              }</div><div class="small">${event.date}</div></div></div></td>
+              <td><span class="badge badge-purple">${event.category}</span></td>
+              <td><strong style="color:var(--blue)">${event.registered}</strong></td>
+              <td class="small">${event.capacity}</td>
+              <td><strong style="color:var(--green)">₹${evRev.toLocaleString()}</strong></td>
+              <td><span class="badge badge-${evStatBadge(event.status)}">${event.status}</span></td>
+            </tr>`;
+            })
+            .join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- All Events Revenue breakdown -->
+  <div class="card">
+    <div style="font-family:var(--font-head);font-size:15px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px">
+      <span style="background:var(--green-dim);color:var(--green);padding:5px 7px;border-radius:8px">📊</span> All Events Revenue Breakdown
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Event</th><th>Price</th><th>Registrations</th><th>Revenue</th><th>Occupancy</th></tr></thead>
+        <tbody>
+          ${allEvents
+            .map(event => {
+              const evRegs = allRegs.filter(registration => registration.eventId === event.id);
+              const evRev2 = evRegs.reduce(
+                (total, registration) => total + (registration.amount || 0),
+                0
+              );
+              const occ = Math.round((event.registered / Math.max(event.capacity, 1)) * 100);
+              return `<tr>
+              <td><div style="font-weight:500">${event.title}</div></td>
+              <td>${
+                event.price === 0
+                  ? '<span class="badge badge-green">Free</span>'
+                  : '₹' + event.price
+              }</td>
+              <td><strong>${evRegs.length}</strong></td>
+              <td style="color:var(--green);font-weight:700">₹${evRev2.toLocaleString()}</td>
+              <td>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <div style="flex:1;height:6px;background:var(--surface3);border-radius:99px;overflow:hidden">
+                    <div style="height:100%;width:${occ}%;background:${
+                occ >= 80 ? 'var(--green)' : occ >= 50 ? 'var(--yellow)' : 'var(--red)'
+              };border-radius:99px"></div>
+                  </div>
+                  <span style="font-size:12px;font-weight:600;color:var(--text2);min-width:32px">${occ}%</span>
+                </div>
+              </td>
+            </tr>`;
+            })
+            .join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+    return `
+  <div class="page-hd">
+    <div class="page-hd-left"><div class="page-title">Reports & Analytics</div><div class="page-sub">Platform-wide statistics for super administration</div></div>
+    <div class="page-hd-right">
+      <button class="btn btn-ghost" onclick="toast('Export feature coming soon','info')">📥 Export</button>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:4px;background:var(--surface2);border-radius:12px;padding:4px;margin-bottom:28px;border:1px solid var(--border)">
+    <button onclick="switchReportTab('users')" style="flex:1;padding:10px 20px;border-radius:9px;font-weight:600;font-size:13.5px;transition:all 0.2s;border:none;cursor:pointer;background:${
+      tab === 'users' ? 'var(--accent)' : 'transparent'
+    };color:${tab === 'users' ? '#fff' : 'var(--text2)'}">
+      👥 User Statistics
+    </button>
+    <button onclick="switchReportTab('events')" style="flex:1;padding:10px 20px;border-radius:9px;font-weight:600;font-size:13.5px;transition:all 0.2s;border:none;cursor:pointer;background:${
+      tab === 'events' ? 'var(--accent)' : 'transparent'
+    };color:${tab === 'events' ? '#fff' : 'var(--text2)'}">
+      📊 Event Analytics
+    </button>
+  </div>
+
+
+  ${tab === 'users' ? userStatsContent : eventStatsContent}
+`;
+  }
+
+  // ── NON-SUPERUSER: original client report view ──────
+  const tab = sessionStorage.getItem('reports_tab') || 'client';
+  const myEvents =
+    CU.role === 'organizer' ? DB.events.filter(event => event.organizer === CU.id) : DB.events;
+  const completedEvents = myEvents.filter(event => event.status === 'completed').length;
+  const eventIds = myEvents.map(event => String(event.id));
+  const eventReports = DB.reports.filter(report => eventIds.includes(String(report.eventId)));
+  const clientReports =
+    CU.role === 'organizer'
+      ? eventReports.filter(report => String(report.submittedBy) === String(CU.id))
+      : eventReports;
+  const pendingClientEvents = myEvents.filter(
+    event =>
+      event.status === 'completed' &&
+      !clientReports.some(report => String(report.eventId) === String(event.id))
+  );
+  const pendingReports = pendingClientEvents.length;
+  const submittedReports = clientReports.length;
+  const clientReportContent = `
+    <div class="grid-3 mb-24">
+      <div class="stat-card" style="border: 1px solid var(--blue-dim); background: rgba(66, 153, 225, 0.05); padding: 16px;">
+        <div class="small" style="color:var(--blue); font-weight:600; margin-bottom: 12px">Total Completed</div>
+        <div style="display:flex; align-items:center; gap: 12px;">
+          <div class="stat-icon" style="background:var(--blue);color:#fff;margin:0;font-size:16px;border-radius:50%">✓</div>
+          <div>
+            <div class="stat-value" style="color:var(--text);font-size:24px;margin:0">${completedEvents}</div>
+            <div class="small" style="color:var(--text2)">Total events</div>
+          </div>
+        </div>
+      </div>
+      <div class="stat-card" style="border: 1px solid var(--green-dim); background: rgba(34, 211, 165, 0.05); padding: 16px;">
+        <div class="small" style="color:var(--green); font-weight:600; margin-bottom: 12px">Reports Submitted</div>
+        <div style="display:flex; align-items:center; gap: 12px;">
+          <div class="stat-icon" style="background:var(--green);color:#fff;margin:0;font-size:15px;border-radius:8px">📄</div>
+          <div>
+            <div class="stat-value" style="color:var(--text);font-size:24px;margin:0">${submittedReports}</div>
+            <div class="small" style="color:var(--text2)">Reports submitted</div>
+          </div>
+        </div>
+      </div>
+      <div class="stat-card" style="border: 1px solid var(--orange-dim); background: rgba(237, 137, 54, 0.05); padding: 16px;">
+        <div class="small" style="color:var(--orange); font-weight:600; margin-bottom: 12px">Pending Submissions</div>
+        <div style="display:flex; align-items:center; gap: 12px;">
+          <div class="stat-icon" style="background:var(--orange);color:#fff;margin:0;font-size:16px;border-radius:50%">🕒</div>
+          <div>
+            <div class="stat-value" style="color:var(--text);font-size:24px;margin:0">${pendingReports}</div>
+            <div class="small" style="color:var(--text2)">Reports pending</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="h4 mb-16" style="display:flex;align-items:center;gap:8px"><span style="color:var(--orange);font-size:18px">⭕</span> Pending Submissions</div>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      ${pendingClientEvents
+        .map(event => {
+          const recipient = getEventReportRecipients(event)[0];
+          return `
+        <div class="card" style="background:var(--surface); border:1px solid var(--border); padding:20px; border-radius:12px;">
+          <div style="font-weight:700;font-size:16px;margin-bottom:12px;color:var(--text)">${
+            event.title
+          }</div>
+          <div style="display:flex;flex-wrap:wrap;gap:24px;margin-bottom:16px;color:var(--text2);font-size:13px">
+            <div style="display:flex;align-items:center;gap:6px"><span>📅</span> ${event.date}</div>
+            <div style="display:flex;align-items:center;gap:6px"><span>📍</span> ${
+              event.venue || event.city || 'Location'
+            }</div>
+            <div style="display:flex;align-items:center;gap:6px"><span>👥</span> ${
+              DB.registrations.filter(registration => registration.eventId === event.id).length
+            } Attendees</div>
+                      </div>
+          <div class="small mb-12"><strong>Send to:</strong> ${reportContactHtml(
+            recipient?.id,
+            'No requesting client linked'
+          )}</div>
+          <div class="flex gap-12">
+            <button class="btn btn-primary" onclick="openSubmitReportModal('${event.id}')" ${
+            recipient ? '' : 'disabled'
+          } style="gap:6px; background:var(--accent); border-radius:8px">📤 Submit Report</button>
+            <button class="btn btn-ghost" onclick="openViewEventDrawer('${
+              event.id
+            }')" style="color:var(--accent);border-color:var(--accent-dim);background:var(--accent-dim);gap:6px; border-radius:8px">👁 View Event Details</button>
+          </div>
+        </div>
+      `;
+        })
+        .join('')}
+      ${
+        pendingReports === 0
+          ? `<div class="empty"><div class="empty-icon">✓</div><div class="empty-title">All Reports Submitted</div><p class="empty-desc">Great job! All your completed events have reports.</p></div>`
+          : ''
+      }
+    </div>
+    <div class="h4 mb-16" style="margin-top:28px">Submitted Reports</div>
+    <div class="table-wrap">
+      ${
+        clientReports.length === 0
+          ? `<div class="empty"><div class="empty-icon">📄</div><div class="empty-title">No submitted reports yet</div></div>`
+          : `
+      <table>
+        <thead><tr><th>Event</th><th>Report File</th><th>Sent To</th><th>Submitted At</th></tr></thead>
+        <tbody>${clientReports
+          .map(report => {
+            const event = myEvents.find(item => String(item.id) === String(report.eventId));
+            return `<tr>
+            <td>${event ? escapeHtml(event.title) : 'Unknown event'}</td>
+            <td>${renderOrganizerReportFile(report)}</td>
+            <td>${reportContactHtml(report.recipientId, 'Recipient not recorded')}</td>
+            <td>${escapeHtml(report.submittedAt || '—')}</td>
+          </tr>`;
+          })
+          .join('')}</tbody>
+      </table>`
+      }
+    </div>
+  `;
+  return `
+  <div style="padding:24px;background:var(--bg);">
+    <div class="page-hd" style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-start;">
+      <div class="page-hd-left">
+        <div class="page-title">Event Reports</div>
+        <div class="page-sub">Send completed-event reports to the requesting client and review submitted files</div>
+      </div>
+      <div class="page-hd-right">
+        <button class="btn" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);font-weight:600;padding:8px 16px;border-radius:8px;gap:8px" onclick="toast('${completedEvents} Completed Events','info')"><span style="font-size:16px;color:var(--accent)">📄</span> ${completedEvents} Completed Events</button>
+      </div>
+    </div>
+    ${clientReportContent}
+  </div>
+  `;
+}
 function switchReportTab(t) {
   if (CU && CU.role === 'superuser') sessionStorage.setItem('admin_reports_tab', t);
   else sessionStorage.setItem('reports_tab', t);
@@ -15568,7 +17425,50 @@ function visibleNotifications() {
     ? DB.notifications.filter(notification => notification.employeeType === 'SUPPORT_FINANCE')
     : DB.notifications;
 }
-/* PORTAL_SECTION_pageNotifications */
+function pageNotifications() {
+  const notifications = visibleNotifications();
+  const unread = notifications.filter(notification => !notification.read).length;
+  return `
+  <div class="page-hd">
+    <div class="page-hd-left"><div class="page-title">Notifications</div><div class="page-sub">${unread} unread notification${
+    unread !== 1 ? 's' : ''
+  }</div></div>
+    <div class="page-hd-right"><button class="btn btn-ghost btn-sm" onclick="markAllRead()">✓ Mark All Read</button></div>
+  </div>
+  <div class="card p-0 notif-panel">
+    ${
+      notifications.length === 0
+        ? `<div class="empty"><div class="empty-icon">🔔</div><div class="empty-title">All caught up!</div></div>`
+        : `
+    ${notifications
+      .map(
+        notification => `
+      <div class="notif-item${notification.read ? '' : ' unread'}" onclick="markNotifRead('${
+          notification.id
+        }')">
+        <div class="notif-icon" style="background:${
+          notification.type === 'success'
+            ? 'var(--green-dim)'
+            : notification.type === 'warning'
+            ? 'var(--yellow-dim)'
+            : notification.type === 'error'
+            ? 'var(--red-dim)'
+            : 'var(--accent-dim)'
+        }">${notification.icon || '🔔'}</div>
+        <div class="notif-content">
+          <div class="notif-title" style="${notification.read ? '' : 'font-weight:600'}">${
+          notification.title
+        }</div>
+          <div class="notif-msg">${notification.msg}</div>
+          <div class="notif-time">${notification.time}</div>
+        </div>
+        ${!notification.read ? `<div class="unread-dot"></div>` : ''}
+      </div>`
+      )
+      .join('')}`
+    }
+  </div>`;
+}
 function markNotifRead(id) {
   const n = DB.notifications.find(notification => notification.id == id);
   if (!n) return;
@@ -15757,13 +17657,184 @@ function pageDepartmentEmployeeProfile() {
     </div>
   </div>`;
 }
-
-/* PORTAL_SECTION_pageProfile */
+function pageProfile() {
+  if (isDepartmentEmployee()) return pageDepartmentEmployeeProfile();
+  const regs =
+    CU.role === 'attendee'
+      ? DB.registrations.filter(registration => registration.attendeeId === CU.id)
+      : [];
+  const myEvs = CU.role === 'organizer' ? DB.events.filter(event => event.organizer === CU.id) : [];
+  const isSF = CU.role === 'employee' && CU.employeeType === 'SUPPORT_FINANCE';
+  const sfSupportHandled = (DB.supportRequests || []).length;
+  const sfResolved = (DB.supportRequests || []).filter(
+    r => r.status === 'Resolved' || r.status === 'Closed'
+  ).length;
+  const sfTxnsReviewed = (DB.financeTransactions || []).length;
+  const sfReportsSubmitted = (DB.operationalReports || []).filter(
+    r => r.status === 'Submitted' || r.status === 'Reviewed'
+  ).length;
+  return `
+  <div class="page-hd"><div class="page-hd-left"><div class="page-title">My Profile</div></div><div class="page-hd-right"><button class="btn btn-ghost" onclick="goNav('settings')">✏️ Edit Profile</button></div></div>
+  <div class="profile-banner">
+    ${
+      CU.avatarImage
+        ? `<div class="av av-xl"><img src="${CU.avatarImage}" alt="${
+            CU.name
+          }" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span style="display:none">${
+            CU.avatar || CU.name[0]
+          }</span></div>`
+        : `<div class="av av-xl">${CU.avatar || CU.name[0]}</div>`
+    }
+    <div class="profile-info">
+      <div class="profile-name">${CU.name}</div>
+      <div class="profile-role-tag">${
+        isSF ? 'Customer Support &amp; Finance Executive' : ROLE_LABELS[CU.role]
+      }</div>
+      ${CU.company ? `<div class="small mt-4">${CU.company}</div>` : ''}
+      ${
+        CU.specialization
+          ? `<div class="small mt-4">Specialization: ${CU.specialization}</div>`
+          : ''
+      }
+      ${CU.service ? `<div class="small mt-4">Service: ${CU.service}</div>` : ''}
+      <span class="badge badge-green mt-8">Active Account</span>
+    </div>
+  </div>
+  <div class="grid-2" style="align-items:start;gap:20px">
+    <div class="card">
+      <div class="h4 mb-14">Contact Information</div>
+      <div class="info-row"><span class="info-label">Email</span><span class="info-value">${
+        CU.email
+      }</span></div>
+      <div class="info-row"><span class="info-label">Phone</span><span class="info-value">${
+        CU.phone || 'Not set'
+      }</span></div>
+      <div class="info-row"><span class="info-label">Member Since</span><span class="info-value">${
+        CU.joined || '—'
+      }</span></div>
+      <div class="info-row"><span class="info-label">Role</span><span class="info-value"><span class="badge badge-${
+        ROLE_COLORS[CU.role]
+      }">${isSF ? 'Customer Support &amp; Finance Executive' : CU.role}</span></span></div>
+      ${
+        CU.bio
+          ? `<div class="mt-14"><div class="label mb-8">Bio</div><p style="font-size:13.5px;color:var(--text2);line-height:1.7">${CU.bio}</p></div>`
+          : ''
+      }
+    </div>
+    <div>
+      ${
+        isSF
+          ? `<div class="card mb-16">
+        <div class="h4 mb-14">Work Summary</div>
+        <div class="info-row"><span class="info-label">Support Requests Handled</span><span class="info-value" style="color:var(--accent);font-weight:700">${sfSupportHandled}</span></div>
+        <div class="info-row"><span class="info-label">Issues Resolved</span><span class="info-value" style="color:var(--green);font-weight:700">${sfResolved}</span></div>
+        <div class="info-row"><span class="info-label">Transactions Reviewed</span><span class="info-value" style="color:var(--blue);font-weight:700">${sfTxnsReviewed}</span></div>
+        <div class="info-row"><span class="info-label">Reports Submitted</span><span class="info-value" style="color:var(--purple);font-weight:700">${sfReportsSubmitted}</span></div>
+      </div>`
+          : CU.role === 'attendee'
+          ? `<div class="card mb-16">
+        <div class="h4 mb-14">Activity Summary</div>
+        <div class="info-row"><span class="info-label">Events Registered</span><span class="info-value">${
+          regs.length
+        }</span></div>
+        <div class="info-row"><span class="info-label">Upcoming Events</span><span class="info-value" style="color:var(--accent)">${
+          regs.filter(registration => {
+            const event = DB.events.find(currentEvent => currentEvent.id === registration.eventId);
+            return event && event.status === 'upcoming';
+          }).length
+        }</span></div>
+        <div class="info-row"><span class="info-label">Events Attended</span><span class="info-value" style="color:var(--green)">${
+          regs.filter(registration => registration.checkedIn).length
+        }</span></div>
+        <div class="info-row"><span class="info-label">Total Spent</span><span class="info-value" style="color:var(--green);font-weight:700">₹${regs.reduce(
+          (total, registration) => total + registration.amount,
+          0
+        )}</span></div>
+      </div>`
+          : CU.role === 'organizer'
+          ? `<div class="card mb-16">
+        <div class="h4 mb-14">Event Summary</div>
+        <div class="info-row"><span class="info-label">Total Events</span><span class="info-value">${
+          myEvs.length
+        }</span></div>
+        <div class="info-row"><span class="info-label">Upcoming</span><span class="info-value" style="color:var(--accent)">${
+          myEvs.filter(e => e.status === 'upcoming').length
+        }</span></div>
+        <div class="info-row"><span class="info-label">Completed</span><span class="info-value" style="color:var(--green)">${
+          myEvs.filter(e => e.status === 'completed').length
+        }</span></div>
+      </div>`
+          : ''
+      }
+      <div class="card">
+        <div class="h4 mb-14">Quick Actions</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button class="btn btn-ghost w-full" onclick="goNav('settings')">⚙️ Account Settings</button>
+          <button class="btn btn-danger w-full" onclick="doLogout()">🚪 Sign Out</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
 
 // ════════════════════════════════════════════════
 //  SETTINGS
 // ════════════════════════════════════════════════
-/* PORTAL_SECTION_pageSettings */
+
+function pageSettings() {
+  return `
+  <div class="page-hd"><div class="page-hd-left"><div class="page-title">Account Settings</div><div class="page-sub">Manage your personal information and account preferences.</div></div></div>
+  <div class="grid-2" style="align-items:start;gap:20px">
+    <div class="card card-lg">
+      <div class="h4 mb-20">Personal Information</div>
+      <div class="profile-banner" style="margin-bottom:20px;padding:18px">
+        ${
+          CU.avatarImage
+            ? `<div class="av av-lg"><img src="${CU.avatarImage}" alt="${
+                CU.name
+              }" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span style="display:none">${
+                CU.avatar || CU.name[0]
+              }</span></div>`
+            : `<div class="av av-lg">${CU.avatar || CU.name[0]}</div>`
+        }
+        <div><div style="font-weight:700">${CU.name}</div><div class="small">${
+    ROLE_LABELS[CU.role]
+  }</div></div>
+      </div>
+      <div class="form-group"><label class="form-label">Full Name</label><input class="form-control" id="st-name" value="${
+        CU.name
+      }"></div>
+      <div class="form-group"><label class="form-label">Email Address</label><input class="form-control" id="st-email" value="${
+        CU.email
+      }"></div>
+      <div class="form-group"><label class="form-label">Phone Number</label><input class="form-control" id="st-phone" value="${
+        CU.phone || ''
+      }"></div>
+      <div class="form-group"><label class="form-label">Bio</label><textarea class="form-control" id="st-bio">${
+        CU.bio || ''
+      }</textarea></div>
+      <button class="btn btn-primary w-full" onclick="saveSettings()" style="justify-content:center">Save Changes</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div class="card card-lg">
+        <div class="h4 mb-20">Change Password</div>
+        <div class="form-group"><label class="form-label">Current Password</label><input class="form-control" id="st-cur" type="password" placeholder="Enter current password"></div>
+        <div class="form-group"><label class="form-label">New Password</label><input class="form-control" id="st-new" type="password" placeholder="Min 6 characters"></div>
+        <div class="form-group"><label class="form-label">Confirm New Password</label><input class="form-control" id="st-conf" type="password" placeholder="Re-enter new password"></div>
+        <button class="btn btn-primary w-full" onclick="changePass()" style="justify-content:center">Update Password</button>
+      </div>
+      <div class="card">
+        <div class="h4 mb-16">Preferences</div>
+        <div class="info-row"><span class="info-label">Email Notifications</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+        <div class="info-row"><span class="info-label">SMS Reminders</span><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
+        <div class="info-row"><span class="info-label">Event Recommendations</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+      </div>
+      <div class="card">
+        <button class="btn btn-danger w-full mb-8" onclick="doLogout()" style="justify-content:center">Sign Out</button>
+      </div>
+    </div>
+  </div>`;
+}
 function saveSettings() {
   const name = v('st-name');
   const email = v('st-email');
@@ -16180,9 +18251,28 @@ function submitEventRequest(organizerId) {
   renderPage(_currentPage);
   toast('Request submitted to organizer!', 'success');
 }
-
-/* PORTAL_SECTION_pageUpcomingEvents */
-
+function pageUpcomingEvents() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const upcoming = DB.events
+    .filter(event => {
+      const eDate = new Date(event.date);
+      return eDate >= today && event.status === 'upcoming' && !isCancelledWorkflowEvent(event);
+    })
+    .sort((leftEvent, rightEvent) => new Date(leftEvent.date) - new Date(rightEvent.date));
+  return `
+  <div class="page-hd">
+    <div class="page-hd-left">
+      <div class="page-title">Upcoming Events</div>
+      <div class="page-sub">Events happening soon that you might be interested in</div>
+    </div>
+  </div>
+  <div class="events-grid">${
+    upcoming.length === 0
+      ? `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">📅</div><div class="empty-title">No upcoming events</div></div>`
+      : upcoming.map(event => evCard(event, CU.role === 'client' ? 'client' : 'attendee')).join('')
+  }</div>`;
+}
 function setWorkflowEventTab(tab) {
   if (!['ongoing', 'completed', 'cancelled'].includes(tab)) return;
   _workflowEventTab = tab;
@@ -16405,8 +18495,66 @@ function renderOrganizerEventActions(event, request = organizerEventRequest(even
   }
   return `<div class="organizer-event-actions">${buttons.join('')}</div>`;
 }
-/* PORTAL_SECTION_pageWorkflowEvents */
-
+function pageWorkflowEvents() {
+  const myEvents = (DB && DB.events) || [];
+  const upcomingCount = myEvents.filter(event => workflowEventPhase(event) === 'upcoming').length;
+  const inProgressCount = myEvents.filter(event => workflowEventPhase(event) === 'ongoing').length;
+  const completedCount = myEvents.filter(event => workflowEventPhase(event) === 'completed').length;
+  const cancelledCount = myEvents.filter(
+    event => (event.backendStatus || event.status) === 'cancelled' || Boolean(event.cancellation)
+  ).length;
+  const attentionCount = myEvents.filter(event => event.needsAttention === true).length;
+  const allCount = myEvents.length;
+  const ongoingCount =
+    typeof getOngoingWorkflowItems === 'function'
+      ? getOngoingWorkflowItems().length
+      : inProgressCount;
+  return `<div class="page-hd"><div class="page-hd-left"><div class="page-title">Events</div><div class="page-sub">Track your ongoing events and review completed events and reports.</div></div></div>
+        <nav aria-label="Event subpages" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">
+          <button type="button" class="btn ${
+            _workflowEventTab === 'ongoing' ? 'btn-primary' : 'btn-ghost'
+          }" aria-pressed="${
+    _workflowEventTab === 'ongoing'
+  }" onclick="setWorkflowEventTab('ongoing')">Ongoing Events (${ongoingCount})</button>
+          <button type="button" class="btn ${
+            _workflowEventTab === 'completed' ? 'btn-primary' : 'btn-ghost'
+          }" aria-pressed="${
+    _workflowEventTab === 'completed'
+  }" onclick="setWorkflowEventTab('completed')">Completed Events (${completedCount})</button>
+          <button type="button" class="btn ${
+            _workflowEventTab === 'cancelled' ? 'btn-primary' : 'btn-ghost'
+          }" aria-pressed="${
+    _workflowEventTab === 'cancelled'
+  }" onclick="setWorkflowEventTab('cancelled')">Cancelled Events (${cancelledCount})</button>
+        </nav>
+        <div class="filter-bar" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;font-size:12px;align-items:center">
+          <span>All Events (${allCount})</span>
+          <span>Upcoming (${upcomingCount})</span>
+          <span>In Progress (${inProgressCount})</span>
+          <span>Completed (${completedCount})</span>
+          <span>Cancelled (${cancelledCount})</span>
+          <span>Needs Attention (${attentionCount})</span>
+          <span>Soonest first</span>
+          <button class="btn btn-ghost btn-xs" onclick="setOrganizerEventFilter('clear')">Clear filters</button>
+        </div>
+        <section aria-label="${
+          _workflowEventTab === 'cancelled'
+            ? 'Cancelled Events'
+            : _workflowEventTab === 'completed'
+            ? 'Completed Events'
+            : 'Ongoing Events'
+        }">${
+    _workflowEventTab === 'cancelled'
+      ? pageCancelledEvents(true)
+      : _workflowEventTab === 'completed'
+      ? typeof pageCompletedEvents === 'function'
+        ? pageCompletedEvents(true)
+        : ''
+      : typeof pageOngoingEvents === 'function'
+      ? pageOngoingEvents(true)
+      : ''
+  }</section>`;
+}
 function pageCancelledEvents(embedded = false) {
   const cancelled = (DB.events || [])
     .filter(isCancelledWorkflowEvent)
@@ -16477,17 +18625,220 @@ function setOrganizerEventFilter(filter) {
   }
   if (typeof renderPage === 'function') renderPage(_currentPage);
 }
-/* PORTAL_SECTION_pageCompletedEvents */
-
-/* PORTAL_SECTION_pageOngoingEvents */
+function pageCompletedEvents(embedded = false) {
+  const completed = DB.events
+    .filter(event => workflowEventPhase(event) === 'completed')
+    .sort((leftEvent, rightEvent) => new Date(rightEvent.date) - new Date(leftEvent.date));
+  return `${
+    embedded
+      ? ''
+      : `
+  <div class="page-hd">
+    <div class="page-hd-left">
+      <div class="page-title">Completed Events</div>
+      <div class="page-sub">Events that have been successfully completed</div>
+    </div>
+  </div>`
+  }
+  <div class="events-grid">${
+    completed.length === 0
+      ? `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">✅</div><div class="empty-title">No completed events</div></div>`
+      : completed
+          .map(event => {
+            const bannerContent = event.image
+              ? `
+          <img src="${event.image}" alt="${
+                  event.title || 'Event'
+                }" class="ev-banner-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+          <div class="ev-banner-fallback" style="display:none;align-items:center;justify-content:center;font-size:52px;width:100%;height:100%">${
+            event.emoji || '📅'
+          }</div>
+          <div class="ev-banner-overlay"></div>
+        `
+              : `<span style="font-size:52px">${event.emoji || '📅'}</span>`;
+            return `<div class="ev-card">
+    <div class="ev-banner" style="background:${event.color || 'var(--accent)'}18">
+      ${bannerContent}
+      <div class="ev-banner-tag"><span class="badge badge-green">✓ Completed</span></div>
+      <div class="ev-banner-price">${event.price === 0 ? 'Free' : '₹' + event.price}</div>
+    </div>
+    <div class="ev-body">
+      <div class="ev-title">${event.title}</div>
+      <div class="ev-meta">
+        <div class="ev-meta-row"><span>📅</span>${event.date} · ${event.time}</div>
+        <div class="ev-meta-row"><span>📍</span>${event.venue}</div>
+        <div class="ev-meta-row"><span>🏷️</span>${event.category}</div>
+      </div>
+      <div style="margin-bottom:12px">
+        <div class="flex justify-between ev-cap mb-4"><span>${event.registered}/${
+              event.capacity
+            } attended</span></div>
+        <div style="font-size:12px;color:var(--green);margin-top:8px">✓ Event Successfully Completed</div>
+      </div>
+      <div class="ev-footer">
+        <div class="flex gap-6" style="width:100%;justify-content:space-between">
+          <button class="btn btn-ghost btn-xs w-full" onclick="viewWorkflowEventDetails('${
+            event.id
+          }')" title="View event details">👁️ View Details</button>
+          <button class="btn btn-primary btn-xs" onclick="viewWorkflowEventReport('${
+            event.id
+          }')" title="View completion report">📊 View Report</button>
+        </div>
+        <div class="tag-list" style="flex:1;justify-content:flex-end">${(event.tags || [])
+          .slice(0, 2)
+          .map(tag => `<span class="tag">${tag}</span>`)
+          .join('')}</div>
+      </div>
+    </div>
+  </div>`;
+          })
+          .join('')
+  }</div>`;
+}
+function pageOngoingEvents(embedded = false) {
+  if (!['client', 'organizer'].includes(CU.role)) {
+    const publicOngoing = DB.events.filter(event => event.status === 'ongoing');
+    return `<div class="page-hd"><div class="page-hd-left"><div class="page-title">Ongoing Events</div><div class="page-sub">Events currently happening right now</div></div></div><div class="events-grid">${
+      publicOngoing.length
+        ? publicOngoing.map(event => evCard(event, 'attendee')).join('')
+        : '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">⏱️</div><div class="empty-title">No ongoing events</div></div>'
+    }</div>`;
+  }
+  const ongoing = getOngoingWorkflowItems();
+  return `${
+    embedded
+      ? ''
+      : `
+  <div class="page-hd">
+    <div class="page-hd-left">
+      <div class="page-title">Ongoing Events</div>
+      <div class="page-sub">Track event planning, approved client events, payment, and completion reports</div>
+    </div>
+  </div>`
+  }
+  <div class="events-grid">${
+    ongoing.length === 0
+      ? `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">⏱️</div><div class="empty-title">No ongoing events</div></div>`
+      : ongoing
+          .map(({ event, request, isPlanning }) => {
+            const paid = request?.paymentStatus === 'fully_paid';
+            const depositPaid = request?.paymentStatus === 'deposit_paid';
+            const paymentLabel = paid ? 'Paid' : depositPaid ? 'Deposit Paid' : 'Unpaid';
+            const paymentColor = paid
+              ? 'var(--green)'
+              : depositPaid
+              ? 'var(--blue)'
+              : 'var(--yellow)';
+            const isUpcoming = !isPlanning && workflowEventPhase(event) === 'upcoming';
+            const stage = isPlanning
+              ? {
+                  planning: 'Planning',
+                  plan_submitted: 'Awaiting Client Review',
+                  plan_revision_requested: 'Plan Revision Requested',
+                  proposal_sent: 'Awaiting Client Review',
+                  awaiting_client: 'Awaiting Payment',
+                  changes_requested: 'Changes Requested',
+                  counteroffer_received: 'Counteroffer Received',
+                }[request?.status] || 'Planning'
+              : isUpcoming
+              ? 'Upcoming'
+              : 'Ongoing';
+            const stageBadgeCls = isPlanning || isUpcoming ? 'blue' : 'green';
+            const title = isPlanning
+              ? request?.eventName || request?.title || 'Event Planning'
+              : event?.name || event?.title || 'Ongoing Event';
+            const date = isPlanning
+              ? request?.eventDate || request?.date || 'TBD'
+              : event?.date || 'TBD';
+            const time = isPlanning ? request?.eventTime || request?.time || '' : event?.time || '';
+            const venue = isPlanning
+              ? request?.venue || request?.location || 'Venue TBD'
+              : event?.location || event?.venue || 'Venue TBD';
+            const category = isPlanning
+              ? request?.category || request?.eventType || 'Corporate'
+              : event?.category || 'Event';
+            const budgetAmount = Number(
+              request?.agreedPrice ??
+                request?.budget ??
+                (request?.proposals?.length
+                  ? request.proposals[request.proposals.length - 1].totalPrice
+                  : 0)
+            );
+            const priceBadge =
+              budgetAmount > 0 ? '₹' + budgetAmount.toLocaleString('en-IN') : 'Budget not set';
+            const capacity = isPlanning
+              ? request?.guestCount || request?.capacity || 0
+              : event?.capacity || request?.guestCount || 0;
+            const registered = isPlanning
+              ? request?.registered || request?.confirmedAttendees || 0
+              : event?.registered || 0;
+            const pct = capacity > 0 ? Math.min(100, Math.round((registered / capacity) * 100)) : 0;
+            const regText =
+              capacity > 0
+                ? `${registered}/${capacity} registered`
+                : isPlanning
+                ? 'Planning in progress'
+                : 'Ongoing Event';
+            const image = (!isPlanning && event?.image) || null;
+            const emoji = (!isPlanning && event?.emoji) || (isPlanning ? '📋' : '⏱️');
+            const color = (!isPlanning && event?.color) || 'var(--accent)';
+            const bannerContent = image
+              ? `
+          <img src="${image}" alt="${workflowHtml(
+                  title
+                )}" class="ev-banner-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+          <div class="ev-banner-fallback" style="display:none;align-items:center;justify-content:center;font-size:52px;width:100%;height:100%">${emoji}</div>
+          <div class="ev-banner-overlay"></div>
+        `
+              : `<span style="font-size:52px">${emoji}</span>`;
+            const details = isPlanning
+              ? `viewWorkflowRequestDrawer('${workflowHtml(request?.id || request?.requestId)}')`
+              : `viewWorkflowEventDetails('${workflowHtml(event?.eventId || event?.id)}')`;
+            return `<div class="ev-card">
+    <div class="ev-banner" style="background:${color}18">
+      ${bannerContent}
+      <div class="ev-banner-tag"><span class="badge badge-${stageBadgeCls}">${stage}</span></div>
+      <div class="ev-banner-price">${priceBadge}</div>
+    </div>
+    <div class="ev-body">
+      <div class="ev-title">${workflowHtml(title)}</div>
+      <div class="ev-meta">
+        <div class="ev-meta-row"><span>📅</span>${workflowHtml(date)}${
+              time ? ` · ${workflowHtml(time)}` : ''
+            }</div>
+        <div class="ev-meta-row"><span>📍</span>${workflowHtml(venue)}</div>
+        <div class="ev-meta-row"><span>🏷️</span>${workflowHtml(category)}</div>
+        <div class="ev-meta-row"><span>💳</span>Payment: <strong style="color:${paymentColor}">${paymentLabel}</strong></div>
+      </div>
+      <div style="margin-bottom:12px">
+        <div class="flex justify-between ev-cap mb-4"><span>${regText}</span><span>${
+              capacity > 0 ? pct + '%' : ''
+            }</span></div>
+        <div class="prog"><div class="prog-fill" style="width:${pct}%"></div></div>
+      </div>
+      <div class="ev-footer">
+        ${
+          !isPlanning && CU.role === 'organizer'
+            ? renderOrganizerEventActions(event, request)
+            : `<button class="btn btn-ghost btn-xs w-full" onclick="${details}" title="View event details">👁️ View Details</button>`
+        }
+      </div>
+    </div>
+  </div>`;
+          })
+          .join('')
+  }</div>`;
+}
 
 // ════════════════════════════════════════════════
 //  MODAL SYSTEM
 // ════════════════════════════════════════════════
 function openModal(title, body, btns = [], showCancel = true) {
   g('modal-title').textContent = title;
+  globalThis.window?.EventFlowOrganizerPages?.clear(g('modal-body'));
   g('modal-body').innerHTML = body;
   const foot = g('modal-foot');
+  globalThis.window?.EventFlowOrganizerPages?.clear(foot);
   foot.innerHTML = '';
   let hasDismiss = false;
   const handlers = new Set();
@@ -16539,6 +18890,7 @@ function closeModalOnBg(e) {
 // DRAWER
 function openDrawer(title, body) {
   g('drawer-title').textContent = title;
+  globalThis.window?.EventFlowOrganizerPages?.clear(g('drawer-body'));
   g('drawer-body').innerHTML = body;
   g('drawer-overlay').classList.add('open');
   g('drawer').classList.add('open');
@@ -16998,4 +19350,86 @@ document.addEventListener('DOMContentLoaded', () => {
 window.EventFlowRole = {
   key: 'organizer',
   label: 'Organizer',
+};
+
+// React pages read the same normalized data and keep the existing workflow action entry points.
+window.EventFlowOrganizerRuntime = {
+  snapshot(pageProps = {}) {
+    return {
+      organizerEventCardStatus,
+      CU: typeof CU === 'undefined' ? undefined : CU,
+      DB: typeof DB === 'undefined' ? undefined : DB,
+      EMPLOYEE_TYPE_LABELS:
+        typeof EMPLOYEE_TYPE_LABELS === 'undefined' ? undefined : EMPLOYEE_TYPE_LABELS,
+      ROLE_COLORS: typeof ROLE_COLORS === 'undefined' ? undefined : ROLE_COLORS,
+      ROLE_LABELS: typeof ROLE_LABELS === 'undefined' ? undefined : ROLE_LABELS,
+      _workflowEventTab: typeof _workflowEventTab === 'undefined' ? undefined : _workflowEventTab,
+      _workflowReturnPage:
+        typeof _workflowReturnPage === 'undefined' ? undefined : _workflowReturnPage,
+      agreementBadgeInfo:
+        typeof agreementBadgeInfo === 'undefined' ? undefined : agreementBadgeInfo,
+      canReviewOrganizerRegistration:
+        typeof canReviewOrganizerRegistration === 'undefined'
+          ? undefined
+          : canReviewOrganizerRegistration,
+      escapeHtml: typeof escapeHtml === 'undefined' ? undefined : escapeHtml,
+      evStatBadge: typeof evStatBadge === 'undefined' ? undefined : evStatBadge,
+      eventOpsReportBadge:
+        typeof eventOpsReportBadge === 'undefined' ? undefined : eventOpsReportBadge,
+      filterOrganizerDashboardEvents:
+        typeof filterOrganizerDashboardEvents === 'undefined'
+          ? undefined
+          : filterOrganizerDashboardEvents,
+      g: typeof g === 'undefined' ? undefined : g,
+      getEventReportRecipients:
+        typeof getEventReportRecipients === 'undefined' ? undefined : getEventReportRecipients,
+      getOngoingWorkflowItems:
+        typeof getOngoingWorkflowItems === 'undefined' ? undefined : getOngoingWorkflowItems,
+      isCancelledWorkflowEvent:
+        typeof isCancelledWorkflowEvent === 'undefined' ? undefined : isCancelledWorkflowEvent,
+      isDepartmentEmployee:
+        typeof isDepartmentEmployee === 'undefined' ? undefined : isDepartmentEmployee,
+      normalizeEventRequest:
+        typeof normalizeEventRequest === 'undefined' ? undefined : normalizeEventRequest,
+      operationalReportBadge:
+        typeof operationalReportBadge === 'undefined' ? undefined : operationalReportBadge,
+      organizerDashboardData:
+        typeof organizerDashboardData === 'undefined' ? undefined : organizerDashboardData,
+      organizerEventCardStatus:
+        typeof organizerEventCardStatus === 'undefined' ? undefined : organizerEventCardStatus,
+      organizerEventRequest:
+        typeof organizerEventRequest === 'undefined' ? undefined : organizerEventRequest,
+      organizerRegistrationEvents:
+        typeof organizerRegistrationEvents === 'undefined'
+          ? undefined
+          : organizerRegistrationEvents,
+      organizerRegistrationStatus:
+        typeof organizerRegistrationStatus === 'undefined'
+          ? undefined
+          : organizerRegistrationStatus,
+      organizerReportAttachment:
+        typeof organizerReportAttachment === 'undefined' ? undefined : organizerReportAttachment,
+      ownsOrganizerEvent:
+        typeof ownsOrganizerEvent === 'undefined' ? undefined : ownsOrganizerEvent,
+      pageCompletedEvents:
+        typeof pageCompletedEvents === 'undefined' ? undefined : pageCompletedEvents,
+      pageOngoingEvents: typeof pageOngoingEvents === 'undefined' ? undefined : pageOngoingEvents,
+      paymentBadgeInfo: typeof paymentBadgeInfo === 'undefined' ? undefined : paymentBadgeInfo,
+      reqBadge: typeof reqBadge === 'undefined' ? undefined : reqBadge,
+      reqBadgeColor: typeof reqBadgeColor === 'undefined' ? undefined : reqBadgeColor,
+      visibleNotifications:
+        typeof visibleNotifications === 'undefined' ? undefined : visibleNotifications,
+      workflowEventPhase:
+        typeof workflowEventPhase === 'undefined' ? undefined : workflowEventPhase,
+      workflowEventPolicy:
+        typeof workflowEventPolicy === 'undefined' ? undefined : workflowEventPolicy,
+      workflowHtml: typeof workflowHtml === 'undefined' ? undefined : workflowHtml,
+      workflowMoney: typeof workflowMoney === 'undefined' ? undefined : workflowMoney,
+      workflowPolicyDate:
+        typeof workflowPolicyDate === 'undefined' ? undefined : workflowPolicyDate,
+      workflowPolicyDocuments:
+        typeof workflowPolicyDocuments === 'undefined' ? undefined : workflowPolicyDocuments,
+      pageProps,
+    };
+  },
 };

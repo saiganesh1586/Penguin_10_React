@@ -52,14 +52,9 @@ test('extracted actor page components compile', async () => {
   });
   try {
     for (const actor of actors.filter(actor => actor !== 'attendee')) {
-      const app = fs.readFileSync(
-        path.join(__dirname, '../src/apps', actor, 'app/App.jsx'),
-        'utf8'
-      );
-      for (const [, page] of app.matchAll(
-        /import raw([A-Za-z]+) from '\.\.\/pages\/[A-Za-z]+\.jsx\?raw';/g
-      )) {
-        const component = await server.ssrLoadModule(`/src/apps/${actor}/pages/${page}.jsx`);
+      const pagesDirectory = path.join(__dirname, '../src/apps', actor, 'pages');
+      for (const page of fs.readdirSync(pagesDirectory).filter(file => file.endsWith('.jsx'))) {
+        const component = await server.ssrLoadModule(`/src/apps/${actor}/pages/${page}`);
         assert.equal(typeof component.default, 'function', `${actor}/${page}`);
       }
     }

@@ -1,95 +1,216 @@
-import React from 'react';
-import LegacyPageMarkup from '../../../app/LegacyPageMarkup.jsx';
-
-// App.jsx extracts the marked functions into the browser runtime.
-// The React component below mounts the HTML returned by those functions.
-function portalRuntimeDefinitions() {
-  /* PORTAL_RUNTIME_START */
-  function pageOperationalReports() {
-    const allReports = DB.operationalReports || [];
-    const reports = allReports.filter(r => !r.type || !r.type.includes('Support'));
-    return `
-        <div class="page-hd">
-          <div class="page-hd-left">
-            <div class="page-title">Finance Reports &amp; Analytics</div>
-            <div class="page-sub">Submit finance, commission, and revenue reconciliation reports to Super Admin.</div>
-          </div>
-          <div class="page-hd-right">
-            <button class="btn btn-primary" onclick="openSubmitOperationalReportModal()">📤 Submit Finance Report</button>
-          </div>
+import { useFinanceExecutiveContext } from '../context/FinanceExecutiveContext.jsx';
+import PortalSelect from '../../../app/PortalSelect.jsx';
+import { listOrEmpty } from '../../../app/view-utils.js';
+import { FinanceHeader, FinanceRanges, FinanceStat } from '../components/FinanceHeader.jsx';
+import { FinanceReportHistory } from '../components/ReportHistory.jsx';
+export default function ReportsPage() {
+  const portalContext = useFinanceExecutiveContext();
+  const portalActions = portalContext.actions;
+  const { financeData, financeDate, financeFilters, financeMoney, financeQuery } = portalContext;
+  let html = '';
+  const params = new URLSearchParams(financeQuery());
+  params.set('type', financeFilters.reportType);
+  const data = financeData;
+  const keys = data.rows.length
+    ? Object.keys(data.rows[0]).filter(
+        x => !['attendeeEmail', 'organizerId', 'eventId'].includes(x)
+      )
+    : [];
+  html = (
+    <>
+      <FinanceHeader
+        onRenderPage={portalContext.actions.onRenderPage}
+        _currentPage={portalContext._currentPage}
+        title={'Financial Reports'}
+        subtitle={'Reports are generated from all matching backend records.'}
+      />
+      <FinanceRanges
+        onFinanceSet={portalContext.actions.onFinanceSet}
+        financeFilters={portalContext.financeFilters}
+      />
+      <>
+        <div className="filter-row finance-filters">
+          <label>
+            Report{' '}
+            <PortalSelect
+              className="form-control"
+              onChange={event =>
+                portalActions.onFinanceSet('reportType', event.currentTarget.value)
+              }
+              value={financeFilters.reportType}
+            >
+              {[
+                ['transactions', 'Payment Transactions'],
+                ['refunds', 'Refunds'],
+                ['events', 'Event Revenue'],
+                ['daily', 'Daily Revenue'],
+                ['monthly', 'Monthly Revenue'],
+              ].map(([value, label]) => (
+                <option value={value} key={value}>
+                  {label}
+                </option>
+              ))}
+            </PortalSelect>
+          </label>
+          <label>
+            Event{' '}
+            <PortalSelect
+              className="form-control"
+              onChange={event => portalActions.onFinanceSet('eventId', event.currentTarget.value)}
+              value={financeFilters.eventId}
+            >
+              <option value="">All events</option>
+              {data.options.events.map((row, index) => (
+                <option value={row.id} key={row?.id ?? row?.name ?? index}>
+                  {row.name}
+                </option>
+              ))}
+            </PortalSelect>
+          </label>
+          <label>
+            Organizer{' '}
+            <PortalSelect
+              className="form-control"
+              onChange={event =>
+                portalActions.onFinanceSet('organizerId', event.currentTarget.value)
+              }
+              value={financeFilters.organizerId}
+            >
+              <option value="">All organizers</option>
+              {data.options.organizers.map((row, index) => (
+                <option value={row.id} key={row?.id ?? row?.name ?? index}>
+                  {row.name}
+                </option>
+              ))}
+            </PortalSelect>
+          </label>
+          {['transactions', 'refunds'].includes(financeFilters.reportType) ? (
+            <label>
+              Status{' '}
+              <PortalSelect
+                className="form-control"
+                onChange={event => portalActions.onFinanceSet('status', event.currentTarget.value)}
+                value={financeFilters.status}
+              >
+                <option value="">All statuses</option>
+                {(financeFilters.reportType === 'transactions'
+                  ? ['pending', 'completed', 'failed', 'refunded']
+                  : ['pending', 'completed', 'failed', 'not_applicable']
+                ).map((value, index) => (
+                  <option
+                    value={value}
+                    key={
+                      value?.id ??
+                      value?.requestId ??
+                      value?.eventId ??
+                      value?.registrationId ??
+                      value?.reportId ??
+                      value?.label ??
+                      (typeof value === 'string' || typeof value === 'number' ? value : index)
+                    }
+                  >
+                    {value}
+                  </option>
+                ))}
+              </PortalSelect>
+            </label>
+          ) : (
+            ''
+          )}
+          <button className="btn btn-primary" onClick={() => portalActions.onFinanceDownloadCsv()}>
+            Download CSV
+          </button>
+          <button className="btn btn-ghost" onClick={() => portalActions.onFinanceDownloadPdf()}>
+            Download PDF
+          </button>
         </div>
-        <div class="grid-3 mb-20">
-          ${[
-            'Finance & Revenue Report',
-            'Commission & Payout Report',
-            'Refunds & Reconciliation Report',
-          ]
-            .map(
-              type => `
-            <div class="stat-card">
-              <div class="stat-icon">${
-                type.includes('Commission') ? '📈' : type.includes('Refund') ? '↩️' : '💳'
-              }</div>
-              <div class="stat-value">${
-                reports.filter(
-                  item =>
-                    item.type === type ||
-                    (type === 'Finance & Revenue Report' && item.type === 'Finance Report')
-                ).length
-              }</div>
-              <div class="stat-label">${type}</div>
-            </div>
-          `
-            )
-            .join('')}
+        <div className="grid-4 mb-20">
+          <FinanceStat label={'Gross Revenue'} value={financeMoney(data.summary.grossRevenue)} />
+          <FinanceStat label={'Refunded'} value={financeMoney(data.summary.refundedAmount)} />
+          <FinanceStat label={'Net Revenue'} value={financeMoney(data.summary.netRevenue)} />
+          <FinanceStat label={'Matching Records'} value={data.total} />
         </div>
-        <div class="card">
-          <div class="h4 mb-12">Finance Operational Reports</div>
-          <div class="table-wrap">
+        <div className="card">
+          <div className="small muted mb-12">
+            Generated {financeDate(data.generatedAt)} · {data.total} rows
+          </div>
+          <div className="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Report Title</th>
-                  <th>Category</th>
-                  <th>Owner</th>
-                  <th>Status</th>
-                  <th>Last Updated</th>
-                  <th>Action</th>
+                  {keys.map((key, index) => (
+                    <th
+                      key={
+                        key?.id ??
+                        key?.requestId ??
+                        key?.eventId ??
+                        key?.registrationId ??
+                        key?.reportId ??
+                        key?.label ??
+                        (typeof key === 'string' || typeof key === 'number' ? key : index)
+                      }
+                    >
+                      {key}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                ${
-                  reports
-                    .map(
-                      item => `
+                {listOrEmpty(
+                  data.rows.slice(0, 100).map((row, index) => (
+                    <tr
+                      key={
+                        row?.id ??
+                        row?.eventReportId ??
+                        row?.requestId ??
+                        row?.registrationId ??
+                        row?.ticketId ??
+                        row?.eventId ??
+                        row?.reportId ??
+                        row?.paymentId ??
+                        row?.refundId ??
+                        row?.notificationId ??
+                        row?.label ??
+                        row?.fileName ??
+                        index
+                      }
+                    >
+                      {keys.map(key => (
+                        <td key={key}>{row[key]}</td>
+                      ))}
+                    </tr>
+                  )),
                   <tr>
-                    <td><strong>${item.title}</strong></td>
-                    <td><span class="badge badge-purple">${item.type}</span></td>
-                    <td>${item.owner}</td>
-                    <td><span class="badge badge-${operationalReportBadge(item.status)}">${
-                        item.status
-                      }</span></td>
-                    <td>${item.updated}</td>
-                    <td>${
-                      item.status === 'Draft'
-                        ? `<button class="btn btn-primary btn-xs" onclick="submitOperationalReport('${item.id}')">Submit</button>`
-                        : '<span class="small" style="color:var(--green)">✓ Synchronized</span>'
-                    }</td>
+                    <td>No report records for these filters.</td>
                   </tr>
-                `
-                    )
-                    .join('') ||
-                  '<tr><td colspan="6" class="text-center py-20 muted">No finance reports submitted yet.</td></tr>'
-                }
+                )}
               </tbody>
             </table>
           </div>
+          {data.total > 100 ? (
+            <div className="small muted">
+              Showing first 100 rows. CSV includes all matching rows.
+            </div>
+          ) : (
+            ''
+          )}
         </div>
-      `;
-  }
-  /* PORTAL_RUNTIME_END */
-}
-
-export default function ReportsPage({ html }) {
-  return <LegacyPageMarkup html={html} />;
+      </>
+    </>
+  );
+  html = [
+    html,
+    <FinanceReportHistory
+      financeSentPage={portalContext.financeSentPage}
+      onFinanceOpenSubmitReport={portalContext.actions.onFinanceOpenSubmitReport}
+      onRenderPage={portalContext.actions.onRenderPage}
+      onFinanceSetSentStatus={portalContext.actions.onFinanceSetSentStatus}
+      onFinanceViewSentReport={portalContext.actions.onFinanceViewSentReport}
+      onFinanceChangeSentPage={portalContext.actions.onFinanceChangeSentPage}
+      financeDate={portalContext.financeDate}
+      financeSentReports={portalContext.financeSentReports}
+      financeSentStatus={portalContext.financeSentStatus}
+    />,
+  ];
+  return html;
 }

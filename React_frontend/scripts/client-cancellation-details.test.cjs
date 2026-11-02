@@ -1,7 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const path = require('node:path');
+const parser = require('@babel/parser');
 const vm = require('node:vm');
 const source = require('./portal-source.cjs')('client');
 
@@ -74,19 +73,13 @@ function harness(overrides = {}) {
     ),
     context
   );
-  for (const page of ['RequestStatusPage', 'NotificationsPage']) {
-    const raw = fs.readFileSync(
-      path.join(__dirname, `../src/apps/client/pages/${page}.jsx`),
-      'utf8'
+  const pageFunctions = new Set(['pageRequestStatus', 'pageNotifications']);
+  const definitions = parser
+    .parse(source, { sourceType: 'script' })
+    .program.body.filter(
+      node => node.type === 'FunctionDeclaration' && pageFunctions.has(node.id.name)
     );
-    vm.runInContext(
-      raw.slice(
-        raw.indexOf('/* PORTAL_RUNTIME_START */') + '/* PORTAL_RUNTIME_START */'.length,
-        raw.indexOf('/* PORTAL_RUNTIME_END */')
-      ),
-      context
-    );
-  }
+  vm.runInContext(definitions.map(node => source.slice(node.start, node.end)).join('\n'), context);
   context.visibleNotifications = () => context.DB.notifications;
   context.markNotifRead = async id => {
     marked.push(id);

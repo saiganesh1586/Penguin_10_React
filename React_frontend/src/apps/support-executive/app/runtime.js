@@ -50,6 +50,7 @@ function renderUsersTable(containerId, users = null) {
       </tbody>
     </table>
   `;
+  globalThis.window?.EventFlowSupportExecutivePages?.clear(container);
   container.innerHTML = html;
 }
 function renderEventsTable(containerId, events = null) {
@@ -97,6 +98,7 @@ function renderEventsTable(containerId, events = null) {
       </tbody>
     </table>
   `;
+  globalThis.window?.EventFlowSupportExecutivePages?.clear(container);
   container.innerHTML = html;
 }
 function renderRegistrationsTable(containerId, registrations = null) {
@@ -148,6 +150,7 @@ function renderRegistrationsTable(containerId, registrations = null) {
       </tbody>
     </table>
   `;
+  globalThis.window?.EventFlowSupportExecutivePages?.clear(container);
   container.innerHTML = html;
 }
 
@@ -227,6 +230,7 @@ function renderEventCards(containerId, events = null, isAttendee = false) {
         .join('')}
     </div>
   `;
+  globalThis.window?.EventFlowSupportExecutivePages?.clear(container);
   container.innerHTML = html;
 }
 
@@ -273,6 +277,7 @@ function renderNotificationsPanel(containerId) {
       }
     </div>
   `;
+  globalThis.window?.EventFlowSupportExecutivePages?.clear(container);
   container.innerHTML = html;
 
   // Update notification badge
@@ -644,6 +649,7 @@ function renderQRCanvas(registrationId, containerId) {
   ctx.font = '10px Arial';
   ctx.textAlign = 'center';
   ctx.fillText(String(registrationId).substring(0, 8), canvas.width / 2, canvas.height - 10);
+  globalThis.window?.EventFlowSupportExecutivePages?.clear(container);
   container.innerHTML = '';
   container.appendChild(canvas);
 }
@@ -3172,6 +3178,7 @@ function initApp() {
   g('sb-name').textContent = isDepartmentEmployee() ? displayRole : CU.name;
   g('sb-role-lbl').textContent = isDepartmentEmployee() ? 'Employee workspace' : displayRole;
   if (CU.avatarImage) {
+    globalThis.window?.EventFlowSupportExecutivePages?.clear(g('sb-av'));
     g('sb-av').innerHTML = `<img src="${CU.avatarImage}" alt="${
       CU.name
     }" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.parentElement.textContent='${
@@ -3253,6 +3260,7 @@ function buildEmployeeNav(employeeType) {
       ]
     : supportExecNav;
   const unread = visibleNotifications().filter(n => !n.read).length;
+  globalThis.window?.EventFlowSupportExecutivePages?.clear(g('sb-nav'));
   g('sb-nav').innerHTML =
     '<div class="sb-section-lbl">Menu</div>' +
     nav
@@ -3330,6 +3338,7 @@ function sendContactMessage() {
 function buildNav(role) {
   const items = NAV[role] || [];
   const unread = DB.notifications.filter(notification => !notification.read).length;
+  globalThis.window?.EventFlowSupportExecutivePages?.clear(g('sb-nav'));
   g('sb-nav').innerHTML =
     `<div class="sb-section-lbl">Menu</div>` +
     items
@@ -3453,9 +3462,20 @@ async function renderPageContent(pg) {
   const r = CU.role;
   if (pg === 'customer-support') {
     if (!window.EventFlowSupport.canRequestSupport(CU)) {
-      element.innerHTML = pageSettings();
+      if (globalThis.window?.EventFlowSupportExecutivePages?.hasPage('settings')) {
+        window.EventFlowSupportExecutivePages.render(
+          element,
+          'settings',
+          window.EventFlowSupportExecutiveRuntime.snapshot({})
+        );
+      } else {
+        globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
+        globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
+        element.innerHTML = pageSettings();
+      }
       return;
     }
+    globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
     element.innerHTML = await window.EventFlowSupport.render(CU);
     window.EventFlowSupport.bind(element, CU, () => goNav('settings'));
     return;
@@ -3510,6 +3530,7 @@ async function renderPageContent(pg) {
           ],
         }[CU.employeeType] || supportExecPages;
     if (!allowed.includes(pg)) {
+      globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
       element.innerHTML = `<div class="empty"><div class="empty-title">Access restricted</div><p class="empty-desc">This department does not have access to this area.</p></div>`;
       return;
     }
@@ -3518,25 +3539,54 @@ async function renderPageContent(pg) {
   // Restrict superuser to only the 3 analytical subpages
   if (r === 'superuser') {
     if (pg === 'dashboard') {
+      globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
       element.innerHTML = dashAdmin();
       return;
     } else if (pg === 'event-reports' || pg === 'events') {
+      globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
       element.innerHTML = pageEventReports();
       return;
     } else if (pg === 'revenue-reports' || pg === 'reports' || pg === 'employee-stats') {
+      globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
       element.innerHTML = pageRevenueReports();
       return;
     } else {
+      globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
       element.innerHTML = pageUserReports();
       return;
     }
   }
   switch (pg) {
     case 'dashboard':
-      element.innerHTML =
-        isDepartmentEmployee() && ['SUPPORT_FINANCE', 'FINANCE_EXECUTIVE'].includes(CU.employeeType)
-          ? await pageFinanceCenter()
-          : isDepartmentEmployee()
+      if (
+        isSupportExecutive() &&
+        globalThis.window?.EventFlowSupportExecutivePages?.hasPage('dashboard')
+      ) {
+        window.EventFlowSupportExecutivePages.render(
+          element,
+          'dashboard',
+          window.EventFlowSupportExecutiveRuntime.snapshot()
+        );
+        break;
+      }
+      if (
+        isDepartmentEmployee() &&
+        ['SUPPORT_FINANCE', 'FINANCE_EXECUTIVE'].includes(CU.employeeType)
+      ) {
+        if (globalThis.window?.EventFlowSupportExecutivePages?.hasPage('finance')) {
+          window.EventFlowSupportExecutivePages.render(
+            element,
+            'finance',
+            window.EventFlowSupportExecutiveRuntime.snapshot({})
+          );
+        } else {
+          globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
+          globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
+          element.innerHTML = await pageFinanceCenter();
+        }
+      } else {
+        globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
+        element.innerHTML = isDepartmentEmployee()
           ? dashDepartmentEmployee()
           : (
               {
@@ -3545,29 +3595,72 @@ async function renderPageContent(pg) {
                 attendee: dashAttendee,
               }[r] || dashAttendee
             )();
+      }
       break;
     case 'user-event-mgmt':
-      element.innerHTML = pageUserAndEventManagement();
+      if (globalThis.window?.EventFlowSupportExecutivePages?.hasPage('user-event-management')) {
+        window.EventFlowSupportExecutivePages.render(
+          element,
+          'user-event-management',
+          window.EventFlowSupportExecutiveRuntime.snapshot({})
+        );
+      } else {
+        globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
+        globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
+        element.innerHTML = pageUserAndEventManagement();
+      }
       break;
     case 'support-issue-mgmt':
       await renderCustomerRequests(element);
       break;
     case 'reports-analytics':
-      element.innerHTML = pageReportsAndAnalytics();
+      if (globalThis.window?.EventFlowSupportExecutivePages?.hasPage('reports-analytics')) {
+        window.EventFlowSupportExecutivePages.render(
+          element,
+          'reports-analytics',
+          window.EventFlowSupportExecutiveRuntime.snapshot({})
+        );
+      } else {
+        globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
+        globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
+        element.innerHTML = pageReportsAndAnalytics();
+      }
       break;
     case 'registrations':
       if (isSupportExecutive()) {
         sessionStorage.setItem('uem_active_tab', 'events');
-        element.innerHTML = pageUserAndEventManagement();
+        if (globalThis.window?.EventFlowSupportExecutivePages?.hasPage('user-event-management')) {
+          window.EventFlowSupportExecutivePages.render(
+            element,
+            'user-event-management',
+            window.EventFlowSupportExecutiveRuntime.snapshot({})
+          );
+        } else {
+          globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
+          globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
+          element.innerHTML = pageUserAndEventManagement();
+        }
       } else {
+        globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
         element.innerHTML = pageRegistrationsForEmployee();
       }
       break;
     case 'events':
       if (isSupportExecutive()) {
         sessionStorage.setItem('uem_active_tab', 'events');
-        element.innerHTML = pageUserAndEventManagement();
+        if (globalThis.window?.EventFlowSupportExecutivePages?.hasPage('user-event-management')) {
+          window.EventFlowSupportExecutivePages.render(
+            element,
+            'user-event-management',
+            window.EventFlowSupportExecutiveRuntime.snapshot({})
+          );
+        } else {
+          globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
+          globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
+          element.innerHTML = pageUserAndEventManagement();
+        }
       } else {
+        globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
         element.innerHTML =
           isDepartmentEmployee() && CU.employeeType === 'EVENT_OPERATIONS'
             ? pageEventOpsEvents()
@@ -3577,8 +3670,19 @@ async function renderPageContent(pg) {
     case 'attendees':
       if (isSupportExecutive()) {
         sessionStorage.setItem('uem_active_tab', 'users');
-        element.innerHTML = pageUserAndEventManagement();
+        if (globalThis.window?.EventFlowSupportExecutivePages?.hasPage('user-event-management')) {
+          window.EventFlowSupportExecutivePages.render(
+            element,
+            'user-event-management',
+            window.EventFlowSupportExecutiveRuntime.snapshot({})
+          );
+        } else {
+          globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
+          globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
+          element.innerHTML = pageUserAndEventManagement();
+        }
       } else {
+        globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
         element.innerHTML =
           isDepartmentEmployee() && CU.employeeType === 'REGISTRATION_VERIFICATION'
             ? pageUserManagement()
@@ -3589,6 +3693,7 @@ async function renderPageContent(pg) {
       if (isSupportExecutive()) {
         await renderCustomerRequests(element);
       } else {
+        globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
         element.innerHTML =
           isDepartmentEmployee() && CU.employeeType === 'EVENT_OPERATIONS'
             ? pageEventOperationsWorkspace()
@@ -3596,21 +3701,39 @@ async function renderPageContent(pg) {
       }
       break;
     case 'support-center':
+      globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
       element.innerHTML =
         isDepartmentEmployee() && CU.employeeType === 'SUPPORT_FINANCE'
           ? pageSupportCenter()
           : pageEventRequests();
       break;
     case 'finance':
-      element.innerHTML =
-        isDepartmentEmployee() && ['SUPPORT_FINANCE', 'FINANCE_EXECUTIVE'].includes(CU.employeeType)
-          ? await pageFinanceCenter()
-          : pageRevenueReports();
+      if (
+        isDepartmentEmployee() &&
+        ['SUPPORT_FINANCE', 'FINANCE_EXECUTIVE'].includes(CU.employeeType)
+      ) {
+        if (globalThis.window?.EventFlowSupportExecutivePages?.hasPage('finance')) {
+          window.EventFlowSupportExecutivePages.render(
+            element,
+            'finance',
+            window.EventFlowSupportExecutiveRuntime.snapshot({})
+          );
+        } else {
+          globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
+          globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
+          element.innerHTML = await pageFinanceCenter();
+        }
+      } else {
+        globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
+        element.innerHTML = pageRevenueReports();
+      }
       break;
     case 'request-status':
+      globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
       element.innerHTML = pageRequestStatus();
       break;
     case 'attendeeVerification':
+      globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
       element.innerHTML = pageAttendeeVerification();
       break;
     case 'reports':
@@ -3618,10 +3741,31 @@ async function renderPageContent(pg) {
         isDepartmentEmployee() &&
         ['SUPPORT_FINANCE', 'FINANCE_EXECUTIVE'].includes(CU.employeeType)
       ) {
-        element.innerHTML = await pageFinanceReports();
+        if (globalThis.window?.EventFlowSupportExecutivePages?.hasPage('finance-reports')) {
+          window.EventFlowSupportExecutivePages.render(
+            element,
+            'finance-reports',
+            window.EventFlowSupportExecutiveRuntime.snapshot({})
+          );
+        } else {
+          globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
+          globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
+          element.innerHTML = await pageFinanceReports();
+        }
       } else if (isSupportExecutive()) {
-        element.innerHTML = pageReportsAndAnalytics();
+        if (globalThis.window?.EventFlowSupportExecutivePages?.hasPage('reports-analytics')) {
+          window.EventFlowSupportExecutivePages.render(
+            element,
+            'reports-analytics',
+            window.EventFlowSupportExecutiveRuntime.snapshot({})
+          );
+        } else {
+          globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
+          globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
+          element.innerHTML = pageReportsAndAnalytics();
+        }
       } else {
+        globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
         element.innerHTML =
           isDepartmentEmployee() && CU.employeeType === 'REGISTRATION_VERIFICATION'
             ? pageRegVerificationReports()
@@ -3631,37 +3775,75 @@ async function renderPageContent(pg) {
       }
       break;
     case 'browse-events':
+      globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
       element.innerHTML = pageBrowseEvents();
       break;
     case 'my-tickets':
+      globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
       element.innerHTML = pageMyTickets();
       break;
     case 'find-organizers':
+      globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
       element.innerHTML = pageFindOrganizers();
       break;
     case 'upcoming-events':
+      globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
       element.innerHTML = pageUpcomingEvents();
       break;
     case 'completed-events':
+      globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
       element.innerHTML = pageCompletedEvents();
       break;
     case 'ongoing-events':
+      globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
       element.innerHTML = pageOngoingEvents();
       break;
     case 'notifications':
-      element.innerHTML = pageNotifications();
+      if (globalThis.window?.EventFlowSupportExecutivePages?.hasPage('notifications')) {
+        window.EventFlowSupportExecutivePages.render(
+          element,
+          'notifications',
+          window.EventFlowSupportExecutiveRuntime.snapshot({})
+        );
+      } else {
+        globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
+        globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
+        element.innerHTML = pageNotifications();
+      }
       break;
     case 'profile':
-      element.innerHTML = pageProfile();
+      if (globalThis.window?.EventFlowSupportExecutivePages?.hasPage('profile')) {
+        window.EventFlowSupportExecutivePages.render(
+          element,
+          'profile',
+          window.EventFlowSupportExecutiveRuntime.snapshot({})
+        );
+      } else {
+        globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
+        globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
+        element.innerHTML = pageProfile();
+      }
       break;
     case 'settings':
-      element.innerHTML = pageSettings();
+      if (globalThis.window?.EventFlowSupportExecutivePages?.hasPage('settings')) {
+        window.EventFlowSupportExecutivePages.render(
+          element,
+          'settings',
+          window.EventFlowSupportExecutiveRuntime.snapshot({})
+        );
+      } else {
+        globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
+        globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
+        element.innerHTML = pageSettings();
+      }
       window.EventFlowSupport.addSettingsEntry(element, () => goNav('customer-support'), CU);
       break;
     case 'users':
+      globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
       element.innerHTML = pageUsers();
       break;
     default:
+      globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
       element.innerHTML = `<div class="empty"><div class="empty-icon">🚧</div><div class="empty-title">Page not found</div><p class="empty-desc">The requested page "${pg}" could not be loaded.</p></div>`;
   }
 }
@@ -3994,10 +4176,752 @@ function refreshReportsAnalytics() {
 window.refreshReportsAnalytics = refreshReportsAnalytics;
 
 // ─── PAGE 1: DASHBOARD ──────────────────────────────────────────
-/* PORTAL_SECTION_dashSupportExecutive */
+
+function dashSupportExecutive() {
+  const users = window.EventFlowAccountPolicy.visibleAccounts(CU, DB.users || []);
+  const events = DB.events || [];
+  const regs = DB.registrations || [];
+  const tasks = DB.eventOperationsTasks || [];
+  const queries = DB.userQueries || [];
+  const supportReqs = DB.supportRequests || [];
+  const totalUsers = users.length;
+  const totalEvents = events.length;
+  const pendingRegs = regs.filter(registration => {
+    const st = (registration.status || '').toLowerCase();
+    const vst = (registration.verificationStatus || '').toLowerCase();
+    return (
+      !registration.reviewStatus &&
+      !registration.verified &&
+      !['rejected', 'cancelled', 'attended', 'no-show'].includes(st) &&
+      (st === 'pending' || st === 'registered' || vst === 'pending review' || vst === 'pending')
+    );
+  }).length;
+  const openTickets =
+    supportReqs.filter(request => request.status !== 'Resolved' && request.status !== 'Closed')
+      .length + queries.filter(q => q.status !== 'Resolved').length;
+  const operationalIssues = tasks.filter(task => task.status !== 'Resolved').length;
+  const activeEventsCount = events.filter(event =>
+    ['published', 'active', 'ongoing', 'upcoming'].includes((event.status || '').toLowerCase())
+  ).length;
+
+  // Pending actions list
+  const pendingActionsList = [];
+  regs
+    .filter(registration => {
+      const st = (registration.status || '').toLowerCase();
+      const vst = (registration.verificationStatus || '').toLowerCase();
+      return (
+        !registration.reviewStatus &&
+        !registration.verified &&
+        !['rejected', 'cancelled', 'attended', 'no-show'].includes(st) &&
+        (st === 'pending' || st === 'registered' || vst === 'pending review' || vst === 'pending')
+      );
+    })
+    .slice(0, 3)
+    .forEach(registration => {
+      const eventRegistration = users.find(
+        user => String(user.id) === String(registration.attendeeId)
+      ) || {
+        name: 'Attendee',
+      };
+      const e = events.find(event => String(event.id) === String(registration.eventId)) || {
+        title: 'Event',
+      };
+      pendingActionsList.push({
+        type: 'Registration Review',
+        title: `${eventRegistration.name} · ${e.title}`,
+        badge: 'Pending Review',
+        badgeCls: 'yellow',
+        actionLbl: 'Review',
+        actionFn: `openReviewRegistrationModal('${registration.id}')`,
+        icon: '📝',
+      });
+    });
+  supportReqs
+    .filter(request => request.status !== 'Resolved' && request.status !== 'Closed')
+    .slice(0, 2)
+    .forEach(request => {
+      pendingActionsList.push({
+        type: 'Customer Support',
+        title: `${request.subject}`,
+        badge: request.status || 'Pending',
+        badgeCls: request.status === 'In Progress' ? 'purple' : 'yellow',
+        actionLbl: 'Manage',
+        actionFn: `openSupportTicketModal('${request.id}')`,
+        icon: '🎧',
+      });
+    });
+  tasks
+    .filter(task => task.status !== 'Resolved')
+    .slice(0, 2)
+    .forEach(task => {
+      pendingActionsList.push({
+        type: 'Operational Issue',
+        title: `${task.eventTitle} · ${task.type}`,
+        badge: task.status || 'Pending',
+        badgeCls: task.status === 'In Progress' ? 'purple' : 'yellow',
+        actionLbl: 'Update',
+        actionFn: `openSupportExecutiveRequest('${task.id}')`,
+        icon: '⚙️',
+      });
+    });
+
+  // Recent Activity
+  const recentActivities = [
+    ...regs.slice(0, 2).map(registration => {
+      const eventRegistration = users.find(
+        user => String(user.id) === String(registration.attendeeId)
+      ) || {
+        name: 'Attendee',
+      };
+      const e = events.find(event => String(event.id) === String(registration.eventId)) || {
+        title: 'Event',
+      };
+      return {
+        icon: '📝',
+        title: `Registration: ${eventRegistration.name}`,
+        detail: `${e.title} · Status: ${
+          registration.verificationStatus || registration.status || 'Verified'
+        }`,
+        time: registration.date || 'Today',
+      };
+    }),
+    ...tasks.slice(0, 2).map(task => ({
+      icon: '⚙️',
+      title: `Operational Task: ${task.type}`,
+      detail: `${task.eventTitle} · Status: ${task.status}`,
+      time: task.updated || 'Recently',
+    })),
+    ...queries.slice(0, 2).map(q => ({
+      icon: '🎧',
+      title: `Support Ticket: ${q.subject}`,
+      detail: `${q.userName} · Status: ${q.status}`,
+      time: q.date || 'Recently',
+    })),
+  ];
+
+  // Async backend stats sync
+  if (typeof apiGetEmployeeDashboard === 'function') {
+    apiGetEmployeeDashboard()
+      .then(res => {
+        const d = res && res.data ? res.data : res;
+        if (d) {
+          if (d.totalUsers !== undefined) {
+            const el = document.getElementById('se-stat-users');
+            if (el) el.textContent = d.totalUsers;
+          }
+          if (d.totalEvents !== undefined) {
+            const el = document.getElementById('se-stat-events');
+            if (el) el.textContent = d.totalEvents;
+          }
+          if (d.registrationsAwaitingReview !== undefined) {
+            const el = document.getElementById('se-stat-regs');
+            if (el) el.textContent = d.registrationsAwaitingReview;
+          }
+          if (d.openSupportTickets !== undefined) {
+            const el = document.getElementById('se-stat-tickets');
+            if (el) el.textContent = d.openSupportTickets;
+          }
+          if (d.operationalIssues !== undefined) {
+            const el = document.getElementById('se-stat-issues');
+            if (el) el.textContent = d.operationalIssues;
+          }
+        }
+      })
+      .catch(() => {});
+  }
+  return `
+        <div class="page-hd">
+          <div class="page-hd-left">
+            <div class="page-title">Support Executive Dashboard</div>
+            <div class="page-sub">Welcome back, ${
+              CU.name
+            }. Overview of users, events, registrations awaiting review, customer support, and operational issues.</div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:16px;margin-bottom:20px">
+          <div class="stat-card" style="cursor:pointer" onclick="switchTabAndNav('user-event-mgmt', 'users')" title="Click to view Users">
+            <div class="stat-icon" style="background:var(--accent-dim);color:var(--accent)">👥</div>
+            <div class="stat-value" id="se-stat-users" style="color:var(--accent)">${totalUsers}</div>
+            <div class="stat-label">Total Users</div>
+            <div class="stat-sub neutral">Click to manage users →</div>
+          </div>
+          <div class="stat-card" style="cursor:pointer" onclick="switchTabAndNav('user-event-mgmt', 'events')" title="Click to view Events">
+            <div class="stat-icon" style="background:var(--green-dim);color:var(--green)">🗓️</div>
+            <div class="stat-value" id="se-stat-events" style="color:var(--green)">${totalEvents}</div>
+            <div class="stat-label">Total Events</div>
+            <div class="stat-sub neutral">${activeEventsCount} active · Click to view →</div>
+          </div>
+          <div class="stat-card" style="cursor:pointer" onclick="switchTabAndNav('user-event-mgmt', 'events', 'pending_regs')" title="Click to review Registrations">
+            <div class="stat-icon" style="background:var(--yellow-dim);color:var(--yellow)">⏳</div>
+            <div class="stat-value" id="se-stat-regs" style="color:var(--yellow)">${pendingRegs}</div>
+            <div class="stat-label">Registrations Awaiting Review</div>
+            <div class="stat-sub up">Needs verification →</div>
+          </div>
+          <div class="stat-card" style="cursor:pointer" onclick="switchTabAndNav('support-issue-mgmt', 'support')" title="Click to view Support Tickets">
+            <div class="stat-icon" style="background:var(--purple-dim);color:var(--purple)">🎧</div>
+            <div class="stat-value" id="se-stat-tickets" style="color:var(--purple)">${openTickets}</div>
+            <div class="stat-label">Open Support Tickets</div>
+            <div class="stat-sub up">Customer inquiries →</div>
+          </div>
+          <div class="stat-card" style="cursor:pointer" onclick="switchTabAndNav('support-issue-mgmt', 'operations')" title="Click to view Operational Issues">
+            <div class="stat-icon" style="background:var(--red-dim);color:var(--red)">⚙️</div>
+            <div class="stat-value" id="se-stat-issues" style="color:var(--red)">${operationalIssues}</div>
+            <div class="stat-label">Operational Issues</div>
+            <div class="stat-sub up">Logistics &amp; tasks →</div>
+          </div>
+        </div>
+
+        <div class="mb-20">
+          <div class="card">
+            <div class="h4 mb-14">Pending Actions &amp; Urgent Items</div>
+            <div style="display:flex;flex-direction:column;gap:10px;max-height:380px;overflow-y:auto;padding-right:4px">
+              ${
+                pendingActionsList
+                  .map(
+                    item => `
+                <div style="padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface2)" class="flex justify-between items-center gap-10">
+                  <div class="flex items-center gap-10" style="flex:1;min-width:0">
+                    <span style="font-size:18px">${item.icon}</span>
+                    <div style="flex:1;min-width:0">
+                      <div class="flex items-center gap-6 mb-2">
+                        <span style="font-weight:700;font-size:13px;color:var(--text)" class="truncate">${item.title}</span>
+                        <span class="badge badge-${item.badgeCls}" style="font-size:10px;padding:1px 6px">${item.badge}</span>
+                      </div>
+                      <div class="small muted truncate">${item.type}</div>
+                    </div>
+                  </div>
+                  <button class="btn btn-ghost btn-xs" onclick="${item.actionFn}">${item.actionLbl}</button>
+                </div>
+              `
+                  )
+                  .join('') ||
+                '<div class="empty">✓ No pending actions requiring immediate attention!</div>'
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="h4 mb-14">Recent Platform Activity</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            ${
+              recentActivities
+                .map(
+                  act => `
+              <div class="flex items-center gap-10" style="padding:8px 0;border-bottom:1px solid var(--border)">
+                <span style="font-size:20px">${act.icon}</span>
+                <div style="flex:1">
+                  <div style="font-weight:600;font-size:13px">${act.title}</div>
+                  <div class="small muted">${act.detail}</div>
+                </div>
+                <span class="small muted" style="white-space:nowrap">${act.time}</span>
+              </div>
+            `
+                )
+                .join('') || '<div class="empty">No recent activity recorded</div>'
+            }
+          </div>
+        </div>
+      `;
+}
 
 // ─── PAGE 2: USER & EVENT MANAGEMENT ───────────────────────────
-/* PORTAL_SECTION_pageUserAndEventManagement */
+
+function pageUserAndEventManagement() {
+  const activeTab = sessionStorage.getItem('uem_active_tab') || 'users';
+  const users = window.EventFlowAccountPolicy.visibleAccounts(CU, DB.users || []);
+  const events = DB.events || [];
+  const regs = DB.registrations || [];
+
+  // Tab 1: Users data filtering
+  const userQ = (sessionStorage.getItem('uem_user_q') || '').toLowerCase();
+  const userRole = sessionStorage.getItem('uem_user_role') || '';
+  const userSt = sessionStorage.getItem('uem_user_st') || '';
+  const filteredUsers = users.filter(user => {
+    const matchesQuery =
+      !userQ ||
+      `${user.name} ${user.email} ${user.phone} ${user.role} ${user.id}`
+        .toLowerCase()
+        .includes(userQ);
+    const matchesRole = !userRole || user.role === userRole;
+    const isDeactivated = user.status === 'deactivated' || user.status === 'inactive';
+    const matchesStatus = !userSt || (userSt === 'active' ? !isDeactivated : isDeactivated);
+    return matchesQuery && matchesRole && matchesStatus;
+  });
+
+  // Tab 2: Events & Registrations filtering
+  const eventQ = (sessionStorage.getItem('uem_event_q') || '').toLowerCase();
+  const eventSt = sessionStorage.getItem('uem_event_st') || '';
+  const eventCat = sessionStorage.getItem('uem_event_cat') || '';
+  const filteredEvents = events.filter(event => {
+    const matchesQuery =
+      !eventQ ||
+      `${event.id} ${event.title || event.name} ${event.category} ${event.venue} ${event.city}`
+        .toLowerCase()
+        .includes(eventQ);
+    const currentSt = formatEventStatus(event.status);
+    const matchesStatus = !eventSt || currentSt === eventSt;
+    const matchesCat = !eventCat || event.category === eventCat;
+    return matchesQuery && matchesStatus && matchesCat;
+  });
+  const regQ = (sessionStorage.getItem('uem_reg_q') || '').toLowerCase();
+  const regSt = sessionStorage.getItem('uem_reg_st') || '';
+  const filteredRegs = regs.filter(registration => {
+    const attendee = users.find(user => String(user.id) === String(registration.attendeeId)) || {
+      name: '',
+      email: '',
+    };
+    const event = events.find(
+      currentEvent => String(currentEvent.id) === String(registration.eventId)
+    ) || {
+      title: '',
+    };
+    const searchStr = `${registration.id} ${registration.ticketId || ''} ${attendee.name} ${
+      attendee.email
+    } ${event.title}`.toLowerCase();
+    const matchesQuery = !regQ || searchStr.includes(regQ);
+    const currentRegSt =
+      registration.verificationStatus ||
+      (registration.status === 'confirmed' ? 'Verified' : 'Pending Review');
+    let matchesStatus = true;
+    if (regSt) {
+      if (regSt === 'Pending Review') {
+        matchesStatus = currentRegSt === 'Pending Review' || currentRegSt === 'Pending';
+      } else if (regSt === 'Verified' || regSt === 'Confirmed') {
+        matchesStatus = currentRegSt === 'Verified';
+      } else if (regSt === 'Flagged') {
+        matchesStatus = currentRegSt === 'Flagged';
+      } else if (regSt === 'Rejected') {
+        matchesStatus = currentRegSt === 'Rejected' || registration.status === 'rejected';
+      } else if (regSt === 'Cancelled') {
+        matchesStatus = registration.status === 'cancelled';
+      }
+    }
+    return matchesQuery && matchesStatus;
+  });
+  return `
+        <div class="page-hd">
+          <div class="page-hd-left">
+            <div class="page-title">User &amp; Event Management</div>
+            <div class="page-sub">Authorized account administration, event review &amp; status management, and registration verification.</div>
+          </div>
+        </div>
+
+        <div class="tabs-nav flex gap-8 mb-20" style="border-bottom:1px solid var(--border);padding-bottom:12px">
+          <button class="btn ${
+            activeTab === 'users' ? 'btn-primary' : 'btn-ghost'
+          }" onclick="setUemTab('users')">👥 Users (${users.length})</button>
+          <button class="btn ${
+            activeTab === 'events' ? 'btn-primary' : 'btn-ghost'
+          }" onclick="setUemTab('events')">🗓️ Events &amp; Registrations (${
+    events.length
+  } Events · ${regs.length} Regs)</button>
+        </div>
+
+        ${
+          activeTab === 'users'
+            ? `
+          <!-- TAB 1: USERS -->
+
+          <div class="filter-row">
+            <div class="search-box input-group">
+              <span class="input-icon">🔍</span>
+              <input class="form-control" id="uem-user-q" placeholder="Search users by name, email, phone, role..." value="${userQ}" oninput="refreshUemUsers()">
+            </div>
+            <select class="form-control filter-select" id="uem-user-role" onchange="refreshUemUsers()">
+              <option value="">All Roles</option>
+              <option value="attendee" ${
+                userRole === 'attendee' ? 'selected' : ''
+              }>Attendee</option>
+              <option value="client" ${userRole === 'client' ? 'selected' : ''}>Client</option>
+              <option value="organizer" ${
+                userRole === 'organizer' ? 'selected' : ''
+              }>Organizer</option>
+              ${
+                window.EventFlowAccountPolicy.isSupportExecutiveAccount(CU)
+                  ? ''
+                  : `<option value="employee" ${
+                      userRole === 'employee' ? 'selected' : ''
+                    }>Employees</option>`
+              }
+            </select>
+            <select class="form-control filter-select" id="uem-user-st" onchange="refreshUemUsers()">
+              <option value="">All Account Statuses</option>
+              <option value="active" ${userSt === 'active' ? 'selected' : ''}>Active</option>
+              <option value="inactive" ${
+                userSt === 'inactive' ? 'selected' : ''
+              }>Deactivated / Inactive</option>
+            </select>
+          </div>
+
+          <div class="card">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>User ID &amp; Name</th>
+                    <th>Contact Info</th>
+                    <th>Role</th>
+                    <th>Account Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${
+                    filteredUsers
+                      .map(u => {
+                        const isDeactivated = u.status === 'deactivated' || u.status === 'inactive';
+                        return `
+                      <tr>
+                        <td>
+                          <div class="flex items-center gap-10">
+                            <div class="av av-xs">${u.avatar || u.name[0]}</div>
+                            <div>
+                              <div style="font-weight:700;font-size:14px;color:var(--text)">${
+                                u.name
+                              }</div>
+                              <div class="small muted">ID: ${u.id}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <div>${u.email}</div>
+                          <div class="small muted">📞 ${u.phone || '—'}</div>
+                        </td>
+                        <td><span class="badge badge-purple">${u.role}</span></td>
+                        <td>
+                          <span class="badge badge-${isDeactivated ? 'red' : 'green'}">${
+                          isDeactivated ? 'Deactivated' : 'Active'
+                        }</span>
+                        </td>
+                        <td>
+                          ${
+                            window.EventFlowAccountPolicy.canManageAccount(CU, u)
+                              ? `<div class="flex items-center gap-6">
+                            <button class="btn btn-ghost btn-xs" onclick="openEditUserModal('${
+                              u.id
+                            }')" title="Edit User">✏️ Edit</button>
+                            <button class="btn btn-xs ${
+                              isDeactivated ? 'btn-success' : 'btn-danger'
+                            }" onclick="toggleUserStatus('${u.id}')" title="Toggle Account Status">
+                              ${isDeactivated ? 'Activate' : 'Deactivate'}
+                            </button>
+                          </div>`
+                              : '<span class="small muted">Admin managed</span>'
+                          }
+                        </td>
+                      </tr>
+                    `;
+                      })
+                      .join('') ||
+                    '<tr><td colspan="5" class="text-center py-20">No matching user accounts found.</td></tr>'
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `
+            : `
+          <!-- TAB 2: EVENTS & REGISTRATIONS -->
+          <!-- SECTION A: EVENT MANAGEMENT -->
+          <div class="mb-24">
+            <div class="flex justify-between items-center mb-12">
+              <div>
+                <div class="h4">Event Management</div>
+                <div class="small muted">Manage event publication, venue capacity, dates, and approval workflow.</div>
+              </div>
+            </div>
+
+            <div class="filter-row">
+              <div class="search-box input-group">
+                <span class="input-icon">🔍</span>
+                <input class="form-control" id="uem-event-q" placeholder="Search events by title, venue, city..." value="${eventQ}" oninput="refreshUemEvents()">
+              </div>
+              <select class="form-control filter-select" id="uem-event-st" onchange="refreshUemEvents()">
+                <option value="">All Event Statuses</option>
+                <option value="Pending" ${
+                  eventSt === 'Pending' ? 'selected' : ''
+                }>Pending Approval</option>
+                <option value="Active" ${
+                  eventSt === 'Active' ? 'selected' : ''
+                }>Active / Published</option>
+                <option value="Completed" ${
+                  eventSt === 'Completed' ? 'selected' : ''
+                }>Completed</option>
+                <option value="Cancelled" ${
+                  eventSt === 'Cancelled' ? 'selected' : ''
+                }>Cancelled</option>
+              </select>
+              <select class="form-control filter-select" id="uem-event-cat" onchange="refreshUemEvents()">
+                <option value="">All Categories</option>
+                ${[...new Set(events.map(event => event.category).filter(Boolean))]
+                  .map(
+                    cat =>
+                      `<option value="${cat}" ${eventCat === cat ? 'selected' : ''}>${cat}</option>`
+                  )
+                  .join('')}
+              </select>
+            </div>
+
+            <div class="card mb-20">
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Event Title &amp; ID</th>
+                      <th>Category</th>
+                      <th>Date &amp; Venue</th>
+                      <th>Capacity &amp; Regs</th>
+                      <th>Status</th>
+                      <th>Update Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${
+                      filteredEvents
+                        .map(event => {
+                          const currentStatus = formatEventStatus(event.status);
+                          const isPending = currentStatus === 'Pending';
+                          const isFull = (event.registered || 0) >= (event.capacity || 100);
+                          return `
+                        <tr>
+                          <td>
+                            <div style="font-weight:700;font-size:14px;color:var(--text)">${
+                              event.title || event.name
+                            }</div>
+                            <div class="small muted">ID: ${event.id}</div>
+                          </td>
+                          <td><span class="badge badge-purple">${
+                            event.category || 'General'
+                          }</span></td>
+                          <td>
+                            <div>📅 ${event.date || 'TBD'}</div>
+                            <div class="small muted">📍 ${
+                              event.venue || event.location || 'TBD'
+                            } (${event.city || 'India'})</div>
+                          </td>
+                          <td>
+                            <div><strong>${event.registered || 0}</strong> / ${
+                            event.capacity || 100
+                          }</div>
+                            <div class="small muted">${
+                              isFull
+                                ? '<span style="color:var(--yellow);font-weight:600">Full</span>'
+                                : event.price
+                                ? '₹' + event.price
+                                : 'Free'
+                            }</div>
+                          </td>
+                          <td>
+                            <span class="badge badge-${eventOpsStatusBadge(
+                              event.status
+                            )}">${currentStatus}</span>
+                          </td>
+                          <td>
+                            <select class="form-control form-control-sm" style="padding:4px 8px;font-size:12px" onchange="setEventOpsStatus('${
+                              event.id
+                            }', this.value)">
+                              <option value="Pending" ${
+                                currentStatus === 'Pending' ? 'selected' : ''
+                              }>Pending</option>
+                              <option value="Active" ${
+                                currentStatus === 'Active' ? 'selected' : ''
+                              }>Active</option>
+                              <option value="Completed" ${
+                                currentStatus === 'Completed' ? 'selected' : ''
+                              }>Completed</option>
+                              <option value="Cancelled" ${
+                                currentStatus === 'Cancelled' ? 'selected' : ''
+                              }>Cancelled</option>
+                            </select>
+                          </td>
+                          <td>
+                            <div class="flex items-center gap-6">
+                              <button class="btn btn-ghost btn-xs" onclick="openViewEventDrawer('${
+                                event.id
+                              }')" title="View Details">👁️</button>
+                              <button class="btn btn-ghost btn-xs" onclick="openEditEventModal('${
+                                event.id
+                              }')" title="Edit Event">✏️</button>
+                              ${
+                                isPending
+                                  ? `
+                                <button class="btn btn-success btn-xs" onclick="approveEventOpsDirect('${event.id}')" title="Approve">✓</button>
+                                <button class="btn btn-danger btn-xs" onclick="rejectEventOpsDirect('${event.id}')" title="Reject">✕</button>
+                              `
+                                  : ''
+                              }
+                            </div>
+                          </td>
+                        </tr>
+                      `;
+                        })
+                        .join('') ||
+                      '<tr><td colspan="7" class="text-center py-20">No matching events found.</td></tr>'
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECTION B: REGISTRATIONS MANAGEMENT -->
+          <div>
+            <div class="flex justify-between items-center mb-12">
+              <div>
+                <div class="h4">Registrations &amp; Verification</div>
+                <div class="small muted">Review online ticket bookings, payment status, verification documents, and approve or reject with reasons.</div>
+              </div>
+            </div>
+
+            <div class="filter-row">
+              <div class="search-box input-group">
+                <span class="input-icon">🔍</span>
+                <input class="form-control" id="uem-reg-q" placeholder="Search by Ticket ID, Attendee, or Event..." value="${regQ}" oninput="refreshUemRegistrations()">
+              </div>
+              <select class="form-control filter-select" id="uem-reg-st" onchange="refreshUemRegistrations()">
+                <option value="">All Registration Statuses</option>
+                <option value="Pending Review" ${
+                  regSt === 'Pending Review' ? 'selected' : ''
+                }>Pending Review</option>
+                <option value="Verified" ${
+                  regSt === 'Verified' ? 'selected' : ''
+                }>Verified / Confirmed</option>
+                <option value="Flagged" ${regSt === 'Flagged' ? 'selected' : ''}>Flagged</option>
+                <option value="Rejected" ${regSt === 'Rejected' ? 'selected' : ''}>Rejected</option>
+                <option value="Cancelled" ${
+                  regSt === 'Cancelled' ? 'selected' : ''
+                }>Cancelled</option>
+              </select>
+            </div>
+
+            <div class="card">
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Ticket / Reg ID</th>
+                      <th>Attendee</th>
+                      <th>Event</th>
+                      <th>Document</th>
+                      <th>Payment Status</th>
+                      <th>Verification Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${
+                      filteredRegs
+                        .map(registration => {
+                          const attendee = users.find(
+                            user => String(user.id) === String(registration.attendeeId)
+                          ) || {
+                            name: 'Attendee',
+                            email: '—',
+                          };
+                          const event = events.find(
+                            currentEvent => String(currentEvent.id) === String(registration.eventId)
+                          ) || {
+                            title: 'Event',
+                          };
+                          const isPending =
+                            !registration.reviewStatus &&
+                            !['rejected', 'cancelled', 'attended', 'no-show'].includes(
+                              registration.status
+                            ) &&
+                            (registration.status === 'pending' ||
+                              registration.verificationStatus === 'Pending Review');
+                          const paymentStatus =
+                            registration.payment === 'paid'
+                              ? 'Paid'
+                              : registration.amount === 0
+                              ? 'Free'
+                              : registration.payment || 'Pending Payment';
+                          const regStatus =
+                            registration.verificationStatus ||
+                            (registration.status === 'confirmed' ? 'Verified' : 'Pending Review');
+                          return `
+                        <tr>
+                          <td class="mono"><strong>${
+                            registration.ticketId || registration.id
+                          }</strong></td>
+                          <td>
+                            <div style="font-weight:700;font-size:13.5px;color:var(--text)">${
+                              attendee.name
+                            }</div>
+                            <div class="small muted">${attendee.email}</div>
+                          </td>
+                          <td>
+                            <div>${event.title}</div>
+                            <div class="small muted">${registration.date || 'Today'}</div>
+                          </td>
+                          <td>
+                            <div class="small"><strong>${
+                              registration.docType || 'Govt ID'
+                            }</strong></div>
+                            <div class="small muted mono">${
+                              registration.docRef || 'REF-' + registration.id
+                            }</div>
+                          </td>
+                          <td>
+                            <span class="badge badge-${
+                              paymentStatus === 'Paid'
+                                ? 'green'
+                                : paymentStatus === 'Free'
+                                ? 'blue'
+                                : 'yellow'
+                            }">
+                              ${paymentStatus} ${
+                            registration.amount ? '(₹' + registration.amount + ')' : ''
+                          }
+                            </span>
+                          </td>
+                          <td>
+                            <span class="badge badge-${
+                              regStatus === 'Verified'
+                                ? 'green'
+                                : regStatus === 'Flagged'
+                                ? 'yellow'
+                                : regStatus === 'Rejected'
+                                ? 'red'
+                                : 'purple'
+                            }">
+                              ${regStatus}
+                            </span>
+                          </td>
+                          <td>
+                            <div class="flex items-center gap-6">
+                              <button class="btn btn-ghost btn-xs" onclick="openReviewRegistrationModal('${
+                                registration.id
+                              }')">Review</button>
+                              ${
+                                isPending
+                                  ? `
+                                <button class="btn btn-success btn-xs" onclick="approveRegistrationDirect('${registration.id}')" title="Approve">✓</button>
+                                <button class="btn btn-danger btn-xs" onclick="openRejectRegistrationWithReasonModal('${registration.id}')" title="Reject with Reason">✕</button>
+                              `
+                                  : ''
+                              }
+                            </div>
+                          </td>
+                        </tr>
+                      `;
+                        })
+                        .join('') ||
+                      '<tr><td colspan="7" class="text-center py-20">No matching registrations found.</td></tr>'
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        `
+        }
+      `;
+}
 
 // ─── PAGE 3: SUPPORT & ISSUE MANAGEMENT ────────────────────────
 function supportExecutiveEventRequests() {
@@ -4097,9 +5021,27 @@ function supportExecutiveRequestOptions() {
       updateSupportExecutiveEventRequest(ticketId, update),
   };
 }
-
-/* PORTAL_SECTION_renderCustomerRequests */
-
+async function renderCustomerRequests(element) {
+  if (globalThis.window?.EventFlowSupportExecutivePages?.hasPage('support-issues')) {
+    window.EventFlowSupportExecutivePages.render(
+      element,
+      'support-issues',
+      window.EventFlowSupportExecutiveRuntime.snapshot()
+    );
+    return;
+  }
+  const options = supportExecutiveRequestOptions();
+  globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
+  element.innerHTML = await window.EventFlowSupport.render(CU, 'Back to Dashboard', options);
+  window.EventFlowSupport.bind(element, CU, () => goNav('dashboard'), 'Back to Dashboard', options);
+  const ticketId = sessionStorage.getItem('support_request_id');
+  sessionStorage.removeItem('support_request_id');
+  if (ticketId) {
+    Array.from(element.querySelectorAll('[data-ticket-view]'))
+      .find(button => button.dataset.ticketView === ticketId)
+      ?.click();
+  }
+}
 function openSupportExecutiveRequest(ticketId) {
   sessionStorage.setItem('support_request_id', String(ticketId));
   goNav('support-issue-mgmt');
@@ -4203,9 +5145,20 @@ async function renderSupportExecutiveReports(element) {
   try {
     await syncSupportExecutiveReports();
     if (['reports-analytics', 'reports'].includes(_currentPage))
-      element.innerHTML = pageReportsAndAnalytics();
+      if (globalThis.window?.EventFlowSupportExecutivePages?.hasPage('reports-analytics')) {
+        window.EventFlowSupportExecutivePages.render(
+          element,
+          'reports-analytics',
+          window.EventFlowSupportExecutiveRuntime.snapshot({})
+        );
+      } else {
+        globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
+        globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
+        element.innerHTML = pageReportsAndAnalytics();
+      }
   } catch (error) {
     if (['reports-analytics', 'reports'].includes(_currentPage)) {
+      globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
       element.innerHTML =
         `<p class="small" role="alert">Reports could not be synced: ${escapeHtml(
           error.message
@@ -4214,8 +5167,153 @@ async function renderSupportExecutiveReports(element) {
     }
   }
 }
+function pageReportsAndAnalytics() {
+  const reports = getAllReportsList();
+  const repQ = (sessionStorage.getItem('rep_q') || '').toLowerCase();
+  const repType = sessionStorage.getItem('rep_type') || '';
+  const repSt = sessionStorage.getItem('rep_st') || '';
+  const totalCount = reports.length;
+  const draftCount = reports.filter(report => report.status === 'Draft').length;
+  const submittedCount = reports.filter(
+    report =>
+      report.status === 'Submitted' ||
+      report.status === 'Pending Review' ||
+      report.status === 'Pending'
+  ).length;
+  const reviewedCount = reports.filter(
+    report => report.status === 'Reviewed' || report.status === 'Approved'
+  ).length;
+  const filtered = reports.filter(report => {
+    const matchesQuery =
+      !repQ ||
+      `${report.id} ${report.title} ${report.category} ${report.scope} ${report.fileName}`
+        .toLowerCase()
+        .includes(repQ);
+    const matchesType = !repType || report.category === repType;
+    let matchesStatus = true;
+    if (repSt) {
+      if (repSt === 'Draft') matchesStatus = report.status === 'Draft';
+      else if (repSt === 'Submitted')
+        matchesStatus =
+          report.status === 'Submitted' ||
+          report.status === 'Pending Review' ||
+          report.status === 'Pending';
+      else if (repSt === 'Reviewed')
+        matchesStatus = report.status === 'Reviewed' || report.status === 'Approved';
+    }
+    return matchesQuery && matchesType && matchesStatus;
+  });
+  return `
+        <div class="page-hd">
+          <div class="page-hd-left">
+            <div class="page-title">Reports &amp; Analytics</div>
+            <div class="page-sub">Consolidated operational, registration, and support performance reports for Super Admin review.</div>
+          </div>
+          <div class="page-hd-right">
+            <button class="btn btn-primary" onclick="openCreateSupportExecutiveReportModal()">📤 Submit Report</button>
+          </div>
+        </div>
 
-/* PORTAL_SECTION_pageReportsAndAnalytics */
+        <div class="grid-4 mb-20">
+          <div class="stat-card">
+            <div class="stat-icon" style="background:var(--accent-dim);color:var(--accent)">📊</div>
+            <div class="stat-value" style="color:var(--accent)">${totalCount}</div>
+            <div class="stat-label">Total Reports</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:var(--yellow-dim);color:var(--yellow)">📝</div>
+            <div class="stat-value" style="color:var(--yellow)">${draftCount}</div>
+            <div class="stat-label">Draft Reports</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:var(--purple-dim);color:var(--purple)">📤</div>
+            <div class="stat-value" style="color:var(--purple)">${submittedCount}</div>
+            <div class="stat-label">Submitted to Admin</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:var(--green-dim);color:var(--green)">✅</div>
+            <div class="stat-value" style="color:var(--green)">${reviewedCount}</div>
+            <div class="stat-label">Reviewed &amp; Approved</div>
+          </div>
+        </div>
+
+        <div class="filter-row">
+          <div class="search-box input-group">
+            <span class="input-icon">🔍</span>
+            <input class="form-control" id="rep-q" placeholder="Search reports by title, category, scope, filename..." value="${repQ}" oninput="refreshReportsAnalytics()">
+          </div>
+          <select class="form-control filter-select" id="rep-type" onchange="refreshReportsAnalytics()">
+            <option value="">All Categories</option>
+            <option value="Registration &amp; User Management" ${
+              repType === 'Registration & User Management' ? 'selected' : ''
+            }>Registration &amp; User Management</option>
+            <option value="Event Operations Report" ${
+              repType === 'Event Operations Report' ? 'selected' : ''
+            }>Event Operations</option>
+            <option value="Support &amp; Issue Summary" ${
+              repType === 'Support & Issue Summary' ? 'selected' : ''
+            }>Support &amp; Issue Summary</option>
+          </select>
+          <select class="form-control filter-select" id="rep-st" onchange="refreshReportsAnalytics()">
+            <option value="">All Statuses</option>
+            <option value="Draft" ${repSt === 'Draft' ? 'selected' : ''}>Draft</option>
+            <option value="Submitted" ${repSt === 'Submitted' ? 'selected' : ''}>Submitted</option>
+            <option value="Reviewed" ${repSt === 'Reviewed' ? 'selected' : ''}>Reviewed</option>
+          </select>
+        </div>
+
+        <div class="report-cards" aria-label="Reports">
+          ${
+            filtered
+              .map(r => {
+                const isDraft = r.status === 'Draft';
+                const isReviewed = r.status === 'Reviewed' || r.status === 'Approved';
+                const stBadge = isReviewed ? 'green' : isDraft ? 'yellow' : 'purple';
+                return `
+              <article class="report-card">
+                <div class="report-card-heading">
+                  <span class="report-card-category">${escapeHtml(r.category)}</span>
+                  <span class="badge badge-${stBadge}">${escapeHtml(r.status)}</span>
+                </div>
+                <h3 class="report-card-title">${escapeHtml(r.title)}</h3>
+                <div class="report-card-byline"><span class="mono">${escapeHtml(
+                  r.id
+                )}</span><span>By ${escapeHtml(r.author || 'Support Executive')}</span></div>
+                <div class="report-card-context"><span>${escapeHtml(
+                  r.scope
+                )}</span><span>${escapeHtml(r.period || 'Q3 2026')}</span></div>
+                <button class="report-card-file" type="button" onclick="previewReportDocument('${
+                  r.id
+                }')" title="${escapeHtml(r.fileName).replace(
+                  /"/g,
+                  '&quot;'
+                )}"><span aria-hidden="true">📄</span><span>${escapeHtml(
+                  r.fileName
+                )}</span></button>
+                <div class="report-card-footer">
+                  <p class="report-card-feedback">${escapeHtml(
+                    r.reviewFeedback ||
+                      r.adminNotes ||
+                      (isReviewed ? 'Approved without remarks' : 'Awaiting admin review')
+                  )}</p>
+                  <div class="report-card-actions">
+                    <button class="btn btn-ghost btn-xs" type="button" onclick="previewReportDocument('${
+                      r.id
+                    }')">View</button>
+                    ${
+                      isDraft
+                        ? `<button class="btn btn-primary btn-xs" type="button" onclick="submitReportToAdminDirect('${r.id}')">Submit</button>`
+                        : ''
+                    }
+                  </div>
+                </div>
+              </article>`;
+              })
+              .join('') || '<div class="card report-cards-empty">No matching reports found.</div>'
+          }
+        </div>
+      `;
+}
 
 // ─── ACTION MODALS & HELPERS ────────────────────────────────────
 
@@ -6333,8 +7431,478 @@ function financeStatusBadge(status) {
     }[String(status || '').toLowerCase()] || 'gray'
   );
 }
-/* PORTAL_SECTION_pageFinanceReports */
-/* PORTAL_SECTION_pageFinanceCenter */
+async function pageFinanceReports() {
+  const from = sessionStorage.getItem('finance_from') || '';
+  const to = sessionStorage.getItem('finance_to') || '';
+  try {
+    const query = new URLSearchParams({
+      from,
+      to,
+    });
+    const data = await apiRequest('/finance/dashboard?' + query.toString());
+    const totals = data.totals || {};
+    const money = value =>
+      new Intl.NumberFormat('en-IN', {
+        style: 'currency',
+        currency: data.currency || 'INR',
+      }).format(Number(value || 0));
+    const rows = (data.eventRevenue || [])
+      .map(
+        row =>
+          '<tr><td>' +
+          escapeHtml(row.eventName) +
+          '</td><td>' +
+          row.ticketsSold +
+          '</td><td>' +
+          money(row.revenue) +
+          '</td></tr>'
+      )
+      .join('');
+    return (
+      '<div class="page-hd"><div><div class="page-title">Financial Reports</div><div class="page-sub">Database-backed revenue summary and transaction export</div></div></div><div class="filter-row"><label class="small muted">From <input class="form-control" type="date" id="finance-from" value="' +
+      escapeHtml(from) +
+      '"></label><label class="small muted">To <input class="form-control" type="date" id="finance-to" value="' +
+      escapeHtml(to) +
+      '"></label><button class="btn btn-primary" onclick="applyFinanceDateRange()">Generate report</button><button class="btn btn-ghost" onclick="downloadFinanceCsv()">Download transaction CSV</button></div><div class="grid-3 mb-20"><div class="stat-card"><div class="stat-value">' +
+      money(totals.grossRevenue) +
+      '</div><div class="stat-label">Gross captured revenue</div></div><div class="stat-card"><div class="stat-value">' +
+      money(totals.refundedAmount) +
+      '</div><div class="stat-label">Completed refunds</div></div><div class="stat-card"><div class="stat-value">' +
+      money(totals.netRevenue) +
+      '</div><div class="stat-label">Net revenue</div></div></div><div class="card"><div class="h4 mb-12">Event revenue report</div><div class="table-wrap"><table><thead><tr><th>Event</th><th>Tickets sold</th><th>Captured revenue</th></tr></thead><tbody>' +
+      (rows ||
+        '<tr><td colspan="3" class="text-center py-20">No event revenue for this range.</td></tr>') +
+      '</tbody></table></div><p class="small muted mt-16">Generated ' +
+      new Date().toLocaleString('en-IN') +
+      '. PDF, payout, and gateway reconciliation reports are not available in the current demo integration.</p></div>'
+    );
+  } catch (error) {
+    return (
+      '<div class="card"><div class="empty-title">Report data is unavailable</div><p class="empty-desc">' +
+      escapeHtml(error.message) +
+      '</p><button class="btn btn-primary" onclick="goNav(&quot;reports&quot;)">Retry</button></div>'
+    );
+  }
+}
+async function pageFinanceCenter() {
+  const tab = sessionStorage.getItem('finance_tab') || 'dashboard';
+  const query = sessionStorage.getItem('finance_query') || '';
+  const page = Number(sessionStorage.getItem('finance_page') || 1);
+  const status = sessionStorage.getItem('finance_status') || '';
+  const method = sessionStorage.getItem('finance_method') || '';
+  const from = sessionStorage.getItem('finance_from') || '';
+  const to = sessionStorage.getItem('finance_to') || '';
+  const eventId = sessionStorage.getItem('finance_event') || '';
+  const sort = sessionStorage.getItem('finance_sort') || 'date';
+  const refundRange = sessionStorage.getItem('finance_refund_range') || 'last30';
+  const refundEvent = sessionStorage.getItem('finance_refund_event') || '';
+  const refundOrganizer = sessionStorage.getItem('finance_refund_organizer') || '';
+  const refundStatus = sessionStorage.getItem('finance_refund_status') || '';
+  const refundSearch = sessionStorage.getItem('finance_refund_search') || '';
+  const refundSort = sessionStorage.getItem('finance_refund_sort') || 'newest';
+  const params = new URLSearchParams({
+    page: String(page),
+    pageSize: '25',
+    search: query,
+    status,
+    paymentMethod: method,
+    eventId,
+    from,
+    to,
+    sort,
+    direction: 'desc',
+  });
+  const isTransactions = tab === 'transactions' || tab === 'dashboard' || tab === 'commission';
+  const dashboardParams = new URLSearchParams({
+    from,
+    to,
+  });
+  const refundParams = new URLSearchParams({
+    page: String(page),
+    pageSize: '25',
+    range: refundRange,
+    eventId: refundEvent,
+    organizerId: refundOrganizer,
+    status: refundStatus,
+    search: refundSearch,
+    sort: refundSort,
+  });
+  const tasks =
+    tab === 'refunds'
+      ? [apiRequest('/finance/refunds?' + refundParams.toString())]
+      : [apiRequest('/finance/dashboard?' + dashboardParams.toString())];
+  if (isTransactions) tasks.push(apiRequest('/finance/transactions?' + params.toString()));
+  let dashboard;
+  let result;
+  try {
+    const data = await Promise.all(tasks);
+    if (tab === 'refunds') result = data[0];
+    else {
+      dashboard = data[0];
+      result = data[1];
+    }
+  } catch (error) {
+    if ((DB.financeTransactions || []).length) return pageFinanceCenterDemo();
+    return (
+      '<div class="page-hd"><div><div class="page-title">Finance Executive</div><div class="page-sub">Financial operations</div></div></div><div class="card"><div class="empty-title">Finance data is unavailable</div><p class="empty-desc">' +
+      escapeHtml(error.message) +
+      '</p><button class="btn btn-primary" onclick="renderPage(&quot;finance&quot;)">Retry</button></div>'
+    );
+  }
+  dashboard = dashboard || {
+    currency: 'INR',
+    totals: {},
+  };
+  const totals = dashboard.totals || {};
+  const currency = value =>
+    new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: dashboard.currency || 'INR',
+      maximumFractionDigits: 2,
+    }).format(Number(value || 0));
+  const dateText = value => (value ? new Date(value).toLocaleString('en-IN') : '—');
+  const metric = (label, value, color) =>
+    '<div class="stat-card"><div class="stat-value" style="color:' +
+    color +
+    '">' +
+    value +
+    '</div><div class="stat-label">' +
+    label +
+    '</div></div>';
+  const metrics =
+    '<div class="grid-4 mb-20">' +
+    metric('Gross captured revenue', currency(totals.grossRevenue), 'var(--green)') +
+    metric('Net after completed refunds', currency(totals.netRevenue), 'var(--accent)') +
+    metric('Successful payments', totals.successfulPayments || 0, 'var(--green)') +
+    metric('Tickets sold', totals.ticketsSold || 0, 'var(--blue)') +
+    metric('Failed payments', totals.failedPayments || 0, 'var(--red)') +
+    metric('Pending payments', totals.pendingPayments || 0, 'var(--yellow)') +
+    metric('Refund requests pending', totals.pendingRefundRequests || 0, 'var(--yellow)') +
+    metric('Completed refunds', currency(totals.refundedAmount), 'var(--purple)') +
+    '</div>';
+  const tabs = [
+    ['dashboard', 'Dashboard'],
+    ['transactions', 'Payment Transactions'],
+    ['refunds', 'Refund Management'],
+    ['settlements', 'Organizer Settlements'],
+    ['commission', 'Commission & Revenue'],
+    ['reconciliation', 'Payment Reconciliation'],
+  ]
+    .map(
+      item =>
+        '<button class="btn ' +
+        (tab === item[0] ? 'btn-primary' : 'btn-ghost') +
+        '" onclick="switchFinanceTab(&quot;' +
+        item[0] +
+        '&quot;)">' +
+        item[1] +
+        '</button>'
+    )
+    .join('');
+  let content = '';
+  if (tab === 'dashboard') {
+    const rows = ((result && result.data) || [])
+      .slice(0, 8)
+      .map(
+        item =>
+          '<tr><td class="mono">' +
+          escapeHtml(item.paymentId) +
+          '</td><td>' +
+          escapeHtml(item.eventName) +
+          '</td><td>' +
+          escapeHtml(item.attendeeName) +
+          '</td><td>' +
+          currency(item.amount) +
+          '</td><td><span class="badge badge-' +
+          financeStatusBadge(item.status) +
+          '">' +
+          escapeHtml(item.status) +
+          '</span></td><td>' +
+          dateText(item.paymentDate || item.createdAt) +
+          '</td></tr>'
+      )
+      .join('');
+    const eventMax = Math.max(
+      1,
+      ...(dashboard.eventRevenue || []).map(item => Number(item.revenue || 0))
+    );
+    const eventBars =
+      (dashboard.eventRevenue || [])
+        .map(
+          item =>
+            '<div class="finance-chart-row"><span>' +
+            escapeHtml(item.eventName) +
+            '</span><div class="finance-bar-track"><i style="width:' +
+            (Number(item.revenue || 0) / eventMax) * 100 +
+            '%"></i></div><strong>' +
+            currency(item.revenue) +
+            '</strong></div>'
+        )
+        .join('') || '<p class="small muted">No event revenue recorded.</p>';
+    const trend =
+      (dashboard.revenueTrend || [])
+        .map(
+          item =>
+            '<div class="finance-trend-item"><span>' +
+            escapeHtml(item.date) +
+            '</span><strong>' +
+            currency(item.revenue) +
+            '</strong></div>'
+        )
+        .join('') || '<p class="small muted">No revenue trend data available.</p>';
+    content =
+      '<div class="filter-row"><label class="small muted">From <input class="form-control" type="date" id="finance-from" value="' +
+      escapeHtml(from) +
+      '"></label><label class="small muted">To <input class="form-control" type="date" id="finance-to" value="' +
+      escapeHtml(to) +
+      '"></label><button class="btn btn-primary" onclick="applyFinanceDateRange()">Apply date range</button><button class="btn btn-ghost" onclick="clearFinanceDateRange()">Clear</button></div><div class="card"><div class="h4 mb-12">Recent payment activity</div><div class="table-wrap"><table><thead><tr><th>Payment</th><th>Event</th><th>Attendee</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead><tbody>' +
+      (rows || '<tr><td colspan="6" class="text-center py-20">No payment records yet.</td></tr>') +
+      '</tbody></table></div></div><div class="grid-2 mt-16"><div class="card"><div class="h4 mb-12">Revenue by event</div>' +
+      eventBars +
+      '</div><div class="card"><div class="h4 mb-12">Captured revenue trend</div><div class="finance-trend">' +
+      trend +
+      '</div></div></div>';
+  } else if (tab === 'transactions') {
+    const rows = (result.data || [])
+      .map(
+        item =>
+          '<tr><td class="mono">' +
+          escapeHtml(item.paymentId) +
+          '</td><td>' +
+          escapeHtml(item.registrationId) +
+          '</td><td>' +
+          escapeHtml(item.eventName) +
+          '</td><td>' +
+          escapeHtml(item.attendeeName) +
+          '<div class="small muted">' +
+          escapeHtml(item.attendeeEmail) +
+          '</div></td><td>' +
+          currency(item.amount) +
+          '</td><td>' +
+          escapeHtml(item.paymentMethod) +
+          '</td><td><span class="badge badge-' +
+          financeStatusBadge(item.status) +
+          '">' +
+          escapeHtml(item.status) +
+          '</span></td><td>' +
+          dateText(item.paymentDate || item.createdAt) +
+          '</td><td><button class="btn btn-ghost btn-sm" data-payment="' +
+          encodeURIComponent(item.paymentId) +
+          '" onclick="openFinanceTransaction(this.dataset.payment)">View</button></td></tr>'
+      )
+      .join('');
+    content =
+      '<div class="card"><div class="filter-row"><input class="form-control" id="finance-query" placeholder="Search payment, booking, attendee, or event" value="' +
+      escapeHtml(query) +
+      '"><select class="form-control" id="finance-status"><option value="">All statuses</option>' +
+      ['completed', 'pending', 'failed', 'refunded']
+        .map(
+          s =>
+            '<option ' + (status === s ? 'selected' : '') + ' value="' + s + '">' + s + '</option>'
+        )
+        .join('') +
+      '</select><select class="form-control" id="finance-method"><option value="">All methods</option><option value="DEMO_PROVIDER" ' +
+      (method === 'DEMO_PROVIDER' ? 'selected' : '') +
+      '>Demo provider</option></select><select class="form-control" id="finance-event"><option value="">All events</option>' +
+      (dashboard.eventRevenue || [])
+        .map(
+          item =>
+            '<option value="' +
+            escapeHtml(item.eventId || '') +
+            '" ' +
+            (eventId === item.eventId ? 'selected' : '') +
+            '>' +
+            escapeHtml(item.eventName) +
+            '</option>'
+        )
+        .join('') +
+      '</select><select class="form-control" id="finance-sort"><option value="date" ' +
+      (sort === 'date' ? 'selected' : '') +
+      '>Sort by date</option><option value="amount" ' +
+      (sort === 'amount' ? 'selected' : '') +
+      '>Sort by amount</option></select><input class="form-control" type="date" id="finance-from" value="' +
+      escapeHtml(from) +
+      '"><input class="form-control" type="date" id="finance-to" value="' +
+      escapeHtml(to) +
+      '"><button class="btn btn-primary" onclick="refreshFinanceCenter()">Apply</button><button class="btn btn-ghost" onclick="downloadFinanceCsv()">Download CSV</button></div><div class="table-wrap"><table><thead><tr><th>Transaction</th><th>Booking</th><th>Event</th><th>Attendee</th><th>Amount (INR)</th><th>Method</th><th>Status</th><th>Date</th><th></th></tr></thead><tbody>' +
+      (rows ||
+        '<tr><td colspan="9" class="text-center py-20">No transactions match these filters.</td></tr>') +
+      '</tbody></table></div><div class="flex justify-between items-center mt-16"><span class="small muted">' +
+      (result.pagination.total || 0) +
+      ' matching records · page ' +
+      result.pagination.page +
+      ' of ' +
+      Math.max(1, result.pagination.totalPages) +
+      '</span><div><button class="btn btn-ghost" ' +
+      (page <= 1 ? 'disabled' : '') +
+      ' onclick="financeChangePage(-1)">Previous</button> <button class="btn btn-ghost" ' +
+      (page >= result.pagination.totalPages ? 'disabled' : '') +
+      ' onclick="financeChangePage(1)">Next</button></div></div></div>';
+  } else if (tab === 'refunds') {
+    const filters = result.filters || {};
+    const eventOptions = (filters.events || [])
+      .map(
+        item =>
+          '<option value="' +
+          escapeHtml(item.eventId) +
+          '" ' +
+          (refundEvent === item.eventId ? 'selected' : '') +
+          '>' +
+          escapeHtml(item.name) +
+          '</option>'
+      )
+      .join('');
+    const organizerOptions = (filters.organizers || [])
+      .map(
+        item =>
+          '<option value="' +
+          escapeHtml(item.organizerId) +
+          '" ' +
+          (refundOrganizer === item.organizerId ? 'selected' : '') +
+          '>' +
+          escapeHtml(item.name) +
+          '</option>'
+      )
+      .join('');
+    const refundDate = value =>
+      value
+        ? new Intl.DateTimeFormat('en-GB', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            timeZone: 'Asia/Kolkata',
+          }).format(new Date(value))
+        : '—';
+    const refundMoney = value =>
+      new Intl.NumberFormat('en-IN', {
+        style: 'currency',
+        currency: 'INR',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(Number(value || 0));
+    const rows = (result.data || [])
+      .map(
+        item =>
+          '<tr><td class="mono">' +
+          escapeHtml(item.refundId) +
+          '</td><td>' +
+          escapeHtml(item.registrationId) +
+          '</td><td>' +
+          escapeHtml(item.eventName) +
+          '<div class="small muted">' +
+          escapeHtml(item.organizerName) +
+          '</div></td><td>' +
+          escapeHtml(item.attendeeName) +
+          '</td><td>' +
+          refundMoney(item.originalPaymentAmount) +
+          '</td><td>' +
+          refundMoney(item.amount) +
+          '</td><td>' +
+          escapeHtml(item.reason) +
+          '</td><td><span class="finance-refund-status finance-refund-status-' +
+          escapeHtml(String(item.status).toLowerCase()) +
+          '">' +
+          escapeHtml(String(item.status).charAt(0).toUpperCase() + String(item.status).slice(1)) +
+          '</span></td><td>' +
+          refundDate(item.requestedAt) +
+          '</td><td><button class="btn btn-ghost btn-sm" data-refund="' +
+          encodeURIComponent(item.refundId) +
+          '" onclick="openFinanceRefund(this.dataset.refund)">View details</button></td></tr>'
+      )
+      .join('');
+    const pagination = result.pagination || {
+      page: 1,
+      total: 0,
+      totalPages: 0,
+    };
+    content =
+      '<div class="finance-warning"><span class="finance-warning-icon">!</span><span>Demo provider only; all existing payments are unverified or simulated. No live refunds or payouts are available. Commission policy is not configured; related amounts remain unavailable.</span></div><div class="finance-filter-toolbar"><label><span>Date range</span><select class="form-control" id="finance-refund-range"><option value="last30" ' +
+      (refundRange === 'last30' ? 'selected' : '') +
+      '>Last 30 days</option><option value="last7" ' +
+      (refundRange === 'last7' ? 'selected' : '') +
+      '>Last 7 days</option><option value="thisMonth" ' +
+      (refundRange === 'thisMonth' ? 'selected' : '') +
+      '>This month</option><option value="all" ' +
+      (refundRange === 'all' ? 'selected' : '') +
+      '>All time</option></select></label><label><span>Event</span><select class="form-control" id="finance-refund-event"><option value="">All events</option>' +
+      eventOptions +
+      '</select></label><label><span>Organizer</span><select class="form-control" id="finance-refund-organizer"><option value="">All organizers</option>' +
+      organizerOptions +
+      '</select></label><label><span>Status</span><select class="form-control" id="finance-refund-status"><option value="">All statuses</option>' +
+      ['pending', 'completed', 'failed', 'not_applicable']
+        .map(
+          value =>
+            '<option value="' +
+            value +
+            '" ' +
+            (refundStatus === value ? 'selected' : '') +
+            '>' +
+            value.charAt(0).toUpperCase() +
+            value.slice(1).replace('_', ' ') +
+            '</option>'
+        )
+        .join('') +
+      '</select></label><label class="finance-refund-search"><span>Search</span><input class="form-control" id="finance-refund-search" placeholder="Reference, booking, attendee" value="' +
+      escapeHtml(refundSearch) +
+      '"></label><label><span>Sort</span><select class="form-control" id="finance-refund-sort"><option value="newest" ' +
+      (refundSort === 'newest' ? 'selected' : '') +
+      '>Newest first</option><option value="oldest" ' +
+      (refundSort === 'oldest' ? 'selected' : '') +
+      '>Oldest first</option><option value="amountHigh" ' +
+      (refundSort === 'amountHigh' ? 'selected' : '') +
+      '>Amount: high to low</option><option value="amountLow" ' +
+      (refundSort === 'amountLow' ? 'selected' : '') +
+      '>Amount: low to high</option></select></label><div class="finance-filter-actions"><button class="btn btn-primary" onclick="applyFinanceRefundFilters()">Apply filters</button><button class="btn btn-ghost" onclick="resetFinanceRefundFilters()">Reset</button></div></div><div class="card finance-refund-table-card"><div class="table-wrap"><table class="finance-refund-table"><thead><tr><th>Refund request</th><th>Booking</th><th>Event</th><th>Attendee</th><th>Original payment</th><th>Requested amount</th><th>Reason</th><th>Status</th><th>Requested</th><th>Actions</th></tr></thead><tbody>' +
+      (rows ||
+        '<tr><td colspan="10" class="text-center py-20">No refund requests match these filters.</td></tr>') +
+      '</tbody></table></div><div class="finance-refund-pagination"><span>' +
+      pagination.total +
+      ' records · Page ' +
+      pagination.page +
+      ' of ' +
+      Math.max(1, pagination.totalPages) +
+      '</span><div><button class="btn btn-ghost" ' +
+      (pagination.page <= 1 ? 'disabled' : '') +
+      ' onclick="financeChangePage(-1)">Previous</button><button class="btn btn-ghost" ' +
+      (pagination.page >= pagination.totalPages ? 'disabled' : '') +
+      ' onclick="financeChangePage(1)">Next</button></div></div></div>';
+  } else if (tab === 'commission') {
+    content =
+      '<div class="card"><div class="h4 mb-12">Commission &amp; revenue</div><p class="small muted">Gross and net revenue below are calculated from persisted payment and refund records.</p><div class="grid-3 mt-16">' +
+      metric('Gross captured revenue', currency(totals.grossRevenue), 'var(--green)') +
+      metric('Completed refunds', currency(totals.refundedAmount), 'var(--purple)') +
+      metric('Net revenue', currency(totals.netRevenue), 'var(--accent)') +
+      '</div><div class="empty-desc mt-16">Commission policy is not configured. Commission and organizer payable amounts are unavailable until an administrator defines a policy.</div></div>';
+  } else {
+    const title = tab === 'settlements' ? 'Organizer settlements' : 'Payment reconciliation';
+    const explanation =
+      tab === 'settlements'
+        ? 'No payout provider or settlement policy is configured. No organizer payouts can be calculated or marked paid.'
+        : 'The configured payment provider is DEMO_PROVIDER and does not provide gateway reconciliation records.';
+    content =
+      '<div class="card"><div class="h4 mb-12">' +
+      title +
+      '</div><p class="empty-desc">' +
+      explanation +
+      '</p></div>';
+  }
+  const pageTitle =
+    {
+      dashboard: 'Dashboard',
+      transactions: 'Payment Transactions',
+      refunds: 'Refund Management',
+      settlements: 'Organizer Settlements',
+      commission: 'Commission & Revenue',
+      reconciliation: 'Payment Reconciliation',
+    }[tab] || 'Finance';
+  const pageHeader =
+    '<div class="page-hd"><div class="page-hd-left"><div class="page-title">' +
+    pageTitle +
+    '</div><div class="page-sub">Financial operations · INR · Asia/Kolkata</div></div><button class="btn btn-ghost" onclick="renderPage(&quot;finance&quot;)">Refresh</button></div>';
+  return pageHeader + (tab === 'refunds' ? '' : metrics) + content;
+}
 function toggleFinanceNav() {
   const node = g('finance-subnav');
   if (!node) return;
@@ -6411,6 +7979,7 @@ async function openFinanceTransaction(encodedId) {
     modal.setAttribute('aria-label', 'Payment transaction details');
     modal.style.cssText =
       'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:20px';
+    globalThis.window?.EventFlowSupportExecutivePages?.clear(modal);
     modal.innerHTML =
       '<div class="card" style="width:min(720px,100%);max-height:90vh;overflow:auto"><div class="flex justify-between items-center mb-16"><div class="h4">Payment details</div><button class="btn btn-ghost" onclick="document.getElementById(&quot;finance-transaction-modal&quot;).remove()" aria-label="Close">×</button></div><div class="finance-detail-row"><span>Transaction reference</span><strong class="mono">' +
       escapeHtml(item.paymentId) +
@@ -6494,6 +8063,7 @@ async function openFinanceRefund(encodedId) {
     modal.setAttribute('aria-label', 'Refund request details');
     modal.style.cssText =
       'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:20px';
+    globalThis.window?.EventFlowSupportExecutivePages?.clear(modal);
     modal.innerHTML =
       '<div class="card finance-refund-detail-modal"><div class="flex justify-between items-center mb-16"><div class="h4">Refund Request ' +
       escapeHtml(item.refundId) +
@@ -7710,6 +9280,7 @@ window.handleRegReportFileSelect = function (input) {
   if (input.files && input.files[0]) {
     const f = input.files[0];
     if (preview) {
+      globalThis.window?.EventFlowSupportExecutivePages?.clear(preview);
       preview.innerHTML = `
             <div class="flex items-center justify-between" style="background:var(--accent-dim);border-radius:8px;padding:10px 14px">
               <div style="font-weight:600;color:var(--accent);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📄 ${
@@ -7726,6 +9297,7 @@ window.resetRegReportFileSelect = function () {
   if (input) input.value = '';
   const preview = document.getElementById('rv-file-preview');
   if (preview) {
+    globalThis.window?.EventFlowSupportExecutivePages?.clear(preview);
     preview.innerHTML = `
           <div style="font-size:24px;margin-bottom:6px">📁</div>
           <div style="font-weight:600;font-size:13.5px">Click to browse or upload report file</div>
@@ -7842,6 +9414,7 @@ function searchEmployeeChanges(query) {
         .includes(changesQuery)
     )
     .slice(0, 12);
+  globalThis.window?.EventFlowSupportExecutivePages?.clear(g('employee-recent-changes'));
   g('employee-recent-changes').innerHTML = buildEmployeeChanges(changes);
 }
 function completeEmployeeChangeRequest(requestId) {
@@ -8915,6 +10488,7 @@ function refreshDirectoryUserManagement() {
       );
     return u.role !== 'superuser' && matchesRole && matchesQuery;
   });
+  globalThis.window?.EventFlowSupportExecutivePages?.clear(g('user-management-table'));
   g('user-management-table').innerHTML = buildUserManagementTable(users);
 }
 function openEditUserModal(userId) {
@@ -9075,6 +10649,7 @@ function refreshEvents() {
       );
     }
   );
+  globalThis.window?.EventFlowSupportExecutivePages?.clear(g('ev-grid'));
   g('ev-grid').innerHTML =
     list.map(e => evCard(e, CU.role)).join('') ||
     `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔍</div><div class="empty-title">No events found</div></div>`;
@@ -9722,6 +11297,7 @@ function refreshBrowse() {
       (!city || event.city === city)
     );
   });
+  globalThis.window?.EventFlowSupportExecutivePages?.clear(g('browse-grid'));
   g('browse-grid').innerHTML =
     list.map(e => evCard(e, 'attendee')).join('') ||
     `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔍</div><div class="empty-title">No events match</div><p class="empty-desc">Try adjusting your filters.</p></div>`;
@@ -10329,6 +11905,7 @@ function refreshAttendees() {
         (status === 'rejected' && registration.status === 'rejected');
       return matchesSearch && matchesStatus;
     });
+    globalThis.window?.EventFlowSupportExecutivePages?.clear(g('attendees-tbl'));
     g('attendees-tbl').innerHTML = buildOrganizerAttendeesTbl(regs, selectedEvent, isPrivate);
   } else {
     const q = (g('at-q') || {}).value?.toLowerCase() || '';
@@ -10352,6 +11929,7 @@ function refreshAttendees() {
         (!ci || (ci === 'in' && r.checkedIn) || (ci === 'out' && !r.checkedIn))
       );
     });
+    globalThis.window?.EventFlowSupportExecutivePages?.clear(g('attendees-tbl'));
     g('attendees-tbl').innerHTML = buildAttendeesTbl(regs);
   }
 }
@@ -10794,6 +12372,7 @@ function viewRequestDetail(reqId) {
     };
   const element = document.getElementById('page-content');
   if (!element) return;
+  globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
   element.innerHTML = `<div style="padding:28px;background:var(--bg);min-height:100vh">
     <button onclick="renderPage('request-status')" style="display:inline-flex;align-items:center;gap:6px;border:none;background:none;color:var(--text2);font-size:13px;cursor:pointer;margin-bottom:24px;padding:0">&larr; Back to Pending Requests</button>
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
@@ -10883,6 +12462,7 @@ function viewOngoingEventDetail(eventId) {
   );
   const element = document.getElementById('page-content');
   if (!element) return;
+  globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
   element.innerHTML = `<div style="padding:28px;background:var(--bg)">
     <button onclick="renderPage('request-status')" style="display:flex;align-items:center;gap:6px;border:none;background:none;color:var(--text2);font-size:13px;cursor:pointer;margin-bottom:20px;padding:0">â† Back to Ongoing Events</button>
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
@@ -11418,6 +12998,7 @@ window.handleReportFileSelect = function (input) {
   if (input.files && input.files[0]) {
     const f = input.files[0];
     if (preview) {
+      globalThis.window?.EventFlowSupportExecutivePages?.clear(preview);
       preview.innerHTML = `
             <div class="flex items-center justify-between" style="background:var(--accent-dim);border-radius:8px;padding:10px 14px">
               <div style="font-weight:600;color:var(--accent);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📄 ${
@@ -11434,6 +13015,7 @@ window.resetReportFileSelect = function () {
   if (input) input.value = '';
   const preview = document.getElementById('eor-file-preview');
   if (preview) {
+    globalThis.window?.EventFlowSupportExecutivePages?.clear(preview);
     preview.innerHTML = `
           <div style="font-size:24px;margin-bottom:6px">📁</div>
           <div style="font-weight:600;font-size:13.5px">Click to browse or upload report file</div>
@@ -12288,7 +13870,50 @@ function visibleNotifications() {
     ? DB.notifications.filter(notification => notification.employeeType === 'SUPPORT_FINANCE')
     : DB.notifications;
 }
-/* PORTAL_SECTION_pageNotifications */
+function pageNotifications() {
+  const notifications = visibleNotifications();
+  const unread = notifications.filter(notification => !notification.read).length;
+  return `
+  <div class="page-hd">
+    <div class="page-hd-left"><div class="page-title">Notifications</div><div class="page-sub">${unread} unread notification${
+    unread !== 1 ? 's' : ''
+  }</div></div>
+    <div class="page-hd-right"><button class="btn btn-ghost btn-sm" onclick="markAllRead()">✓ Mark All Read</button></div>
+  </div>
+  <div class="card p-0 notif-panel">
+    ${
+      notifications.length === 0
+        ? `<div class="empty"><div class="empty-icon">🔔</div><div class="empty-title">All caught up!</div></div>`
+        : `
+    ${notifications
+      .map(
+        notification => `
+      <div class="notif-item${notification.read ? '' : ' unread'}" onclick="markNotifRead('${
+          notification.id
+        }')">
+        <div class="notif-icon" style="background:${
+          notification.type === 'success'
+            ? 'var(--green-dim)'
+            : notification.type === 'warning'
+            ? 'var(--yellow-dim)'
+            : notification.type === 'error'
+            ? 'var(--red-dim)'
+            : 'var(--accent-dim)'
+        }">${notification.icon || '🔔'}</div>
+        <div class="notif-content">
+          <div class="notif-title" style="${notification.read ? '' : 'font-weight:600'}">${
+          notification.title
+        }</div>
+          <div class="notif-msg">${notification.msg}</div>
+          <div class="notif-time">${notification.time}</div>
+        </div>
+        ${!notification.read ? `<div class="unread-dot"></div>` : ''}
+      </div>`
+      )
+      .join('')}`
+    }
+  </div>`;
+}
 function markNotifRead(id) {
   const n = DB.notifications.find(notification => notification.id == id);
   if (!n) return;
@@ -12477,13 +14102,184 @@ function pageDepartmentEmployeeProfile() {
     </div>
   </div>`;
 }
-
-/* PORTAL_SECTION_pageProfile */
+function pageProfile() {
+  if (isDepartmentEmployee()) return pageDepartmentEmployeeProfile();
+  const regs =
+    CU.role === 'attendee'
+      ? DB.registrations.filter(registration => registration.attendeeId === CU.id)
+      : [];
+  const myEvs = CU.role === 'organizer' ? DB.events.filter(event => event.organizer === CU.id) : [];
+  const isSF = CU.role === 'employee' && CU.employeeType === 'SUPPORT_FINANCE';
+  const sfSupportHandled = (DB.supportRequests || []).length;
+  const sfResolved = (DB.supportRequests || []).filter(
+    r => r.status === 'Resolved' || r.status === 'Closed'
+  ).length;
+  const sfTxnsReviewed = (DB.financeTransactions || []).length;
+  const sfReportsSubmitted = (DB.operationalReports || []).filter(
+    r => r.status === 'Submitted' || r.status === 'Reviewed'
+  ).length;
+  return `
+  <div class="page-hd"><div class="page-hd-left"><div class="page-title">My Profile</div></div><div class="page-hd-right"><button class="btn btn-ghost" onclick="goNav('settings')">✏️ Edit Profile</button></div></div>
+  <div class="profile-banner">
+    ${
+      CU.avatarImage
+        ? `<div class="av av-xl"><img src="${CU.avatarImage}" alt="${
+            CU.name
+          }" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span style="display:none">${
+            CU.avatar || CU.name[0]
+          }</span></div>`
+        : `<div class="av av-xl">${CU.avatar || CU.name[0]}</div>`
+    }
+    <div class="profile-info">
+      <div class="profile-name">${CU.name}</div>
+      <div class="profile-role-tag">${
+        isSF ? 'Customer Support &amp; Finance Executive' : ROLE_LABELS[CU.role]
+      }</div>
+      ${CU.company ? `<div class="small mt-4">${CU.company}</div>` : ''}
+      ${
+        CU.specialization
+          ? `<div class="small mt-4">Specialization: ${CU.specialization}</div>`
+          : ''
+      }
+      ${CU.service ? `<div class="small mt-4">Service: ${CU.service}</div>` : ''}
+      <span class="badge badge-green mt-8">Active Account</span>
+    </div>
+  </div>
+  <div class="grid-2" style="align-items:start;gap:20px">
+    <div class="card">
+      <div class="h4 mb-14">Contact Information</div>
+      <div class="info-row"><span class="info-label">Email</span><span class="info-value">${
+        CU.email
+      }</span></div>
+      <div class="info-row"><span class="info-label">Phone</span><span class="info-value">${
+        CU.phone || 'Not set'
+      }</span></div>
+      <div class="info-row"><span class="info-label">Member Since</span><span class="info-value">${
+        CU.joined || '—'
+      }</span></div>
+      <div class="info-row"><span class="info-label">Role</span><span class="info-value"><span class="badge badge-${
+        ROLE_COLORS[CU.role]
+      }">${isSF ? 'Customer Support &amp; Finance Executive' : CU.role}</span></span></div>
+      ${
+        CU.bio
+          ? `<div class="mt-14"><div class="label mb-8">Bio</div><p style="font-size:13.5px;color:var(--text2);line-height:1.7">${CU.bio}</p></div>`
+          : ''
+      }
+    </div>
+    <div>
+      ${
+        isSF
+          ? `<div class="card mb-16">
+        <div class="h4 mb-14">Work Summary</div>
+        <div class="info-row"><span class="info-label">Support Requests Handled</span><span class="info-value" style="color:var(--accent);font-weight:700">${sfSupportHandled}</span></div>
+        <div class="info-row"><span class="info-label">Issues Resolved</span><span class="info-value" style="color:var(--green);font-weight:700">${sfResolved}</span></div>
+        <div class="info-row"><span class="info-label">Transactions Reviewed</span><span class="info-value" style="color:var(--blue);font-weight:700">${sfTxnsReviewed}</span></div>
+        <div class="info-row"><span class="info-label">Reports Submitted</span><span class="info-value" style="color:var(--purple);font-weight:700">${sfReportsSubmitted}</span></div>
+      </div>`
+          : CU.role === 'attendee'
+          ? `<div class="card mb-16">
+        <div class="h4 mb-14">Activity Summary</div>
+        <div class="info-row"><span class="info-label">Events Registered</span><span class="info-value">${
+          regs.length
+        }</span></div>
+        <div class="info-row"><span class="info-label">Upcoming Events</span><span class="info-value" style="color:var(--accent)">${
+          regs.filter(registration => {
+            const event = DB.events.find(currentEvent => currentEvent.id === registration.eventId);
+            return event && event.status === 'upcoming';
+          }).length
+        }</span></div>
+        <div class="info-row"><span class="info-label">Events Attended</span><span class="info-value" style="color:var(--green)">${
+          regs.filter(registration => registration.checkedIn).length
+        }</span></div>
+        <div class="info-row"><span class="info-label">Total Spent</span><span class="info-value" style="color:var(--green);font-weight:700">₹${regs.reduce(
+          (total, registration) => total + registration.amount,
+          0
+        )}</span></div>
+      </div>`
+          : CU.role === 'organizer'
+          ? `<div class="card mb-16">
+        <div class="h4 mb-14">Event Summary</div>
+        <div class="info-row"><span class="info-label">Total Events</span><span class="info-value">${
+          myEvs.length
+        }</span></div>
+        <div class="info-row"><span class="info-label">Upcoming</span><span class="info-value" style="color:var(--accent)">${
+          myEvs.filter(e => e.status === 'upcoming').length
+        }</span></div>
+        <div class="info-row"><span class="info-label">Completed</span><span class="info-value" style="color:var(--green)">${
+          myEvs.filter(e => e.status === 'completed').length
+        }</span></div>
+      </div>`
+          : ''
+      }
+      <div class="card">
+        <div class="h4 mb-14">Quick Actions</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button class="btn btn-ghost w-full" onclick="goNav('settings')">⚙️ Account Settings</button>
+          <button class="btn btn-danger w-full" onclick="doLogout()">🚪 Sign Out</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
 
 // ════════════════════════════════════════════════
 //  SETTINGS
 // ════════════════════════════════════════════════
-/* PORTAL_SECTION_pageSettings */
+
+function pageSettings() {
+  return `
+  <div class="page-hd"><div class="page-hd-left"><div class="page-title">Account Settings</div><div class="page-sub">Manage your personal information and account preferences.</div></div></div>
+  <div class="grid-2" style="align-items:start;gap:20px">
+    <div class="card card-lg">
+      <div class="h4 mb-20">Personal Information</div>
+      <div class="profile-banner" style="margin-bottom:20px;padding:18px">
+        ${
+          CU.avatarImage
+            ? `<div class="av av-lg"><img src="${CU.avatarImage}" alt="${
+                CU.name
+              }" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span style="display:none">${
+                CU.avatar || CU.name[0]
+              }</span></div>`
+            : `<div class="av av-lg">${CU.avatar || CU.name[0]}</div>`
+        }
+        <div><div style="font-weight:700">${CU.name}</div><div class="small">${
+    ROLE_LABELS[CU.role]
+  }</div></div>
+      </div>
+      <div class="form-group"><label class="form-label">Full Name</label><input class="form-control" id="st-name" value="${
+        CU.name
+      }"></div>
+      <div class="form-group"><label class="form-label">Email Address</label><input class="form-control" id="st-email" value="${
+        CU.email
+      }"></div>
+      <div class="form-group"><label class="form-label">Phone Number</label><input class="form-control" id="st-phone" value="${
+        CU.phone || ''
+      }"></div>
+      <div class="form-group"><label class="form-label">Bio</label><textarea class="form-control" id="st-bio">${
+        CU.bio || ''
+      }</textarea></div>
+      <button class="btn btn-primary w-full" onclick="saveSettings()" style="justify-content:center">Save Changes</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div class="card card-lg">
+        <div class="h4 mb-20">Change Password</div>
+        <div class="form-group"><label class="form-label">Current Password</label><input class="form-control" id="st-cur" type="password" placeholder="Enter current password"></div>
+        <div class="form-group"><label class="form-label">New Password</label><input class="form-control" id="st-new" type="password" placeholder="Min 6 characters"></div>
+        <div class="form-group"><label class="form-label">Confirm New Password</label><input class="form-control" id="st-conf" type="password" placeholder="Re-enter new password"></div>
+        <button class="btn btn-primary w-full" onclick="changePass()" style="justify-content:center">Update Password</button>
+      </div>
+      <div class="card">
+        <div class="h4 mb-16">Preferences</div>
+        <div class="info-row"><span class="info-label">Email Notifications</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+        <div class="info-row"><span class="info-label">SMS Reminders</span><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
+        <div class="info-row"><span class="info-label">Event Recommendations</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+      </div>
+      <div class="card">
+        <button class="btn btn-danger w-full mb-8" onclick="doLogout()" style="justify-content:center">Sign Out</button>
+      </div>
+    </div>
+  </div>`;
+}
 function saveSettings() {
   const name = v('st-name');
   const email = v('st-email');
@@ -12963,8 +14759,10 @@ function pageOngoingEvents() {
 // ════════════════════════════════════════════════
 function openModal(title, body, btns = [], showCancel = true) {
   g('modal-title').textContent = title;
+  globalThis.window?.EventFlowSupportExecutivePages?.clear(g('modal-body'));
   g('modal-body').innerHTML = body;
   const foot = g('modal-foot');
+  globalThis.window?.EventFlowSupportExecutivePages?.clear(foot);
   foot.innerHTML = '';
   let hasDismiss = false;
   const handlers = new Set();
@@ -13016,6 +14814,7 @@ function closeModalOnBg(e) {
 // DRAWER
 function openDrawer(title, body) {
   g('drawer-title').textContent = title;
+  globalThis.window?.EventFlowSupportExecutivePages?.clear(g('drawer-body'));
   g('drawer-body').innerHTML = body;
   g('drawer-overlay').classList.add('open');
   g('drawer').classList.add('open');
@@ -13056,6 +14855,7 @@ function toast(msg, type = 'info') {
   };
   const element = document.createElement('div');
   element.className = `toast ${type}`;
+  globalThis.window?.EventFlowSupportExecutivePages?.clear(element);
   element.innerHTML = `<span class="toast-icon">${icons[type]}</span><span class="toast-msg">${msg}</span>`;
   g('toasts').appendChild(element);
   setTimeout(() => {
@@ -13467,4 +15267,36 @@ document.addEventListener('DOMContentLoaded', () => {
 window.EventFlowRole = {
   key: 'employee1',
   label: 'Employee 1 — Registration & Verification',
+};
+
+// React pages read the same normalized data and keep the existing workflow action entry points.
+window.EventFlowSupportExecutiveRuntime = {
+  snapshot(pageProps = {}) {
+    return {
+      supportExecutiveRequestOptions,
+      CU: typeof CU === 'undefined' ? undefined : CU,
+      DB: typeof DB === 'undefined' ? undefined : DB,
+      EMPLOYEE_TYPE_LABELS:
+        typeof EMPLOYEE_TYPE_LABELS === 'undefined' ? undefined : EMPLOYEE_TYPE_LABELS,
+      ROLE_COLORS: typeof ROLE_COLORS === 'undefined' ? undefined : ROLE_COLORS,
+      ROLE_LABELS: typeof ROLE_LABELS === 'undefined' ? undefined : ROLE_LABELS,
+      apiGetEmployeeDashboard:
+        typeof apiGetEmployeeDashboard === 'undefined' ? undefined : apiGetEmployeeDashboard,
+      eventOpsStatusBadge:
+        typeof eventOpsStatusBadge === 'undefined' ? undefined : eventOpsStatusBadge,
+      financeReportData: typeof financeReportData === 'undefined' ? undefined : financeReportData,
+      financeResults: typeof financeResults === 'undefined' ? undefined : financeResults,
+      financeStatusBadge:
+        typeof financeStatusBadge === 'undefined' ? undefined : financeStatusBadge,
+      financeStatusBadgeDemo:
+        typeof financeStatusBadgeDemo === 'undefined' ? undefined : financeStatusBadgeDemo,
+      formatEventStatus: typeof formatEventStatus === 'undefined' ? undefined : formatEventStatus,
+      getAllReportsList: typeof getAllReportsList === 'undefined' ? undefined : getAllReportsList,
+      isDepartmentEmployee:
+        typeof isDepartmentEmployee === 'undefined' ? undefined : isDepartmentEmployee,
+      visibleNotifications:
+        typeof visibleNotifications === 'undefined' ? undefined : visibleNotifications,
+      pageProps,
+    };
+  },
 };

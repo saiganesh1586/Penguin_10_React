@@ -526,6 +526,7 @@
         } catch (error) {
           if (state.disposed || sequence !== state.sequence || _currentPage !== pg) return;
           const container = document.getElementById('page-content');
+          window.EventFlowReactPages?.clear(container);
           if (container)
             container.innerHTML = `<div class="empty"><div class="empty-title">Data could not be loaded</div><p class="empty-desc" id="data-sync-notice" role="status">${esc(
               error.message

@@ -1,63 +1,79 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { listTickets, sendFollowUp, submitTicket, uploadAttachment } from '../api/supportApi.js';
 
 export default function useSupportRequests(user) {
-  const [tickets, setTickets] = useState([]);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(true);
-  const identity = `${user?.id || user?.userId}:${user?.token || ''}`;
-  const activeIdentity = useRef(identity);
-  const requestSequence = useRef(0);
-  const mounted = useRef(false);
-  activeIdentity.current = identity;
+  const identity = [user?.id || user?.userId, user?.token || ''].join(':');
+  const [state, setState] = useState({
+    identity,
+    tickets: [],
+    loading: true,
+    error: '',
+    request: null,
+  });
   const refresh = useCallback(
     async signal => {
-      const sequence = ++requestSequence.current;
-      // Ignore responses from an older refresh, a signed-out user, or an unmounted page.
-      const isCurrentResponse = () =>
-        mounted.current &&
-        activeIdentity.current === identity &&
-        sequence === requestSequence.current;
+      const request = {};
+      const requestSignal = typeof signal?.aborted === 'boolean' ? signal : undefined;
+      setState(current => (current.identity === identity ? { ...current, request } : current));
       try {
-        const result = await listTickets(user, signal);
-        if (isCurrentResponse()) {
-          setTickets(result);
-          setError('');
-        }
-        return result;
-      } catch (failure) {
-        if (failure.name !== 'AbortError' && isCurrentResponse())
-          setError(failure.message || 'Unable to load support tickets.');
+        const tickets = await listTickets(user, requestSignal);
+        // A later refresh or a different account owns the screen once its request starts.
+        setState(current =>
+          current.identity === identity && current.request === request
+            ? { ...current, tickets, loading: false, error: '' }
+            : current
+        );
+        return tickets;
+      } catch (error) {
+        if (error.name !== 'AbortError')
+          setState(current =>
+            current.identity === identity && current.request === request
+              ? {
+                  ...current,
+                  loading: false,
+                  error: error.message || 'Unable to load support tickets.',
+                }
+              : current
+          );
         return null;
-      } finally {
-        if (isCurrentResponse()) setLoading(false);
       }
     },
     [identity, user]
   );
+
   useEffect(() => {
-    mounted.current = true;
     const controller = new AbortController();
-    setLoading(true);
-    setTickets([]);
-    setError('');
+    setState({ identity, tickets: [], loading: true, error: '', request: null });
     refresh(controller.signal);
-    return () => {
-      mounted.current = false;
-      requestSequence.current++;
-      controller.abort();
-    };
-  }, [refresh]);
-  const create = async (request, files) => {
-    const attachmentIds = [];
-    for (const file of files) attachmentIds.push((await uploadAttachment(user, file)).attachmentId);
-    const result = await submitTicket(user, { ...request, attachmentIds });
-    await refresh();
-    return result;
+    return () => controller.abort();
+  }, [identity, refresh]);
+
+  const create = useCallback(
+    async (request, files) => {
+      const attachmentIds = [];
+      for (const file of files)
+        attachmentIds.push((await uploadAttachment(user, file)).attachmentId);
+      const result = await submitTicket(user, { ...request, attachmentIds });
+      await refresh();
+      return result;
+    },
+    [user, refresh]
+  );
+  const followUp = useCallback(
+    async (id, message) => {
+      await sendFollowUp(user, id, message);
+      await refresh();
+    },
+    [user, refresh]
+  );
+
+  const visible = state.identity === identity ? state : { tickets: [], loading: true, error: '' };
+  return {
+    tickets: visible.tickets,
+    loading: visible.loading,
+    error: visible.error,
+    refresh,
+    create,
+    followUp,
   };
-  const followUp = async (id, message) => {
-    await sendFollowUp(user, id, message);
-    await refresh();
-  };
-  return { tickets, error, loading, refresh, create, followUp };
 }

@@ -1,6 +1,3 @@
-import React from 'react';
-import { legacyEvent } from '../../../app/legacyEvents.js';
-
 export default function PublicHomePage() {
   return (
     <div id="landing">
@@ -21,34 +18,43 @@ export default function PublicHomePage() {
         <div className="l-nav-links">
           <a
             href="#"
-            onClick={event => legacyEvent("event.preventDefault();showPage('find-events');", event)}
+            onClick={domEvent => {
+              domEvent.preventDefault();
+              window.showPage('find-events');
+            }}
           >
             Find Events
           </a>
           <a
             href="#"
-            onClick={event => legacyEvent("event.preventDefault();showPage('gallery');", event)}
+            onClick={domEvent => {
+              domEvent.preventDefault();
+              window.showPage('gallery');
+            }}
           >
             Gallery
           </a>
           <a
             href="#"
-            onClick={event => legacyEvent("event.preventDefault();showPage('about');", event)}
+            onClick={domEvent => {
+              domEvent.preventDefault();
+              window.showPage('about');
+            }}
           >
             About Us
           </a>
           <a
             href="#"
-            onClick={event => legacyEvent("event.preventDefault();showPage('contact');", event)}
+            onClick={domEvent => {
+              domEvent.preventDefault();
+              window.showPage('contact');
+            }}
           >
             Contact
           </a>
         </div>
         <div className="l-nav-actions">
-          <button
-            className="btn btn-ghost btn-sm"
-            onClick={event => legacyEvent("gotoLogin('attendee')", event)}
-          >
+          <button className="btn btn-ghost btn-sm" onClick={() => window.gotoLogin('attendee')}>
             Sign In
           </button>
         </div>
@@ -73,32 +79,52 @@ export default function PublicHomePage() {
           <div className="hero-btns">
             <button
               className="btn btn-primary btn-lg"
-              onClick={event => legacyEvent("showPage('find-events')", event)}
+              onClick={() => window.showPage('find-events')}
             >
               🎟️ Explore Events
             </button>
           </div>
           <div className="hero-stats">
             <div className="hero-stat">
-              <div className="hero-stat-val" style={{ color: 'var(--accent)' }}>
+              <div
+                className="hero-stat-val"
+                style={{
+                  color: 'var(--accent)',
+                }}
+              >
                 2,400+
               </div>
               <div className="hero-stat-lbl">Events Managed</div>
             </div>
             <div className="hero-stat">
-              <div className="hero-stat-val" style={{ color: 'var(--green)' }}>
+              <div
+                className="hero-stat-val"
+                style={{
+                  color: 'var(--green)',
+                }}
+              >
                 98K+
               </div>
               <div className="hero-stat-lbl">Attendees Registered</div>
             </div>
             <div className="hero-stat">
-              <div className="hero-stat-val" style={{ color: 'var(--yellow)' }}>
+              <div
+                className="hero-stat-val"
+                style={{
+                  color: 'var(--yellow)',
+                }}
+              >
                 500+
               </div>
               <div className="hero-stat-lbl">Organizers Onboard</div>
             </div>
             <div className="hero-stat">
-              <div className="hero-stat-val" style={{ color: 'var(--blue)' }}>
+              <div
+                className="hero-stat-val"
+                style={{
+                  color: 'var(--blue)',
+                }}
+              >
                 99.8%
               </div>
               <div className="hero-stat-lbl">Platform Uptime</div>
@@ -114,7 +140,10 @@ export default function PublicHomePage() {
           <div className="feat-card">
             <div
               className="feat-icon"
-              style={{ background: 'var(--accent-dim)', color: 'var(--accent)' }}
+              style={{
+                background: 'var(--accent-dim)',
+                color: 'var(--accent)',
+              }}
             >
               📋
             </div>
@@ -128,7 +157,10 @@ export default function PublicHomePage() {
           <div className="feat-card">
             <div
               className="feat-icon"
-              style={{ background: 'var(--blue-dim)', color: 'var(--blue)' }}
+              style={{
+                background: 'var(--blue-dim)',
+                color: 'var(--blue)',
+              }}
             >
               ✅
             </div>
@@ -141,7 +173,10 @@ export default function PublicHomePage() {
           <div className="feat-card">
             <div
               className="feat-icon"
-              style={{ background: 'var(--yellow-dim)', color: 'var(--yellow)' }}
+              style={{
+                background: 'var(--yellow-dim)',
+                color: 'var(--yellow)',
+              }}
             >
               💳
             </div>
@@ -154,7 +189,10 @@ export default function PublicHomePage() {
           <div className="feat-card">
             <div
               className="feat-icon"
-              style={{ background: 'var(--orange-dim)', color: 'var(--orange)' }}
+              style={{
+                background: 'var(--orange-dim)',
+                color: 'var(--orange)',
+              }}
             >
               📊
             </div>
@@ -167,7 +205,10 @@ export default function PublicHomePage() {
           <div className="feat-card">
             <div
               className="feat-icon"
-              style={{ background: 'var(--red-dim)', color: 'var(--red)' }}
+              style={{
+                background: 'var(--red-dim)',
+                color: 'var(--red)',
+              }}
             >
               🔔
             </div>
@@ -183,15 +224,17 @@ export default function PublicHomePage() {
         <div className="text-center">
           <div className="l-eyebrow">Role-Based Access Control</div>
           <h2 className="l-heading">Built for Every Stakeholder</h2>
-          <p className="l-desc" style={{ margin: '0 auto' }}>
+          <p
+            className="l-desc"
+            style={{
+              margin: '0 auto',
+            }}
+          >
             Each actor gets a tailored interface with precisely the permissions they need.
           </p>
         </div>
         <div className="roles-grid">
-          <div
-            className="role-card"
-            onClick={event => legacyEvent("gotoLogin('superuser')", event)}
-          >
+          <div className="role-card" onClick={() => window.gotoLogin('superuser')}>
             <div className="role-card-emoji">🛡️</div>
             <div className="role-card-title">Super Admin</div>
             <p className="role-card-desc">
@@ -199,10 +242,7 @@ export default function PublicHomePage() {
             </p>
             <span className="badge badge-red">Full Control</span>
           </div>
-          <div
-            className="role-card"
-            onClick={event => legacyEvent("gotoLogin('organizer')", event)}
-          >
+          <div className="role-card" onClick={() => window.gotoLogin('organizer')}>
             <div className="role-card-emoji">🎯</div>
             <div className="role-card-title">Event Organizer</div>
             <p className="role-card-desc">
@@ -211,7 +251,7 @@ export default function PublicHomePage() {
             </p>
             <span className="badge badge-purple">Operational</span>
           </div>
-          <div className="role-card" onClick={event => legacyEvent("gotoLogin('client')", event)}>
+          <div className="role-card" onClick={() => window.gotoLogin('client')}>
             <div className="role-card-emoji">💼</div>
             <div className="role-card-title">Client</div>
             <p className="role-card-desc">
@@ -220,7 +260,7 @@ export default function PublicHomePage() {
             </p>
             <span className="badge badge-yellow">Requestor</span>
           </div>
-          <div className="role-card" onClick={event => legacyEvent("gotoLogin('attendee')", event)}>
+          <div className="role-card" onClick={() => window.gotoLogin('attendee')}>
             <div className="role-card-emoji">🎟️</div>
             <div className="role-card-title">Attendee</div>
             <p className="role-card-desc">
@@ -229,10 +269,7 @@ export default function PublicHomePage() {
             </p>
             <span className="badge badge-green">End User</span>
           </div>
-          <div
-            className="role-card"
-            onClick={event => legacyEvent("gotoLogin('employee1')", event)}
-          >
+          <div className="role-card" onClick={() => window.gotoLogin('employee1')}>
             <div className="role-card-emoji">👔</div>
             <div className="role-card-title">Employee</div>
             <p className="role-card-desc">
@@ -246,8 +283,18 @@ export default function PublicHomePage() {
       <section className="l-section l-section-alt" id="how">
         <div className="l-eyebrow">How It Works</div>
         <h2 className="l-heading">Simple. Fast. Reliable.</h2>
-        <div className="grid-3" style={{ marginTop: '48px', gap: '28px' }}>
-          <div style={{ textAlign: 'center' }}>
+        <div
+          className="grid-3"
+          style={{
+            marginTop: '48px',
+            gap: '28px',
+          }}
+        >
+          <div
+            style={{
+              textAlign: 'center',
+            }}
+          >
             <div
               style={{
                 width: '64px',
@@ -269,7 +316,11 @@ export default function PublicHomePage() {
               Clients submit event requests. Organizers create and plan events with full detail.
             </p>
           </div>
-          <div style={{ textAlign: 'center' }}>
+          <div
+            style={{
+              textAlign: 'center',
+            }}
+          >
             <div
               style={{
                 width: '64px',
@@ -292,7 +343,11 @@ export default function PublicHomePage() {
               codes.
             </p>
           </div>
-          <div style={{ textAlign: 'center' }}>
+          <div
+            style={{
+              textAlign: 'center',
+            }}
+          >
             <div
               style={{
                 width: '64px',
@@ -318,23 +373,32 @@ export default function PublicHomePage() {
       </section>
       <section
         className="l-section"
-        style={{ textAlign: 'center', paddingTop: '80px', paddingBottom: '80px' }}
+        style={{
+          textAlign: 'center',
+          paddingTop: '80px',
+          paddingBottom: '80px',
+        }}
       >
         <h2 className="l-heading">Ready to Transform Your Events?</h2>
-        <p className="l-desc" style={{ margin: '0 auto 32px' }}>
+        <p
+          className="l-desc"
+          style={{
+            margin: '0 auto 32px',
+          }}
+        >
           Join thousands of organizers and attendees already using EventFlow.
         </p>
-        <div style={{ display: 'flex', gap: '14px', justifyContent: 'center' }}>
-          <button
-            className="btn btn-primary btn-lg"
-            onClick={event => legacyEvent("gotoLogin('organizer')", event)}
-          >
+        <div
+          style={{
+            display: 'flex',
+            gap: '14px',
+            justifyContent: 'center',
+          }}
+        >
+          <button className="btn btn-primary btn-lg" onClick={() => window.gotoLogin('organizer')}>
             Start Organizing →
           </button>
-          <button
-            className="btn btn-ghost btn-lg"
-            onClick={event => legacyEvent("gotoLogin('attendee')", event)}
-          >
+          <button className="btn btn-ghost btn-lg" onClick={() => window.gotoLogin('attendee')}>
             Browse Events
           </button>
         </div>
@@ -363,7 +427,11 @@ export default function PublicHomePage() {
           </span>
           <div
             className="small"
-            style={{ color: 'var(--text2)', lineHeight: '1.6', marginBottom: '8px' }}
+            style={{
+              color: 'var(--text2)',
+              lineHeight: '1.6',
+              marginBottom: '8px',
+            }}
           >
             <div>📧 support@eventflow.com</div>
             <div>📞 +1 (555) 123-4567</div>
@@ -373,27 +441,54 @@ export default function PublicHomePage() {
         <span className="small">
           © 2026 EventFlow Inc. — Event Registration &amp; Attendee Management Platform
         </span>
-        <div style={{ display: 'flex', gap: '16px' }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: '16px',
+          }}
+        >
           <a
             className="small"
             href="#"
-            style={{ color: 'var(--text3)' }}
-            onClick={event => legacyEvent("event.preventDefault();showPage('contact');", event)}
+            style={{
+              color: 'var(--text3)',
+            }}
+            onClick={domEvent => {
+              domEvent.preventDefault();
+              window.showPage('contact');
+            }}
           >
             Contact Us
           </a>
           <a
             className="small"
             href="#"
-            style={{ color: 'var(--text3)' }}
-            onClick={event => legacyEvent("event.preventDefault();showPage('about');", event)}
+            style={{
+              color: 'var(--text3)',
+            }}
+            onClick={domEvent => {
+              domEvent.preventDefault();
+              window.showPage('about');
+            }}
           >
             About
           </a>
-          <a className="small" href="#" style={{ color: 'var(--text3)' }}>
+          <a
+            className="small"
+            href="#"
+            style={{
+              color: 'var(--text3)',
+            }}
+          >
             Privacy
           </a>
-          <a className="small" href="#" style={{ color: 'var(--text3)' }}>
+          <a
+            className="small"
+            href="#"
+            style={{
+              color: 'var(--text3)',
+            }}
+          >
             Terms
           </a>
         </div>

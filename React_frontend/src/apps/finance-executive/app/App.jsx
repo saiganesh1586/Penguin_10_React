@@ -9,45 +9,27 @@ import AboutPage from '../../landing/pages/AboutPage.jsx';
 import ContactPage from '../../landing/pages/ContactPage.jsx';
 import React from 'react';
 import LegacyRuntime from '../../../app/LegacyRuntime.jsx';
-import { legacyEvent } from '../../../app/legacyEvents.js';
 import runtime from './runtime.js?raw';
 import portalApi from '../api/portal-api.js?raw';
 import portalState from '../context/portal-state.js?raw';
-import rawDashboardPage from '../pages/DashboardPage.jsx?raw';
-import rawFinancePage from '../pages/FinancePage.jsx?raw';
-import rawReportsPage from '../pages/ReportsPage.jsx?raw';
-import rawNotificationsPage from '../pages/NotificationsPage.jsx?raw';
-import rawProfilePage from '../pages/ProfilePage.jsx?raw';
-import rawSettingsPage from '../pages/SettingsPage.jsx?raw';
 import financeSource from './finance-workspace.js?raw';
 import '../styles/finance-executive.css';
-// Page components retain their existing HTML renderers inside these markers.
-// Extract only that block so imports and the React wrapper stay out of the browser script.
-function pageRuntime(pageSource) {
-  const startMarker = '/* PORTAL_RUNTIME_START */';
-  const endMarker = '/* PORTAL_RUNTIME_END */';
-  const startIndex = pageSource.indexOf(startMarker);
-  const endIndex = pageSource.indexOf(endMarker);
-  if (startIndex < 0 || endIndex < startIndex) {
-    throw new Error('Portal page source is incomplete');
-  }
-  return pageSource.slice(startIndex + startMarker.length, endIndex);
-}
-const source = Object.entries({
-  api: portalApi,
-  state: portalState,
-  dashSupportFinance: pageRuntime(rawDashboardPage),
-  pageFinanceCenter: pageRuntime(rawFinancePage),
-  pageOperationalReports: pageRuntime(rawReportsPage),
-  pageNotifications: pageRuntime(rawNotificationsPage),
-  pageProfile: pageRuntime(rawProfilePage),
-  pageSettings: pageRuntime(rawSettingsPage),
-}).reduce((code, [name, section]) => {
-  const marker = `/* PORTAL_SECTION_${name} */`;
-  if (!code.includes(marker)) throw new Error(`Missing portal section: ${name}`);
-  return code.replace(marker, section);
-}, runtime);
+import FinanceExecutivePageContainer, {
+  financeExecutivePageNames,
+} from './FinanceExecutivePageContainer.jsx';
+import createPageBridge from '../../../app/createPageBridge.jsx';
+const financeExecutivePages = createPageBridge(
+  FinanceExecutivePageContainer,
+  financeExecutivePageNames
+);
+const source = runtime
+  .replace('/* PORTAL_SECTION_api */', () => portalApi)
+  .replace('/* PORTAL_SECTION_state */', () => portalState);
 export default function FinanceExecutiveWorkspace() {
+  if (typeof window !== 'undefined') {
+    window.EventFlowFinanceExecutivePages = financeExecutivePages;
+    window.EventFlowReactPages = financeExecutivePages;
+  }
   return (
     <>
       <PublicHomePage />
@@ -104,16 +86,10 @@ export default function FinanceExecutiveWorkspace() {
               User
             </div>
             <div className="topbar-right">
-              <button
-                className="notif-trigger"
-                onClick={event => legacyEvent("goNav('notifications')", event)}
-              >
+              <button className="notif-trigger" onClick={() => window.goNav('notifications')}>
                 🔔<span className="notif-badge" id="notif-count-dot"></span>
               </button>
-              <button
-                className="btn btn-ghost btn-sm"
-                onClick={event => legacyEvent('doLogout()', event)}
-              >
+              <button className="btn btn-ghost btn-sm" onClick={() => window.doLogout()}>
                 Sign Out
               </button>
             </div>
@@ -121,18 +97,11 @@ export default function FinanceExecutiveWorkspace() {
         }
       />
 
-      <div
-        className="overlay"
-        id="modal-overlay"
-        onClick={event => legacyEvent('closeModalOnBg(event)', event)}
-      >
+      <div className="overlay" id="modal-overlay" onClick={event => window.closeModalOnBg(event)}>
         <div className="modal-box" id="modal-box">
           <div className="modal-head">
             <span className="modal-title" id="modal-title"></span>
-            <button
-              className="modal-close-btn"
-              onClick={event => legacyEvent('closeModal()', event)}
-            >
+            <button className="modal-close-btn" onClick={() => window.closeModal()}>
               ✕
             </button>
           </div>
@@ -144,7 +113,7 @@ export default function FinanceExecutiveWorkspace() {
       <div
         className="overlay"
         id="confirm-overlay"
-        onClick={event => legacyEvent('closeConfirmOnBg(event)', event)}
+        onClick={event => window.closeConfirmOnBg(event)}
       >
         <div
           className="modal-box"
@@ -156,10 +125,7 @@ export default function FinanceExecutiveWorkspace() {
             <span className="modal-title" id="confirm-title">
               Confirm Action
             </span>
-            <button
-              className="modal-close-btn"
-              onClick={event => legacyEvent('closeConfirm()', event)}
-            >
+            <button className="modal-close-btn" onClick={() => window.closeConfirm()}>
               ✕
             </button>
           </div>
@@ -174,17 +140,10 @@ export default function FinanceExecutiveWorkspace() {
             ></p>
           </div>
           <div className="modal-foot">
-            <button
-              className="btn btn-ghost"
-              onClick={event => legacyEvent('closeConfirm()', event)}
-            >
+            <button className="btn btn-ghost" onClick={() => window.closeConfirm()}>
               Cancel
             </button>
-            <button
-              className="btn btn-danger"
-              id="confirm-ok"
-              onClick={event => legacyEvent('runConfirm()', event)}
-            >
+            <button className="btn btn-danger" id="confirm-ok" onClick={() => window.runConfirm()}>
               Confirm
             </button>
           </div>
@@ -194,7 +153,7 @@ export default function FinanceExecutiveWorkspace() {
       <div
         className="drawer-overlay"
         id="drawer-overlay"
-        onClick={event => legacyEvent('closeDrawer()', event)}
+        onClick={() => window.closeDrawer()}
       ></div>
 
       <div className="drawer" id="drawer">
@@ -202,10 +161,7 @@ export default function FinanceExecutiveWorkspace() {
           <span className="h4" id="drawer-title">
             Details
           </span>
-          <button
-            className="modal-close-btn"
-            onClick={event => legacyEvent('closeDrawer()', event)}
-          >
+          <button className="modal-close-btn" onClick={() => window.closeDrawer()}>
             ✕
           </button>
         </div>

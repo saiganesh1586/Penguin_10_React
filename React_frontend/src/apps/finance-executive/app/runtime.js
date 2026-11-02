@@ -50,6 +50,7 @@ function renderUsersTable(containerId, users = null) {
       </tbody>
     </table>
   `;
+  globalThis.window?.EventFlowFinanceExecutivePages?.clear(container);
   container.innerHTML = html;
 }
 function renderEventsTable(containerId, events = null) {
@@ -97,6 +98,7 @@ function renderEventsTable(containerId, events = null) {
       </tbody>
     </table>
   `;
+  globalThis.window?.EventFlowFinanceExecutivePages?.clear(container);
   container.innerHTML = html;
 }
 function renderRegistrationsTable(containerId, registrations = null) {
@@ -148,6 +150,7 @@ function renderRegistrationsTable(containerId, registrations = null) {
       </tbody>
     </table>
   `;
+  globalThis.window?.EventFlowFinanceExecutivePages?.clear(container);
   container.innerHTML = html;
 }
 
@@ -227,6 +230,7 @@ function renderEventCards(containerId, events = null, isAttendee = false) {
         .join('')}
     </div>
   `;
+  globalThis.window?.EventFlowFinanceExecutivePages?.clear(container);
   container.innerHTML = html;
 }
 
@@ -273,6 +277,7 @@ function renderNotificationsPanel(containerId) {
       }
     </div>
   `;
+  globalThis.window?.EventFlowFinanceExecutivePages?.clear(container);
   container.innerHTML = html;
 
   // Update notification badge
@@ -644,6 +649,7 @@ function renderQRCanvas(registrationId, containerId) {
   ctx.font = '10px Arial';
   ctx.textAlign = 'center';
   ctx.fillText(String(registrationId).substring(0, 8), canvas.width / 2, canvas.height - 10);
+  globalThis.window?.EventFlowFinanceExecutivePages?.clear(container);
   container.innerHTML = '';
   container.appendChild(canvas);
 }
@@ -3162,6 +3168,7 @@ function initApp() {
   g('sb-name').textContent = isDepartmentEmployee() ? displayRole : CU.name;
   g('sb-role-lbl').textContent = isDepartmentEmployee() ? 'Employee workspace' : displayRole;
   if (CU.avatarImage) {
+    globalThis.window?.EventFlowFinanceExecutivePages?.clear(g('sb-av'));
     g('sb-av').innerHTML = `<img src="${CU.avatarImage}" alt="${
       CU.name
     }" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.parentElement.textContent='${
@@ -3261,6 +3268,7 @@ function buildEmployeeNav(employeeType) {
       ],
     }[employeeType] || [];
   const unread = visibleNotifications().filter(n => !n.read).length;
+  globalThis.window?.EventFlowFinanceExecutivePages?.clear(g('sb-nav'));
   g('sb-nav').innerHTML =
     `<div class="sb-section-lbl">Menu</div>` +
     nav
@@ -3307,6 +3315,7 @@ function sendContactMessage() {
 function buildNav(role) {
   const items = NAV[role] || [];
   const unread = DB.notifications.filter(notification => !notification.read).length;
+  globalThis.window?.EventFlowFinanceExecutivePages?.clear(g('sb-nav'));
   g('sb-nav').innerHTML =
     `<div class="sb-section-lbl">Menu</div>` +
     items
@@ -3434,9 +3443,20 @@ async function renderPageContent(pg) {
   const r = CU.role;
   if (pg === 'customer-support') {
     if (!window.EventFlowSupport.canRequestSupport(CU)) {
-      element.innerHTML = pageSettings();
+      if (globalThis.window?.EventFlowFinanceExecutivePages?.hasPage('settings')) {
+        window.EventFlowFinanceExecutivePages.render(
+          element,
+          'settings',
+          window.EventFlowFinanceExecutiveRuntime.snapshot({})
+        );
+      } else {
+        globalThis.window?.EventFlowFinanceExecutivePages?.clear(element);
+        globalThis.window?.EventFlowFinanceExecutivePages?.clear(element);
+        element.innerHTML = pageSettings();
+      }
       return;
     }
+    globalThis.window?.EventFlowFinanceExecutivePages?.clear(element);
     element.innerHTML = await window.EventFlowSupport.render(CU);
     window.EventFlowSupport.bind(element, CU, () => goNav('settings'));
     return;
@@ -3486,6 +3506,7 @@ async function renderPageContent(pg) {
         ],
       }[CU.employeeType] || [];
     if (!allowed.includes(pg)) {
+      globalThis.window?.EventFlowFinanceExecutivePages?.clear(element);
       element.innerHTML = `<div class="empty"><div class="empty-title">Access restricted</div><p class="empty-desc">This department does not have access to this area.</p></div>`;
       return;
     }
@@ -3503,21 +3524,26 @@ async function renderPageContent(pg) {
   // Restrict superuser to only the 3 analytical subpages
   if (r === 'superuser') {
     if (pg === 'dashboard') {
+      globalThis.window?.EventFlowFinanceExecutivePages?.clear(element);
       element.innerHTML = dashAdmin();
       return;
     } else if (pg === 'event-reports' || pg === 'events') {
+      globalThis.window?.EventFlowFinanceExecutivePages?.clear(element);
       element.innerHTML = pageEventReports();
       return;
     } else if (pg === 'revenue-reports' || pg === 'reports' || pg === 'employee-stats') {
+      globalThis.window?.EventFlowFinanceExecutivePages?.clear(element);
       element.innerHTML = pageRevenueReports();
       return;
     } else {
+      globalThis.window?.EventFlowFinanceExecutivePages?.clear(element);
       element.innerHTML = pageUserReports();
       return;
     }
   }
   switch (pg) {
     case 'dashboard':
+      globalThis.window?.EventFlowFinanceExecutivePages?.clear(element);
       element.innerHTML = isDepartmentEmployee()
         ? dashDepartmentEmployee()
         : (
@@ -3529,15 +3555,18 @@ async function renderPageContent(pg) {
           )();
       break;
     case 'registrations':
+      globalThis.window?.EventFlowFinanceExecutivePages?.clear(element);
       element.innerHTML = pageRegistrationsForEmployee();
       break;
     case 'events':
+      globalThis.window?.EventFlowFinanceExecutivePages?.clear(element);
       element.innerHTML =
         isDepartmentEmployee() && CU.employeeType === 'EVENT_OPERATIONS'
           ? pageEventOpsEvents()
           : pageEvents();
       break;
     case 'event-requests':
+      globalThis.window?.EventFlowFinanceExecutivePages?.clear(element);
       element.innerHTML =
         isDepartmentEmployee() && CU.employeeType === 'EVENT_OPERATIONS'
           ? pageEventOperationsWorkspace()
@@ -3551,9 +3580,11 @@ async function renderPageContent(pg) {
         goNav('finance');
         return;
       }
+      globalThis.window?.EventFlowFinanceExecutivePages?.clear(element);
       element.innerHTML = pageEventRequests();
       break;
     case 'finance':
+      globalThis.window?.EventFlowFinanceExecutivePages?.clear(element);
       element.innerHTML =
         isDepartmentEmployee() &&
         (CU.employeeType === 'SUPPORT_FINANCE' || CU.employeeType === 'FINANCE_EXECUTIVE')
@@ -3561,18 +3592,22 @@ async function renderPageContent(pg) {
           : pageRevenueReports();
       break;
     case 'request-status':
+      globalThis.window?.EventFlowFinanceExecutivePages?.clear(element);
       element.innerHTML = pageRequestStatus();
       break;
     case 'attendees':
+      globalThis.window?.EventFlowFinanceExecutivePages?.clear(element);
       element.innerHTML =
         isDepartmentEmployee() && CU.employeeType === 'REGISTRATION_VERIFICATION'
           ? pageUserManagement()
           : pageAttendees();
       break;
     case 'attendeeVerification':
+      globalThis.window?.EventFlowFinanceExecutivePages?.clear(element);
       element.innerHTML = pageAttendeeVerification();
       break;
     case 'reports':
+      globalThis.window?.EventFlowFinanceExecutivePages?.clear(element);
       element.innerHTML =
         isDepartmentEmployee() && CU.employeeType === 'REGISTRATION_VERIFICATION'
           ? pageRegVerificationReports()
@@ -3584,37 +3619,75 @@ async function renderPageContent(pg) {
           : pageReports();
       break;
     case 'browse-events':
+      globalThis.window?.EventFlowFinanceExecutivePages?.clear(element);
       element.innerHTML = pageBrowseEvents();
       break;
     case 'my-tickets':
+      globalThis.window?.EventFlowFinanceExecutivePages?.clear(element);
       element.innerHTML = pageMyTickets();
       break;
     case 'find-organizers':
+      globalThis.window?.EventFlowFinanceExecutivePages?.clear(element);
       element.innerHTML = pageFindOrganizers();
       break;
     case 'upcoming-events':
+      globalThis.window?.EventFlowFinanceExecutivePages?.clear(element);
       element.innerHTML = pageUpcomingEvents();
       break;
     case 'completed-events':
+      globalThis.window?.EventFlowFinanceExecutivePages?.clear(element);
       element.innerHTML = pageCompletedEvents();
       break;
     case 'ongoing-events':
+      globalThis.window?.EventFlowFinanceExecutivePages?.clear(element);
       element.innerHTML = pageOngoingEvents();
       break;
     case 'notifications':
-      element.innerHTML = pageNotifications();
+      if (globalThis.window?.EventFlowFinanceExecutivePages?.hasPage('notifications')) {
+        window.EventFlowFinanceExecutivePages.render(
+          element,
+          'notifications',
+          window.EventFlowFinanceExecutiveRuntime.snapshot({})
+        );
+      } else {
+        globalThis.window?.EventFlowFinanceExecutivePages?.clear(element);
+        globalThis.window?.EventFlowFinanceExecutivePages?.clear(element);
+        element.innerHTML = pageNotifications();
+      }
       break;
     case 'profile':
-      element.innerHTML = pageProfile();
+      if (globalThis.window?.EventFlowFinanceExecutivePages?.hasPage('profile')) {
+        window.EventFlowFinanceExecutivePages.render(
+          element,
+          'profile',
+          window.EventFlowFinanceExecutiveRuntime.snapshot({})
+        );
+      } else {
+        globalThis.window?.EventFlowFinanceExecutivePages?.clear(element);
+        globalThis.window?.EventFlowFinanceExecutivePages?.clear(element);
+        element.innerHTML = pageProfile();
+      }
       break;
     case 'settings':
-      element.innerHTML = pageSettings();
+      if (globalThis.window?.EventFlowFinanceExecutivePages?.hasPage('settings')) {
+        window.EventFlowFinanceExecutivePages.render(
+          element,
+          'settings',
+          window.EventFlowFinanceExecutiveRuntime.snapshot({})
+        );
+      } else {
+        globalThis.window?.EventFlowFinanceExecutivePages?.clear(element);
+        globalThis.window?.EventFlowFinanceExecutivePages?.clear(element);
+        element.innerHTML = pageSettings();
+      }
       window.EventFlowSupport.addSettingsEntry(element, () => goNav('customer-support'), CU);
       break;
     case 'users':
+      globalThis.window?.EventFlowFinanceExecutivePages?.clear(element);
       element.innerHTML = pageUsers();
       break;
     default:
+      globalThis.window?.EventFlowFinanceExecutivePages?.clear(element);
       element.innerHTML = `<div class="empty"><div class="empty-icon">🚧</div><div class="empty-title">Page not found</div><p class="empty-desc">The requested page "${pg}" could not be loaded.</p></div>`;
   }
 }
@@ -4846,8 +4919,171 @@ function supportStatusBadge(status) {
     }[status] || 'gray'
   );
 }
-/* PORTAL_SECTION_dashSupportFinance */
+function dashSupportFinance() {
+  const transactions = Array.isArray(DB.financeTransactions) ? DB.financeTransactions : [];
+  const refunds = Array.isArray(DB.financeRefunds) ? DB.financeRefunds : [];
+  const reports = Array.isArray(DB.operationalReports) ? DB.operationalReports : [];
+  const paidRegistrations = (DB.registrations || []).filter(
+    registration =>
+      String(registration.payment || '').toLowerCase() === 'paid' &&
+      ['confirmed', 'verified'].includes(String(registration.status || '').toLowerCase())
+  );
+  const successfulTransactions = paidRegistrations.length
+    ? paidRegistrations
+    : transactions.filter(
+        tx => String(tx.status || '').toLowerCase() === 'successful' && Number(tx.amount || 0) > 0
+      );
+  const commissionRate = 0.15;
+  const totalRevenue = successfulTransactions.reduce(
+    (sum, item) => sum + Number(item.amount || 0),
+    0
+  );
+  const platformCommission = totalRevenue * commissionRate;
+  const organizerPayout = totalRevenue - platformCommission;
+  const pendingRefunds = refunds.filter(
+    item => item.status === 'Requested' || item.status === 'Processing'
+  );
+  const todayStr = today();
+  const todayTxns = transactions.filter(item => item.date === todayStr);
 
+  // Financial activity feed only (Transactions, Refunds, Reports)
+  const txnActivities = transactions.map(item => ({
+    label: `Payment Transaction ${item.id}`,
+    detail: `Amount: ₹${Number(item.amount || 0).toLocaleString('en-IN')} · Status: ${
+      item.status
+    } · Date: ${item.date}`,
+    icon: '💳',
+    date: item.date,
+  }));
+  const refActivities = refunds.map(item => ({
+    label: `Refund Request ${item.id}`,
+    detail: `Amount: ₹${Number(item.amount || 0).toLocaleString('en-IN')} · Status: ${
+      item.status
+    } · Reason: ${item.reason}`,
+    icon: '↩️',
+    date: item.date,
+  }));
+  const rptActivities = reports
+    .filter(
+      report =>
+        report.type &&
+        (report.type.includes('Finance') ||
+          report.type.includes('Revenue') ||
+          report.type.includes('Reconciliation'))
+    )
+    .map(item => ({
+      label: `Report: ${item.title}`,
+      detail: `${item.type} · ${item.status} · Updated: ${item.updated}`,
+      icon: '📊',
+      date: item.updated,
+    }));
+  const financialActivities = [
+    ...txnActivities.slice(0, 3),
+    ...refActivities.slice(0, 3),
+    ...rptActivities.slice(0, 2),
+  ].slice(0, 6);
+  return `
+        <div class="page-hd">
+          <div class="page-hd-left">
+            <div class="page-title">Finance Executive Dashboard</div>
+            <div class="page-sub">Financial operations, registration revenue monitoring, platform commissions, organizer payouts, and refund reconciliations for ${
+              CU.name
+            }.</div>
+          </div>
+          <div class="page-hd-right" style="display:flex;gap:10px">
+            <button class="btn btn-ghost" onclick="goNav('reports')">📋 View Reports</button>
+            <button class="btn btn-primary" onclick="goNav('finance')">💳 Open Finance Center</button>
+          </div>
+        </div>
+
+        <div class="grid-4 mb-20">
+          <div class="stat-card" style="cursor:pointer;border-left:4px solid var(--green)" onclick="goNav('finance')">
+            <div class="stat-icon" style="background:var(--green-dim);color:var(--green)">💰</div>
+            <div class="stat-value" style="color:var(--green)">₹${totalRevenue.toLocaleString(
+              'en-IN'
+            )}</div>
+            <div class="stat-label">Total Revenue</div>
+            <div class="stat-sub neutral">${successfulTransactions.length} successful payments</div>
+          </div>
+          <div class="stat-card" style="cursor:pointer;border-left:4px solid var(--accent)" onclick="switchFinanceTab('transactions')">
+            <div class="stat-icon" style="background:var(--accent-dim);color:var(--accent)">💳</div>
+            <div class="stat-value" style="color:var(--accent)">${transactions.length}</div>
+            <div class="stat-label">Total Transactions</div>
+            <div class="stat-sub neutral">${todayTxns.length} processed today</div>
+          </div>
+          <div class="stat-card" style="cursor:pointer;border-left:4px solid var(--yellow)" onclick="switchFinanceTab('refunds')">
+            <div class="stat-icon" style="background:var(--yellow-dim);color:var(--yellow)">↩️</div>
+            <div class="stat-value" style="color:var(--yellow)">${pendingRefunds.length}</div>
+            <div class="stat-label">Refunds Awaiting Review</div>
+            <div class="stat-sub neutral">${refunds.length} total refund records</div>
+          </div>
+          <div class="stat-card" style="cursor:pointer;border-left:4px solid var(--purple)" onclick="goNav('finance')">
+            <div class="stat-icon" style="background:var(--purple-dim);color:var(--purple)">📈</div>
+            <div class="stat-value" style="color:var(--purple)">₹${platformCommission.toLocaleString(
+              'en-IN'
+            )}</div>
+            <div class="stat-label">Platform Commission (15%)</div>
+            <div class="stat-sub neutral">₹${organizerPayout.toLocaleString(
+              'en-IN'
+            )} net organizer payouts</div>
+          </div>
+        </div>
+
+        <div class="grid-2 gap-20">
+          <div class="card">
+            <div class="flex justify-between items-center mb-14">
+              <div class="h4">Quick Finance Navigation</div>
+              <span class="badge badge-purple">Finance Only</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div style="padding:16px;border:1px solid var(--border);border-radius:10px;background:var(--surface2);cursor:pointer;transition:transform .2s" onclick="switchFinanceTab('transactions')">
+                <div style="font-size:24px;margin-bottom:8px">💳</div>
+                <div style="font-weight:700;font-size:14px;color:var(--text)">Transactions Monitor</div>
+                <div class="small muted mt-4">Review all incoming registrations & attendee charges</div>
+              </div>
+              <div style="padding:16px;border:1px solid var(--border);border-radius:10px;background:var(--surface2);cursor:pointer;transition:transform .2s" onclick="switchFinanceTab('refunds')">
+                <div style="font-size:24px;margin-bottom:8px">↩️</div>
+                <div style="font-weight:700;font-size:14px;color:var(--text)">Refunds & Approvals</div>
+                <div class="small muted mt-4">Audit attendee refund requests and payment chargebacks</div>
+              </div>
+            </div>
+            <div class="mt-16" style="padding:14px;border-radius:8px;background:rgba(34,211,165,0.08);border:1px solid rgba(34,211,165,0.2)">
+              <div class="flex justify-between items-center">
+                <div>
+                  <div style="font-weight:600;font-size:13px;color:var(--green)">✓ Super Admin Financial Audit Sync</div>
+                  <div class="small muted">Ledgers automatically reconciled with platform banking services.</div>
+                </div>
+                <button class="btn btn-ghost btn-xs" onclick="goNav('reports')">Audit Reports →</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="flex justify-between items-center mb-14">
+              <div class="h4">Recent Financial Activity</div>
+              <button class="btn btn-ghost btn-xs" onclick="goNav('finance')">View All →</button>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              ${
+                financialActivities
+                  .map(
+                    item => `
+                <div class="flex items-center gap-10" style="padding:10px 0;border-bottom:1px solid var(--border)">
+                  <span style="font-size:20px">${item.icon}</span>
+                  <div style="flex:1">
+                    <div style="font-weight:600;font-size:13px">${item.label}</div>
+                    <div class="small muted">${item.detail}</div>
+                  </div>
+                </div>
+              `
+                  )
+                  .join('') || '<div class="empty">No recent financial activity</div>'
+              }
+            </div>
+          </div>
+        </div>
+      `;
+}
 function pageSupportCenter() {
   setTimeout(() => goNav('finance'), 0);
   return `<div class="card p-24 text-center"><div class="h4 mb-8">Redirecting to Finance Center…</div><p class="muted">Customer support is handled by Support Executive.</p></div>`;
@@ -4865,7 +5101,204 @@ function financeStatusBadge(status) {
     }[status] || 'gray'
   );
 }
-/* PORTAL_SECTION_pageFinanceCenter */
+function pageFinanceCenter() {
+  const tab = sessionStorage.getItem('finance_tab') || 'transactions';
+  const query = (sessionStorage.getItem('finance_query') || '').toLowerCase();
+  const commissionRate = 0.15;
+  const allTransactions = Array.isArray(DB.financeTransactions) ? DB.financeTransactions : [];
+  const refundRecords = Array.isArray(DB.financeRefunds) ? DB.financeRefunds : [];
+  const paidRegistrations = (DB.registrations || []).filter(
+    registration =>
+      String(registration.payment || '').toLowerCase() === 'paid' &&
+      ['confirmed', 'verified'].includes(String(registration.status || '').toLowerCase())
+  );
+  const successfulTransactions = allTransactions.filter(tx => tx.status === 'Successful');
+  const totalRevenue = successfulTransactions.reduce(
+    (sum, item) => sum + Number(item.amount || 0),
+    0
+  );
+  const platformCommission = totalRevenue * commissionRate;
+  const organizerPayout = totalRevenue - platformCommission;
+  const records = tab === 'transactions' ? allTransactions : refundRecords;
+  const filtered = records.filter(item => {
+    const user = DB.users.find(u => String(u.id) === String(item.userId)) || {};
+    const event =
+      DB.events.find(currentEvent => String(currentEvent.id) === String(item.eventId)) || {};
+    const text = `${item.id || ''} ${user.name || ''} ${user.email || ''} ${event.title || ''} ${
+      item.status || ''
+    } ${item.reason || ''}`.toLowerCase();
+    return !query || text.includes(query);
+  });
+  return `
+        <div class="page-hd">
+          <div class="page-hd-left">
+            <div class="page-title">Finance &amp; Revenue</div>
+            <div class="page-sub">Track registration revenue, platform commission, organizer payouts, and customer payment activity.</div>
+          </div>
+        </div>
+
+        <div class="grid-4 mb-20">
+          <div class="stat-card">
+            <div class="stat-icon" style="background:var(--green-dim);color:var(--green)">💰</div>
+            <div class="stat-value" style="color:var(--green)">₹${totalRevenue.toLocaleString(
+              'en-IN'
+            )}</div>
+            <div class="stat-label">Total Revenue</div>
+            <div class="stat-sub neutral">Completed payment records</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:var(--accent-dim);color:var(--accent)">📈</div>
+            <div class="stat-value" style="color:var(--accent)">₹${platformCommission.toLocaleString(
+              'en-IN'
+            )}</div>
+            <div class="stat-label">Platform Commission</div>
+            <div class="stat-sub neutral">Fixed 15% fee share</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:var(--yellow-dim);color:var(--yellow)">💸</div>
+            <div class="stat-value" style="color:var(--yellow)">₹${organizerPayout.toLocaleString(
+              'en-IN'
+            )}</div>
+            <div class="stat-label">Organizer Payouts</div>
+            <div class="stat-sub neutral">Net payout after commission</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:var(--purple-dim);color:var(--purple)">🧾</div>
+            <div class="stat-value" style="color:var(--purple)">${
+              successfulTransactions.length
+            }</div>
+            <div class="stat-label">Successful Transactions</div>
+            <div class="stat-sub neutral">Monitored payment records</div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:20px">
+          <div class="flex justify-between items-center mb-12">
+            <div class="h4">Event-wise Revenue &amp; Commission</div>
+            <div class="small muted">Commission formula: registration fee × 15%</div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Event</th>
+                  <th>Payments</th>
+                  <th>Gross Revenue</th>
+                  <th>Platform Commission</th>
+                  <th>Organizer Payout</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${(() => {
+                  const eventSummary = {};
+                  successfulTransactions.forEach(tx => {
+                    const event = DB.events.find(
+                      currentEvent => String(currentEvent.id) === String(tx.eventId)
+                    ) || {
+                      title: 'Unknown Event',
+                    };
+                    const eventKey = String(tx.eventId || event.title);
+                    if (!eventSummary[eventKey]) {
+                      eventSummary[eventKey] = {
+                        eventTitle: event.title,
+                        attendeeCount: 0,
+                        revenue: 0,
+                      };
+                    }
+                    eventSummary[eventKey].attendeeCount += 1;
+                    eventSummary[eventKey].revenue += Number(tx.amount || 0);
+                  });
+                  const rows = Object.values(eventSummary);
+                  return rows.length
+                    ? rows
+                        .map(row => {
+                          const commission = row.revenue * commissionRate;
+                          const payout = row.revenue - commission;
+                          return `
+                          <tr>
+                            <td>${row.eventTitle}</td>
+                            <td>${row.attendeeCount}</td>
+                            <td style="color:var(--green);font-weight:700">₹${row.revenue}</td>
+                            <td style="color:var(--accent);font-weight:700">₹${commission}</td>
+                            <td style="color:var(--yellow);font-weight:700">₹${payout}</td>
+                          </tr>
+                        `;
+                        })
+                        .join('')
+                    : '<tr><td colspan="5" class="text-center py-20">No successful event revenue data found.</td></tr>';
+                })()}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:6px;margin-bottom:16px">
+          <button class="btn ${
+            tab === 'transactions' ? 'btn-primary' : 'btn-ghost'
+          }" onclick="switchFinanceTab('transactions')">💳 Transactions</button>
+          <button class="btn ${
+            tab === 'refunds' ? 'btn-primary' : 'btn-ghost'
+          }" onclick="switchFinanceTab('refunds')">↩️ Refunds</button>
+        </div>
+
+        <div class="filter-row">
+          <div class="search-box input-group">
+            <span class="input-icon">🔍</span>
+            <input class="form-control" id="finance-query" placeholder="Search finance records..." value="${query}" oninput="refreshFinanceCenter()">
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                ${
+                  tab === 'transactions'
+                    ? '<tr><th>Transaction ID</th><th>User</th><th>Event</th><th>Amount</th><th>Payment Status</th><th>Date</th></tr>'
+                    : '<tr><th>Refund ID</th><th>User</th><th>Event</th><th>Amount</th><th>Reason</th><th>Status</th><th>Date</th></tr>'
+                }
+              </thead>
+              <tbody>
+                ${
+                  filtered
+                    .map(item => {
+                      const user = DB.users.find(u => String(u.id) === String(item.userId)) || {
+                        name: 'Unknown',
+                      };
+                      const event = DB.events.find(
+                        currentEvent => String(currentEvent.id) === String(item.eventId)
+                      ) || {
+                        title: 'Unknown Event',
+                      };
+                      return tab === 'transactions'
+                        ? `<tr><td class="mono">${item.id}</td><td>${user.name}</td><td>${
+                            event.title
+                          }</td><td style="color:var(--green);font-weight:700">₹${
+                            item.amount
+                          }</td><td><span class="badge badge-${financeStatusBadge(item.status)}">${
+                            item.status
+                          }</span></td><td>${item.date}</td></tr>`
+                        : `<tr><td class="mono">${item.id}</td><td>${user.name}</td><td>${
+                            event.title
+                          }</td><td style="color:var(--green);font-weight:700">₹${
+                            item.amount
+                          }</td><td>${
+                            item.reason
+                          }</td><td><span class="badge badge-${financeStatusBadge(item.status)}">${
+                            item.status
+                          }</span></td><td>${item.date}</td></tr>`;
+                    })
+                    .join('') ||
+                  `<tr><td colspan="${
+                    tab === 'transactions' ? 6 : 7
+                  }" class="text-center py-20">No finance records found.</td></tr>`
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+}
 function switchFinanceTab(tab) {
   sessionStorage.setItem('finance_tab', tab);
   renderPage('finance');
@@ -5811,6 +6244,7 @@ window.handleRegReportFileSelect = function (input) {
   if (input.files && input.files[0]) {
     const f = input.files[0];
     if (preview) {
+      globalThis.window?.EventFlowFinanceExecutivePages?.clear(preview);
       preview.innerHTML = `
             <div class="flex items-center justify-between" style="background:var(--accent-dim);border-radius:8px;padding:10px 14px">
               <div style="font-weight:600;color:var(--accent);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📄 ${
@@ -5827,6 +6261,7 @@ window.resetRegReportFileSelect = function () {
   if (input) input.value = '';
   const preview = document.getElementById('rv-file-preview');
   if (preview) {
+    globalThis.window?.EventFlowFinanceExecutivePages?.clear(preview);
     preview.innerHTML = `
           <div style="font-size:24px;margin-bottom:6px">📁</div>
           <div style="font-weight:600;font-size:13.5px">Click to browse or upload report file</div>
@@ -5943,6 +6378,7 @@ function searchEmployeeChanges(query) {
         .includes(changesQuery)
     )
     .slice(0, 12);
+  globalThis.window?.EventFlowFinanceExecutivePages?.clear(g('employee-recent-changes'));
   g('employee-recent-changes').innerHTML = buildEmployeeChanges(changes);
 }
 function completeEmployeeChangeRequest(requestId) {
@@ -7016,6 +7452,7 @@ function refreshDirectoryUserManagement() {
       );
     return u.role !== 'superuser' && matchesRole && matchesQuery;
   });
+  globalThis.window?.EventFlowFinanceExecutivePages?.clear(g('user-management-table'));
   g('user-management-table').innerHTML = buildUserManagementTable(users);
 }
 function openEditUserModal(userId) {
@@ -7176,6 +7613,7 @@ function refreshEvents() {
       );
     }
   );
+  globalThis.window?.EventFlowFinanceExecutivePages?.clear(g('ev-grid'));
   g('ev-grid').innerHTML =
     list.map(e => evCard(e, CU.role)).join('') ||
     `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔍</div><div class="empty-title">No events found</div></div>`;
@@ -7823,6 +8261,7 @@ function refreshBrowse() {
       (!city || event.city === city)
     );
   });
+  globalThis.window?.EventFlowFinanceExecutivePages?.clear(g('browse-grid'));
   g('browse-grid').innerHTML =
     list.map(e => evCard(e, 'attendee')).join('') ||
     `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔍</div><div class="empty-title">No events match</div><p class="empty-desc">Try adjusting your filters.</p></div>`;
@@ -8430,6 +8869,7 @@ function refreshAttendees() {
         (status === 'rejected' && registration.status === 'rejected');
       return matchesSearch && matchesStatus;
     });
+    globalThis.window?.EventFlowFinanceExecutivePages?.clear(g('attendees-tbl'));
     g('attendees-tbl').innerHTML = buildOrganizerAttendeesTbl(regs, selectedEvent, isPrivate);
   } else {
     const q = (g('at-q') || {}).value?.toLowerCase() || '';
@@ -8453,6 +8893,7 @@ function refreshAttendees() {
         (!ci || (ci === 'in' && r.checkedIn) || (ci === 'out' && !r.checkedIn))
       );
     });
+    globalThis.window?.EventFlowFinanceExecutivePages?.clear(g('attendees-tbl'));
     g('attendees-tbl').innerHTML = buildAttendeesTbl(regs);
   }
 }
@@ -8895,6 +9336,7 @@ function viewRequestDetail(reqId) {
     };
   const element = document.getElementById('page-content');
   if (!element) return;
+  globalThis.window?.EventFlowFinanceExecutivePages?.clear(element);
   element.innerHTML = `<div style="padding:28px;background:var(--bg);min-height:100vh">
     <button onclick="renderPage('request-status')" style="display:inline-flex;align-items:center;gap:6px;border:none;background:none;color:var(--text2);font-size:13px;cursor:pointer;margin-bottom:24px;padding:0">&larr; Back to Pending Requests</button>
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
@@ -8984,6 +9426,7 @@ function viewOngoingEventDetail(eventId) {
   );
   const element = document.getElementById('page-content');
   if (!element) return;
+  globalThis.window?.EventFlowFinanceExecutivePages?.clear(element);
   element.innerHTML = `<div style="padding:28px;background:var(--bg)">
     <button onclick="renderPage('request-status')" style="display:flex;align-items:center;gap:6px;border:none;background:none;color:var(--text2);font-size:13px;cursor:pointer;margin-bottom:20px;padding:0">â† Back to Ongoing Events</button>
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
@@ -9150,7 +9593,88 @@ function operationalReportBadge(status) {
     }[status] || 'gray'
   );
 }
-/* PORTAL_SECTION_pageOperationalReports */
+function pageOperationalReports() {
+  const allReports = DB.operationalReports || [];
+  const reports = allReports.filter(r => !r.type || !r.type.includes('Support'));
+  return `
+        <div class="page-hd">
+          <div class="page-hd-left">
+            <div class="page-title">Finance Reports &amp; Analytics</div>
+            <div class="page-sub">Submit finance, commission, and revenue reconciliation reports to Super Admin.</div>
+          </div>
+          <div class="page-hd-right">
+            <button class="btn btn-primary" onclick="openSubmitOperationalReportModal()">📤 Submit Finance Report</button>
+          </div>
+        </div>
+        <div class="grid-3 mb-20">
+          ${[
+            'Finance & Revenue Report',
+            'Commission & Payout Report',
+            'Refunds & Reconciliation Report',
+          ]
+            .map(
+              type => `
+            <div class="stat-card">
+              <div class="stat-icon">${
+                type.includes('Commission') ? '📈' : type.includes('Refund') ? '↩️' : '💳'
+              }</div>
+              <div class="stat-value">${
+                reports.filter(
+                  item =>
+                    item.type === type ||
+                    (type === 'Finance & Revenue Report' && item.type === 'Finance Report')
+                ).length
+              }</div>
+              <div class="stat-label">${type}</div>
+            </div>
+          `
+            )
+            .join('')}
+        </div>
+        <div class="card">
+          <div class="h4 mb-12">Finance Operational Reports</div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Report Title</th>
+                  <th>Category</th>
+                  <th>Owner</th>
+                  <th>Status</th>
+                  <th>Last Updated</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${
+                  reports
+                    .map(
+                      item => `
+                  <tr>
+                    <td><strong>${item.title}</strong></td>
+                    <td><span class="badge badge-purple">${item.type}</span></td>
+                    <td>${item.owner}</td>
+                    <td><span class="badge badge-${operationalReportBadge(item.status)}">${
+                        item.status
+                      }</span></td>
+                    <td>${item.updated}</td>
+                    <td>${
+                      item.status === 'Draft'
+                        ? `<button class="btn btn-primary btn-xs" onclick="submitOperationalReport('${item.id}')">Submit</button>`
+                        : '<span class="small" style="color:var(--green)">✓ Synchronized</span>'
+                    }</td>
+                  </tr>
+                `
+                    )
+                    .join('') ||
+                  '<tr><td colspan="6" class="text-center py-20 muted">No finance reports submitted yet.</td></tr>'
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+}
 function openOperationalReportModal() {
   openModal(
     'Prepare Finance Report',
@@ -9488,6 +10012,7 @@ window.handleReportFileSelect = function (input) {
   if (input.files && input.files[0]) {
     const f = input.files[0];
     if (preview) {
+      globalThis.window?.EventFlowFinanceExecutivePages?.clear(preview);
       preview.innerHTML = `
             <div class="flex items-center justify-between" style="background:var(--accent-dim);border-radius:8px;padding:10px 14px">
               <div style="font-weight:600;color:var(--accent);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📄 ${
@@ -9504,6 +10029,7 @@ window.resetReportFileSelect = function () {
   if (input) input.value = '';
   const preview = document.getElementById('eor-file-preview');
   if (preview) {
+    globalThis.window?.EventFlowFinanceExecutivePages?.clear(preview);
     preview.innerHTML = `
           <div style="font-size:24px;margin-bottom:6px">📁</div>
           <div style="font-weight:600;font-size:13.5px">Click to browse or upload report file</div>
@@ -10353,7 +10879,50 @@ function visibleNotifications() {
     ? DB.notifications.filter(notification => notification.employeeType === 'SUPPORT_FINANCE')
     : DB.notifications;
 }
-/* PORTAL_SECTION_pageNotifications */
+function pageNotifications() {
+  const notifications = visibleNotifications();
+  const unread = notifications.filter(notification => !notification.read).length;
+  return `
+  <div class="page-hd">
+    <div class="page-hd-left"><div class="page-title">Notifications</div><div class="page-sub">${unread} unread notification${
+    unread !== 1 ? 's' : ''
+  }</div></div>
+    <div class="page-hd-right"><button class="btn btn-ghost btn-sm" onclick="markAllRead()">✓ Mark All Read</button></div>
+  </div>
+  <div class="card p-0 notif-panel">
+    ${
+      notifications.length === 0
+        ? `<div class="empty"><div class="empty-icon">🔔</div><div class="empty-title">All caught up!</div></div>`
+        : `
+    ${notifications
+      .map(
+        notification => `
+      <div class="notif-item${notification.read ? '' : ' unread'}" onclick="markNotifRead('${
+          notification.id
+        }')">
+        <div class="notif-icon" style="background:${
+          notification.type === 'success'
+            ? 'var(--green-dim)'
+            : notification.type === 'warning'
+            ? 'var(--yellow-dim)'
+            : notification.type === 'error'
+            ? 'var(--red-dim)'
+            : 'var(--accent-dim)'
+        }">${notification.icon || '🔔'}</div>
+        <div class="notif-content">
+          <div class="notif-title" style="${notification.read ? '' : 'font-weight:600'}">${
+          notification.title
+        }</div>
+          <div class="notif-msg">${notification.msg}</div>
+          <div class="notif-time">${notification.time}</div>
+        </div>
+        ${!notification.read ? `<div class="unread-dot"></div>` : ''}
+      </div>`
+      )
+      .join('')}`
+    }
+  </div>`;
+}
 function markNotifRead(id) {
   const n = DB.notifications.find(notification => notification.id == id);
   if (!n) return;
@@ -10557,13 +11126,187 @@ function pageDepartmentEmployeeProfile() {
     </div>
   </div>`;
 }
-
-/* PORTAL_SECTION_pageProfile */
+function pageProfile() {
+  if (isDepartmentEmployee()) return pageDepartmentEmployeeProfile();
+  const regs =
+    CU.role === 'attendee'
+      ? DB.registrations.filter(registration => registration.attendeeId === CU.id)
+      : [];
+  const myEvs = CU.role === 'organizer' ? DB.events.filter(event => event.organizer === CU.id) : [];
+  const isSF =
+    CU.role === 'employee' &&
+    (CU.employeeType === 'SUPPORT_FINANCE' || CU.employeeType === 'FINANCE_EXECUTIVE');
+  const sfTotalRev = (DB.financeTransactions || []).reduce(
+    (s, t) => s + (Number(t.amount) || 0),
+    0
+  );
+  const sfRefunds = (DB.financeRefunds || []).length;
+  const sfTxnsReviewed = (DB.financeTransactions || []).length;
+  const sfReportsSubmitted = (DB.operationalReports || []).filter(
+    r => r.status === 'Submitted' || r.status === 'Reviewed'
+  ).length;
+  return `
+  <div class="page-hd"><div class="page-hd-left"><div class="page-title">My Profile</div></div><div class="page-hd-right"><button class="btn btn-ghost" onclick="goNav('settings')">✏️ Edit Profile</button></div></div>
+  <div class="profile-banner">
+    ${
+      CU.avatarImage
+        ? `<div class="av av-xl"><img src="${CU.avatarImage}" alt="${
+            CU.name
+          }" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span style="display:none">${
+            CU.avatar || CU.name[0]
+          }</span></div>`
+        : `<div class="av av-xl">${CU.avatar || CU.name[0]}</div>`
+    }
+    <div class="profile-info">
+      <div class="profile-name">${CU.name}</div>
+      <div class="profile-role-tag">${isSF ? 'Finance Executive' : ROLE_LABELS[CU.role]}</div>
+      ${CU.company ? `<div class="small mt-4">${CU.company}</div>` : ''}
+      ${
+        CU.specialization
+          ? `<div class="small mt-4">Specialization: ${CU.specialization}</div>`
+          : ''
+      }
+      ${CU.service ? `<div class="small mt-4">Service: ${CU.service}</div>` : ''}
+      <span class="badge badge-green mt-8">Active Account</span>
+    </div>
+  </div>
+  <div class="grid-2" style="align-items:start;gap:20px">
+    <div class="card">
+      <div class="h4 mb-14">Contact Information</div>
+      <div class="info-row"><span class="info-label">Email</span><span class="info-value">${
+        CU.email
+      }</span></div>
+      <div class="info-row"><span class="info-label">Phone</span><span class="info-value">${
+        CU.phone || 'Not set'
+      }</span></div>
+      <div class="info-row"><span class="info-label">Member Since</span><span class="info-value">${
+        CU.joined || '—'
+      }</span></div>
+      <div class="info-row"><span class="info-label">Role</span><span class="info-value"><span class="badge badge-${
+        ROLE_COLORS[CU.role]
+      }">${isSF ? 'Finance Executive' : CU.role}</span></span></div>
+      ${
+        CU.bio
+          ? `<div class="mt-14"><div class="label mb-8">Bio</div><p style="font-size:13.5px;color:var(--text2);line-height:1.7">${CU.bio}</p></div>`
+          : ''
+      }
+    </div>
+    <div>
+      ${
+        isSF
+          ? `<div class="card mb-16">
+        <div class="h4 mb-14">Work Summary</div>
+        <div class="info-row"><span class="info-label">Total Revenue Tracked</span><span class="info-value" style="color:var(--green);font-weight:700">₹${sfTotalRev.toLocaleString(
+          'en-IN'
+        )}</span></div>
+        <div class="info-row"><span class="info-label">Transactions Monitored</span><span class="info-value" style="color:var(--blue);font-weight:700">${sfTxnsReviewed}</span></div>
+        <div class="info-row"><span class="info-label">Refund Requests Handled</span><span class="info-value" style="color:var(--yellow);font-weight:700">${sfRefunds}</span></div>
+        <div class="info-row"><span class="info-label">Reports Submitted</span><span class="info-value" style="color:var(--purple);font-weight:700">${sfReportsSubmitted}</span></div>
+      </div>`
+          : CU.role === 'attendee'
+          ? `<div class="card mb-16">
+        <div class="h4 mb-14">Activity Summary</div>
+        <div class="info-row"><span class="info-label">Events Registered</span><span class="info-value">${
+          regs.length
+        }</span></div>
+        <div class="info-row"><span class="info-label">Upcoming Events</span><span class="info-value" style="color:var(--accent)">${
+          regs.filter(registration => {
+            const event = DB.events.find(currentEvent => currentEvent.id === registration.eventId);
+            return event && event.status === 'upcoming';
+          }).length
+        }</span></div>
+        <div class="info-row"><span class="info-label">Events Attended</span><span class="info-value" style="color:var(--green)">${
+          regs.filter(registration => registration.checkedIn).length
+        }</span></div>
+        <div class="info-row"><span class="info-label">Total Spent</span><span class="info-value" style="color:var(--green);font-weight:700">₹${regs.reduce(
+          (total, registration) => total + registration.amount,
+          0
+        )}</span></div>
+      </div>`
+          : CU.role === 'organizer'
+          ? `<div class="card mb-16">
+        <div class="h4 mb-14">Event Summary</div>
+        <div class="info-row"><span class="info-label">Total Events</span><span class="info-value">${
+          myEvs.length
+        }</span></div>
+        <div class="info-row"><span class="info-label">Upcoming</span><span class="info-value" style="color:var(--accent)">${
+          myEvs.filter(e => e.status === 'upcoming').length
+        }</span></div>
+        <div class="info-row"><span class="info-label">Completed</span><span class="info-value" style="color:var(--green)">${
+          myEvs.filter(e => e.status === 'completed').length
+        }</span></div>
+      </div>`
+          : ''
+      }
+      <div class="card">
+        <div class="h4 mb-14">Quick Actions</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button class="btn btn-ghost w-full" onclick="goNav('settings')">⚙️ Account Settings</button>
+          <button class="btn btn-danger w-full" onclick="doLogout()">🚪 Sign Out</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
 
 // ════════════════════════════════════════════════
 //  SETTINGS
 // ════════════════════════════════════════════════
-/* PORTAL_SECTION_pageSettings */
+
+function pageSettings() {
+  return `
+  <div class="page-hd"><div class="page-hd-left"><div class="page-title">Account Settings</div><div class="page-sub">Manage your personal information and account preferences.</div></div></div>
+  <div class="grid-2" style="align-items:start;gap:20px">
+    <div class="card card-lg">
+      <div class="h4 mb-20">Personal Information</div>
+      <div class="profile-banner" style="margin-bottom:20px;padding:18px">
+        ${
+          CU.avatarImage
+            ? `<div class="av av-lg"><img src="${CU.avatarImage}" alt="${
+                CU.name
+              }" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span style="display:none">${
+                CU.avatar || CU.name[0]
+              }</span></div>`
+            : `<div class="av av-lg">${CU.avatar || CU.name[0]}</div>`
+        }
+        <div><div style="font-weight:700">${CU.name}</div><div class="small">${
+    ROLE_LABELS[CU.role]
+  }</div></div>
+      </div>
+      <div class="form-group"><label class="form-label">Full Name</label><input class="form-control" id="st-name" value="${
+        CU.name
+      }"></div>
+      <div class="form-group"><label class="form-label">Email Address</label><input class="form-control" id="st-email" value="${
+        CU.email
+      }"></div>
+      <div class="form-group"><label class="form-label">Phone Number</label><input class="form-control" id="st-phone" value="${
+        CU.phone || ''
+      }"></div>
+      <div class="form-group"><label class="form-label">Bio</label><textarea class="form-control" id="st-bio">${
+        CU.bio || ''
+      }</textarea></div>
+      <button class="btn btn-primary w-full" onclick="saveSettings()" style="justify-content:center">Save Changes</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div class="card card-lg">
+        <div class="h4 mb-20">Change Password</div>
+        <div class="form-group"><label class="form-label">Current Password</label><input class="form-control" id="st-cur" type="password" placeholder="Enter current password"></div>
+        <div class="form-group"><label class="form-label">New Password</label><input class="form-control" id="st-new" type="password" placeholder="Min 6 characters"></div>
+        <div class="form-group"><label class="form-label">Confirm New Password</label><input class="form-control" id="st-conf" type="password" placeholder="Re-enter new password"></div>
+        <button class="btn btn-primary w-full" onclick="changePass()" style="justify-content:center">Update Password</button>
+      </div>
+      <div class="card">
+        <div class="h4 mb-16">Preferences</div>
+        <div class="info-row"><span class="info-label">Email Notifications</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+        <div class="info-row"><span class="info-label">SMS Reminders</span><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
+        <div class="info-row"><span class="info-label">Event Recommendations</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+      </div>
+      <div class="card">
+        <button class="btn btn-danger w-full mb-8" onclick="doLogout()" style="justify-content:center">Sign Out</button>
+      </div>
+    </div>
+  </div>`;
+}
 function saveSettings() {
   const name = v('st-name');
   const email = v('st-email');
@@ -11043,8 +11786,10 @@ function pageOngoingEvents() {
 // ════════════════════════════════════════════════
 function openModal(title, body, btns = [], showCancel = true) {
   g('modal-title').textContent = title;
+  globalThis.window?.EventFlowFinanceExecutivePages?.clear(g('modal-body'));
   g('modal-body').innerHTML = body;
   const foot = g('modal-foot');
+  globalThis.window?.EventFlowFinanceExecutivePages?.clear(foot);
   foot.innerHTML = '';
   let hasDismiss = false;
   const handlers = new Set();
@@ -11096,6 +11841,7 @@ function closeModalOnBg(e) {
 // DRAWER
 function openDrawer(title, body) {
   g('drawer-title').textContent = title;
+  globalThis.window?.EventFlowFinanceExecutivePages?.clear(g('drawer-body'));
   g('drawer-body').innerHTML = body;
   g('drawer-overlay').classList.add('open');
   g('drawer').classList.add('open');
@@ -11136,6 +11882,7 @@ function toast(msg, type = 'info') {
   };
   const element = document.createElement('div');
   element.className = `toast ${type}`;
+  globalThis.window?.EventFlowFinanceExecutivePages?.clear(element);
   element.innerHTML = `<span class="toast-icon">${icons[type]}</span><span class="toast-msg">${msg}</span>`;
   g('toasts').appendChild(element);
   setTimeout(() => {
@@ -11547,4 +12294,45 @@ document.addEventListener('DOMContentLoaded', () => {
 window.EventFlowRole = {
   key: 'employee2',
   label: 'Finance Executive',
+};
+
+// React pages read the same normalized data and keep the existing workflow action entry points.
+window.EventFlowFinanceExecutiveRuntime = {
+  snapshot(pageProps = {}) {
+    return {
+      CU: typeof CU === 'undefined' ? undefined : CU,
+      DB: typeof DB === 'undefined' ? undefined : DB,
+      EMPLOYEE_TYPE_LABELS:
+        typeof EMPLOYEE_TYPE_LABELS === 'undefined' ? undefined : EMPLOYEE_TYPE_LABELS,
+      ROLE_COLORS: typeof ROLE_COLORS === 'undefined' ? undefined : ROLE_COLORS,
+      ROLE_LABELS: typeof ROLE_LABELS === 'undefined' ? undefined : ROLE_LABELS,
+      _currentPage: typeof _currentPage === 'undefined' ? undefined : _currentPage,
+      financeCommissionDemo:
+        typeof financeCommissionDemo === 'undefined' ? undefined : financeCommissionDemo,
+      financeData: typeof financeData === 'undefined' ? undefined : financeData,
+      financeDate: typeof financeDate === 'undefined' ? undefined : financeDate,
+      financeFilters: typeof financeFilters === 'undefined' ? undefined : financeFilters,
+      financeMoney: typeof financeMoney === 'undefined' ? undefined : financeMoney,
+      financeQuery: typeof financeQuery === 'undefined' ? undefined : financeQuery,
+      get financeSentPage() {
+        return financeSentPage;
+      },
+      set financeSentPage(value) {
+        financeSentPage = value;
+      },
+      get financeSentReports() {
+        return financeSentReports;
+      },
+      set financeSentReports(value) {
+        financeSentReports = value;
+      },
+      financeSentStatus: typeof financeSentStatus === 'undefined' ? undefined : financeSentStatus,
+      financeTrend: typeof financeTrend === 'undefined' ? undefined : financeTrend,
+      isDepartmentEmployee:
+        typeof isDepartmentEmployee === 'undefined' ? undefined : isDepartmentEmployee,
+      visibleNotifications:
+        typeof visibleNotifications === 'undefined' ? undefined : visibleNotifications,
+      pageProps,
+    };
+  },
 };

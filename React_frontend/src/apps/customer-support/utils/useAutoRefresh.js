@@ -1,7 +1,5 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 export default function useAutoRefresh(refresh, { enabled = true, interval = 8000 } = {}) {
-  const latest = useRef(refresh);
-  latest.current = refresh;
   useEffect(() => {
     if (!enabled) return undefined;
     let active = true;
@@ -10,7 +8,7 @@ export default function useAutoRefresh(refresh, { enabled = true, interval = 800
       if (!active || running || document.hidden) return;
       running = true;
       try {
-        await latest.current();
+        await refresh();
       } catch {
         /* The feature retains its last data and reports errors. */
       } finally {
@@ -26,5 +24,5 @@ export default function useAutoRefresh(refresh, { enabled = true, interval = 800
       window.removeEventListener('focus', update);
       document.removeEventListener('visibilitychange', update);
     };
-  }, [enabled, interval]);
+  }, [refresh, enabled, interval]);
 }

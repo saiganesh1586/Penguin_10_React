@@ -546,19 +546,33 @@
         });
       });
     };
-    container.querySelectorAll('[data-ticket-view]').forEach(button => {
-      button.addEventListener('click', () =>
-        openTicket(tickets.find(ticket => ticket.ticketId === button.dataset.ticketView))
-      );
-    });
-    modal?.addEventListener('click', event => {
+    if (!options.nativeView)
+      container.querySelectorAll('[data-ticket-view]').forEach(button => {
+        button.addEventListener('click', () =>
+          openTicket(tickets.find(ticket => ticket.ticketId === button.dataset.ticketView))
+        );
+      });
+    const onModalClick = event => {
       if (event.target === modal) closeModal();
-    });
-    modal?.addEventListener('keydown', event => {
+    };
+    const onModalKeyDown = event => {
       if (event.key === 'Escape') closeModal();
-    });
+    };
+    modal?.addEventListener('click', onModalClick);
+    modal?.addEventListener('keydown', onModalKeyDown);
 
     const refreshTicketView = async (ticketId, notice = '') => {
+      if (options.onRefresh) {
+        const updatedTickets = await options.onRefresh();
+        if (ticketId)
+          openTicket(updatedTickets.find(ticket => String(ticket.ticketId) === String(ticketId)));
+        const feedback = modalContent?.querySelector('[data-status-feedback]');
+        if (notice && feedback) {
+          feedback.classList.add('is-success');
+          feedback.textContent = notice;
+        }
+        return;
+      }
       const page = container.querySelector('#page-content') || container;
       page.innerHTML = await render(user, backLabel, options);
       bind(page, user, onBack, backLabel, options);
@@ -689,6 +703,14 @@
     });
 
     bindAttachmentDownloads(container, user);
+    return {
+      openTicket,
+      closeModal,
+      destroy() {
+        modal?.removeEventListener('click', onModalClick);
+        modal?.removeEventListener('keydown', onModalKeyDown);
+      },
+    };
   }
 
   function bindAttachmentDownloads(container, user) {

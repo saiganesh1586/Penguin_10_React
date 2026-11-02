@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { allowedCategories, SUPPORT_CONCERNS } from '../utils/supportConfig.js';
 export default function SupportRequestForm({ user, onSubmit, onEditing }) {
   const [type, setType] = useState('');
@@ -8,13 +8,12 @@ export default function SupportRequestForm({ user, onSubmit, onEditing }) {
   const [feedback, setFeedback] = useState('');
   const [isError, setIsError] = useState(false);
   const [busy, setBusy] = useState(false);
-  const pending = useRef(false);
-  const fileInput = useRef(null);
+  const [fileInputKey, setFileInputKey] = useState(0);
   const editing = (nextType, nextDescription, nextFiles) =>
     onEditing(Boolean(nextType || nextDescription || nextFiles.length));
   async function submit(event) {
     event.preventDefault();
-    if (pending.current) return;
+    if (busy) return;
     setFeedback('');
     setIsError(false);
     if (!event.currentTarget.reportValidity()) {
@@ -37,7 +36,6 @@ export default function SupportRequestForm({ user, onSubmit, onEditing }) {
       setFeedback('Choose up to 5 JPG, PNG, WEBP, PDF, or TXT files, each no larger than 5 MB.');
       return;
     }
-    pending.current = true;
     setBusy(true);
     try {
       const created = await onSubmit(
@@ -53,13 +51,12 @@ export default function SupportRequestForm({ user, onSubmit, onEditing }) {
       setDescription('');
       setFiles([]);
       onEditing(false);
-      if (fileInput.current) fileInput.current.value = '';
+      setFileInputKey(current => current + 1);
       setFeedback(`Request submitted. Your ticket number is ${created.ticketId}.`);
     } catch (error) {
       setIsError(true);
       setFeedback(error.message);
     } finally {
-      pending.current = false;
       setBusy(false);
     }
   }
@@ -135,7 +132,7 @@ export default function SupportRequestForm({ user, onSubmit, onEditing }) {
             Attachments <span className="small">(optional; up to 5 files, 5 MB each)</span>
           </label>
           <input
-            ref={fileInput}
+            key={fileInputKey}
             className="form-control"
             id="support-attachments"
             name="attachments"

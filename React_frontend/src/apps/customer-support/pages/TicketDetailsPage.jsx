@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { downloadAttachment } from '../api/client.js';
 import { statusLabel, ticketDate } from '../utils/supportConfig.js';
 function Attachment({ attachment, user }) {
@@ -36,14 +36,13 @@ function Attachment({ attachment, user }) {
   );
 }
 export default function TicketDetailsPage({ ticket, user, onClose, onFollowUp }) {
+  const [dialogElement, setDialogElement] = useState(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const pending = useRef(false);
-  const dialog = useRef(null);
   useEffect(() => {
-    dialog.current?.focus();
-  }, []);
+    dialogElement?.focus();
+  }, [dialogElement]);
   const messages = [
     {
       sender: 'requester',
@@ -64,12 +63,11 @@ export default function TicketDetailsPage({ ticket, user, onClose, onFollowUp })
   ];
   async function followUp(event) {
     event.preventDefault();
-    if (pending.current) return;
+    if (busy) return;
     if (!message.trim()) {
       setError('Enter a follow-up message.');
       return;
     }
-    pending.current = true;
     setBusy(true);
     setError('');
     try {
@@ -78,7 +76,6 @@ export default function TicketDetailsPage({ ticket, user, onClose, onFollowUp })
     } catch (failure) {
       setError(failure.message);
     } finally {
-      pending.current = false;
       setBusy(false);
     }
   }
@@ -94,7 +91,7 @@ export default function TicketDetailsPage({ ticket, user, onClose, onFollowUp })
       }}
     >
       <section
-        ref={dialog}
+        ref={setDialogElement}
         tabIndex={-1}
         className="support-modal"
         role="dialog"
