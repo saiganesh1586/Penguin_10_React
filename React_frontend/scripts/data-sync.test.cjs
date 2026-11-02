@@ -130,6 +130,7 @@ function harness() {
     approveRegistrationDirect() {},
     confirmRejectRegistration() {},
     setEventOpsStatus() {},
+    saveNewEvent() {},
     fetch: async (url, options = {}) => {
       server.calls.push({ url, options });
       const result = (status, body) => ({
@@ -162,6 +163,7 @@ function harness() {
     },
   });
   context.window = context;
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../src/app/event-date-rules.js'), 'utf8'), context);
   vm.runInContext(policy, context);
   vm.runInContext(
     runtime.slice(
@@ -189,6 +191,25 @@ function harness() {
     },
   };
 }
+
+test('the API-backed event creation handler rejects dates inside the seven-day window', async () => {
+  const h = harness();
+  h.field('ne-title', 'Conference');
+  h.field('ne-venue', 'Hall');
+  h.field('ne-cap', '50');
+  const minimum = h.context.EventFlowEventDates.minimumEventDate();
+  const close = new Date(`${minimum}T00:00:00Z`);
+  close.setUTCDate(close.getUTCDate() - 1);
+  h.field('ne-date', close.toISOString().slice(0, 10));
+  await h.context.saveNewEvent();
+  assert.equal(h.server.calls.length, 0);
+  assert.match(h.toasts.at(-1)[0], /at least 7 days/);
+  h.field('ne-date', minimum);
+  await h.context.saveNewEvent();
+  const creation = h.server.calls.find(call => call.options.method === 'POST');
+  assert.ok(creation);
+  assert.equal(JSON.parse(creation.options.body).date, minimum);
+});
 
 test('leaving a workspace stops polling and ignores its in-flight render', async () => {
   const h = harness();

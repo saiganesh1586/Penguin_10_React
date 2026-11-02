@@ -37,7 +37,10 @@ export class CreateEventRequestDto extends EventPolicyAcknowledgementDto {
   @IsNotEmpty()
   eventType!: string;
 
-  @ApiProperty({ description: 'Desired event date (YYYY-MM-DD)', example: '2026-09-01' })
+  @ApiProperty({
+    description: 'Desired event date (YYYY-MM-DD), at least 7 calendar days from today in India',
+    example: '2026-11-20',
+  })
   @IsString()
   @IsNotEmpty()
   @IsDateString()

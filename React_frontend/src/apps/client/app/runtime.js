@@ -8711,7 +8711,7 @@ function openAddEventModal() {
       </div>
     </div>
     <div class="grid-2">
-      <div class="form-group"><label class="form-label">Date *</label><input class="form-control" id="ne-date" type="date"></div>
+      <div class="form-group"><label class="form-label">Date *</label><input class="form-control" id="ne-date" type="date" min="${EventFlowEventDates.minimumEventDate()}"><p class="small muted">Choose a date at least 7 days from today.</p></div>
       <div class="form-group"><label class="form-label">Start Time</label><input class="form-control" id="ne-time" type="time" value="09:00"></div>
     </div>
     <div class="form-group"><label class="form-label">Venue *</label><input class="form-control" id="ne-venue" placeholder="Convention Center, Hall A"></div>
@@ -8743,6 +8743,11 @@ function saveNewEvent() {
   }
   if (!date) {
     toast('Event date is required', 'error');
+    return;
+  }
+  const dateError = EventFlowEventDates.validateEventLeadTime(date);
+  if (dateError) {
+    toast(dateError, 'error');
     return;
   }
   if (!venue) {
@@ -17361,9 +17366,9 @@ async function openRequestModal(organizerId, keepDraft = false) {
       <div class="form-group"><label class="form-label">Expected Guests *</label><input class="form-control" id="req-guests" type="number" min="1" value="${escapeHtml(
         String(draft.capacity || '')
       )}" placeholder="100"></div>
-      <div class="form-group"><label class="form-label">Event Date *</label><input class="form-control" id="req-date" type="date" value="${escapeHtml(
+      <div class="form-group"><label class="form-label">Event Date *</label><input class="form-control" id="req-date" type="date" min="${EventFlowEventDates.minimumEventDate()}" value="${escapeHtml(
         draft.eventDate || ''
-      )}"></div>
+      )}"><p class="small muted">Choose a date at least 7 days from today.</p></div>
       <div class="form-group"><label class="form-label">City *</label><input class="form-control" id="req-city" value="${escapeHtml(
         draft.city || organizer.city || ''
       )}" placeholder="e.g., Mumbai"></div>
@@ -17408,7 +17413,6 @@ function reviewEventRequest(organizerId) {
   const ticketPrice = Number(v('req-ticket-price') || 0);
   const visibility = v('req-visibility') || 'public';
   const city = v('req-city').trim();
-  const todayDate = new Date().toISOString().slice(0, 10);
   if (
     !eventName ||
     !eventDate ||
@@ -17439,8 +17443,9 @@ function reviewEventRequest(organizerId) {
     );
     return;
   }
-  if (eventDate <= todayDate) {
-    toast('Event date must be in the future', 'error');
+  const dateError = EventFlowEventDates.validateEventLeadTime(eventDate);
+  if (dateError) {
+    toast(dateError, 'error');
     return;
   }
   if (
@@ -17524,6 +17529,11 @@ function reviewEventRequest(organizerId) {
 }
 async function submitEventRequest(organizerId) {
   if (!eventRequestDraft || isSubmittingEventRequest) return;
+  const dateError = EventFlowEventDates.validateEventLeadTime(eventRequestDraft.eventDate);
+  if (dateError) {
+    toast(dateError, 'error');
+    return;
+  }
   isSubmittingEventRequest = true;
   const foot = typeof g === 'function' ? g('modal-foot') : null;
   const submitBtn =

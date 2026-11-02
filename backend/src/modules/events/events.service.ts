@@ -15,6 +15,7 @@ import {
   eventAmountPaid,
 } from '../../common/utils/event-payments';
 import { isEventOpenForRegistration } from '../../common/utils/event-registration';
+import { assertEventLeadTime } from '../../common/utils/event-date';
 @Injectable()
 export class EventsService {
   private dataStore: DataStore;
@@ -141,6 +142,7 @@ export class EventsService {
       throw new BadRequestException('Enter a valid event date and time');
     if (start.getTime() < Date.now())
       throw new BadRequestException('A new event cannot be scheduled in the past');
+    assertEventLeadTime(createEventDto.date);
     if (
       role === UserRole.EVENT_ORGANIZER &&
       !['draft', 'published', undefined].includes(createEventDto.status)

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import validationRulesSource from './validation-rules.js?raw';
+import eventDateRulesSource from './event-date-rules.js?raw';
 import themeSource from './theme.js?raw';
 import scannerSource from '../apps/attendee/utils/ticket-scanner.js?raw';
 import supportSource from '../apps/customer-support/api/legacySupport.js?raw';
@@ -32,6 +33,7 @@ export default function LegacyRuntime({ source, role }) {
     window.__eventFlowLegacyRuntime = { role, source, active: true };
     document.body.dataset.eventflowRole = role;
     const scripts = [
+      run(eventDateRulesSource),
       run(validationRulesSource),
       run(themeSource),
       run(scannerSource),

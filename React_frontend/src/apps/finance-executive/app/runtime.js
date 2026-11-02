@@ -7707,7 +7707,7 @@ function openAddEventModal() {
       </div>
     </div>
     <div class="grid-2">
-      <div class="form-group"><label class="form-label">Date *</label><input class="form-control" id="ne-date" type="date"></div>
+      <div class="form-group"><label class="form-label">Date *</label><input class="form-control" id="ne-date" type="date" min="${EventFlowEventDates.minimumEventDate()}"><p class="small muted">Choose a date at least 7 days from today.</p></div>
       <div class="form-group"><label class="form-label">Start Time</label><input class="form-control" id="ne-time" type="time" value="09:00"></div>
     </div>
     <div class="form-group"><label class="form-label">Venue *</label><input class="form-control" id="ne-venue" placeholder="Convention Center, Hall A"></div>
@@ -7739,6 +7739,11 @@ function saveNewEvent() {
   }
   if (!date) {
     toast('Event date is required', 'error');
+    return;
+  }
+  const dateError = EventFlowEventDates.validateEventLeadTime(date);
+  if (dateError) {
+    toast(dateError, 'error');
     return;
   }
   if (!venue) {

@@ -10,6 +10,8 @@ EventFlow is a web application that supports the event lifecycle: discovering ev
 
 The application uses a React frontend and a NestJS REST API. Role-specific workspaces display backend data, while a local JSON data store preserves records between server restarts. Seeded accounts and sample records support development and project demonstrations.
 
+New events and client event requests must be scheduled at least seven calendar days from today in India time. A date exactly seven days ahead is allowed. Creation forms and server validation both enforce this rule.
+
 This README describes the current implementation. Development limitations and possible extensions are listed separately at the end.
 
 Code formatting is configured in [`.prettierrc.json`](.prettierrc.json). For the portal rendering flow and the existing browser helper names, see [the frontend application guide](React_frontend/src/app/README.md). Backend controllers handle HTTP requests, DTO files validate inputs, services implement workflows, and `common/data-store.ts` handles persistence and development fixtures.

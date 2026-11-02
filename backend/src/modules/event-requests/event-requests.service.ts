@@ -17,6 +17,7 @@ import {
 } from '../../common/event-policy';
 import { allocatePaymentRefunds, completedEventPayments } from '../../common/utils/event-payments';
 import { acceptedProposalFor } from '../../common/utils/accepted-proposal';
+import { assertEventLeadTime } from '../../common/utils/event-date';
 import {
   CreateEventRequestDto,
   UpdateEventRequestStatusDto,
@@ -242,6 +243,7 @@ export class EventRequestsService {
     if (this.isPastDate(dto.eventDate)) {
       throw new BadRequestException('Desired event date must be in the future');
     }
+    assertEventLeadTime(dto.eventDate);
     if (dto.budget <= 0) {
       throw new BadRequestException('Budget must be greater than zero');
     }

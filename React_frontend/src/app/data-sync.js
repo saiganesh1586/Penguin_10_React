@@ -689,6 +689,8 @@
       const capacity = Number(field('ne-cap'));
       if (!name || !venue || !date || capacity < 1)
         return toast('Enter the title, venue, date, and a valid capacity.', 'error');
+      const dateError = EventFlowEventDates.validateEventLeadTime(date);
+      if (dateError) return toast(dateError, 'error');
       return mutate(
         'new-event',
         () =>

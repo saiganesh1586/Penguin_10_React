@@ -71,8 +71,8 @@ export class CreateEventDto {
   category!: string;
 
   @ApiProperty({
-    description: 'Event date (YYYY-MM-DD)',
-    example: '2024-06-15',
+    description: 'Event date (YYYY-MM-DD), at least 7 calendar days from today in India',
+    example: '2026-11-20',
   })
   @IsString()
   @IsNotEmpty()
