@@ -1,1 +1,6 @@
 data/
+
+# Runtime output is regenerated locally and should not create merge conflicts.
+logs/*.log
+logs/*.log.*
+docs/swagger.json
