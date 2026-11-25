@@ -282,7 +282,7 @@ export default function UserEventManagementPage() {
                 value={eventCat}
               >
                 <option value="">All Categories</option>
-                {[...new Set(events.map((event, index) => event.category).filter(Boolean))].map(
+                {[...new Set(events.map((event) => event.category).filter(Boolean))].map(
                   (cat, index) => (
                     <option
                       value={cat}

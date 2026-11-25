@@ -10,6 +10,8 @@ import ProfilePage from '../src/apps/attendee/pages/ProfilePage.jsx';
 import SettingsPage from '../src/apps/attendee/pages/SettingsPage.jsx';
 import EventDetailsPage from '../src/apps/attendee/pages/EventDetailsPage.jsx';
 import TicketCard from '../src/apps/attendee/components/TicketCard.jsx';
+import { registrationConfirmed } from '../src/apps/auth/authSlice.js';
+import { store } from '../src/app/state/store.js';
 
 const publicEvent = {
   id: 'public-1',
@@ -236,5 +238,25 @@ describe('Attendee JSX pages', () => {
       next: 'newpass',
       confirm: 'newpass',
     });
+  });
+
+  it('places Customer Support below the loaded account settings and opens the support page', async () => {
+    stubData();
+    store.dispatch(registrationConfirmed({
+      userId: 'attendee-1',
+      role: 'attendee',
+      name: 'Attendee',
+      email: 'attendee@example.test',
+      token: 'test-session',
+    }));
+    const { container } = render(<AttendeePageContainer page="settings" />);
+
+    const supportButton = await screen.findByRole('button', { name: 'Customer Support' });
+    expect(container.lastElementChild).toHaveClass('support-settings-entry');
+    expect(container.lastElementChild).toContainElement(supportButton);
+    expect(supportButton.closest('.support-settings-entry').previousElementSibling)
+      .toContainElement(screen.getByRole('button', { name: 'Sign Out' }));
+    fireEvent.click(supportButton);
+    expect(window.goNav).toHaveBeenCalledWith('customer-support');
   });
 });

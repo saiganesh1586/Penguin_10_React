@@ -70,7 +70,7 @@ export default function OngoingEventsPage({ embedded = false }) {
       </>
     );
   }
-  const ongoing = getOngoingWorkflowItems();
+  const ongoing = portalContext.ongoingWorkflowItems ?? getOngoingWorkflowItems();
   return (
     <>
       {embedded ? (

@@ -20,6 +20,7 @@ let AppState = {
 // ═══════════════════ PERSISTENCE ═══════════════════
 
 function saveState() {
+  if (window.EventFlowResources) return;
   try {
     localStorage.setItem(STATE_KEY, JSON.stringify(AppState));
   } catch (e) {
@@ -27,6 +28,7 @@ function saveState() {
   }
 }
 function loadState() {
+  if (window.EventFlowResources) return;
   try {
     const saved = localStorage.getItem(STATE_KEY);
     if (saved) {

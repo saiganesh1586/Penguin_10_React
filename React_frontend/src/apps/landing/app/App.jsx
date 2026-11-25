@@ -1,13 +1,10 @@
 import DashboardLayout from '../../../app/DashboardLayout.jsx';
-import Sidebar from '../../../app/Sidebar.jsx';
-import Navbar from '../../../app/Navbar.jsx';
 import HomePage from '../pages/HomePage.jsx';
 import LoginPage from '../../auth/pages/UnifiedAuthPage.jsx';
 import FindEventsPage from '../pages/FindEventsPage.jsx';
 import GalleryPage from '../pages/GalleryPage.jsx';
 import AboutPage from '../pages/AboutPage.jsx';
 import ContactPage from '../pages/ContactPage.jsx';
-import React from 'react';
 import LegacyRuntime from '../../../app/LegacyRuntime.jsx';
 import { legacyEvent } from '../../../app/legacyEvents.js';
 import source from './runtime.js?raw';
@@ -31,7 +28,7 @@ export default function HomeWorkspace() {
 
       <DashboardLayout
         sidebar={
-          <Sidebar>
+          <>
             <div className="sb-logo">
               <div className="sb-logo-mark">
                 <span className="brand-logo">
@@ -64,10 +61,10 @@ export default function HomeWorkspace() {
                 <span style={{ color: 'var(--text3)', fontSize: '12px' }}>⚙</span>
               </div>
             </div>
-          </Sidebar>
+          </>
         }
         navbar={
-          <Navbar>
+          <>
             <div className="topbar-title" id="topbar-title">
               User
             </div>
@@ -85,7 +82,7 @@ export default function HomeWorkspace() {
                 Sign Out
               </button>
             </div>
-          </Navbar>
+          </>
         }
       />
 

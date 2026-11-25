@@ -28,6 +28,7 @@ function normalizeRole(role) {
 
 // ─── Session Helpers ─────────────────────────────────────────────
 function getCurrentUser() {
+  if (window.EventFlowAuth) return window.EventFlowAuth.getSession();
   try {
     const s = sessionStorage.getItem(SESSION_KEY);
     return s ? JSON.parse(s) : null;
@@ -37,12 +38,14 @@ function getCurrentUser() {
 }
 
 function setCurrentUser(user) {
+  if (window.EventFlowAuth) return window.EventFlowAuth.updateProfile(user);
   try {
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
   } catch (e) {}
 }
 
 function clearCurrentUser() {
+  if (window.EventFlowAuth) return window.EventFlowAuth.logout();
   try {
     sessionStorage.removeItem(SESSION_KEY);
   } catch (e) {}
@@ -77,7 +80,7 @@ async function apiRequest(endpoint, options = {}) {
   };
 
   try {
-    const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const res = await (globalThis.window?.EventFlowFetch || fetch)(`${API_BASE_URL}${endpoint}`, {
       ...options,
       headers,
     });
@@ -305,7 +308,7 @@ async function apiCreateEventPlan(planData) {
 async function apiUploadEventPlanDocument(requestId, file) {
   const formData = new FormData();
   formData.append('file', file);
-  const response = await fetch(
+  const response = await (globalThis.window?.EventFlowFetch || fetch)(
     `${API_BASE_URL}/event-plans/${encodeURIComponent(requestId)}/document`,
     {
       method: 'POST',
@@ -323,14 +326,14 @@ async function apiUploadEventPlanDocument(requestId, file) {
 
 async function apiDownloadEventPlanDocument(planId, version) {
   const vParam = version ? `?version=${encodeURIComponent(version)}` : '';
-  let response = await fetch(
+  let response = await (globalThis.window?.EventFlowFetch || fetch)(
     `${API_BASE_URL}/event-plans/${encodeURIComponent(planId)}/document${vParam}`,
     {
       headers: getAuthHeader() ? { Authorization: getAuthHeader() } : {},
     }
   );
   if (response.status === 404) {
-    response = await fetch(
+    response = await (globalThis.window?.EventFlowFetch || fetch)(
       `${API_BASE_URL}/event-requests/${encodeURIComponent(planId)}/document${vParam}`,
       {
         headers: getAuthHeader() ? { Authorization: getAuthHeader() } : {},
@@ -409,7 +412,7 @@ async function apiGetCompletionReports() {
 }
 
 async function apiSubmitCompletionReport(eventId, formData) {
-  const response = await fetch(
+  const response = await (globalThis.window?.EventFlowFetch || fetch)(
     `${API_BASE_URL}/reports/events/${encodeURIComponent(eventId)}/completion`,
     {
       method: 'POST',
@@ -456,7 +459,7 @@ async function apiGetEventReports() {
 async function apiUploadEventReport(eventId, file) {
   const form = new FormData();
   form.set('file', file);
-  const response = await fetch(
+  const response = await (globalThis.window?.EventFlowFetch || fetch)(
     `${API_BASE_URL}/reports/events/${encodeURIComponent(eventId)}/file`,
     {
       method: 'POST',

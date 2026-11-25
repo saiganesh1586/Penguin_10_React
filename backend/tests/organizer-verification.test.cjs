@@ -13,6 +13,9 @@ const { UserRole } = require(path.join(__dirname, '../dist/common/constants'));
 
 const runId = Date.now();
 const testEmail = `robert.${runId}@apexevents.com`;
+const futureDate = new Date();
+futureDate.setUTCDate(futureDate.getUTCDate() + 30);
+const eventDate = futureDate.toISOString().slice(0, 10);
 let testRefNumber = '';
 
 test('Backend: Organizer Application Submission & Status Tracking', () => {
@@ -108,7 +111,7 @@ test('Backend: Unapproved organizer cannot publish events or accept bookings', (
     eventsService.create(
       {
         name: 'Unauthorized Concert',
-        date: '2026-11-20',
+        date: eventDate,
         time: '18:10',
         location: 'Stadium',
         capacity: 500,
@@ -124,7 +127,7 @@ test('Backend: Unapproved organizer cannot publish events or accept bookings', (
   const draftEvent = eventsService.create(
     {
       name: 'Draft Event',
-      date: '2026-11-20',
+      date: eventDate,
       time: '18:20',
       location: 'Stadium',
       capacity: 500,
@@ -153,7 +156,7 @@ test('Backend: Unapproved organizer cannot publish events or accept bookings', (
     organizerId: org.organizerId,
     eventName: 'Corporate Gala',
     eventType: 'corporate',
-    eventDate: '2026-12-01',
+    eventDate,
     eventTime: '19:00',
     status: 'submitted',
     capacity: 200,
@@ -222,7 +225,7 @@ test('Backend: Reviewer workflow (Under Review, Additional Info, Approved, Rejec
   const publishedEvent = eventsService.create(
     {
       name: 'Approved Festival',
-      date: '2026-11-28',
+      date: eventDate,
       time: uniqueTime,
       location: 'Open Grounds',
       capacity: 1000,

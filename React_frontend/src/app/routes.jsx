@@ -1,5 +1,5 @@
-import { lazy } from 'react';
-import { Navigate } from 'react-router-dom';
+import { lazy, Suspense } from 'react';
+import { Navigate, useRoutes } from 'react-router-dom';
 
 const Landing = lazy(() => import('../apps/landing/app/App.jsx'));
 const CustomerSupport = lazy(() => import('../apps/customer-support/app/App.jsx'));
@@ -10,7 +10,7 @@ const SupportExecutive = lazy(() => import('../apps/customer-support/app/Support
 const FinanceExecutive = lazy(() => import('../apps/finance-executive/app/App.jsx'));
 const Organizer = lazy(() => import('../apps/organizer/app/App.jsx'));
 
-export const routes = [
+const routes = [
   { path: '/', element: <Landing /> },
   { path: '/landing', element: <Landing /> },
   { path: '/customer-support', element: <CustomerSupport /> },
@@ -23,3 +23,7 @@ export const routes = [
   { path: '/organizer', element: <Organizer /> },
   { path: '*', element: <Navigate to="/" replace /> },
 ];
+
+export default function AppRoutes() {
+  return <Suspense fallback={null}>{useRoutes(routes)}</Suspense>;
+}

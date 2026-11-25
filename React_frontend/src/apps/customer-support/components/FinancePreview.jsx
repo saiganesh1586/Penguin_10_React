@@ -4,7 +4,6 @@ import { listOrEmpty } from '../../../app/view-utils.js';
 export function FinancePreview({
   financeTransactions,
   financeRefunds,
-  registrations,
   users,
   events,
   onSwitchFinanceTab,
@@ -16,11 +15,6 @@ export function FinancePreview({
   const commissionRate = 0.15;
   const allTransactions = Array.isArray(financeTransactions) ? financeTransactions : [];
   const refundRecords = Array.isArray(financeRefunds) ? financeRefunds : [];
-  const paidRegistrations = (registrations || []).filter(
-    registration =>
-      String(registration.payment || '').toLowerCase() === 'paid' &&
-      ['confirmed', 'verified'].includes(String(registration.status || '').toLowerCase())
-  );
   const successfulTransactions = allTransactions.filter(tx => tx.status === 'Successful');
   const totalRevenue = successfulTransactions.reduce(
     (sum, item) => sum + Number(item.amount || 0),

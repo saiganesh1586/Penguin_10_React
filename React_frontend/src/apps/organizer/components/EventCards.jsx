@@ -309,7 +309,7 @@ export function CancelledEvents({
     const refunds = event.registrationSummary?.refunds || {};
     const statuses = ['pending', 'completed', 'failed']
       .filter(status => Number(refunds[status]) > 0)
-      .map((status, index) => `${Number(refunds[status])} ${status}`);
+      .map((status) => `${Number(refunds[status])} ${status}`);
     if (statuses.length) return statuses.join(', ');
     const cancellationStatus = String(event.cancellation?.refundStatus || '').toLowerCase();
     return cancellationStatus === 'pending'

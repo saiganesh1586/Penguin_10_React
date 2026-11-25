@@ -9,6 +9,10 @@ import accountPolicySource from './account-policy.js?raw';
 import organizerRegSource from '../apps/organizer/utils/organizer-registration.js?raw';
 import paymentCheckoutSource from './paymentCheckout.js?raw';
 import dataSyncSource from './data-sync.js?raw';
+import { portalSlices, store } from './state/store.js';
+import { createRuntimeFetch } from './state/portalRepository.js';
+import { selectWorkspace } from './state/resources.js';
+import { login, logout, profileReceived, registrationConfirmed, selectSession } from '../apps/auth/authSlice.js';
 import '../styles/payment-checkout.css';
 
 function run(source) {
@@ -32,6 +36,31 @@ export default function LegacyRuntime({ source, role }) {
     }
     window.__eventFlowLegacyRuntime = { role, source, active: true };
     document.body.dataset.eventflowRole = role;
+    window.EventFlowAuth = {
+      login: (email, password) => store.dispatch(login({ email, password })),
+      logout: () => store.dispatch(logout()),
+      getSession: () => {
+        const user = selectSession(store.getState());
+        return user && structuredClone(user);
+      },
+      updateProfile: profile => store.dispatch(profileReceived(profile)),
+      registrationConfirmed: user => store.dispatch(registrationConfirmed(user)),
+    };
+    const slice = portalSlices[role];
+    if (slice) {
+      window.EventFlowFetch = createRuntimeFetch(
+        store.dispatch,
+        slice.actions,
+        () => window.EventFlowData?.invalidate(),
+        () => selectSession(store.getState())?.token
+      );
+      window.EventFlowResources = {
+        getWorkspace: () => {
+          const workspace = selectWorkspace(store.getState());
+          return workspace && structuredClone(workspace);
+        },
+      };
+    }
     const scripts = [
       run(eventDateRulesSource),
       run(validationRulesSource),
@@ -48,6 +77,10 @@ export default function LegacyRuntime({ source, role }) {
     document.dispatchEvent(new Event('DOMContentLoaded'));
     return () => {
       window.EventFlowData?.dispose?.();
+      delete window.EventFlowFetch;
+      delete window.EventFlowAuth;
+      delete window.EventFlowResources;
+      if (slice) store.dispatch(slice.actions.reset());
       window.__eventFlowLegacyRuntime.active = false;
       scripts.forEach(script => script.remove());
     };

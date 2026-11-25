@@ -6,7 +6,6 @@ import {
 } from '../components/FinanceHeader.jsx';
 export default function ReconciliationPage() {
   const portalContext = useFinanceExecutiveContext();
-  const portalActions = portalContext.actions;
   const { financeData } = portalContext;
   let html = '';
   const data = financeData;

@@ -6,7 +6,6 @@ export default function RevenueReportsPage() {
   const { DB: workspaceData } = portalContext;
   const timeframe = sessionStorage.getItem('admin_revenue_timeframe') || '6m';
   const allEvents = workspaceData.events;
-  const allRegs = workspaceData.registrations;
   const ticketPayments = (workspaceData.financeTransactions || []).filter(
     payment => payment.kind !== 'event' && payment.status === 'Successful'
   );

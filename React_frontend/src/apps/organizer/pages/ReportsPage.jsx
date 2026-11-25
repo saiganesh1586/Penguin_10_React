@@ -8,7 +8,7 @@ import {
   ReportContact,
 } from '../components/EventReports.jsx';
 export default function ReportsPage() {
-  const [reportEvent, setReportEvent] = useState(null);
+  const [reportEventId, setReportEventId] = useState(null);
   const portalContext = useOrganizerContext();
   const portalActions = portalContext.actions;
   const {
@@ -18,7 +18,7 @@ export default function ReportsPage() {
     evStatBadge,
     getEventReportRecipients,
   } = portalContext;
-  if (!workspaceData.reports) workspaceData.reports = [];
+  const reportEvent = workspaceData.events.find(event => (event.eventId || event.id) === reportEventId);
   if (currentUser.role === 'employee' && currentUser.employeeType === 'SUPPORT_FINANCE')
     return (
       <OperationalReports
@@ -89,7 +89,7 @@ export default function ReportsPage() {
         if (monthData[key]) monthData[key].count++;
       });
     const months = Object.values(monthData);
-    const maxMonthCount = Math.max(...months.map((m, index) => m.count), 1);
+    const maxMonthCount = Math.max(...months.map((m) => m.count), 1);
 
     // Role breakdown bar widths
     const maxRole = Math.max(attendees, organizers, clients, employeeCount, admins, 1);
@@ -625,7 +625,7 @@ export default function ReportsPage() {
       );
     });
     const cats = Object.entries(catMap).sort((a, b) => b[1].regs - a[1].regs);
-    const maxCatRegs = Math.max(...cats.map((c, index) => c[1].regs), 1);
+    const maxCatRegs = Math.max(...cats.map((c) => c[1].regs), 1);
     const catColors = [
       'var(--accent)',
       'var(--green)',
@@ -659,7 +659,7 @@ export default function ReportsPage() {
       }
     });
     const revMonths = Object.values(revMonthData);
-    const maxRev = Math.max(...revMonths.map((m, index) => m.revenue), 1);
+    const maxRev = Math.max(...revMonths.map((m) => m.revenue), 1);
     const eventStatsContent = (
       <>
         <div
@@ -1294,14 +1294,13 @@ export default function ReportsPage() {
   }
 
   // ── NON-SUPERUSER: original client report view ──────
-  const tab = sessionStorage.getItem('reports_tab') || 'client';
   const myEvents =
     currentUser.role === 'organizer'
       ? workspaceData.events.filter(event => event.organizer === currentUser.id)
       : workspaceData.events;
   const completedEvents = myEvents.filter(event => event.status === 'completed').length;
-  const eventIds = myEvents.map((event, index) => String(event.id));
-  const eventReports = workspaceData.reports.filter(report =>
+  const eventIds = myEvents.map((event) => String(event.id));
+  const eventReports = (workspaceData.reports || []).filter(report =>
     eventIds.includes(String(report.eventId))
   );
   const clientReports =
@@ -1600,7 +1599,7 @@ export default function ReportsPage() {
                 <button
                   className="btn btn-primary"
                   type="button"
-                  onClick={() => setReportEvent(event)}
+                  onClick={() => setReportEventId(event.eventId || event.id)}
                   style={{
                     gap: '6px',
                     background: 'var(--accent)',
@@ -1744,12 +1743,12 @@ export default function ReportsPage() {
           key={reportEvent.eventId || reportEvent.id}
           event={reportEvent}
           recipient={getEventReportRecipients(reportEvent)[0]}
-          onClose={() => setReportEvent(null)}
+          onClose={() => setReportEventId(null)}
           onSubmit={file =>
             portalActions.onUploadEventReport(reportEvent.eventId || reportEvent.id, file)
           }
           onSubmitted={async () => {
-            setReportEvent(null);
+            setReportEventId(null);
             portalActions.onToast('Report sent to the requesting client.', 'success');
             try {
               await portalActions.onRenderPage('reports');

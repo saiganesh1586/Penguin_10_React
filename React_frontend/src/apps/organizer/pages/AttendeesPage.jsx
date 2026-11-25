@@ -89,12 +89,6 @@ export default function AttendeesPage() {
     const rejectedCount = regs.filter(
       registration => organizerRegistrationStatus(registration) === 'Declined'
     ).length;
-    const eventStatus =
-      selectedEvent.status === 'published'
-        ? 'Published'
-        : selectedEvent.status === 'draft'
-        ? 'Draft'
-        : selectedEvent.status || 'Event';
     return (
       <div className="org-attendees">
         <div className="page-hd org-attendees-heading">

@@ -479,7 +479,7 @@ export default function DashboardPage() {
             value={categoryFilter}
           >
             <option value="">All Categories</option>
-            {[...new Set(myEv.map((e, index) => e.category).filter(Boolean))]
+            {[...new Set(myEv.map((e) => e.category).filter(Boolean))]
               .sort()
               .map((category, index) => (
                 <option

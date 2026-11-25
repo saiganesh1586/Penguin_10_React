@@ -3,6 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import CustomerSupportWorkspace from '../src/apps/customer-support/app/App.jsx';
+import { restoreSession } from '../src/apps/auth/authSlice.js';
+import { store } from '../src/app/state/store.js';
 
 const customer = {
   id: 'client-1',
@@ -32,6 +34,7 @@ function deferred() {
 }
 function open(user = customer) {
   if (user) sessionStorage.setItem('ef_cu', JSON.stringify(user));
+  store.dispatch(restoreSession());
   return render(
     <MemoryRouter initialEntries={['/customer-support']}>
       <Routes>
@@ -296,5 +299,21 @@ describe('React Customer Support', () => {
     await user.click(screen.getByRole('button', { name: 'Sign out and return' }));
     expect(screen.getByText('Public landing')).toBeInTheDocument();
     expect(sessionStorage.getItem('ef_cu')).toBeNull();
+  });
+
+  it('keeps a ticket visible until the backend confirms its deletion', async () => {
+    const pending = deferred();
+    fetch.mockResolvedValueOnce(json([ticket])).mockReturnValueOnce(pending.promise);
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    open();
+    fireEvent.click(await screen.findByRole('button', { name: 'View' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete Request' }));
+    expect(fetch).toHaveBeenLastCalledWith(expect.stringContaining('/support/tickets/SUP-001'), expect.objectContaining({
+      method: 'DELETE',
+    }));
+    expect(screen.getByRole('dialog')).toHaveTextContent(ticket.concern);
+    await act(async () => pending.resolve(new Response(null, { status: 204 })));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'View' })).toBeNull();
   });
 });

@@ -1,10 +1,18 @@
 import { loadFinanceCenter, loadFinanceReport } from './finance-data.js';
-// API refresh stays in this module; pages consume the normalized workspace snapshot.
-export async function loadSupportExecutiveData(page, initialData, attempt = 0) {
-  let data = initialData;
-  if (!data || attempt > 0) {
-    await window.EventFlowData?.sync();
-    data = window.EventFlowSupportExecutiveRuntime.snapshot(initialData?.pageProps);
+import { createPortalRepository, readRuntimeData } from '../../../app/state/portalRepository.js';
+
+export const supportExecutiveRepository = createPortalRepository(async ({ page, pageProps, force = false }) => {
+  await window.EventFlowData?.sync(undefined, undefined, { force, applyCached: false });
+  const runtime = window.EventFlowSupportExecutiveRuntime;
+  const snapshot = runtime.snapshot(pageProps);
+  const data = readRuntimeData(snapshot, {
+    ...(page === 'notifications' ? { notificationRows: 'visibleNotifications' } : {}),
+    ...(page === 'reports-analytics' ? { supportReports: 'getAllReportsList' } : {}),
+  });
+  if (page === 'support-issues') {
+    data.additionalTickets = readRuntimeData({
+      tickets: snapshot.supportExecutiveRequestOptions?.().getAdditionalTickets?.() || [],
+    }).tickets;
   }
   if (page === 'dashboard') {
     try {
@@ -28,9 +36,8 @@ export async function loadSupportExecutiveData(page, initialData, attempt = 0) {
       data.financeReportError = error.message;
     }
   }
-  data.actions = supportExecutiveActions;
   return data;
-}
+});
 
 // Resolve handlers at click time so API-backed overrides installed by data-sync remain active.
 export const supportExecutiveActions = {

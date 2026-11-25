@@ -18,9 +18,7 @@ export default function MyEventsPage() {
     },
     [portalContext.actions]
   );
-  const portalActions = portalContext.actions;
-  const { getClientWorkflowEvents } = portalContext;
-  const data = getClientWorkflowEvents();
+  const data = portalContext.workflowEvents ?? portalContext.getClientWorkflowEvents();
   const upcomingCount = data.upcoming.length;
   const ongoingCount = data.ongoing.length;
   const completedCount = data.completed.length;

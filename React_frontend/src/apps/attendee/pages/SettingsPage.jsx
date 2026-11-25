@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import PageHeader from '../components/PageHeader.jsx';
 import ProfileAvatar from '../components/ProfileAvatar.jsx';
+import AccountPreferences from '../../../app/AccountPreferences.jsx';
+import SettingsSupportEntry from '../../customer-support/components/SettingsSupportEntry.jsx';
 
 function Field({ id, label, value, onChange, type = 'text', placeholder, multiline = false }) {
   return (
@@ -24,7 +26,9 @@ function Field({ id, label, value, onChange, type = 'text', placeholder, multili
   );
 }
 
-export default function SettingsPage({ user = {}, onSaveSettings, onChangePassword, onSignOut }) {
+export default function SettingsPage({
+  user = {}, onSaveSettings, onChangePassword, onNavigate, onSignOut, preferenceControls,
+}) {
   const [profile, setProfile] = useState({
     name: user.name || '',
     email: user.email || '',
@@ -32,25 +36,14 @@ export default function SettingsPage({ user = {}, onSaveSettings, onChangePasswo
     bio: user.bio || '',
   });
   const [password, setPassword] = useState({ current: '', next: '', confirm: '' });
-  const [displayName, setDisplayName] = useState(user.name || '');
-  const [preferences, setPreferences] = useState([true, false, true]);
+  const displayName = user.name || '';
   const updateProfile = field => event =>
     setProfile(current => ({ ...current, [field]: event.target.value }));
   const updatePassword = field => event =>
     setPassword(current => ({ ...current, [field]: event.target.value }));
 
-  async function saveProfile() {
-    if (await onSaveSettings?.(profile)) setDisplayName(profile.name);
-  }
-
   async function savePassword() {
     if (await onChangePassword?.(password)) setPassword({ current: '', next: '', confirm: '' });
-  }
-
-  function togglePreference(index) {
-    setPreferences(current =>
-      current.map((value, position) => (position === index ? !value : value))
-    );
   }
 
   return (
@@ -107,7 +100,7 @@ export default function SettingsPage({ user = {}, onSaveSettings, onChangePasswo
           <button
             className="btn btn-primary w-full"
             style={{ justifyContent: 'center' }}
-            onClick={saveProfile}
+            onClick={() => onSaveSettings?.(profile)}
           >
             Save Changes
           </button>
@@ -147,20 +140,7 @@ export default function SettingsPage({ user = {}, onSaveSettings, onChangePasswo
               Update Password
             </button>
           </div>
-          <div className="card">
-            <div className="h4 mb-16">Preferences</div>
-            {['Email Notifications', 'SMS Reminders', 'Event Recommendations'].map(
-              (label, index) => (
-                <div className="info-row" key={label}>
-                  <span className="info-label">{label}</span>
-                  <div
-                    className={`toggle${preferences[index] ? ' on' : ''}`}
-                    onClick={() => togglePreference(index)}
-                  />
-                </div>
-              )
-            )}
-          </div>
+          <AccountPreferences user={user} controls={preferenceControls} />
           <div className="card">
             <button
               className="btn btn-danger w-full mb-8"
@@ -172,6 +152,7 @@ export default function SettingsPage({ user = {}, onSaveSettings, onChangePasswo
           </div>
         </div>
       </div>
+      <SettingsSupportEntry user={user} onNavigate={onNavigate} />
     </>
   );
 }

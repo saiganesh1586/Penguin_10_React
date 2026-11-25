@@ -1,7 +1,11 @@
-import React from 'react';
-import NotificationCard from '../components/NotificationCard.jsx';
 import PageHeader from '../components/PageHeader.jsx';
-import { EmptyState, ErrorState, LoadingState } from '../components/PageFeedback.jsx';
+import { EmptyState, ErrorState, LoadingState } from '../../../app/PageFeedback.jsx';
+
+const backgrounds = {
+  success: 'var(--green-dim)',
+  warning: 'var(--yellow-dim)',
+  error: 'var(--red-dim)',
+};
 
 export default function NotificationsPage({
   notifications = [],
@@ -14,7 +18,7 @@ export default function NotificationsPage({
   if (loading) return <LoadingState icon="🔔" title="Loading notifications…" />;
   if (error)
     return (
-      <ErrorState title="Notifications could not be loaded" message={error} onRetry={onRetry} />
+      <ErrorState icon="⚠️" title="Notifications could not be loaded" message={error} onRetry={onRetry} />
     );
 
   const unread = notifications.filter(item => !item.read).length;
@@ -31,8 +35,35 @@ export default function NotificationsPage({
       />
       <div className="card p-0 notif-panel">
         {notifications.length ? (
-          notifications.map(item => (
-            <NotificationCard key={item.id} notification={item} onRead={onMarkNotificationRead} />
+          notifications.map(notification => (
+            <div
+              key={notification.id}
+              className={`notif-item${notification.read ? '' : ' unread'}`}
+              onClick={() => onMarkNotificationRead?.(notification.id)}
+            >
+              <div
+                className="notif-icon"
+                style={{ background: backgrounds[notification.type] || 'var(--accent-dim)' }}
+              >
+                {notification.icon || '🔔'}
+              </div>
+              <div className="notif-content">
+                <div
+                  className="notif-title"
+                  style={notification.read ? undefined : { fontWeight: 600 }}
+                >
+                  {notification.title || ''}
+                </div>
+                <div
+                  className="notif-msg"
+                  style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}
+                >
+                  {notification.msg || ''}
+                </div>
+                <div className="notif-time">{notification.time}</div>
+              </div>
+              {!notification.read && <div className="unread-dot" />}
+            </div>
           ))
         ) : (
           <EmptyState icon="🔔" title="All caught up!" />

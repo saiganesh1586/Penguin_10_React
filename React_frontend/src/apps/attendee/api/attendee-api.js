@@ -28,6 +28,7 @@ function normalizeRole(role) {
 
 // ─── Session Helpers ─────────────────────────────────────────────
 function getCurrentUser() {
+  if (window.EventFlowAuth) return window.EventFlowAuth.getSession();
   try {
     const s = sessionStorage.getItem(SESSION_KEY);
     return s ? JSON.parse(s) : null;
@@ -37,12 +38,14 @@ function getCurrentUser() {
 }
 
 function setCurrentUser(user) {
+  if (window.EventFlowAuth) return window.EventFlowAuth.updateProfile(user);
   try {
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
   } catch (e) {}
 }
 
 function clearCurrentUser() {
+  if (window.EventFlowAuth) return window.EventFlowAuth.logout();
   try {
     sessionStorage.removeItem(SESSION_KEY);
   } catch (e) {}
@@ -77,7 +80,7 @@ async function apiRequest(endpoint, options = {}) {
   };
 
   try {
-    const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const res = await (globalThis.window?.EventFlowFetch || fetch)(`${API_BASE_URL}${endpoint}`, {
       ...options,
       headers,
     });

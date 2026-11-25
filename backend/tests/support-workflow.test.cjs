@@ -60,7 +60,7 @@ test('Customer Support requests reach support executives and saved replies reach
       },
       ...(body ? { body: JSON.stringify(body) } : {}),
     });
-    const result = await response.json();
+    const result = response.status === 204 ? {} : await response.json();
     assert.equal(response.status, expected, `${method} ${route}: ${JSON.stringify(result)}`);
     return result.data ?? result;
   }
@@ -240,8 +240,7 @@ test('Customer Support requests reach support executives and saved replies reach
       assert.equal(final.status, 'resolved');
       assert.equal(final.emailNotificationSent, false);
       assert.equal(final.messages.length, 4);
-      DataStore.instance = undefined;
-      const reloaded = DataStore.getInstance();
+      const reloaded = new DataStore();
       const saved = reloaded.supportTickets.find(item => item.ticketId === ticket.ticketId);
       assert.equal(saved.response, final.response);
       assert.equal(saved.status, 'resolved');
@@ -253,4 +252,28 @@ test('Customer Support requests reach support executives and saved replies reach
       );
     }
   );
+
+  await t.test('only the requester can delete a ticket and the deletion survives a reload', async () => {
+    const route = `/support/tickets/${ticket.ticketId}`;
+    await call(client, 'DELETE', route, undefined, 404);
+    await call(agent, 'DELETE', route, undefined, 404);
+    await call(attendee, 'DELETE', route, undefined, 204);
+    await call(attendee, 'DELETE', route, undefined, 204);
+    await call(attendee, 'POST', `${route}/follow-ups`, { message: 'Should fail.' }, 404);
+    assert.equal((await call(attendee, 'GET', '/support/tickets')).length, 0);
+    assert.ok(!(await call(agent, 'GET', '/support/tickets')).some(item => item.ticketId === ticket.ticketId));
+    assert.ok(new DataStore().supportTickets.find(item => item.ticketId === ticket.ticketId).deletedAt instanceof Date);
+  });
+
+  await t.test('account preferences are merged and exposed on the refreshed workspace', async () => {
+    const endpoint = `/users/${ticket.userId}`;
+    await call(client, 'PATCH', endpoint, { preferences: { smsReminders: true } }, 403);
+    await call(attendee, 'PATCH', endpoint, { preferences: { emailNotifications: false } });
+    await call(attendee, 'PATCH', endpoint, { preferences: { smsReminders: true } });
+    const account = (await call(attendee, 'GET', '/workspace')).currentUser;
+    assert.deepEqual(account.preferences, {
+      emailNotifications: false, smsReminders: true, eventRecommendations: true,
+    });
+    assert.deepEqual(new DataStore().findUserById(ticket.userId).preferences, account.preferences);
+  });
 });

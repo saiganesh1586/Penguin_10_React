@@ -1,6 +1,7 @@
 import { useClientContext } from '../context/ClientContext.jsx';
 import OrganizerReviewForm from '../components/OrganizerReviewForm.jsx';
 import { listOrEmpty } from '../../../app/view-utils.js';
+import EventDetailsLayout from '../../../app/EventDetailsLayout.jsx';
 import {
   WorkflowCancellation,
   WorkflowEventPolicy,
@@ -1263,12 +1264,7 @@ export default function RequestDetailsPage({ id }) {
           </div>
         </div>
       </div>
-      <div
-        className="card"
-        style={{
-          maxWidth: '1000px',
-        }}
-      >
+      <EventDetailsLayout eventId={eventId}>
         <div
           style={{
             display: 'flex',
@@ -1542,7 +1538,7 @@ export default function RequestDetailsPage({ id }) {
             </div>
           )}
         </div>
-      </div>
+      </EventDetailsLayout>
     </>
   );
 }

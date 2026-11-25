@@ -13,7 +13,7 @@
 
   async function request(user, route = '', options = {}) {
     if (!user?.token) throw new Error('Sign in again to access reports.');
-    const response = await fetch(base + route, {
+    const response = await (globalThis.window?.EventFlowFetch || fetch)(base + route, {
       ...options,
       headers: {
         Authorization: `Bearer ${user.token}`,

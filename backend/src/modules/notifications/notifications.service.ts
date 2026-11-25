@@ -1,13 +1,12 @@
 import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { DataStore } from '../../common/data-store';
-import { UserRole } from '../../common/constants';
 @Injectable()
 export class NotificationsService {
   private db: DataStore;
   constructor() {
     this.db = DataStore.getInstance();
   }
-  findAll(role: UserRole, userId: string): any[] {
+  findAll(userId: string): any[] {
     if (!userId) throw new ForbiddenException('x-user-id header is required to view notifications');
     return this.db.notifications
       .filter(notification => notification.userId === userId)

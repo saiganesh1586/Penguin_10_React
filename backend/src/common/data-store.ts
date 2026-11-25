@@ -18,6 +18,7 @@ const DATA_COLLECTIONS = [
   'organizers',
   'attendees',
   'events',
+  'eventChatMessages',
   'eventRequests',
   'eventPlans',
   'eventWorkflowPayments',
@@ -43,6 +44,7 @@ type DataCollection = (typeof DATA_COLLECTIONS)[number];
 const DATE_FIELDS = new Set([
   'createdAt',
   'updatedAt',
+  'deletedAt',
   'assignedAt',
   'dateTime',
   'timestamp',
@@ -75,6 +77,8 @@ export interface User {
   bio?: string;
   preferences?: {
     emailNotifications: boolean;
+    smsReminders?: boolean;
+    eventRecommendations?: boolean;
   };
   profile?: Record<string, unknown>;
   demoScenario?: 'event-request-workflow-v1' | 'organizer-attendees-v1';
@@ -238,6 +242,15 @@ export interface Event {
   createdAt: Date;
   updatedAt: Date;
 }
+export interface EventChatMessage {
+  id: string;
+  eventId: string;
+  senderUserId: string;
+  recipientUserId: string;
+  text: string;
+  createdAt: Date;
+}
+
 export interface EventPreparationTask {
   taskId: string;
   title: string;
@@ -736,6 +749,7 @@ export interface SupportTicket {
   createdAt: Date;
   updatedAt: Date;
   resolutionEmailSentAt?: Date;
+  deletedAt?: Date;
 }
 
 // ==================== DATA STORE CLASS ====================
@@ -752,6 +766,7 @@ export class DataStore {
 
   // Event entities
   events: Event[] = [];
+  eventChatMessages: EventChatMessage[] = [];
   eventRequests: EventRequest[] = [];
   eventPlans: EventPlan[] = [];
   eventWorkflowPayments: EventWorkflowPayment[] = [];
@@ -4161,6 +4176,7 @@ export class DataStore {
     this.organizers = [];
     this.attendees = [];
     this.events = [];
+    this.eventChatMessages = [];
     this.eventRequests = [];
     this.eventPlans = [];
     this.eventWorkflowPayments = [];

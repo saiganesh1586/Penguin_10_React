@@ -69,7 +69,7 @@ export class SupportService {
   listTickets(userId: string, role: UserRole): SupportTicketListItem[] {
     const canViewAll = this.isSupportAgent(userId, role);
     const tickets = this.db.supportTickets
-      .filter(ticket => canViewAll || ticket.userId === userId)
+      .filter(ticket => !ticket.deletedAt && (canViewAll || ticket.userId === userId))
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
     return tickets.map(ticket => ({
@@ -149,7 +149,7 @@ export class SupportService {
     dto: CreateSupportFollowUpDto
   ): SupportTicket {
     const ticket = this.db.supportTickets.find(
-      item => item.ticketId === ticketId && item.userId === userId
+      item => !item.deletedAt && item.ticketId === ticketId && item.userId === userId
     );
     if (!ticket) throw new NotFoundException('Support ticket not found');
 
@@ -165,6 +165,18 @@ export class SupportService {
     );
     this.db.persist();
     return ticket;
+  }
+
+  deleteTicket(ticketId: string, userId: string): void {
+    const ticket = this.db.supportTickets.find(
+      item => item.ticketId === ticketId && item.userId === userId
+    );
+    if (!ticket) throw new NotFoundException('Support ticket not found');
+    // Keep ticket IDs and their history stable across deletion and retry.
+    if (ticket.deletedAt) return;
+    ticket.deletedAt = new Date();
+    ticket.updatedAt = ticket.deletedAt;
+    this.db.notifications = this.db.notifications.filter(item => item.supportTicketId !== ticketId);
   }
 
   registerAttachment(
@@ -197,7 +209,7 @@ export class SupportService {
     const canViewAll = this.isSupportAgent(userId, role);
     const ticket = this.db.supportTickets.find(
       item =>
-        (canViewAll || item.userId === userId) &&
+        !item.deletedAt && (canViewAll || item.userId === userId) &&
         item.attachments.some(attachment => attachment.attachmentId === attachmentId)
     );
     if (!ticket) throw new NotFoundException('Attachment not found');
@@ -228,7 +240,7 @@ export class SupportService {
         'Only the Support Executive or an administrator can update support tickets'
       );
     }
-    const ticket = this.db.supportTickets.find(item => item.ticketId === ticketId);
+    const ticket = this.db.supportTickets.find(item => !item.deletedAt && item.ticketId === ticketId);
     if (!ticket) throw new NotFoundException('Support ticket not found');
 
     if (!['open', 'in_progress', 'resolved'].includes(dto.status))

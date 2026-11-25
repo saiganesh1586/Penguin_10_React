@@ -23,9 +23,7 @@ export default function MyEventsPage() {
   const attentionCount = myEvents.filter(event => event.needsAttention === true).length;
   const allCount = myEvents.length;
   const ongoingCount =
-    typeof getOngoingWorkflowItems === 'function'
-      ? getOngoingWorkflowItems().length
-      : inProgressCount;
+    (portalContext.ongoingWorkflowItems ?? getOngoingWorkflowItems?.())?.length ?? inProgressCount;
   return (
     <>
       <div className="page-hd">

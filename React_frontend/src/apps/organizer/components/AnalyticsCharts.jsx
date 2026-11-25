@@ -11,7 +11,6 @@ export function EventReportsOverview({ events, onFilterEventReportsStage }) {
   if (selectedStage === 'ongoing') eventsToAnalyze = ongoingEvents;
   else if (selectedStage === 'upcoming') eventsToAnalyze = upcomingEvents;
   else if (selectedStage === 'completed') eventsToAnalyze = completedEvents;
-  const totalEvents = eventsToAnalyze.length;
 
   // 1. Lifecycle Stage Bar Graph
   const lifecycleBars = [
@@ -71,7 +70,7 @@ export function EventReportsOverview({ events, onFilterEventReportsStage }) {
       monthlyBuckets[match[1]].count++;
     }
   });
-  const monthlyBars = Object.values(monthlyBuckets).map((m, index) => ({
+  const monthlyBars = Object.values(monthlyBuckets).map((m) => ({
     label: m.label + (m.isCurrent ? ' (Now)' : ''),
     value: m.count,
     color: m.isCurrent
@@ -435,7 +434,7 @@ export function EventReportsOverview({ events, onFilterEventReportsStage }) {
 //  ADMIN SUBPAGE 3: REVENUE REPORTS (BAR GRAPHS)
 // ════════════════════════════════════════════════
 export function AnalyticsBars({ items, height }) {
-  const max = Math.max(1, ...items.map((item, index) => item.value || 0));
+  const max = Math.max(1, ...items.map((item) => item.value || 0));
   const chartHeight = height || 180;
   return (
     <div

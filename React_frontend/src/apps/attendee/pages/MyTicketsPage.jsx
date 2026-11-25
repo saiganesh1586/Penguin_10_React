@@ -1,7 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import TicketCard from '../components/TicketCard.jsx';
 import PageHeader from '../components/PageHeader.jsx';
-import { EmptyState, ErrorState, LoadingState } from '../components/PageFeedback.jsx';
+import { EmptyState, ErrorState, LoadingState } from '../../../app/PageFeedback.jsx';
 import { ticketEvent, ticketView } from '../utils/ticket-view.js';
 
 const stored = key => (typeof sessionStorage === 'undefined' ? null : sessionStorage.getItem(key));
@@ -113,7 +113,7 @@ export default function MyTicketsPage({
     return (
       <>
         <PageHeader title="My Tickets" />
-        <ErrorState title="Registrations could not be loaded" message={error} onRetry={onRetry} />
+        <ErrorState icon="⚠️" title="Registrations could not be loaded" message={error} onRetry={onRetry} />
       </>
     );
 

@@ -1,7 +1,7 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import PageHeader from '../components/PageHeader.jsx';
 import ProfileAvatar from '../components/ProfileAvatar.jsx';
-import { ErrorState, LoadingState } from '../components/PageFeedback.jsx';
+import { ErrorState, LoadingState } from '../../../app/PageFeedback.jsx';
 
 function ContactInformation({ user }) {
   return (
@@ -92,7 +92,7 @@ export default function ProfilePage({
 
   if (loading) return <LoadingState icon="👤" title="Loading profile…" />;
   if (error)
-    return <ErrorState title="Profile could not be loaded" message={error} onRetry={onRetry} />;
+    return <ErrorState icon="⚠️" title="Profile could not be loaded" message={error} onRetry={onRetry} />;
 
   return (
     <>

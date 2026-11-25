@@ -1,6 +1,6 @@
 import ImageWithFallback from '../../../app/ImageWithFallback.jsx';
 import { useFinanceExecutiveContext } from '../context/FinanceExecutiveContext.jsx';
-import { EmployeeProfile } from '../components/EmployeeProfile.jsx';
+import { EmployeeProfile } from '../../../app/EmployeeProfile.jsx';
 export default function ProfilePage() {
   const portalContext = useFinanceExecutiveContext();
   const portalActions = portalContext.actions;
@@ -14,6 +14,7 @@ export default function ProfilePage() {
   if (isDepartmentEmployee())
     return (
       <EmployeeProfile
+        financeWorkspace
         registrations={portalContext.DB.registrations}
         supportRequests={portalContext.DB.supportRequests}
         financeTransactions={portalContext.DB.financeTransactions}

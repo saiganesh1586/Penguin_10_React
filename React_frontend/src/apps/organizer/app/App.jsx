@@ -1,18 +1,17 @@
 import DashboardLayout from '../../../app/DashboardLayout.jsx';
-import Sidebar from '../../../app/Sidebar.jsx';
-import Navbar from '../../../app/Navbar.jsx';
 import PublicHomePage from '../../landing/pages/PortalPublicHomePage.jsx';
 import LoginPage from '../../auth/pages/UnifiedAuthPage.jsx';
-import FindEventsPage from '../../landing/pages/PortalFindEventsPage.jsx';
+import FindEventsPage from '../../landing/pages/FindEventsPage.jsx';
 import GalleryPage from '../../landing/pages/GalleryPage.jsx';
 import AboutPage from '../../landing/pages/AboutPage.jsx';
 import ContactPage from '../../landing/pages/ContactPage.jsx';
-import React from 'react';
 import LegacyRuntime from '../../../app/LegacyRuntime.jsx';
 import runtime from './runtime.js?raw';
 import portalApi from '../api/portal-api.js?raw';
-import portalState from '../context/portal-state.js?raw';
+import portalState from '../../../app/portal-state.js?raw';
 import ToastHost from '../../../app/ToastHost.jsx';
+import { useSelector } from 'react-redux';
+import { selectSession } from '../../auth/authSlice.js';
 import '../styles/organizer.css';
 import OrganizerPageContainer, { organizerPageNames } from './OrganizerPageContainer.jsx';
 import createPageBridge from '../../../app/createPageBridge.jsx';
@@ -21,6 +20,8 @@ const source = runtime
   .replace('/* PORTAL_SECTION_api */', () => portalApi)
   .replace('/* PORTAL_SECTION_state */', () => portalState);
 export default function OrganizerWorkspace() {
+  const account = useSelector(selectSession);
+  const avatar = account?.avatar && account.avatar !== '?' ? account.avatar : '👤';
   if (typeof window !== 'undefined') {
     window.EventFlowOrganizerPages = organizerPages;
     window.EventFlowReactPages = organizerPages;
@@ -41,7 +42,7 @@ export default function OrganizerWorkspace() {
 
       <DashboardLayout
         sidebar={
-          <Sidebar>
+          <>
             <div className="sb-logo">
               <div className="sb-logo-mark">
                 <span className="brand-logo">
@@ -59,32 +60,34 @@ export default function OrganizerWorkspace() {
             </div>
             <nav className="sb-nav" id="sb-nav"></nav>
             <div className="sb-bottom">
-              <div className="sb-user" onClick={() => window.goNav('settings')}>
-                <div className="av" id="sb-av">
-                  ?
-                </div>
-                <div className="sb-user-info">
-                  <div className="sb-user-name" id="sb-name">
-                    User
-                  </div>
-                  <div className="sb-user-role" id="sb-role-lbl">
-                    Role
-                  </div>
-                </div>
-                <span
-                  style={{
-                    color: 'var(--text3)',
-                    fontSize: '12px',
-                  }}
-                >
-                  ⚙
+              <button
+                type="button"
+                className="sb-user"
+                aria-label="Account settings"
+                aria-describedby="sb-name sb-role-lbl"
+                title="Account settings"
+                onClick={() => window.goNav('settings')}
+              >
+                <span className="av" id="sb-av" aria-hidden="true">
+                  {avatar}
                 </span>
-              </div>
+                <span className="sb-user-info">
+                  <span className="sb-user-name" id="sb-name">
+                    {account?.name || 'Organizer'}
+                  </span>
+                  <span className="sb-user-role" id="sb-role-lbl">
+                    Event Organizer
+                  </span>
+                </span>
+                <span className="sb-user-action" aria-hidden="true">
+                  ⚙️
+                </span>
+              </button>
             </div>
-          </Sidebar>
+          </>
         }
         navbar={
-          <Navbar>
+          <>
             <div className="topbar-title" id="topbar-title">
               User
             </div>
@@ -96,7 +99,7 @@ export default function OrganizerWorkspace() {
                 Sign Out
               </button>
             </div>
-          </Navbar>
+          </>
         }
       />
 

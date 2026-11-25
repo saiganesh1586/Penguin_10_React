@@ -1,8 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import EventCard from '../components/EventCard.jsx';
 import EventFilters from '../components/EventFilters.jsx';
 import PageHeader from '../components/PageHeader.jsx';
-import { EmptyState, ErrorState, LoadingState } from '../components/PageFeedback.jsx';
+import { EmptyState, ErrorState, LoadingState } from '../../../app/PageFeedback.jsx';
 import { compareNewestFirst } from '../../../app/record-order.js';
 
 export default function BrowseEventsPage({
@@ -58,7 +58,7 @@ export default function BrowseEventsPage({
     return (
       <>
         <PageHeader title="Browse Events" subtitle="Discover and register for upcoming events." />
-        <ErrorState title="Events could not be loaded" message={error} onRetry={onRetry} />
+        <ErrorState icon="⚠️" title="Events could not be loaded" message={error} onRetry={onRetry} />
       </>
     );
 

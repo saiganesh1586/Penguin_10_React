@@ -1,13 +1,10 @@
 import DashboardLayout from '../../../app/DashboardLayout.jsx';
-import Sidebar from '../../../app/Sidebar.jsx';
-import Navbar from '../../../app/Navbar.jsx';
 import PublicHomePage from '../../landing/pages/PortalPublicHomePage.jsx';
 import LoginPage from '../../auth/pages/UnifiedAuthPage.jsx';
-import FindEventsPage from '../../landing/pages/PortalFindEventsPage.jsx';
+import FindEventsPage from '../../landing/pages/FindEventsPage.jsx';
 import GalleryPage from '../../landing/pages/GalleryPage.jsx';
 import AboutPage from '../../landing/pages/AboutPage.jsx';
 import ContactPage from '../../landing/pages/ContactPage.jsx';
-import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { flushSync } from 'react-dom';
 import AttendeePageContainer, { attendeeActions } from './AttendeePageContainer.jsx';
@@ -36,6 +33,9 @@ let activePageRoot = null;
 let activeDetailsRoot = null;
 let activeTicketRoot = null;
 const attendeePageBridge = {
+  hasPage(page) {
+    return page === 'customer-support';
+  },
   clear(container) {
     if (activePageRoot?.container === container) {
       activePageRoot.root.unmount();
@@ -74,14 +74,17 @@ const attendeePageBridge = {
 };
 
 export default function AttendeeWorkspace() {
-  if (typeof window !== 'undefined') window.EventFlowAttendeePages = attendeePageBridge;
+  if (typeof window !== 'undefined') {
+    window.EventFlowAttendeePages = attendeePageBridge;
+    window.EventFlowReactPages = attendeePageBridge;
+  }
   return (
     <>
       <PublicHomePage />
 
       <LoginPage workspace="attendee" />
 
-      <FindEventsPage eventGridId="public-events-grid" />
+      <FindEventsPage />
 
       <GalleryPage />
 
@@ -91,7 +94,7 @@ export default function AttendeeWorkspace() {
 
       <DashboardLayout
         sidebar={
-          <Sidebar>
+          <>
             <div className="sb-logo">
               <div className="sb-logo-mark">
                 <span className="brand-logo">
@@ -124,10 +127,10 @@ export default function AttendeeWorkspace() {
                 <span style={{ color: 'var(--text3)', fontSize: '12px' }}>⚙</span>
               </div>
             </div>
-          </Sidebar>
+          </>
         }
         navbar={
-          <Navbar>
+          <>
             <div className="topbar-title" id="topbar-title">
               User
             </div>
@@ -145,7 +148,7 @@ export default function AttendeeWorkspace() {
                 Sign Out
               </button>
             </div>
-          </Navbar>
+          </>
         }
       />
 

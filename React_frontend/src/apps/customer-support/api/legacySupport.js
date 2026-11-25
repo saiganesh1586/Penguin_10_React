@@ -141,7 +141,7 @@
       ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
       ...(options.headers || {}),
     };
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, { ...options, headers });
+    const response = await (globalThis.window?.EventFlowFetch || fetch)(`${API_BASE_URL}${endpoint}`, { ...options, headers });
     if (response.ok && options.method && options.method !== 'GET')
       window.EventFlowData?.invalidate();
 
@@ -522,6 +522,8 @@
           try {
             const updated = ticket.localEventRequest
               ? await options.updateAdditionalTicket(ticket.ticketId, { status, response })
+              : options.updateTicket
+              ? await options.updateTicket(ticket.ticketId, { status, response })
               : await request(
                   `/support/tickets/${encodeURIComponent(ticket.ticketId)}/status`,
                   user,
@@ -564,7 +566,7 @@
     const refreshTicketView = async (ticketId, notice = '') => {
       if (options.onRefresh) {
         const updatedTickets = await options.onRefresh();
-        if (ticketId)
+        if (ticketId && updatedTickets)
           openTicket(updatedTickets.find(ticket => String(ticket.ticketId) === String(ticketId)));
         const feedback = modalContent?.querySelector('[data-status-feedback]');
         if (notice && feedback) {
@@ -720,7 +722,7 @@
       button.addEventListener('click', async () => {
         button.disabled = true;
         try {
-          const response = await fetch(
+          const response = await (globalThis.window?.EventFlowFetch || fetch)(
             `${API_BASE_URL}/support/attachments/${encodeURIComponent(
               button.dataset.supportDownload
             )}`,

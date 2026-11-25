@@ -4,7 +4,7 @@ export default function EmployeeReportsPage() {
   const portalContext = useAdminContext();
   const portalActions = portalContext.actions;
   const { employeeReportFilter, receivedEmployeeReports } = portalContext;
-  const reports = receivedEmployeeReports();
+  const reports = portalContext.employeeReports ?? receivedEmployeeReports();
   const open = reports.filter(item => item.report.status !== 'Reviewed').length;
   const visible = reports
     .map((item, index) => ({

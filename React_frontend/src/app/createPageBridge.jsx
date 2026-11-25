@@ -1,4 +1,3 @@
-import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { flushSync } from 'react-dom';
 
@@ -25,9 +24,10 @@ export default function createPageBridge(PageContainer, pages) {
         active = { container, root: createRoot(container) };
       }
       active.page = page;
-      const key = `${page}:${data?.pageProps?.id || ''}`;
+      const pageProps = data?.pageProps || {};
+      const key = `${page}:${pageProps.id || ''}`;
       flushSync(() =>
-        active.root.render(<PageContainer key={key} page={page} initialData={data} />)
+        active.root.render(<PageContainer key={key} page={page} pageProps={pageProps} />)
       );
     },
   };

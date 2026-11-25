@@ -4,4 +4,4 @@
 
 Root routing and common application helpers live in `src/app/`.
 
-`PortalPublicHomePage.jsx` and `PortalFindEventsPage.jsx` are the unchanged public pages shared by actor portals. Actor portals also reuse this folder's About, Contact and Gallery pages where their rendered output matches.
+`PortalPublicHomePage.jsx` and `FindEventsPage.jsx` are shared by role portals. The client portal enables the Employee entry on its public home page. Role portals also reuse this folder's About, Contact, and Gallery pages.

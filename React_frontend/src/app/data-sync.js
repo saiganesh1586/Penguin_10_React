@@ -39,7 +39,7 @@
   async function request(user, route, options = {}) {
     if (!user?.token && route !== '/auth/register')
       throw new Error('Sign in again to load your account data.');
-    const response = await fetch((window.API_BASE_URL || 'http://localhost:3001/api') + route, {
+    const response = await (globalThis.window?.EventFlowFetch || fetch)((window.API_BASE_URL || 'http://localhost:3001/api') + route, {
       ...options,
       headers: {
         ...(user?.token
@@ -268,15 +268,18 @@
       typeof buildEmployeeNav === 'function'
     )
       buildEmployeeNav(user.employeeType);
-    try {
-      sessionStorage.setItem('ef_cu', JSON.stringify(user));
-    } catch {}
+    if (window.EventFlowAuth) window.EventFlowAuth.updateProfile(user);
+    else {
+      try {
+        sessionStorage.setItem('ef_cu', JSON.stringify(user));
+      } catch {}
+    }
     if (typeof updateNotifDot === 'function') updateNotifDot();
     if (typeof updateHeaderUser === 'function') updateHeaderUser();
     const sidebarName = document.getElementById('sb-name');
     if (sidebarName && !user.employeeType) sidebarName.textContent = user.name;
   }
-  async function sync(user = current(), db = database(), { force = true } = {}) {
+  async function sync(user = current(), db = database(), { force = true, applyCached = true } = {}) {
     if (state.disposed || !user?.token || !db) return false;
     const session = identity(user);
     if (state.identity !== session)
@@ -287,12 +290,14 @@
         pending: false,
       });
     if (!force && state.snapshot) {
-      apply(state.snapshot, user, db);
+      if (applyCached) apply(state.snapshot, user, db);
       return false;
     }
     if (!state.flight || state.flight.epoch !== state.epoch) {
       const flight = {
-        promise: request(user, '/workspace'),
+        promise: request(user, '/workspace').then(
+          snapshot => window.EventFlowResources?.getWorkspace() || snapshot
+        ),
         epoch: state.epoch,
       };
       state.flight = flight;
@@ -403,7 +408,8 @@
       closeModal();
       if (registered.token) {
         CU = normalizeUser(registered);
-        sessionStorage.setItem('ef_cu', JSON.stringify(CU));
+        if (window.EventFlowAuth) window.EventFlowAuth.registrationConfirmed(CU);
+        else sessionStorage.setItem('ef_cu', JSON.stringify(CU));
         toast(`Account created! Welcome, ${CU.name}!`, 'success');
         if (!routeToRoleWorkspace(CU)) {
           initApp();

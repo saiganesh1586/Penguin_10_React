@@ -2664,6 +2664,7 @@ const DB = {
 //  DATA PERSISTENCE (LOCALSTORAGE)
 // ════════════════════════════════════════════════
 function saveDB() {
+  if (window.EventFlowResources) return;
   try {
     localStorage.setItem('ffsd_db', JSON.stringify(DB));
   } catch (e) {
@@ -2673,6 +2674,7 @@ function saveDB() {
 // `persist` is disabled for storage events so receiving tabs do not write the
 // same data back and trigger another refresh in every open session.
 function loadDB(persist = true) {
+  if (window.EventFlowResources) return;
   try {
     const saved = localStorage.getItem('ffsd_db');
     if (saved) {
@@ -2968,105 +2970,16 @@ function doLogin() {
     button.disabled = true;
   }
 
-  // Try backend first, with instant fallback to local DB if backend is offline
-  apiLogin(email, pass)
-    .then(function (userData) {
-      const roleMap = {
-        EMPLOYEE: 'employee',
-        employee: 'employee',
-        SUPER_ADMIN: 'superuser',
-        super_admin: 'superuser',
-        CLIENT: 'client',
-        client: 'client',
-        EVENT_ORGANIZER: 'organizer',
-        event_organizer: 'organizer',
-        ATTENDEE: 'attendee',
-        attendee: 'attendee',
-      };
-      const frontendRole =
-        roleMap[userData.role || userData.userRole] ||
-        (userData.role || userData.userRole || '').toLowerCase();
-      CU = {
-        id: userData.userId,
-        userId: userData.userId,
-        name: userData.name,
-        email: userData.email,
-        token: userData.token,
-        role: frontendRole,
-        userRole: userData.role || userData.userRole,
-        employeeType: userData.employeeType,
-        status: userData.status,
-        avatar: (userData.name || 'U')
-          .split(' ')
-          .map(n => n[0])
-          .join('')
-          .toUpperCase()
-          .slice(0, 2),
-      };
-      try {
-        sessionStorage.setItem('ef_cu', JSON.stringify(CU));
-      } catch (e) {}
+  return window.EventFlowAuth.login(email, pass)
+    .then(user => {
+      CU = structuredClone(user);
       if (routeToRoleWorkspace(CU)) return;
       initApp();
       showPage('app');
       document.documentElement.classList.remove('restoring-session');
-      toast(`Welcome back, ${CU.name}! 👋`, 'success');
+      toast(`Welcome back, ${CU.name}!`, 'success');
     })
-    .catch(function (error) {
-      // Check local DB if offline or if password matches demo aliases
-      const localUser = DB.users.find(user => user.email.toLowerCase() === email.toLowerCase());
-      const norm = s => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-      const inNorm = norm(pass);
-      const stNorm = localUser ? norm(localUser.password) : '';
-      const localMatches =
-        localUser &&
-        (localUser.password === pass ||
-          localUser.password.toLowerCase() === pass.toLowerCase() ||
-          inNorm === stNorm ||
-          inNorm === 'employee123' ||
-          inNorm === 'employee' ||
-          inNorm === 'organizer123' ||
-          inNorm === 'org123' ||
-          inNorm === 'organizer' ||
-          inNorm === 'client123' ||
-          inNorm === 'client' ||
-          inNorm === 'attendee123' ||
-          inNorm === 'att123' ||
-          inNorm === 'attendee' ||
-          inNorm === 'admin123' ||
-          inNorm === 'admin');
-      if (localMatches) {
-        CU = {
-          id: localUser.id || localUser.userId,
-          userId: localUser.userId || localUser.id,
-          name: localUser.name,
-          email: localUser.email,
-          role: localUser.role,
-          userRole: localUser.userRole || localUser.role,
-          employeeType: localUser.employeeType,
-          status: localUser.status || 'active',
-          avatar: (localUser.name || 'U')
-            .split(' ')
-            .map(n => n[0])
-            .join('')
-            .toUpperCase()
-            .slice(0, 2),
-        };
-        try {
-          sessionStorage.setItem('ef_cu', JSON.stringify(CU));
-        } catch (e) {}
-        if (routeToRoleWorkspace(CU)) return;
-        initApp();
-        showPage('app');
-        document.documentElement.classList.remove('restoring-session');
-        toast(`Welcome back, ${CU.name}! 👋`, 'success');
-      } else {
-        const msg = error.message || 'Invalid email or password';
-        toast(msg, 'error');
-        showErr('l-pass-err');
-        g('l-pass-err').textContent = msg;
-      }
-    })
+    .catch(error => toast(error.message || 'Sign-in failed.', 'error'))
     .finally(function () {
       if (button) {
         button.textContent = 'Sign In →';
@@ -3076,9 +2989,7 @@ function doLogin() {
 }
 function doLogout() {
   CU = null;
-  try {
-    sessionStorage.removeItem('ef_cu');
-  } catch (e) {}
+  window.EventFlowAuth.logout();
   document.documentElement.classList.remove('restoring-session');
   if (window.EventFlowRole?.key !== 'landing') {
     window.location.replace('/landing');
@@ -3644,6 +3555,10 @@ async function renderPageContent(pg) {
   const r = CU.role;
   if (pg === 'customer-support') {
     if (!window.EventFlowSupport.canRequestSupport(CU)) return renderPageContent('settings');
+    if (window.EventFlowClientPages?.hasPage(pg)) {
+      window.EventFlowClientPages.render(element, pg);
+      return;
+    }
     globalThis.window?.EventFlowClientPages?.clear(element);
     element.innerHTML = await window.EventFlowSupport.render(CU);
     window.EventFlowSupport.bind(element, CU, () => goNav('settings'));
@@ -3956,8 +3871,8 @@ async function renderPageContent(pg) {
         globalThis.window?.EventFlowClientPages?.clear(element);
         globalThis.window?.EventFlowClientPages?.clear(element);
         element.innerHTML = pageSettings();
+        window.EventFlowSupport.addSettingsEntry(element, () => goNav('customer-support'), CU);
       }
-      window.EventFlowSupport.addSettingsEntry(element, () => goNav('customer-support'), CU);
       break;
     case 'users':
       globalThis.window?.EventFlowClientPages?.clear(element);
@@ -10725,10 +10640,10 @@ function getClientAcceptedProposal(request) {
     null
   );
 }
-function getClientBookingAmounts(request, plan) {
+function getClientBookingAmounts(request, plan, workspace = DB) {
   const acceptedProposal = getClientAcceptedProposal(request);
   const totalAmount = Number(acceptedProposal?.amount ?? plan?.budget ?? request.budget ?? 0);
-  const payments = (DB.eventWorkflowPayments || []).filter(
+  const payments = (workspace.eventWorkflowPayments || []).filter(
     payment =>
       payment.status === 'completed' &&
       (!payment.clientId || payment.clientId === request.clientId) &&
@@ -10881,7 +10796,7 @@ function submitClientOrganizerReview(eventId, requestId, review) {
     requestId
   );
 }
-function isClientOwner(request, currentUser) {
+function isClientOwner(request, currentUser, workspace = DB) {
   if (!currentUser || currentUser.role !== 'client') return true;
   if (!request) return false;
   const ids = new Set(
@@ -10891,7 +10806,7 @@ function isClientOwner(request, currentUser) {
       String(currentUser.clientId || ''),
     ].filter(Boolean)
   );
-  (DB.clients || []).forEach(client => {
+  (workspace.clients || []).forEach(client => {
     if (
       ids.has(String(client.clientId)) ||
       ids.has(String(client.userId)) ||
@@ -18470,10 +18385,8 @@ document.addEventListener('DOMContentLoaded', function boot() {
   // users whenever the optional backend was offline.
   loadDB(false);
   try {
-    const saved = sessionStorage.getItem('ef_cu');
-    if (saved) {
-      CU = window.EventFlowAccountPolicy.normalizeSavedAccount(JSON.parse(saved));
-      if (!CU) throw new Error('This account is no longer available.');
+    CU = window.EventFlowAuth.getSession();
+    if (CU) {
       const workspace = getRoleWorkspace(CU);
       if (workspace && routeToRoleWorkspace(CU)) return;
       if (!workspace && window.EventFlowRole?.key !== 'landing') {
@@ -18487,9 +18400,7 @@ document.addEventListener('DOMContentLoaded', function boot() {
     }
   } catch (e) {
     CU = null;
-    try {
-      sessionStorage.removeItem('ef_cu');
-    } catch (ignore) {}
+    window.EventFlowAuth.logout();
   }
   if (window.EventFlowRole?.key !== 'landing') {
     window.location.replace('/landing');
@@ -18711,7 +18622,7 @@ window.EventFlowRole = {
 
 // React pages read the same normalized data and keep the existing workflow action entry points.
 window.EventFlowClientRuntime = {
-  snapshot(pageProps = {}) {
+  snapshot(pageProps = {}, selectedData) {
     return {
       CU: typeof CU === 'undefined' ? undefined : CU,
       DB: typeof DB === 'undefined' ? undefined : DB,
@@ -18732,10 +18643,15 @@ window.EventFlowClientRuntime = {
       getClientAcceptedProposal:
         typeof getClientAcceptedProposal === 'undefined' ? undefined : getClientAcceptedProposal,
       getClientBookingAmounts:
-        typeof getClientBookingAmounts === 'undefined' ? undefined : getClientBookingAmounts,
+        typeof getClientBookingAmounts === 'undefined'
+          ? undefined
+          : (request, plan) => getClientBookingAmounts(request, plan, selectedData?.DB),
       getClientWorkflowEvents:
         typeof getClientWorkflowEvents === 'undefined' ? undefined : getClientWorkflowEvents,
-      isClientOwner: typeof isClientOwner === 'undefined' ? undefined : isClientOwner,
+      isClientOwner:
+        typeof isClientOwner === 'undefined'
+          ? undefined
+          : (request, user) => isClientOwner(request, user, selectedData?.DB),
       isDepartmentEmployee:
         typeof isDepartmentEmployee === 'undefined' ? undefined : isDepartmentEmployee,
       reqBadge: typeof reqBadge === 'undefined' ? undefined : reqBadge,

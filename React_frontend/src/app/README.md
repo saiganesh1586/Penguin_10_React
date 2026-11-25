@@ -1,22 +1,43 @@
 # Root application
 
-This folder owns `App.jsx`, `routes.jsx`, `session.js`, `config.js`, and the existing common layout, theme, account policy, checkout and synchronization helpers used across portals.
+This folder owns routing, session configuration, the shared Redux store and slice factory, and the layout, theme, account policy, checkout and synchronization code used across portals.
 
 Portals live under `src/apps/`. Authentication is `src/apps/auth/pages/UnifiedAuthPage.jsx`; the landing entry is `src/apps/landing/app/App.jsx`. Automated checks live in `scripts/`.
 
 `LegacyRuntime.jsx` loads the existing navigation, session, payment and workflow handlers. Signed-in role pages render React components through their page containers.
 
-## Reading a portal page
+`portal-state.js` supplies the browser state adapter shared by five role runtimes. Admin, Support Executive and Finance Executive also share `employee-portal-api.js`.
 
-Start with a role's `app/<Role>PageContainer.jsx`. It selects the page and loads data through `context/use<Role>Data.js`. The hook uses the role's API adapter, and the context makes the workspace data and named action callbacks available to pages and components. Pages contain JSX; reusable event cards, tables, charts and workflow sections live in `components/`.
+## Redux data flow
 
-`createPageBridge.jsx` connects the existing navigation to these containers. It reuses the current React root so filters and form state survive data refreshes. `usePortalData.js` handles loading, errors, retry and obsolete requests. `AccountSettingsPage.jsx` shares the attendee form pattern across the other roles.
+`state/store.js` registers the session, resource, and portal-view reducers. `main.jsx` provides the store to the application, and `PortalProvider.jsx` connects the page roots created by existing navigation to the same store.
 
-In these browser scripts, `CU` means the signed-in user and `DB` is the legacy browser model. The short helpers `g(id)` and `v(id)` find an element and read its trimmed form value. These names remain available because existing HTML event handlers call global functions by name.
+| Store key | Repository |
+| --- | --- |
+| `admin` | `apps/admin/api/admin-api.js` |
+| `attendee` | `apps/attendee/api/attendeeRepository.js` |
+| `client` | `apps/client/api/client-api.js` |
+| `organizer` | `apps/organizer/api/organizer-api.js` |
+| `supportExecutive` | `apps/customer-support/api/support-executive-api.js` |
+| `supportTickets` | `apps/customer-support/api/supportApi.js` |
+| `financeExecutive` | `apps/finance-executive/api/finance-executive-api.js` |
+| `landing` | Public catalog loading and errors |
+| `resources` | Backend collections and their API queries, including the public event catalog |
+| `workspace` | Metadata for the backend workspace snapshot |
+| `auth` | The signed-in account and its preference writes |
+| `eventChatMessages` | Conversations indexed by event ID |
 
-The API adapters expose named callbacks that look up existing handlers when clicked, preserving the API-backed overrides installed by `data-sync.js`. Runtime snapshots retain `CU` and `DB` for compatibility; React components give these values descriptive local names. Existing modal workflows and fallback renderers remain in the runtimes, as they do in the attendee workspace. Shared request synchronization belongs in `data-sync.js`; UI notifications belong in `ToastHost.jsx`.
+1. When a page opens, its data hook dispatches the repository's read thunk. The fulfilled reducer stores the data, and React selects it from Redux.
+2. A form collects and validates its inputs. The runtime API adapter dispatches the matching backend resource thunk. For example, client event requests and attendee registrations dispatch create thunks for their respective resources.
+3. The thunk waits for the backend write to succeed before invalidating the workspace. The active page then reads the saved records into Redux. A failed write preserves the previous records. Event chat and support tickets have dedicated CRUD thunks.
 
-Pages use Context for workspace data and pass specific props and callback props to their child components. `FilterInput.jsx` and `PortalSelect.jsx` keep filter controls in React state during API refreshes. `ImageWithFallback.jsx` and `HoverCard.jsx` use state to control their appearance. Account forms keep controlled values and validate them before calling the existing save handlers. The concept-to-file guide is in the root `FRONTEND_STRUCTURE.md`.
+Events, event requests, and registrations each have an API route table, named thunks, selectors, and focused tests under `src/features/`. Existing portal handlers dispatch those thunks through the runtime adapter. React code can also dispatch them directly with the form data, for example `createEventRequest({ body })` or `cancelEventRequest({ id, body })`.
+
+`createPageBridge.jsx` passes route arguments to the page container. The workspace request puts backend collections into their resource slices. `data-sync.js` provides a detached view of those records to the existing navigation and modal handlers. Portal page thunks prepare the view data React selects for each page.
+
+The sign-in action sets the Redux session after the backend accepts the credentials. Browser session storage preserves the Redux session across reloads. Signing out clears the session and the previous account's cached records.
+
+Pages pass selected data and callbacks to their child components. React state holds interaction details such as form drafts, filters, and selected IDs. The concept-to-file guide is in the root `FRONTEND_STRUCTURE.md`.
 
 `event-date-rules.js` supplies the minimum date and validation for event creation and client requests. `LegacyRuntime.jsx` loads it before the role runtime and API handlers. New dates must be at least seven calendar days from today in India time; the backend independently enforces the same creation rule.
 

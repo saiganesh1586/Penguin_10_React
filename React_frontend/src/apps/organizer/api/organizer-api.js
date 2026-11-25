@@ -1,15 +1,17 @@
-// API refresh stays in this module; pages consume the normalized workspace snapshot.
-export async function loadOrganizerData(page, initialData, attempt = 0) {
-  let data = initialData;
-  if (!data || attempt > 0) {
-    await window.EventFlowData?.sync();
+import { createPortalRepository, readRuntimeData } from '../../../app/state/portalRepository.js';
+
+export const organizerRepository = createPortalRepository(async ({ page, pageProps, force = false }) => {
+  await window.EventFlowData?.sync(undefined, undefined, { force, applyCached: false });
+  if (force) {
     await window.syncWorkflowData?.();
     if (page === 'attendees') await window.syncOrganizerAttendees?.();
-    data = window.EventFlowOrganizerRuntime.snapshot(initialData?.pageProps);
   }
-  data.actions = organizerActions;
-  return data;
-}
+  const runtime = window.EventFlowOrganizerRuntime;
+  return readRuntimeData(runtime.snapshot(pageProps), {
+    ...(['ongoing-events', 'my-events'].includes(page) ? { ongoingWorkflowItems: 'getOngoingWorkflowItems' } : {}),
+    ...(page === 'notifications' ? { notificationRows: 'visibleNotifications' } : {}),
+  });
+});
 
 // Resolve handlers at click time so API-backed overrides installed by data-sync remain active.
 export const organizerActions = {

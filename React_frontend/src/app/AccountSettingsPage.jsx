@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { validateProfile, validatePassword } from './settingsValidation.js';
 import PageHeader from '../apps/attendee/components/PageHeader.jsx';
 import ProfileAvatar from '../apps/attendee/components/ProfileAvatar.jsx';
+import AccountPreferences from './AccountPreferences.jsx';
+import SettingsSupportEntry from '../apps/customer-support/components/SettingsSupportEntry.jsx';
 function Field({
   id,
   label,
@@ -46,11 +47,9 @@ function Field({
 export default function AccountSettingsPage({
   user,
   roleLabel,
+  preferenceControls,
   admin = false,
-  onSaveSettings,
-  onChangePassword,
-  onSignOut,
-  onValidationError,
+  actions: { onSaveSettings, onChangePass, onNavigate, onSignOut, onValidationError },
 }) {
   const [profile, setProfile] = useState({
     name: user.name,
@@ -63,8 +62,7 @@ export default function AccountSettingsPage({
     next: '',
     confirm: '',
   });
-  const [displayName, setDisplayName] = useState(user.name);
-  const [preferences, setPreferences] = useState([true, false, true]);
+  const displayName = user.name || '';
   const [errors, setErrors] = useState({
     profile: '',
     password: '',
@@ -81,7 +79,10 @@ export default function AccountSettingsPage({
     }));
   async function saveProfile(event) {
     event.preventDefault();
-    const error = validateProfile(profile);
+    const error =
+      !profile.name.trim() || !profile.email.trim().includes('@')
+        ? 'Enter a name and valid email.'
+        : '';
     setErrors(current => ({
       ...current,
       profile: error,
@@ -90,11 +91,17 @@ export default function AccountSettingsPage({
       onValidationError?.(error);
       return;
     }
-    if (await onSaveSettings(profile)) setDisplayName(profile.name);
+    await onSaveSettings(profile);
   }
   async function savePassword(event) {
     event.preventDefault();
-    const error = validatePassword(password);
+    const { current, next, confirm } = password;
+    const error =
+      !current.trim() || next.trim().length < 6
+        ? 'Enter your current password and a new password of at least 6 characters.'
+        : next.trim() !== confirm.trim()
+          ? 'Passwords do not match.'
+          : '';
     setErrors(current => ({
       ...current,
       password: error,
@@ -103,7 +110,7 @@ export default function AccountSettingsPage({
       onValidationError?.(error);
       return;
     }
-    if (await onChangePassword(password))
+    if (await onChangePass(password))
       setPassword({
         current: '',
         next: '',
@@ -236,26 +243,7 @@ export default function AccountSettingsPage({
               Update Password
             </button>
           </form>
-          {!admin && (
-            <div className="card">
-              <div className="h4 mb-16">Preferences</div>
-              {['Email Notifications', 'SMS Reminders', 'Event Recommendations'].map(
-                (label, index) => (
-                  <div className="info-row" key={label}>
-                    <span className="info-label">{label}</span>
-                    <div
-                      className={`toggle${preferences[index] ? ' on' : ''}`}
-                      onClick={() =>
-                        setPreferences(current =>
-                          current.map((value, position) => (position === index ? !value : value))
-                        )
-                      }
-                    />
-                  </div>
-                )
-              )}
-            </div>
-          )}
+          {!admin && <AccountPreferences user={user} controls={preferenceControls} />}
           <div className="card">
             <button
               className="btn btn-danger w-full mb-8"
@@ -269,6 +257,7 @@ export default function AccountSettingsPage({
           </div>
         </div>
       </div>
+      <SettingsSupportEntry user={user} onNavigate={onNavigate} />
     </>
   );
 }

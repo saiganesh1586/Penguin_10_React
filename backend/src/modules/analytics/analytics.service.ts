@@ -181,6 +181,7 @@ export class AnalyticsService {
     );
     const unresolvedIssues = this.db.supportTickets.filter(
       ticket =>
+        !ticket.deletedAt &&
         ticket.userId === userId &&
         ticket.requestType === 'Event Related Issues' &&
         ticket.status !== 'resolved'
@@ -424,10 +425,15 @@ export class AnalyticsService {
               registration.status
             )
         ).length,
-        openSupportTickets: this.db.supportTickets.filter(ticket => ticket.status !== 'resolved')
+        openSupportTickets: this.db.supportTickets.filter(
+          ticket => !ticket.deletedAt && ticket.status !== 'resolved'
+        )
           .length,
         operationalIssues: this.db.supportTickets.filter(
-          ticket => ticket.requestType === 'Event Related Issues' && ticket.status !== 'resolved'
+          ticket =>
+            !ticket.deletedAt &&
+            ticket.requestType === 'Event Related Issues' &&
+            ticket.status !== 'resolved'
         ).length,
         activeEvents: this.db.events.filter(event =>
           ['published', 'ongoing'].includes(event.status)

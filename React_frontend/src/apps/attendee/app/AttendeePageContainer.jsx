@@ -1,11 +1,14 @@
-import React from 'react';
-import useAttendeeData from '../context/useAttendeeData.js';
+import { ErrorState, LoadingState } from '../../../app/PageFeedback.jsx';
+import CustomerSupportPage from '../../customer-support/pages/CustomerSupportPage.jsx';
+import usePortalData from '../../../app/usePortalData.js';
+import { attendeeSlice } from '../store/attendeeSlice.js';
 import DashboardPage from '../pages/DashboardPage.jsx';
 import BrowseEventsPage from '../pages/BrowseEventsPage.jsx';
 import MyTicketsPage from '../pages/MyTicketsPage.jsx';
 import NotificationsPage from '../pages/NotificationsPage.jsx';
 import ProfilePage from '../pages/ProfilePage.jsx';
 import SettingsPage from '../pages/SettingsPage.jsx';
+import PortalProvider from '../../../app/state/PortalProvider.jsx';
 
 const pages = {
   dashboard: DashboardPage,
@@ -42,13 +45,34 @@ export const attendeeActions = {
   onSignOut: () => window.doLogout(),
 };
 
-function LoadedPage({ page, user }) {
-  const data = useAttendeeData(dataForPage[page]);
+function LoadedPage({ page }) {
+  const { data, loading, error, retry } = usePortalData(attendeeSlice, page, dataForPage[page]);
   const Page = pages[page];
-  return <Page {...data} user={user} onRetry={data.retry} {...attendeeActions} />;
+  const waiting = loading || (!error && !data);
+  if (page === 'settings') {
+    if (error) return <ErrorState message={error} onRetry={retry} />;
+    if (waiting) return <LoadingState title="Loading settings…" />;
+  }
+  return (
+    <Page
+      {...data}
+      user={data?.CU ?? undefined}
+      loading={waiting}
+      error={error}
+      onRetry={retry}
+      {...attendeeActions}
+    />
+  );
 }
 
-export default function AttendeePageContainer({ page, user }) {
-  if (page === 'settings') return <SettingsPage user={user} {...attendeeActions} />;
-  return <LoadedPage page={page} user={user} />;
+export default function AttendeePageContainer({ page }) {
+  return (
+    <PortalProvider>
+      {page === 'customer-support' ? (
+        <CustomerSupportPage onBack={() => window.goNav('settings')} />
+      ) : (
+        <LoadedPage page={page} />
+      )}
+    </PortalProvider>
+  );
 }

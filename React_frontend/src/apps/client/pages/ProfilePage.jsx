@@ -1,6 +1,6 @@
 import ImageWithFallback from '../../../app/ImageWithFallback.jsx';
 import { useClientContext } from '../context/ClientContext.jsx';
-import { EmployeeProfile } from '../components/EmployeeProfile.jsx';
+import { EmployeeProfile } from '../../../app/EmployeeProfile.jsx';
 export default function ProfilePage() {
   const portalContext = useClientContext();
   const portalActions = portalContext.actions;

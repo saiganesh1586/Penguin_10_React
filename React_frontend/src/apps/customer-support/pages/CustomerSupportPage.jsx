@@ -1,10 +1,13 @@
 import { useState } from 'react';
+import { useSelector } from 'react-redux';
+import { selectSession } from '../../auth/authSlice.js';
 import useAutoRefresh from '../utils/useAutoRefresh.js';
 import useSupportRequests from '../context/useSupportRequests.js';
 import SupportRequestForm from '../components/SupportRequestForm.jsx';
 import SupportTicketTable from '../components/SupportTicketTable.jsx';
 import TicketDetailsPage from './TicketDetailsPage.jsx';
-export default function CustomerSupportPage({ user, onSignOut }) {
+export default function CustomerSupportPage({ onSignOut, onBack }) {
+  const user = useSelector(selectSession);
   const requests = useSupportRequests(user);
   const [editing, setEditing] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
@@ -23,8 +26,8 @@ export default function CustomerSupportPage({ user, onSignOut }) {
           </div>
         </div>
         <div className="page-hd-right">
-          <button className="btn btn-ghost btn-sm" type="button" onClick={onSignOut}>
-            Sign out and return
+          <button className="btn btn-ghost btn-sm" type="button" onClick={onBack || onSignOut}>
+            {onBack ? 'Back to Settings' : 'Sign out and return'}
           </button>
         </div>
       </div>
@@ -44,6 +47,10 @@ export default function CustomerSupportPage({ user, onSignOut }) {
           user={user}
           onClose={() => setSelectedId(null)}
           onFollowUp={requests.followUp}
+          onDelete={async id => {
+            await requests.remove(id);
+            setSelectedId(null);
+          }}
         />
       )}
     </>

@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Delete,
   Post,
   Patch,
   Body,
@@ -101,6 +102,13 @@ export class SupportController {
     @Body() dto: CreateSupportFollowUpDto
   ) {
     return this.service.addRequesterFollowUp(ticketId, userId, dto);
+  }
+
+  @Delete('tickets/:ticketId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Delete a support ticket owned by the requester' })
+  deleteTicket(@Param('ticketId') ticketId: string, @UserId() userId: string): void {
+    this.service.deleteTicket(ticketId, userId);
   }
 
   @Post('attachments')

@@ -1,15 +1,20 @@
-// API refresh stays in this module; pages consume the normalized workspace snapshot.
-export async function loadClientData(page, initialData, attempt = 0) {
-  let data = initialData;
-  if (!data || attempt > 0) {
-    await window.EventFlowData?.sync();
+import { createPortalRepository, readRuntimeData } from '../../../app/state/portalRepository.js';
+import { resourceAction } from '../../../app/state/resources.js';
+import { API_BASE_URL } from '../../../app/config.js';
+import { selectSession } from '../../auth/authSlice.js';
+
+export const clientRepository = createPortalRepository(async ({ page, pageProps, force = false }) => {
+  await window.EventFlowData?.sync(undefined, undefined, { force, applyCached: false });
+  if (force) {
     await window.syncWorkflowData?.();
     if (page === 'find-organizers') await window.syncOrganizerDirectory?.();
-    data = window.EventFlowClientRuntime.snapshot(initialData?.pageProps);
   }
-  data.actions = clientActions;
-  return data;
-}
+  const runtime = window.EventFlowClientRuntime;
+  return readRuntimeData(runtime.snapshot(pageProps), {
+    ...(page === 'my-events' ? { workflowEvents: 'getClientWorkflowEvents' } : {}),
+    ...(page === 'notifications' ? { notificationRows: 'visibleNotifications' } : {}),
+  });
+});
 
 // Resolve handlers at click time so API-backed overrides installed by data-sync remain active.
 export const clientActions = {
@@ -61,13 +66,18 @@ export const clientActions = {
   onGotoLogin: (...args) => window.gotoLogin(...args),
   onValidationError: message => window.toast(message, 'error'),
 };
-export async function loadClientActivity() {
-  const response = await window.apiGetMyActivity(8);
-  const rows = Array.isArray(response) ? response : response?.logs || [];
-  return [...rows].sort((left, right) => {
-    const difference =
-      new Date(right.timestamp || right.createdAt || 0) -
-      new Date(left.timestamp || left.createdAt || 0);
-    return difference || String(right.id || '').localeCompare(String(left.id || ''));
-  });
-}
+const activityUrl = `${API_BASE_URL}/activity-logs/me?limit=8`;
+export const clientActivityQuery = new URL(activityUrl).pathname + '?limit=8';
+const readActivity = resourceAction('activityLogs', 'GET');
+
+export const loadClientActivity = () => (dispatch, getState) => {
+  const token = selectSession(getState())?.token;
+  if (!token) return;
+  return dispatch(readActivity({
+    key: clientActivityQuery,
+    request: signal => fetch(activityUrl, {
+      signal,
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+  }));
+};

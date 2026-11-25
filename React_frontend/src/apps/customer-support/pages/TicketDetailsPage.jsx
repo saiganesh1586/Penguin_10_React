@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { downloadAttachment } from '../api/client.js';
+import { downloadAttachment } from '../api/supportApi.js';
 import { statusLabel, ticketDate } from '../utils/supportConfig.js';
 function Attachment({ attachment, user }) {
   const [busy, setBusy] = useState(false);
@@ -35,7 +35,7 @@ function Attachment({ attachment, user }) {
     </>
   );
 }
-export default function TicketDetailsPage({ ticket, user, onClose, onFollowUp }) {
+export default function TicketDetailsPage({ ticket, user, onClose, onFollowUp, onDelete }) {
   const [dialogElement, setDialogElement] = useState(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -73,6 +73,18 @@ export default function TicketDetailsPage({ ticket, user, onClose, onFollowUp })
     try {
       await onFollowUp(ticket.ticketId, message.trim());
       setMessage('');
+    } catch (failure) {
+      setError(failure.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function deleteTicket() {
+    if (busy || !window.confirm(`Delete support request ${ticket.ticketId}?`)) return;
+    setBusy(true);
+    setError('');
+    try {
+      await onDelete(ticket.ticketId);
     } catch (failure) {
       setError(failure.message);
     } finally {
@@ -189,6 +201,11 @@ export default function TicketDetailsPage({ ticket, user, onClose, onFollowUp })
                 {error}
               </p>
               <div className="support-modal-footer">
+                {onDelete && (
+                  <button className="btn btn-danger" type="button" disabled={busy} onClick={deleteTicket}>
+                    Delete Request
+                  </button>
+                )}
                 <button className="btn btn-ghost" type="button" onClick={onClose}>
                   Cancel
                 </button>

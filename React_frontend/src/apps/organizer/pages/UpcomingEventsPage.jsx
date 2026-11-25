@@ -3,7 +3,6 @@ import { compareNewestFirst } from '../../../app/record-order.js';
 import { EventCard } from '../components/EventCards.jsx';
 export default function UpcomingEventsPage() {
   const portalContext = useOrganizerContext();
-  const portalActions = portalContext.actions;
   const { CU: currentUser, DB: workspaceData, isCancelledWorkflowEvent } = portalContext;
   const today = new Date();
   today.setHours(0, 0, 0, 0);

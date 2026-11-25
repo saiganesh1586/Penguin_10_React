@@ -2621,6 +2621,7 @@ const DB = {
 //  DATA PERSISTENCE (LOCALSTORAGE)
 // ════════════════════════════════════════════════
 function saveDB() {
+  if (window.EventFlowResources) return;
   try {
     localStorage.setItem('ffsd_db', JSON.stringify(DB));
   } catch (e) {
@@ -2630,6 +2631,7 @@ function saveDB() {
 // `persist` is disabled for storage events so receiving tabs do not write the
 // same data back and trigger another refresh in every open session.
 function loadDB(persist = true) {
+  if (window.EventFlowResources) return;
   try {
     const saved = localStorage.getItem('ffsd_db');
     if (saved) {
@@ -2956,105 +2958,16 @@ function doLogin() {
     button.disabled = true;
   }
 
-  // Try backend first, with instant fallback to local DB if backend is offline
-  apiLogin(email, pass)
-    .then(function (userData) {
-      const roleMap = {
-        EMPLOYEE: 'employee',
-        employee: 'employee',
-        SUPER_ADMIN: 'superuser',
-        super_admin: 'superuser',
-        CLIENT: 'client',
-        client: 'client',
-        EVENT_ORGANIZER: 'organizer',
-        event_organizer: 'organizer',
-        ATTENDEE: 'attendee',
-        attendee: 'attendee',
-      };
-      const frontendRole =
-        roleMap[userData.role || userData.userRole] ||
-        (userData.role || userData.userRole || '').toLowerCase();
-      CU = {
-        id: userData.userId,
-        userId: userData.userId,
-        name: userData.name,
-        email: userData.email,
-        token: userData.token,
-        role: frontendRole,
-        userRole: userData.role || userData.userRole,
-        employeeType: userData.employeeType,
-        status: userData.status,
-        avatar: (userData.name || 'U')
-          .split(' ')
-          .map(n => n[0])
-          .join('')
-          .toUpperCase()
-          .slice(0, 2),
-      };
-      try {
-        sessionStorage.setItem('ef_cu', JSON.stringify(CU));
-      } catch (e) {}
+  return window.EventFlowAuth.login(email, pass)
+    .then(user => {
+      CU = structuredClone(user);
       if (routeToRoleWorkspace(CU)) return;
       initApp();
       showPage('app');
       document.documentElement.classList.remove('restoring-session');
-      toast(`Welcome back, ${CU.name}! 👋`, 'success');
+      toast(`Welcome back, ${CU.name}!`, 'success');
     })
-    .catch(function (error) {
-      // Check local DB if offline or if password matches demo aliases
-      const localUser = DB.users.find(user => user.email.toLowerCase() === email.toLowerCase());
-      const norm = s => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-      const inNorm = norm(pass);
-      const stNorm = localUser ? norm(localUser.password) : '';
-      const localMatches =
-        localUser &&
-        (localUser.password === pass ||
-          localUser.password.toLowerCase() === pass.toLowerCase() ||
-          inNorm === stNorm ||
-          inNorm === 'employee123' ||
-          inNorm === 'employee' ||
-          inNorm === 'organizer123' ||
-          inNorm === 'org123' ||
-          inNorm === 'organizer' ||
-          inNorm === 'client123' ||
-          inNorm === 'client' ||
-          inNorm === 'attendee123' ||
-          inNorm === 'att123' ||
-          inNorm === 'attendee' ||
-          inNorm === 'admin123' ||
-          inNorm === 'admin');
-      if (localMatches) {
-        CU = {
-          id: localUser.id || localUser.userId,
-          userId: localUser.userId || localUser.id,
-          name: localUser.name,
-          email: localUser.email,
-          role: localUser.role,
-          userRole: localUser.userRole || localUser.role,
-          employeeType: localUser.employeeType,
-          status: localUser.status || 'active',
-          avatar: (localUser.name || 'U')
-            .split(' ')
-            .map(n => n[0])
-            .join('')
-            .toUpperCase()
-            .slice(0, 2),
-        };
-        try {
-          sessionStorage.setItem('ef_cu', JSON.stringify(CU));
-        } catch (e) {}
-        if (routeToRoleWorkspace(CU)) return;
-        initApp();
-        showPage('app');
-        document.documentElement.classList.remove('restoring-session');
-        toast(`Welcome back, ${CU.name}! 👋`, 'success');
-      } else {
-        const msg = error.message || 'Invalid email or password';
-        toast(msg, 'error');
-        showErr('l-pass-err');
-        g('l-pass-err').textContent = msg;
-      }
-    })
+    .catch(error => toast(error.message || 'Sign-in failed.', 'error'))
     .finally(function () {
       if (button) {
         button.textContent = 'Sign In →';
@@ -3064,9 +2977,7 @@ function doLogin() {
 }
 function doLogout() {
   CU = null;
-  try {
-    sessionStorage.removeItem('ef_cu');
-  } catch (e) {}
+  window.EventFlowAuth.logout();
   document.documentElement.classList.remove('restoring-session');
   if (window.EventFlowRole?.key !== 'landing') {
     window.location.replace('/landing');
@@ -3377,11 +3288,9 @@ function initApp() {
     globalThis.window?.EventFlowOrganizerPages?.clear(g('sb-av'));
     g('sb-av').innerHTML = `<img src="${CU.avatarImage}" alt="${
       CU.name
-    }" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.parentElement.textContent='${
-      CU.avatar || CU.name.charAt(0)
-    }'">`;
+    }" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.parentElement.textContent='👤'">`;
   } else {
-    g('sb-av').textContent = CU.avatar || CU.name.charAt(0);
+    g('sb-av').textContent = CU.avatar && CU.avatar !== '?' ? CU.avatar : '👤';
   }
   updateNotifDot();
   buildNav(navRole);
@@ -3631,6 +3540,10 @@ async function renderPageContent(pg) {
   const r = CU.role;
   if (pg === 'customer-support') {
     if (!window.EventFlowSupport.canRequestSupport(CU)) return renderPageContent('settings');
+    if (window.EventFlowOrganizerPages?.hasPage(pg)) {
+      window.EventFlowOrganizerPages.render(element, pg);
+      return;
+    }
     globalThis.window?.EventFlowOrganizerPages?.clear(element);
     element.innerHTML = await window.EventFlowSupport.render(CU);
     window.EventFlowSupport.bind(element, CU, () => goNav('settings'));
@@ -4000,8 +3913,8 @@ async function renderPageContent(pg) {
         globalThis.window?.EventFlowOrganizerPages?.clear(element);
         globalThis.window?.EventFlowOrganizerPages?.clear(element);
         element.innerHTML = pageSettings();
+        window.EventFlowSupport.addSettingsEntry(element, () => goNav('customer-support'), CU);
       }
-      window.EventFlowSupport.addSettingsEntry(element, () => goNav('customer-support'), CU);
       break;
     case 'users':
       globalThis.window?.EventFlowOrganizerPages?.clear(element);
@@ -9147,7 +9060,7 @@ async function confirmDeleteDraftEvent(id) {
     if (window.EventFlowData && typeof window.EventFlowData.mutate === 'function') {
       await window.EventFlowData.mutate(
         `event:${backendId}`,
-        () => window.EventFlowData.send(`/events/${encodeURIComponent(backendId)}`, 'DELETE'),
+        () => apiDeleteEvent(backendId),
         'Draft event deleted successfully',
         {
           close: true,
@@ -11189,7 +11102,7 @@ function renderWorkflowFileReports(eventId) {
 }
 async function downloadWorkflowEventReport(reportId) {
   try {
-    const response = await fetch(
+    const response = await (globalThis.window?.EventFlowFetch || fetch)(
       `${API_BASE_URL}/reports/events/${encodeURIComponent(reportId)}/file`,
       {
         headers: getAuthHeader()
@@ -11508,7 +11421,7 @@ async function openEventPlanPdf(planId, fileName, preview) {
 async function openEventCompletionPhoto(eventId, fileName) {
   const previewWindow = window.open('about:blank', '_blank');
   try {
-    const response = await fetch(
+    const response = await (globalThis.window?.EventFlowFetch || fetch)(
       `${API_BASE_URL}/reports/events/${encodeURIComponent(
         eventId
       )}/completion/photos/${encodeURIComponent(fileName)}`,
@@ -16574,7 +16487,7 @@ async function openOrganizerReportFile(reportId, download = false) {
   try {
     let file;
     if (attachment) {
-      const response = await fetch(
+      const response = await (globalThis.window?.EventFlowFetch || fetch)(
         attachment.sample
           ? attachment.url
           : `${API_BASE_URL}/reports/events/${encodeURIComponent(
@@ -17230,10 +17143,10 @@ function switchReportTab(t) {
   else sessionStorage.setItem('reports_tab', t);
   renderPage('reports');
 }
-function getEventReportRecipients(event) {
-  if (CU.role === 'organizer') {
+function getEventReportRecipients(event, workspace = DB, user = CU) {
+  if (user.role === 'organizer') {
     const eventIds = new Set([event.eventId, event.id].filter(id => id != null).map(String));
-    const request = (DB.eventRequests || []).find(
+    const request = (workspace.eventRequests || []).find(
       item => (item.eventId != null && eventIds.has(String(item.eventId))) ||
         (event.requestId != null && String(item.requestId || item.id) === String(event.requestId))
     );
@@ -17243,13 +17156,13 @@ function getEventReportRecipients(event) {
     const ids = requestIds.length
       ? requestIds
       : [event.clientUserId, event.clientId, event.backendClientId].filter(id => id != null && id !== '');
-    const client = DB.users.find(
+    const client = workspace.users.find(
       user =>
         (user.role || user.userRole) === 'client' &&
         ids.some(id => [user.id, user.userId, user.clientId].some(value => value != null && String(value) === String(id)))
     );
     if (client) return [client];
-    const profile = (DB.clients || []).find(item =>
+    const profile = (workspace.clients || []).find(item =>
       ids.some(id => [item.clientId, item.userId].some(value => value != null && String(value) === String(id)))
     );
     const userId =
@@ -17267,15 +17180,14 @@ function getEventReportRecipients(event) {
       email: details.email || event.clientEmail || '',
       role: 'client',
     };
-    if (userId) DB.users.push(contact);
+    if (userId && workspace === DB) workspace.users.push(contact);
     return [contact];
   }
-  const superuser = DB.users.find(user => user.role === 'superuser');
   const recipientIds = [event.clientId, event.organizer];
   const seen = new Set();
   return recipientIds
-    .filter(id => id != null && String(id) !== String(CU.id))
-    .map(id => DB.users.find(user => String(user.id) === String(id)))
+    .filter(id => id != null && String(id) !== String(user.id))
+    .map(id => workspace.users.find(item => String(item.id) === String(id)))
     .filter(user => {
       if (!user || seen.has(String(user.id))) return false;
       seen.add(String(user.id));
@@ -18397,10 +18309,10 @@ function getOngoingWorkflowItems() {
       (Date.parse(leftRecord.createdAt || leftRecord.created || '') || 0);
   });
 }
-function organizerEventRequest(event) {
+function organizerEventRequest(event, workspace = DB) {
   const eventIds = new Set([event?.eventId, event?.id].filter(id => id != null).map(String));
   return (
-    (DB.eventRequests || []).find(
+    (workspace.eventRequests || []).find(
       request =>
         (request.eventId != null && eventIds.has(String(request.eventId))) ||
         (event?.requestId != null &&
@@ -18408,10 +18320,11 @@ function organizerEventRequest(event) {
     ) || null
   );
 }
-function ownsOrganizerEvent(event, request = organizerEventRequest(event)) {
-  if (CU?.role !== 'organizer') return false;
-  const ownerIds = new Set([CU.id, CU.userId, CU.organizerId].filter(id => id != null).map(String));
-  (DB.organizers || [])
+function ownsOrganizerEvent(event, request, workspace = DB, user = CU) {
+  if (user?.role !== 'organizer') return false;
+  if (request === undefined) request = organizerEventRequest(event, workspace);
+  const ownerIds = new Set([user.id, user.userId, user.organizerId].filter(id => id != null).map(String));
+  (workspace.organizers || [])
     .filter(profile => ownerIds.has(String(profile.userId)))
     .forEach(profile => {
       if (profile.organizerId != null) ownerIds.add(String(profile.organizerId));
@@ -19120,10 +19033,8 @@ document.addEventListener('DOMContentLoaded', function boot() {
   // users whenever the optional backend was offline.
   loadDB(false);
   try {
-    const saved = sessionStorage.getItem('ef_cu');
-    if (saved) {
-      CU = window.EventFlowAccountPolicy.normalizeSavedAccount(JSON.parse(saved));
-      if (!CU) throw new Error('This account is no longer available.');
+    CU = window.EventFlowAuth.getSession();
+    if (CU) {
       const workspace = getRoleWorkspace(CU);
       if (workspace && routeToRoleWorkspace(CU)) return;
       if (!workspace && window.EventFlowRole?.key !== 'landing') {
@@ -19137,9 +19048,7 @@ document.addEventListener('DOMContentLoaded', function boot() {
     }
   } catch (e) {
     CU = null;
-    try {
-      sessionStorage.removeItem('ef_cu');
-    } catch (ignore) {}
+    window.EventFlowAuth.logout();
   }
   if (window.EventFlowRole?.key !== 'landing') {
     window.location.replace('/landing');
@@ -19361,7 +19270,7 @@ window.EventFlowRole = {
 
 // React pages read the same normalized data and keep the existing workflow action entry points.
 window.EventFlowOrganizerRuntime = {
-  snapshot(pageProps = {}) {
+  snapshot(pageProps = {}, selectedData) {
     return {
       organizerEventCardStatus,
       CU: typeof CU === 'undefined' ? undefined : CU,
@@ -19389,7 +19298,9 @@ window.EventFlowOrganizerRuntime = {
           : filterOrganizerDashboardEvents,
       g: typeof g === 'undefined' ? undefined : g,
       getEventReportRecipients:
-        typeof getEventReportRecipients === 'undefined' ? undefined : getEventReportRecipients,
+        typeof getEventReportRecipients === 'undefined'
+          ? undefined
+          : event => getEventReportRecipients(event, selectedData?.DB, selectedData?.CU),
       getOngoingWorkflowItems:
         typeof getOngoingWorkflowItems === 'undefined' ? undefined : getOngoingWorkflowItems,
       isCancelledWorkflowEvent:
@@ -19405,7 +19316,9 @@ window.EventFlowOrganizerRuntime = {
       organizerEventCardStatus:
         typeof organizerEventCardStatus === 'undefined' ? undefined : organizerEventCardStatus,
       organizerEventRequest:
-        typeof organizerEventRequest === 'undefined' ? undefined : organizerEventRequest,
+        typeof organizerEventRequest === 'undefined'
+          ? undefined
+          : event => organizerEventRequest(event, selectedData?.DB),
       organizerRegistrationEvents:
         typeof organizerRegistrationEvents === 'undefined'
           ? undefined
@@ -19417,7 +19330,9 @@ window.EventFlowOrganizerRuntime = {
       organizerReportAttachment:
         typeof organizerReportAttachment === 'undefined' ? undefined : organizerReportAttachment,
       ownsOrganizerEvent:
-        typeof ownsOrganizerEvent === 'undefined' ? undefined : ownsOrganizerEvent,
+        typeof ownsOrganizerEvent === 'undefined'
+          ? undefined
+          : (event, request) => ownsOrganizerEvent(event, request, selectedData?.DB, selectedData?.CU),
       pageCompletedEvents:
         typeof pageCompletedEvents === 'undefined' ? undefined : pageCompletedEvents,
       pageOngoingEvents: typeof pageOngoingEvents === 'undefined' ? undefined : pageOngoingEvents,

@@ -98,7 +98,7 @@ export default function DashboardPage() {
 
   // Recent Activity
   const recentActivities = [
-    ...regs.slice(0, 2).map((registration, index) => {
+    ...regs.slice(0, 2).map((registration) => {
       const eventRegistration = users.find(
         user => String(user.id) === String(registration.attendeeId)
       ) || {
@@ -116,13 +116,13 @@ export default function DashboardPage() {
         time: registration.date || 'Today',
       };
     }),
-    ...tasks.slice(0, 2).map((task, index) => ({
+    ...tasks.slice(0, 2).map((task) => ({
       icon: '⚙️',
       title: `Operational Task: ${task.type}`,
       detail: `${task.eventTitle} · Status: ${task.status}`,
       time: task.updated || 'Recently',
     })),
-    ...queries.slice(0, 2).map((q, index) => ({
+    ...queries.slice(0, 2).map((q) => ({
       icon: '🎧',
       title: `Support Ticket: ${q.subject}`,
       detail: `${q.userName} · Status: ${q.status}`,

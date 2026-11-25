@@ -11,6 +11,7 @@ test('Attendee runtime remains executable and all pages render JSX without HTML 
   const { createServer } = await import('vite');
   const server = await createServer({
     configFile: false,
+    esbuild: { jsx: 'automatic' },
     server: { middlewareMode: true },
     appType: 'custom',
     logLevel: 'silent',

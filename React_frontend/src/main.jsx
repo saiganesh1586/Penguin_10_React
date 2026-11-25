@@ -1,11 +1,13 @@
-import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import App from './app/App.jsx';
+import AppRoutes from './app/routes.jsx';
+import PortalProvider from './app/state/PortalProvider.jsx';
 import './styles/global.css';
 
 createRoot(document.getElementById('root')).render(
   <BrowserRouter>
-    <App />
+    <PortalProvider>
+      <AppRoutes />
+    </PortalProvider>
   </BrowserRouter>
 );

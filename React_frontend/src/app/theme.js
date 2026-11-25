@@ -19,7 +19,7 @@
     if (!['/', '/landing'].includes(window.location.pathname)) return;
 
     const button = document.createElement('button');
-    const isLight = root.dataset.theme === 'light';
+    const isLight = root.dataset.theme !== 'dark';
     button.className = 'theme-toggle';
     button.type = 'button';
     button.setAttribute('aria-pressed', String(isLight));
@@ -34,7 +34,7 @@
         <path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"></path>
       </svg>`;
     button.addEventListener('click', () => {
-      const theme = root.dataset.theme === 'light' ? 'dark' : 'light';
+      const theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
       setTheme(theme);
       const light = theme === 'light';
       button.setAttribute('aria-pressed', String(light));

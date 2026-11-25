@@ -8,8 +8,11 @@ import {
 } from '../src/apps/client/components/WorkflowDetails.jsx';
 import EventPicker from '../src/apps/organizer/components/EventPicker.jsx';
 import AccountSettingsPage from '../src/app/AccountSettingsPage.jsx';
+import { restoreSession } from '../src/apps/auth/authSlice.js';
+import { store } from '../src/app/state/store.js';
 import ImageWithFallback from '../src/app/ImageWithFallback.jsx';
 import useSupportRequests from '../src/apps/customer-support/context/useSupportRequests.js';
+import PortalProvider from '../src/app/state/PortalProvider.jsx';
 
 describe('Course React patterns retain existing behavior', () => {
   it('renders cancellation details with explicit props and no workspace provider', () => {
@@ -129,9 +132,11 @@ describe('Course React patterns retain existing behavior', () => {
       <AccountSettingsPage
         user={{ name: 'Michael', email: 'client@example.com' }}
         roleLabel="Client"
-        onSaveSettings={onSave}
-        onChangePassword={onPassword}
-        onValidationError={onError}
+        actions={{
+          onSaveSettings: onSave,
+          onChangePass: onPassword,
+          onValidationError: onError,
+        }}
       />
     );
     fireEvent.change(screen.getByLabelText('Full Name'), { target: { value: '' } });
@@ -194,7 +199,11 @@ describe('Course React patterns retain existing behavior', () => {
       vi.fn(() => new Promise(resolve => pending.push(resolve)))
     );
     const user = { id: 'client-1', token: 'token' };
-    const { result } = renderHook(() => useSupportRequests(user));
+    sessionStorage.setItem('ef_cu', JSON.stringify(user));
+    store.dispatch(restoreSession());
+    const { result } = renderHook(() => useSupportRequests(user), {
+      wrapper: ({ children }) => <PortalProvider>{children}</PortalProvider>,
+    });
     await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
     let refresh;
     act(() => {

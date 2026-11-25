@@ -2,9 +2,7 @@ import { Controller, Get, Patch, Param, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiHeader } from '@nestjs/swagger';
 import { NotificationsService } from './notifications.service';
 import { RoleGuard } from '../../common/guards/role.guard';
-import { UserRoleDecorator } from '../../common/decorators/user-role.decorator';
 import { UserId } from '../../common/decorators/user-id.decorator';
-import { UserRole } from '../../common/constants';
 
 @ApiTags('notifications')
 @Controller('api/notifications')
@@ -21,8 +19,8 @@ export class NotificationsController {
   @Get()
   @ApiOperation({ summary: 'Get notifications for the current user (requires x-user-id header)' })
   @ApiResponse({ status: 200, description: 'List of notifications for this user' })
-  findAll(@UserRoleDecorator() role: UserRole, @UserId() userId: string) {
-    return this.service.findAll(role, userId);
+  findAll(@UserId() userId: string) {
+    return this.service.findAll(userId);
   }
 
   @Get('unread-count')

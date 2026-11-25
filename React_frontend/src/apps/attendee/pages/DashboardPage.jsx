@@ -1,7 +1,7 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import EventCard from '../components/EventCard.jsx';
 import PageHeader from '../components/PageHeader.jsx';
-import { EmptyState, ErrorState, LoadingState } from '../components/PageFeedback.jsx';
+import { EmptyState, ErrorState, LoadingState } from '../../../app/PageFeedback.jsx';
 import { summarizeDashboard } from '../utils/dashboard-data.js';
 
 function StatCard({ icon, value, label, background, color }) {
@@ -137,7 +137,7 @@ export default function DashboardPage({
 
   if (loading) return <LoadingState icon="📊" title="Loading dashboard…" />;
   if (error)
-    return <ErrorState title="Dashboard could not be loaded" message={error} onRetry={onRetry} />;
+    return <ErrorState icon="⚠️" title="Dashboard could not be loaded" message={error} onRetry={onRetry} />;
 
   return (
     <>

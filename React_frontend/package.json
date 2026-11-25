@@ -10,8 +10,10 @@
     "test:react": "vitest run"
   },
   "dependencies": {
+    "@reduxjs/toolkit": "^2.8.2",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "react-redux": "^9.2.0",
     "react-router-dom": "7.18.4"
   },
   "devDependencies": {

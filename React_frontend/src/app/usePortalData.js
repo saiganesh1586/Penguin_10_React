@@ -1,35 +1,43 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { getRuntimeHelpers } from './state/portalRepository.js';
+import { saveAccountPreferences, selectPreferenceStatus, selectSession } from '../apps/auth/authSlice.js';
 
-// Role hooks supply their API loader; page components receive only its current result.
-export default function usePortalData(load, page, initialData, waitForLoad = false) {
-  const [state, setState] = useState({
-    data: initialData,
-    loading: waitForLoad || !initialData,
-    error: '',
-  });
-  const [attempt, setAttempt] = useState(0);
+export default function usePortalData(slice, page, pageProps, actions, runtime) {
+  const dispatch = useDispatch();
+  const state = useSelector(rootState => rootState[slice.name]);
+  const account = useSelector(rootState => page === 'settings' ? selectSession(rootState) : null);
+  const preferenceStatus = useSelector(rootState =>
+    page === 'settings' ? selectPreferenceStatus(rootState) : null
+  );
+  const loadData = slice.actions.loadData;
+  const lastRevision = useRef(state.revision);
 
   useEffect(() => {
-    let active = true;
-    setState(current => ({ ...current, loading: waitForLoad || !initialData, error: '' }));
-    Promise.resolve()
-      .then(() => load(page, initialData, attempt))
-      .then(data => {
-        if (active) setState({ data, loading: false, error: '' });
-      })
-      .catch(error => {
-        if (active)
-          setState(current => ({
-            ...current,
-            loading: false,
-            error: error.message || 'Please try again.',
-          }));
-      });
-    return () => {
-      active = false;
-    };
-  }, [load, page, initialData, attempt, waitForLoad]);
+    const force = lastRevision.current !== state.revision;
+    lastRevision.current = state.revision;
+    const request = dispatch(loadData({ page, pageProps, force }));
+    return () => request.abort();
+  }, [dispatch, loadData, page, pageProps, state.revision]);
 
-  const retry = useCallback(() => setAttempt(value => value + 1), []);
-  return { ...state, retry };
+  const retry = useCallback(
+    () => dispatch(loadData({ page, pageProps, force: true })),
+    [dispatch, loadData, page, pageProps]
+  );
+  const data = state.page === page && state.data
+    ? { ...getRuntimeHelpers(runtime, state.data), ...state.data, actions }
+    : null;
+  if (data && page === 'settings' && account) {
+    const { token, ...safeAccount } = account;
+    data.CU = { ...data.CU, ...safeAccount, phone: safeAccount.phoneNo ?? safeAccount.phone };
+    data.preferenceControls = {
+      pending: Boolean(preferenceStatus.requestId),
+      error: preferenceStatus.error,
+      onSave: async preferences => {
+        const action = await dispatch(saveAccountPreferences(preferences));
+        if (saveAccountPreferences.fulfilled.match(action)) window.EventFlowData?.invalidate();
+      },
+    };
+  }
+  return { data, loading: state.loading, error: state.error, retry };
 }

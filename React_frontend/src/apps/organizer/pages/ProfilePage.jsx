@@ -1,6 +1,6 @@
 import ImageWithFallback from '../../../app/ImageWithFallback.jsx';
 import { useOrganizerContext } from '../context/OrganizerContext.jsx';
-import { EmployeeProfile } from '../components/EmployeeProfile.jsx';
+import { EmployeeProfile } from '../../../app/EmployeeProfile.jsx';
 export default function ProfilePage() {
   const portalContext = useOrganizerContext();
   const portalActions = portalContext.actions;

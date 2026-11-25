@@ -8,8 +8,11 @@ import {
   Matches,
   ValidateIf,
   MaxLength,
+  IsBoolean,
+  IsObject,
+  ValidateNested,
 } from 'class-validator';
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { UserRole } from '../../../common/constants';
 
@@ -56,7 +59,27 @@ export class CreateUserDto {
   phoneNo?: string;
 }
 
+export class UpdateUserPreferencesDto {
+  @IsOptional()
+  @IsBoolean()
+  emailNotifications?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  smsReminders?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  eventRecommendations?: boolean;
+}
+
 export class UpdateUserDto {
+  @IsOptional()
+  @IsObject()
+  @ValidateNested()
+  @Type(() => UpdateUserPreferencesDto)
+  preferences?: UpdateUserPreferencesDto;
+
   @ApiPropertyOptional({ description: 'Profile biography' })
   @IsString()
   @IsOptional()

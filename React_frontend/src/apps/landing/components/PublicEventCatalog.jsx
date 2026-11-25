@@ -1,40 +1,32 @@
 import { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { landingSlice } from '../store/landingSlice.js';
+import { selectEventsRevision, selectPublicEvents } from '../../../features/events/eventsSlice.js';
 
 export default function PublicEventCatalog() {
-  const [events, setEvents] = useState([]);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
+  const data = useSelector(selectPublicEvents);
+  const { error } = useSelector(state => state.landing);
+  const revision = useSelector(selectEventsRevision);
+  const sessionId = useSelector(state => state.auth.user?.userId);
+  const loading = !data && !error;
   const [query, setQuery] = useState('');
+  const events = (data || []).filter(event => new Date(`${event.date}T23:59:59`) >= new Date());
+
   useEffect(() => {
-    let active = true;
-    async function refresh() {
-      try {
-        const response = await fetch('http://localhost:3001/api/public/events');
-        if (!response.ok) throw new Error('Events could not be loaded. Please try again.');
-        const result = await response.json();
-        if (active) {
-          setEvents(
-            (result.data ?? result).filter(
-              event => new Date(`${event.date}T23:59:59`) >= new Date()
-            )
-          );
-          setError('');
-        }
-      } catch (error) {
-        if (active) setError(error.message);
-      } finally {
-        if (active) setLoading(false);
-      }
+    const controller = new AbortController();
+    function refresh() {
+      dispatch(landingSlice.actions.loadData({ page: 'public-events' }, { signal: controller.signal }));
     }
     refresh();
     const interval = setInterval(refresh, 15000);
     window.addEventListener('focus', refresh);
     return () => {
-      active = false;
+      controller.abort();
       clearInterval(interval);
       window.removeEventListener('focus', refresh);
     };
-  }, []);
+  }, [dispatch, revision, sessionId]);
   return (
     <>
       <input

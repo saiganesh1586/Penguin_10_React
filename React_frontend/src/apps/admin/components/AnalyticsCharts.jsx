@@ -14,7 +14,7 @@ export function AnalyticsBars({
       ADMIN_CHART_COLORS={ADMIN_CHART_COLORS}
       adminChartLine={adminChartLine}
       adminChartNumber={adminChartNumber}
-      groups={items.map((item, index) => ({
+      groups={items.map((item) => ({
         label: item.label,
         bars: [item],
       }))}
@@ -140,9 +140,9 @@ export function AdminAnalyticsChart({
   options = {},
 }) {
   const [chartId] = useState(() => `admin-chart-${++nextChartNumber}`);
-  const data = (groups || []).map((group, index) => ({
+  const data = (groups || []).map((group) => ({
     label: String(group.label || ''),
-    bars: (group.bars || []).map((bar, index) => ({
+    bars: (group.bars || []).map((bar) => ({
       ...bar,
       value: Number.isFinite(Number(bar.value)) ? Math.max(0, Number(bar.value)) : 0,
     })),
@@ -152,7 +152,7 @@ export function AdminAnalyticsChart({
   const id = chartId;
   const width = 600;
   const plotHeight = 180;
-  const highest = Math.max(1, ...data.flatMap(group => group.bars.map((bar, index) => bar.value)));
+  const highest = Math.max(1, ...data.flatMap(group => group.bars.map((bar) => bar.value)));
   const roughStep = highest / 4;
   const magnitude = Math.pow(10, Math.floor(Math.log10(roughStep)));
   const step = Math.max(
@@ -161,7 +161,7 @@ export function AdminAnalyticsChart({
   );
   const maximum = step * 4;
   const groupWidth = width / data.length;
-  const seriesCount = Math.max(1, ...data.map((group, index) => group.bars.length));
+  const seriesCount = Math.max(1, ...data.map((group) => group.bars.length));
   const color = index => ADMIN_CHART_COLORS[index % ADMIN_CHART_COLORS.length];
   const y = value => plotHeight - (value / maximum) * plotHeight;
   const ticks = Array.from(

@@ -1,79 +1,61 @@
-import { useCallback, useEffect, useState } from 'react';
-import { listTickets, sendFollowUp, submitTicket, uploadAttachment } from '../api/supportApi.js';
+import { useCallback, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { supportIdentity, supportTicketsActions } from '../store/supportTicketsSlice.js';
 
 export default function useSupportRequests(user) {
-  const identity = [user?.id || user?.userId, user?.token || ''].join(':');
-  const [state, setState] = useState({
-    identity,
-    tickets: [],
-    loading: true,
-    error: '',
-    request: null,
-  });
+  const dispatch = useDispatch();
+  const state = useSelector(rootState => rootState.supportTickets);
+  const identity = supportIdentity(user);
+  const visibleState =
+    state.identity === identity
+      ? state
+      : { tickets: [], loading: true, error: '' };
+
   const refresh = useCallback(
     async signal => {
-      const request = {};
-      const requestSignal = typeof signal?.aborted === 'boolean' ? signal : undefined;
-      setState(current => (current.identity === identity ? { ...current, request } : current));
       try {
-        const tickets = await listTickets(user, requestSignal);
-        // A later refresh or a different account owns the screen once its request starts.
-        setState(current =>
-          current.identity === identity && current.request === request
-            ? { ...current, tickets, loading: false, error: '' }
-            : current
-        );
-        return tickets;
-      } catch (error) {
-        if (error.name !== 'AbortError')
-          setState(current =>
-            current.identity === identity && current.request === request
-              ? {
-                  ...current,
-                  loading: false,
-                  error: error.message || 'Unable to load support tickets.',
-                }
-              : current
-          );
+        return await dispatch(supportTicketsActions.loadTickets({ identity }, { signal })).unwrap();
+      } catch {
         return null;
       }
     },
-    [identity, user]
+    [dispatch, identity]
   );
 
   useEffect(() => {
     const controller = new AbortController();
-    setState({ identity, tickets: [], loading: true, error: '', request: null });
     refresh(controller.signal);
     return () => controller.abort();
-  }, [identity, refresh]);
+  }, [refresh]);
 
   const create = useCallback(
-    async (request, files) => {
-      const attachmentIds = [];
-      for (const file of files)
-        attachmentIds.push((await uploadAttachment(user, file)).attachmentId);
-      const result = await submitTicket(user, { ...request, attachmentIds });
-      await refresh();
-      return result;
-    },
-    [user, refresh]
+    (request, files) =>
+      dispatch(supportTicketsActions.createTicket({ request, files, identity })).unwrap(),
+    [dispatch, identity]
   );
   const followUp = useCallback(
-    async (id, message) => {
-      await sendFollowUp(user, id, message);
-      await refresh();
-    },
-    [user, refresh]
+    (id, message) =>
+      dispatch(supportTicketsActions.sendTicketFollowUp({ id, message, identity })).unwrap(),
+    [dispatch, identity]
+  );
+  const updateTicket = useCallback(
+    (id, values) =>
+      dispatch(supportTicketsActions.updateTicket({ id, values, identity })).unwrap(),
+    [dispatch, identity]
+  );
+  const remove = useCallback(
+    id => dispatch(supportTicketsActions.deleteTicket({ id, identity })).unwrap(),
+    [dispatch, identity]
   );
 
-  const visible = state.identity === identity ? state : { tickets: [], loading: true, error: '' };
   return {
-    tickets: visible.tickets,
-    loading: visible.loading,
-    error: visible.error,
+    tickets: visibleState.tickets,
+    loading: visibleState.loading,
+    error: visibleState.error,
     refresh,
     create,
     followUp,
+    updateTicket,
+    remove,
   };
 }

@@ -1,4 +1,3 @@
-import React from 'react';
 import { legacyEvent } from '../../../app/legacyEvents.js';
 import PublicEventCatalog from '../components/PublicEventCatalog.jsx';
 

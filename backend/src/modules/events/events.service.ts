@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { DataStore, Event, EventCancellation } from '../../common/data-store';
 import { CancelClientEventDto, CreateEventDto, UpdateEventDto } from './dtos/event.dto';
+import { SendEventChatMessageDto, UpdateEventChatMessageDto } from './dtos/event-chat.dto';
 import { UserRole } from '../../common/constants';
 import { assertEventPolicyAccepted, getEventPolicy } from '../../common/event-policy';
 import {
@@ -227,7 +228,7 @@ export class EventsService {
     const tasks = event.preparationTasks || [];
     const completedTasks = tasks.filter(task => task.status === 'completed').length;
     const issues = this.dataStore.supportTickets.filter(
-      ticket => ticket.eventId === event.eventId && ticket.status !== 'resolved'
+      ticket => !ticket.deletedAt && ticket.eventId === event.eventId && ticket.status !== 'resolved'
     );
     const nowDate = this.localDateKey();
     const attentionReasons = [
@@ -423,6 +424,96 @@ export class EventsService {
       }
     }
     return this.mapEventToFrontend(event);
+  }
+
+  private chatParticipants(eventId: string, role: UserRole, userId: string) {
+    const event = this.dataStore.events.find(item => item.eventId === eventId);
+    if (!event) throw new NotFoundException('Event not found');
+
+    const organizer = this.dataStore.organizers.find(
+      item => item.organizerId === event.organizerId || item.userId === event.organizerId
+    );
+    const clientId = event.clientId || this.dataStore.eventRequests.find(
+      request => request.eventId === eventId && request.organizerId === organizer?.organizerId
+    )?.clientId;
+    const client = this.dataStore.clients.find(
+      item => item.clientId === clientId || item.userId === clientId
+    );
+    const organizerUser = organizer && this.dataStore.findUserById(organizer.userId);
+    const clientUser = client && this.dataStore.findUserById(client.userId);
+    if (clientUser && organizerUser) {
+      if (role === UserRole.CLIENT && userId === clientUser.userId) {
+        return { sender: clientUser, recipient: organizerUser };
+      }
+      if (role === UserRole.EVENT_ORGANIZER && userId === organizerUser.userId) {
+        return { sender: organizerUser, recipient: clientUser };
+      }
+    }
+    throw new ForbiddenException('Only the client and assigned organizer can access this chat');
+  }
+
+  getChat(eventId: string, role: UserRole, userId: string) {
+    const { sender, recipient } = this.chatParticipants(eventId, role, userId);
+    const messages = this.dataStore.eventChatMessages.flatMap(message => {
+      if (message.eventId !== eventId) return [];
+      const isOwn = message.senderUserId === sender.userId;
+      const matches = isOwn
+        ? message.recipientUserId === recipient.userId
+        : message.senderUserId === recipient.userId && message.recipientUserId === sender.userId;
+      if (!matches) return [];
+      return [{ id: message.id, isOwn, text: message.text, createdAt: message.createdAt }];
+    });
+    return { participantName: recipient.name, messages };
+  }
+
+  sendChatMessage(eventId: string, dto: SendEventChatMessageDto, role: UserRole, userId: string) {
+    const { sender, recipient } = this.chatParticipants(eventId, role, userId);
+    const id = `${sender.userId}-${dto.id}`;
+    const existing = this.dataStore.eventChatMessages.find(
+      message => message.eventId === eventId && message.id === id
+    );
+    if (existing) {
+      if (existing.text !== dto.text || existing.recipientUserId !== recipient.userId) {
+        throw new ConflictException('This message ID has already been used');
+      }
+      return;
+    }
+    this.dataStore.eventChatMessages.push({
+      id,
+      eventId,
+      senderUserId: sender.userId,
+      recipientUserId: recipient.userId,
+      text: dto.text,
+      createdAt: new Date(),
+    });
+  }
+
+  private ownChatMessageIndex(eventId: string, messageId: string, role: UserRole, userId: string) {
+    const { sender, recipient } = this.chatParticipants(eventId, role, userId);
+    const index = this.dataStore.eventChatMessages.findIndex(message =>
+      message.eventId === eventId &&
+      message.id === messageId &&
+      message.senderUserId === sender.userId &&
+      message.recipientUserId === recipient.userId
+    );
+    if (index === -1) throw new NotFoundException('Chat message not found');
+    return index;
+  }
+
+  updateChatMessage(
+    eventId: string,
+    messageId: string,
+    dto: UpdateEventChatMessageDto,
+    role: UserRole,
+    userId: string
+  ): void {
+    const index = this.ownChatMessageIndex(eventId, messageId, role, userId);
+    this.dataStore.eventChatMessages[index].text = dto.text;
+  }
+
+  deleteChatMessage(eventId: string, messageId: string, role: UserRole, userId: string): void {
+    const index = this.ownChatMessageIndex(eventId, messageId, role, userId);
+    this.dataStore.eventChatMessages.splice(index, 1);
   }
 
   // Update event - only by organizer who created it or super admin

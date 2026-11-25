@@ -120,7 +120,9 @@ export class WorkspaceService {
                 user.userRole === UserRole.EVENT_ORGANIZER))
       )
       .map(user => this.safeUser(user, operator || user.userId === userId));
-    const tickets = this.db.supportTickets.filter(ticket => support || ticket.userId === userId);
+    const tickets = this.db.supportTickets.filter(
+      ticket => !ticket.deletedAt && (support || ticket.userId === userId)
+    );
     const reportIds = new Set(requests.map(request => request.requestId));
     const payload = {
       currentUser: this.safeUser(actor, true),

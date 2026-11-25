@@ -1,4 +1,3 @@
-import React from 'react';
 import { legacyEvent } from '../../../app/legacyEvents.js';
 
 function GeneralLoginPage() {

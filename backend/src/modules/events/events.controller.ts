@@ -5,15 +5,18 @@ import {
   Body,
   Param,
   Put,
+  Patch,
   Delete,
   UseGuards,
   Query,
   HttpStatus,
   HttpCode,
+  Header,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiHeader, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { EventsService } from './events.service';
 import { CancelClientEventDto, CreateEventDto, UpdateEventDto } from './dtos/event.dto';
+import { SendEventChatMessageDto, UpdateEventChatMessageDto } from './dtos/event-chat.dto';
 import { RoleGuard } from '../../common/guards/role.guard';
 import { UserRoleDecorator } from '../../common/decorators/user-role.decorator';
 import { UserId } from '../../common/decorators/user-id.decorator';
@@ -95,6 +98,50 @@ export class EventsController {
   @ApiResponse({ status: 404, description: 'Event not found' })
   findOne(@Param('id') id: string, @UserRoleDecorator() role: UserRole, @UserId() userId: string) {
     return this.eventsService.findOne(id, role, userId);
+  }
+
+  @Get(':id/chat')
+  @Header('Cache-Control', 'no-store')
+  @ApiOperation({ summary: 'Read the private conversation between the client and assigned organizer' })
+  getChat(@Param('id') id: string, @UserRoleDecorator() role: UserRole, @UserId() userId: string) {
+    return this.eventsService.getChat(id, role, userId);
+  }
+
+  @Post(':id/chat')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Send a chat message as an event participant' })
+  sendChatMessage(
+    @Param('id') id: string,
+    @Body() dto: SendEventChatMessageDto,
+    @UserRoleDecorator() role: UserRole,
+    @UserId() userId: string
+  ): void {
+    this.eventsService.sendChatMessage(id, dto, role, userId);
+  }
+
+  @Patch(':id/chat/:messageId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Edit a message sent by the current event participant' })
+  updateChatMessage(
+    @Param('id') id: string,
+    @Param('messageId') messageId: string,
+    @Body() dto: UpdateEventChatMessageDto,
+    @UserRoleDecorator() role: UserRole,
+    @UserId() userId: string
+  ): void {
+    this.eventsService.updateChatMessage(id, messageId, dto, role, userId);
+  }
+
+  @Delete(':id/chat/:messageId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Delete a message sent by the current event participant' })
+  deleteChatMessage(
+    @Param('id') id: string,
+    @Param('messageId') messageId: string,
+    @UserRoleDecorator() role: UserRole,
+    @UserId() userId: string
+  ): void {
+    this.eventsService.deleteChatMessage(id, messageId, role, userId);
   }
 
   @Post(':id/complete')

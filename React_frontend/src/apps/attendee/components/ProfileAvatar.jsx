@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 export default function ProfileAvatar({ name = '', image, fallback, size = 'av-xl' }) {
   const [imageFailed, setImageFailed] = useState(false);

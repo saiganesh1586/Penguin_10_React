@@ -30,6 +30,7 @@ function normalizeRole(role) {
 
 // ─── Session Helpers ─────────────────────────────────────────────
 function getCurrentUser() {
+  if (window.EventFlowAuth) return window.EventFlowAuth.getSession();
   try {
     const s = sessionStorage.getItem(SESSION_KEY);
     return s ? JSON.parse(s) : null;
@@ -38,11 +39,13 @@ function getCurrentUser() {
   }
 }
 function setCurrentUser(user) {
+  if (window.EventFlowAuth) return window.EventFlowAuth.updateProfile(user);
   try {
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
   } catch (e) {}
 }
 function clearCurrentUser() {
+  if (window.EventFlowAuth) return window.EventFlowAuth.logout();
   try {
     sessionStorage.removeItem(SESSION_KEY);
   } catch (e) {}
@@ -77,7 +80,7 @@ async function apiRequest(endpoint, options = {}) {
     ...(options.headers || {}),
   };
   try {
-    const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const res = await (globalThis.window?.EventFlowFetch || fetch)(`${API_BASE_URL}${endpoint}`, {
       ...options,
       headers,
     });
@@ -367,6 +370,7 @@ let AppState = {
 // ═══════════════════ PERSISTENCE ═══════════════════
 
 function saveState() {
+  if (window.EventFlowResources) return;
   try {
     localStorage.setItem(STATE_KEY, JSON.stringify(AppState));
   } catch (e) {
@@ -374,6 +378,7 @@ function saveState() {
   }
 }
 function loadState() {
+  if (window.EventFlowResources) return;
   try {
     const saved = localStorage.getItem(STATE_KEY);
     if (saved) {
@@ -3221,6 +3226,7 @@ const DB = {
 //  DATA PERSISTENCE (LOCALSTORAGE)
 // ════════════════════════════════════════════════
 function saveDB() {
+  if (window.EventFlowResources) return;
   try {
     localStorage.setItem('ffsd_db', JSON.stringify(DB));
   } catch (e) {
@@ -3230,6 +3236,7 @@ function saveDB() {
 // `persist` is disabled for storage events so receiving tabs do not write the
 // same data back and trigger another refresh in every open session.
 function loadDB(persist = true) {
+  if (window.EventFlowResources) return;
   try {
     const saved = localStorage.getItem('ffsd_db');
     if (saved) {
@@ -3533,108 +3540,16 @@ function doLogin() {
     button.disabled = true;
   }
 
-  // Try backend first, with instant fallback to local DB if backend is offline
-  apiLogin(email, pass)
-    .then(function (userData) {
-      const roleMap = {
-        EMPLOYEE: 'employee',
-        employee: 'employee',
-        SUPER_ADMIN: 'superuser',
-        super_admin: 'superuser',
-        CLIENT: 'client',
-        client: 'client',
-        EVENT_ORGANIZER: 'organizer',
-        event_organizer: 'organizer',
-        ATTENDEE: 'attendee',
-        attendee: 'attendee',
-      };
-      const frontendRole =
-        roleMap[userData.role || userData.userRole] ||
-        (userData.role || userData.userRole || '').toLowerCase();
-      CU = {
-        id: userData.userId,
-        userId: userData.userId,
-        name: userData.name,
-        email: userData.email,
-        token: userData.token,
-        role: frontendRole,
-        userRole: userData.role || userData.userRole,
-        employeeType: userData.employeeType,
-        status: userData.status,
-        avatar: (userData.name || 'U')
-          .split(' ')
-          .map(n => n[0])
-          .join('')
-          .toUpperCase()
-          .slice(0, 2),
-      };
-      try {
-        sessionStorage.setItem('ef_cu', JSON.stringify(CU));
-      } catch (e) {}
+  return window.EventFlowAuth.login(email, pass)
+    .then(user => {
+      CU = structuredClone(user);
       if (routeToRoleWorkspace(CU)) return;
       initApp();
       showPage('app');
       document.documentElement.classList.remove('restoring-session');
-      toast(`Welcome back, ${CU.name}! 👋`, 'success');
+      toast(`Welcome back, ${CU.name}!`, 'success');
     })
-    .catch(function (error) {
-      // Check local DB if offline or if password matches demo aliases
-      const localUser = DB.users.find(user => user.email.toLowerCase() === email.toLowerCase());
-      const norm = s => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-      const inNorm = norm(pass);
-      const stNorm = localUser ? norm(localUser.password) : '';
-      const localMatches =
-        localUser &&
-        !['SUPPORT_FINANCE', 'FINANCE_EXECUTIVE'].includes(
-          String(localUser.employeeType || '').toUpperCase()
-        ) &&
-        (localUser.password === pass ||
-          localUser.password.toLowerCase() === pass.toLowerCase() ||
-          inNorm === stNorm ||
-          inNorm === 'employee123' ||
-          inNorm === 'employee' ||
-          inNorm === 'organizer123' ||
-          inNorm === 'org123' ||
-          inNorm === 'organizer' ||
-          inNorm === 'client123' ||
-          inNorm === 'client' ||
-          inNorm === 'attendee123' ||
-          inNorm === 'att123' ||
-          inNorm === 'attendee' ||
-          inNorm === 'admin123' ||
-          inNorm === 'admin');
-      if (localMatches) {
-        CU = {
-          id: localUser.id || localUser.userId,
-          userId: localUser.userId || localUser.id,
-          name: localUser.name,
-          email: localUser.email,
-          role: localUser.role,
-          userRole: localUser.userRole || localUser.role,
-          employeeType: localUser.employeeType,
-          status: localUser.status || 'active',
-          avatar: (localUser.name || 'U')
-            .split(' ')
-            .map(n => n[0])
-            .join('')
-            .toUpperCase()
-            .slice(0, 2),
-        };
-        try {
-          sessionStorage.setItem('ef_cu', JSON.stringify(CU));
-        } catch (e) {}
-        if (routeToRoleWorkspace(CU)) return;
-        initApp();
-        showPage('app');
-        document.documentElement.classList.remove('restoring-session');
-        toast(`Welcome back, ${CU.name}! 👋`, 'success');
-      } else {
-        const msg = error.message || 'Invalid email or password';
-        toast(msg, 'error');
-        showErr('l-pass-err');
-        g('l-pass-err').textContent = msg;
-      }
-    })
+    .catch(error => toast(error.message || 'Sign-in failed.', 'error'))
     .finally(function () {
       if (button) {
         button.textContent = 'Sign In →';
@@ -3644,9 +3559,7 @@ function doLogin() {
 }
 function doLogout() {
   CU = null;
-  try {
-    sessionStorage.removeItem('ef_cu');
-  } catch (e) {}
+  window.EventFlowAuth.logout();
   document.documentElement.classList.remove('restoring-session');
   if (window.EventFlowRole?.key !== 'landing') {
     window.location.replace('/landing');
@@ -13372,10 +13285,8 @@ document.addEventListener('DOMContentLoaded', function boot() {
   // users whenever the optional backend was offline.
   loadDB(false);
   try {
-    const saved = sessionStorage.getItem('ef_cu');
-    if (saved) {
-      CU = window.EventFlowAccountPolicy.normalizeSavedAccount(JSON.parse(saved));
-      if (!CU) throw new Error('This account is no longer available.');
+    CU = window.EventFlowAuth.getSession();
+    if (CU) {
       const workspace = getRoleWorkspace(CU);
       if (workspace && routeToRoleWorkspace(CU)) return;
       if (!workspace && window.EventFlowRole?.key !== 'landing') {
@@ -13389,9 +13300,7 @@ document.addEventListener('DOMContentLoaded', function boot() {
     }
   } catch (e) {
     CU = null;
-    try {
-      sessionStorage.removeItem('ef_cu');
-    } catch (ignore) {}
+    window.EventFlowAuth.logout();
   }
   if (window.EventFlowRole?.key !== 'landing') {
     window.location.replace('/landing');

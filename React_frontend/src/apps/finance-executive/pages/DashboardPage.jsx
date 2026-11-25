@@ -15,7 +15,7 @@ export default function DashboardPage() {
   const data = financeData;
   const t = data.totals;
   const activity = [
-    ...data.recentTransactions.map((row, index) => ({
+    ...data.recentTransactions.map((row) => ({
       type: 'Payment',
       id: row.paymentId,
       date: row.createdAt,
@@ -24,7 +24,7 @@ export default function DashboardPage() {
       event: row.eventName,
       target: 'transactions',
     })),
-    ...data.recentRefunds.map((row, index) => ({
+    ...data.recentRefunds.map((row) => ({
       type: 'Refund',
       id: row.refundId,
       date: row.processedAt || row.requestedAt,

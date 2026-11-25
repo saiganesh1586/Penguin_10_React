@@ -1,6 +1,8 @@
-import React from 'react';
+import CustomerSupportPage from '../../customer-support/pages/CustomerSupportPage.jsx';
 import { ClientContext } from '../context/ClientContext.jsx';
-import useClientData from '../context/useClientData.js';
+import usePortalData from '../../../app/usePortalData.js';
+import { clientSlice } from '../store/clientSlice.js';
+import { clientActions } from '../api/client-api.js';
 import { LoadingState, ErrorState } from '../../../app/PageFeedback.jsx';
 import CompletedEventsPage from '../pages/CompletedEventsPage.jsx';
 import DashboardPage from '../pages/DashboardPage.jsx';
@@ -11,9 +13,11 @@ import OngoingEventsPage from '../pages/OngoingEventsPage.jsx';
 import ProfilePage from '../pages/ProfilePage.jsx';
 import RequestDetailsPage from '../pages/RequestDetailsPage.jsx';
 import RequestStatusPage from '../pages/RequestStatusPage.jsx';
-import SettingsPage from '../pages/SettingsPage.jsx';
+import AccountSettingsPage from '../../../app/AccountSettingsPage.jsx';
 import UpcomingEventsPage from '../pages/UpcomingEventsPage.jsx';
+import PortalProvider from '../../../app/state/PortalProvider.jsx';
 const pages = {
+  'customer-support': CustomerSupportPage,
   'completed-events': CompletedEventsPage,
   dashboard: DashboardPage,
   'find-organizers': FindOrganizersPage,
@@ -23,18 +27,45 @@ const pages = {
   profile: ProfilePage,
   'request-details': RequestDetailsPage,
   'request-status': RequestStatusPage,
-  settings: SettingsPage,
+  settings: AccountSettingsPage,
   'upcoming-events': UpcomingEventsPage,
 };
 export const clientPageNames = Object.keys(pages);
-export default function ClientPageContainer({ page, initialData }) {
-  const { data, loading, error, retry } = useClientData(page, initialData);
+function ClientPageContent({ page, pageProps }) {
+  const { data, loading, error, retry } = usePortalData(
+    clientSlice,
+    page,
+    pageProps,
+    clientActions,
+    window.EventFlowClientRuntime
+  );
   const Page = pages[page];
   if (error) return <ErrorState message={error} onRetry={retry} />;
   if (loading || !data?.actions) return <LoadingState title="Loading…" />;
   return (
     <ClientContext.Provider value={data}>
-      <Page {...data.pageProps} page={page} />
+      {page === 'settings' ? (
+        <AccountSettingsPage
+          user={data.CU}
+          roleLabel={data.ROLE_LABELS[data.CU.role]}
+          preferenceControls={data.preferenceControls}
+          actions={data.actions}
+        />
+      ) : (
+        <Page {...data.pageProps} page={page} />
+      )}
     </ClientContext.Provider>
+  );
+}
+
+export default function ClientPageContainer(props) {
+  return (
+    <PortalProvider>
+      {props.page === 'customer-support' ? (
+        <CustomerSupportPage onBack={() => window.goNav('settings')} />
+      ) : (
+        <ClientPageContent {...props} />
+      )}
+    </PortalProvider>
   );
 }

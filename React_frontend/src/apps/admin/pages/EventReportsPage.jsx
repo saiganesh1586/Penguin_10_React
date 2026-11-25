@@ -20,7 +20,6 @@ export default function EventReportsPage() {
   if (selectedStage === 'ongoing') eventsToAnalyze = ongoingEvents;
   else if (selectedStage === 'upcoming') eventsToAnalyze = upcomingEvents;
   else if (selectedStage === 'completed') eventsToAnalyze = completedEvents;
-  const totalEvents = eventsToAnalyze.length;
 
   // 1. Lifecycle Stage Bar Graph
   const lifecycleBars = [
@@ -80,7 +79,7 @@ export default function EventReportsPage() {
       monthlyBuckets[match[1]].count++;
     }
   });
-  const monthlyBars = Object.values(monthlyBuckets).map((m, index) => ({
+  const monthlyBars = Object.values(monthlyBuckets).map((m) => ({
     label: m.label + (m.isCurrent ? ' (Now)' : ''),
     value: m.count,
     color: m.isCurrent

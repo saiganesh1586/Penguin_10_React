@@ -1,5 +1,3 @@
-import React from 'react';
-
 export function LoadingState({ title = 'Loading…', icon = '⏳' }) {
   return (
     <div className="empty">
@@ -9,16 +7,19 @@ export function LoadingState({ title = 'Loading…', icon = '⏳' }) {
   );
 }
 
-export function ErrorState({ title = 'Data could not be loaded', message, onRetry }) {
+export function ErrorState({ title = 'Data could not be loaded', icon, message, onRetry }) {
   return (
     <div className="empty">
+      {icon && <div className="empty-icon">{icon}</div>}
       <div className="empty-title">{title}</div>
       <p className="empty-desc" role="alert">
         {message}
       </p>
-      <button className="btn btn-primary mt-16" onClick={onRetry}>
-        Try Again
-      </button>
+      {onRetry && (
+        <button className="btn btn-primary mt-16" onClick={onRetry}>
+          Try Again
+        </button>
+      )}
     </div>
   );
 }

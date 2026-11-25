@@ -1,4 +1,3 @@
-import React from 'react';
 import TicketQR from './TicketQR.jsx';
 const eventBadge = status =>
   ({

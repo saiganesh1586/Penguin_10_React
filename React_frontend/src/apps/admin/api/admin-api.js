@@ -1,10 +1,11 @@
-// API refresh stays in this module; pages consume the normalized workspace snapshot.
-export async function loadAdminData(page, initialData, attempt = 0) {
-  let data = initialData;
-  if (!data || attempt > 0) {
-    await window.EventFlowData?.sync();
-    data = window.EventFlowAdminRuntime.snapshot(initialData?.pageProps);
-  }
+import { createPortalRepository, readRuntimeData } from '../../../app/state/portalRepository.js';
+
+export const adminRepository = createPortalRepository(async ({ page, pageProps, force = false }) => {
+  await window.EventFlowData?.sync(undefined, undefined, { force, applyCached: false });
+  const runtime = window.EventFlowAdminRuntime;
+  const data = readRuntimeData(runtime.snapshot(pageProps), {
+    ...(page === 'employee-reports' ? { employeeReports: 'receivedEmployeeReports' } : {}),
+  });
   if (page === 'dashboard') {
     try {
       const response = await window.apiGetDashboard();
@@ -13,9 +14,8 @@ export async function loadAdminData(page, initialData, attempt = 0) {
       data.dashboardData = null;
     }
   }
-  data.actions = adminActions;
   return data;
-}
+});
 
 // Resolve handlers at click time so API-backed overrides installed by data-sync remain active.
 export const adminActions = {

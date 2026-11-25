@@ -3,7 +3,7 @@ export default function NotificationsPage() {
   const portalContext = useClientContext();
   const portalActions = portalContext.actions;
   const { visibleNotifications } = portalContext;
-  const notifications = visibleNotifications();
+  const notifications = portalContext.notificationRows ?? visibleNotifications();
   const unread = notifications.filter(notification => !notification.read).length;
   return (
     <>

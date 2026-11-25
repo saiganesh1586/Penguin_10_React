@@ -1,17 +1,14 @@
 import DashboardLayout from '../../../app/DashboardLayout.jsx';
-import Sidebar from '../../../app/Sidebar.jsx';
-import Navbar from '../../../app/Navbar.jsx';
-import PublicHomePage from '../pages/PublicHomePage.jsx';
+import PublicHomePage from '../../landing/pages/PortalPublicHomePage.jsx';
 import LoginPage from '../../auth/pages/UnifiedAuthPage.jsx';
-import FindEventsPage from '../../landing/pages/PortalFindEventsPage.jsx';
+import FindEventsPage from '../../landing/pages/FindEventsPage.jsx';
 import GalleryPage from '../../landing/pages/GalleryPage.jsx';
 import AboutPage from '../../landing/pages/AboutPage.jsx';
 import ContactPage from '../../landing/pages/ContactPage.jsx';
-import React from 'react';
 import LegacyRuntime from '../../../app/LegacyRuntime.jsx';
 import runtime from './runtime.js?raw';
 import portalApi from '../api/portal-api.js?raw';
-import portalState from '../context/portal-state.js?raw';
+import portalState from '../../../app/portal-state.js?raw';
 import '../styles/client.css';
 import ClientPageContainer, { clientPageNames } from './ClientPageContainer.jsx';
 import createPageBridge from '../../../app/createPageBridge.jsx';
@@ -26,7 +23,7 @@ export default function ClientWorkspace() {
   }
   return (
     <>
-      <PublicHomePage />
+      <PublicHomePage showEmployeeEntry />
 
       <LoginPage workspace="client" />
 
@@ -40,7 +37,7 @@ export default function ClientWorkspace() {
 
       <DashboardLayout
         sidebar={
-          <Sidebar>
+          <>
             <div className="sb-logo">
               <div className="sb-logo-mark">
                 <span className="brand-logo">
@@ -80,10 +77,10 @@ export default function ClientWorkspace() {
                 </span>
               </div>
             </div>
-          </Sidebar>
+          </>
         }
         navbar={
-          <Navbar>
+          <>
             <div className="topbar-title" id="topbar-title">
               User
             </div>
@@ -95,7 +92,7 @@ export default function ClientWorkspace() {
                 Sign Out
               </button>
             </div>
-          </Navbar>
+          </>
         }
       />
 

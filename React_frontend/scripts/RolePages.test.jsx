@@ -3,8 +3,11 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import FinanceExecutivePageContainer from '../src/apps/finance-executive/app/FinanceExecutivePageContainer.jsx';
-import { loadFinancePage } from '../src/apps/finance-executive/api/finance-data.js';
-import { financeExecutiveActions } from '../src/apps/finance-executive/api/finance-executive-api.js';
+import AccountSettingsPage from '../src/app/AccountSettingsPage.jsx';
+import PortalProvider from '../src/app/state/PortalProvider.jsx';
+import { restoreSession } from '../src/apps/auth/authSlice.js';
+import { store } from '../src/app/state/store.js';
+import { financeExecutiveActions, loadFinancePage } from '../src/apps/finance-executive/api/finance-executive-api.js';
 import { ClientContext } from '../src/apps/client/context/ClientContext.jsx';
 import { OrganizerContext } from '../src/apps/organizer/context/OrganizerContext.jsx';
 import { AdminContext } from '../src/apps/admin/context/AdminContext.jsx';
@@ -32,7 +35,6 @@ const renderers = {
   OngoingEventsPage: 'pageOngoingEvents',
   ProfilePage: 'pageProfile',
   RequestStatusPage: 'pageRequestStatus',
-  SettingsPage: 'pageSettings',
   UpcomingEventsPage: 'pageUpcomingEvents',
   AttendeesPage: 'pageAttendees',
   EventRequestsPage: 'pageEventRequests',
@@ -52,6 +54,27 @@ const normalize = html => {
 };
 
 describe('Role React pages', () => {
+  for (const role of Object.keys(contexts)) {
+    it(`${role} renders the shared account settings for its workspace`, () => {
+      const { data, context } = fixtures.roleFixture(role, document, sessionStorage);
+      const html = renderToStaticMarkup(
+        <AccountSettingsPage
+          user={data.CU}
+          roleLabel={data.ROLE_LABELS[data.CU.role]}
+          actions={data.actions}
+          admin={role === 'admin'}
+        />
+      );
+      expect(html).toContain('Account Settings');
+      const hasCustomerSupport = role === 'client' || role === 'organizer';
+      expect(html.includes('support-settings-entry')).toBe(hasCustomerSupport);
+      if (role !== 'finance-executive') {
+        const supportFooter = hasCustomerSupport ? 'CustomerSupport' : '';
+        expect(normalize(html)).toBe(normalize(context.pageSettings()) + supportFooter);
+      }
+    });
+  }
+
   for (const [file, module] of Object.entries(pages)) {
     if (
       file.endsWith('/PublicHomePage.jsx') ||
@@ -74,9 +97,11 @@ describe('Role React pages', () => {
         page: name === 'FinancePage.jsx' ? 'transactions' : 'dashboard',
       };
       const html = renderToStaticMarkup(
-        <Context.Provider value={data}>
-          <Page {...props} />
-        </Context.Provider>
+        <PortalProvider>
+          <Context.Provider value={data}>
+            <Page {...props} />
+          </Context.Provider>
+        </PortalProvider>
       );
       expect(html).not.toMatch(
         /\[object Object\]|___PORTAL_EXPR_|&lt;(?:div|table|tr|span|button)/
@@ -192,9 +217,11 @@ describe('Role React pages', () => {
       const Page = pages[`../src/apps/${role}/pages/RequestDetailsPage.jsx`].default;
       const Context = contexts[role];
       const { container } = render(
-        <Context.Provider value={data}>
-          <Page id={request.id} />
-        </Context.Provider>
+        <PortalProvider>
+          <Context.Provider value={data}>
+            <Page id={request.id} />
+          </Context.Provider>
+        </PortalProvider>
       );
       expect(container).toHaveTextContent('Venue unavailable <script>alert(1)</script>');
       expect(container.querySelector('script')).toBeNull();
@@ -307,12 +334,15 @@ describe('Role React pages', () => {
           })
       );
     vi.stubGlobal('apiRequest', request);
+    vi.stubGlobal('EventFlowFinanceExecutiveRuntime', {
+      snapshot: pageProps => ({ ...data, pageProps }),
+    });
     const { container, rerender } = render(
-      <FinanceExecutivePageContainer page="transactions" initialData={data} />
+      <FinanceExecutivePageContainer page="transactions" pageProps={{}} />
     );
     expect(container.querySelector('.finance-loading')).not.toBeNull();
     await screen.findByText('PAY-OLD');
-    rerender(<FinanceExecutivePageContainer page="transactions" initialData={{ ...data }} />);
+    rerender(<FinanceExecutivePageContainer page="transactions" pageProps={{}} />);
     await waitFor(() => expect(request).toHaveBeenCalledTimes(2));
     expect(container.querySelector('.finance-loading')).not.toBeNull();
     expect(screen.queryByText('PAY-OLD')).not.toBeInTheDocument();
@@ -335,6 +365,8 @@ describe('Role React pages', () => {
 
   it('loads support tickets, merges event issues once, and opens the existing reply dialog', async () => {
     const { data } = fixtures.roleFixture('support-executive', document, sessionStorage);
+    sessionStorage.setItem('ef_cu', JSON.stringify({ ...data.CU, token: 'support-token' }));
+    store.dispatch(restoreSession());
     const ticket = {
       ticketId: 'SUP-1',
       concern: 'Payment help',
@@ -343,12 +375,7 @@ describe('Role React pages', () => {
       requesterName: 'Anita Rao',
       createdAt: '2026-10-01',
     };
-    data.supportExecutiveRequestOptions = () => ({
-      getAdditionalTickets: () => [
-        ticket,
-        { ...ticket, ticketId: 'EVENT-1', concern: 'Venue issue' },
-      ],
-    });
+    data.additionalTickets = [ticket, { ...ticket, ticketId: 'EVENT-1', concern: 'Venue issue' }];
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
@@ -361,9 +388,11 @@ describe('Role React pages', () => {
     vi.stubGlobal('EventFlowSupport', { bind: vi.fn(() => ({ openTicket, destroy: vi.fn() })) });
     const Page = pages['../src/apps/customer-support/pages/SupportIssuesPage.jsx'].default;
     render(
-      <SupportExecutiveContext.Provider value={data}>
-        <Page />
-      </SupportExecutiveContext.Provider>
+      <PortalProvider>
+        <SupportExecutiveContext.Provider value={data}>
+          <Page />
+        </SupportExecutiveContext.Provider>
+      </PortalProvider>
     );
     await screen.findByText('Payment help');
     expect(screen.getAllByText('Payment help')).toHaveLength(1);

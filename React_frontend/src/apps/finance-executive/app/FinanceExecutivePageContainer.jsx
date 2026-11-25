@@ -1,19 +1,21 @@
-import React from 'react';
 import { FinanceExecutiveContext } from '../context/FinanceExecutiveContext.jsx';
-import useFinanceExecutiveData from '../context/useFinanceExecutiveData.js';
+import usePortalData from '../../../app/usePortalData.js';
+import { financeExecutiveSlice } from '../store/financeExecutiveSlice.js';
+import { financeExecutiveActions } from '../api/finance-executive-api.js';
 import { ErrorState } from '../../../app/PageFeedback.jsx';
 import NotificationsPage from '../pages/NotificationsPage.jsx';
 import ProfilePage from '../pages/ProfilePage.jsx';
-import SettingsPage from '../pages/SettingsPage.jsx';
+import AccountSettingsPage from '../../../app/AccountSettingsPage.jsx';
 import DashboardPage from '../pages/DashboardPage.jsx';
 import CommissionsPage from '../pages/CommissionsPage.jsx';
 import FinancePage from '../pages/FinancePage.jsx';
 import ReconciliationPage from '../pages/ReconciliationPage.jsx';
 import ReportsPage from '../pages/ReportsPage.jsx';
+import PortalProvider from '../../../app/state/PortalProvider.jsx';
 const pages = {
   notifications: NotificationsPage,
   profile: ProfilePage,
-  settings: SettingsPage,
+  settings: AccountSettingsPage,
   dashboard: DashboardPage,
   commissions: CommissionsPage,
   transactions: FinancePage,
@@ -22,8 +24,14 @@ const pages = {
   reports: ReportsPage,
 };
 export const financeExecutivePageNames = Object.keys(pages);
-export default function FinanceExecutivePageContainer({ page, initialData }) {
-  const { data, loading, error, retry } = useFinanceExecutiveData(page, initialData);
+function FinanceExecutivePageContent({ page, pageProps }) {
+  const { data, loading, error, retry } = usePortalData(
+    financeExecutiveSlice,
+    page,
+    pageProps,
+    financeExecutiveActions,
+    window.EventFlowFinanceExecutiveRuntime
+  );
   const Page = pages[page];
   if (error) return <ErrorState message={error} onRetry={retry} />;
   if (loading || !data?.actions)
@@ -36,7 +44,24 @@ export default function FinanceExecutivePageContainer({ page, initialData }) {
     );
   return (
     <FinanceExecutiveContext.Provider value={data}>
-      <Page {...data.pageProps} page={page} />
+      {page === 'settings' ? (
+        <AccountSettingsPage
+          user={data.CU}
+          roleLabel={data.ROLE_LABELS[data.CU.role]}
+          preferenceControls={data.preferenceControls}
+          actions={data.actions}
+        />
+      ) : (
+        <Page {...data.pageProps} page={page} />
+      )}
     </FinanceExecutiveContext.Provider>
+  );
+}
+
+export default function FinanceExecutivePageContainer(props) {
+  return (
+    <PortalProvider>
+      <FinanceExecutivePageContent {...props} />
+    </PortalProvider>
   );
 }

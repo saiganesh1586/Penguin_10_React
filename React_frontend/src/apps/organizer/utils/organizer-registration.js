@@ -1844,7 +1844,7 @@
     };
     let result = null;
     try {
-      const res = await fetch(`${getBackendBase()}/api/auth/organizer-application`, {
+      const res = await (globalThis.window?.EventFlowFetch || fetch)(`${getBackendBase()}/api/auth/organizer-application`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1991,7 +1991,7 @@
     if (!term) return;
     let appData = null;
     try {
-      const res = await fetch(
+      const res = await (globalThis.window?.EventFlowFetch || fetch)(
         `${getBackendBase()}/api/auth/organizer-application/${encodeURIComponent(term)}`
       );
       if (res.ok) {
@@ -2170,7 +2170,7 @@
     let app = null;
     try {
       const token = (window.CU && window.CU.token) || '';
-      const res = await fetch(
+      const res = await (globalThis.window?.EventFlowFetch || fetch)(
         `${getBackendBase()}/api/auth/organizer-application/${encodeURIComponent(referenceNumber)}`,
         {
           headers: token
@@ -2291,7 +2291,7 @@
     }
     try {
       const token = (window.CU && window.CU.token) || '';
-      const res = await fetch(
+      const res = await (globalThis.window?.EventFlowFetch || fetch)(
         `${getBackendBase()}/api/auth/organizer-application/${encodeURIComponent(
           refNumber
         )}/review`,

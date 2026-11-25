@@ -1,26 +1,53 @@
-import { useCallback, useEffect } from 'react';
-import useSupportDialog from '../context/useSupportDialog.js';
+import { useEffect, useMemo, useRef } from 'react';
+import { useSelector } from 'react-redux';
+import { selectSession } from '../../auth/authSlice.js';
 import { useSupportExecutiveContext } from '../context/SupportExecutiveContext.jsx';
-import useSupportQueue from '../context/useSupportQueue.js';
+import useSupportRequests from '../context/useSupportRequests.js';
 import SupportTicketTable from '../components/SupportTicketTable.jsx';
+
 export default function SupportIssuesPage() {
   const context = useSupportExecutiveContext();
-  const user = context.CU;
+  const user = useSelector(selectSession);
   const getOptions = context.supportExecutiveRequestOptions;
-  const options = getOptions();
-  const { tickets, loading, error, refresh } = useSupportQueue(user, getOptions);
-  const onBack = useCallback(() => context.actions.onNavigate('dashboard'), [context.actions]);
-  const { setContainer, openTicket, ready } = useSupportDialog(user, getOptions, refresh, onBack);
+  const { queueTitle } = getOptions();
+  const { tickets: receivedTickets, loading, error, refresh, updateTicket } =
+    useSupportRequests(user);
+  const { onNavigate } = context.actions;
+  const container = useRef(null);
+  const dialog = useRef(null);
+  const tickets = useMemo(() => {
+    const ids = new Set(receivedTickets.map(ticket => String(ticket.ticketId)));
+    return [
+      ...receivedTickets,
+      ...(context.additionalTickets || []).filter(ticket => !ids.has(String(ticket.ticketId))),
+    ];
+  }, [receivedTickets, context.additionalTickets]);
+
   useEffect(() => {
-    if (loading || !ready) return;
+    const boundDialog = window.EventFlowSupport.bind(
+      container.current,
+      user,
+      () => onNavigate('dashboard'),
+      'Back to Dashboard',
+      { ...getOptions(), management: true, nativeView: true, onRefresh: refresh, updateTicket }
+    );
+    dialog.current = boundDialog;
+    return () => {
+      boundDialog?.destroy();
+      dialog.current = null;
+    };
+  }, [user, onNavigate, getOptions, refresh, updateTicket]);
+
+  useEffect(() => {
+    if (loading || !dialog.current) return;
     const ticketId = sessionStorage.getItem('support_request_id');
     if (!ticketId) return;
     sessionStorage.removeItem('support_request_id');
     const ticket = tickets.find(item => String(item.ticketId) === ticketId);
-    if (ticket) openTicket(ticket);
-  }, [loading, tickets, ready, openTicket]);
+    if (ticket) dialog.current.openTicket(ticket);
+  }, [loading, tickets]);
   return (
-    <div ref={setContainer}>
+    <div ref={container}>
       <div className="page-hd support-page-heading">
         <div className="page-hd-left">
           <div className="page-title">Support &amp; Issue Management</div>
@@ -37,7 +64,7 @@ export default function SupportIssuesPage() {
           marginBottom: 18,
         }}
       >
-        <button type="button" className="btn btn-ghost" disabled={loading} onClick={refresh}>
+        <button type="button" className="btn btn-ghost" disabled={loading} onClick={() => refresh()}>
           Refresh Requests
         </button>
         <span className="support-status support-status-open">
@@ -62,10 +89,10 @@ export default function SupportIssuesPage() {
           </p>
         )}
         <SupportTicketTable
-          title={options.queueTitle || 'Received Support Requests'}
+          title={queueTitle || 'Received Support Requests'}
           tickets={tickets}
           management
-          onView={id => openTicket(tickets.find(ticket => ticket.ticketId === id))}
+          onView={id => dialog.current?.openTicket(tickets.find(ticket => ticket.ticketId === id))}
         />
       </div>
       <div className="support-modal-overlay" id="support-ticket-modal" hidden>

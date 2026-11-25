@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 const statusColor = status =>
   ({ upcoming: 'purple', full: 'red', completed: 'green' }[status] || 'gray');

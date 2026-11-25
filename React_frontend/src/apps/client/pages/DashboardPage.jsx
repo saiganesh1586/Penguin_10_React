@@ -4,10 +4,10 @@ import { useClientContext } from '../context/ClientContext.jsx';
 import useClientActivity from '../context/useClientActivity.js';
 import { compareNewestFirst } from '../../../app/record-order.js';
 export default function DashboardPage() {
+  const activity = useClientActivity();
   const portalContext = useClientContext();
   const portalActions = portalContext.actions;
   const { CU: currentUser, DB: workspaceData } = portalContext;
-  const activity = useClientActivity(portalContext);
   const upcomingEvents = workspaceData.events
     .filter(
       event =>

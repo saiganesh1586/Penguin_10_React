@@ -3,7 +3,7 @@ import { NextFunction, Request, Response } from 'express';
 import { FileLogService } from '../logging/file-log.service';
 @Injectable()
 export class EventsAuditMiddleware implements NestMiddleware {
-  use(request: Request, res: Response, next: NextFunction): void {
+  use(request: Request, _response: Response, next: NextFunction): void {
     const role = (request as any).user?.userRole || 'anonymous';
     FileLogService.writeAccess(
       `${new Date().toISOString()} EVENT_ROUTE role=${role} ${request.method} ${

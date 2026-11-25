@@ -268,7 +268,7 @@ export default function DashboardPage() {
                   ADMIN_CHART_COLORS={portalContext.ADMIN_CHART_COLORS}
                   adminChartLine={portalContext.adminChartLine}
                   adminChartNumber={portalContext.adminChartNumber}
-                  items={months.map((row, index) => ({
+                  items={months.map((row) => ({
                     label: row.label,
                     value: row.registrations,
                   }))}

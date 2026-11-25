@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { EmptyState } from '../components/PageFeedback.jsx';
+import { useState } from 'react';
+import { EmptyState } from '../../../app/PageFeedback.jsx';
 
 function InfoRow({ label, value, style }) {
   return (

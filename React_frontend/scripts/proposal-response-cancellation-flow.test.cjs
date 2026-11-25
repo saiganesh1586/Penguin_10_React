@@ -269,6 +269,7 @@ function setupClientHarness(initialRequests = [], initialEvents = [], initialPay
 }
 
 test('1. Proposal Review Modal: displays full details, pricing, advance deposit, balance, and version history', () => {
+  const dateAfter = days => new Date(Date.now() + days * 86400000).toISOString().slice(0, 10);
   const req = {
     id: 'req-active-001',
     requestId: 'req-active-001',
@@ -278,7 +279,7 @@ test('1. Proposal Review Modal: displays full details, pricing, advance deposit,
     eventName: 'Active Gala Request',
     eventType: 'Corporate',
     status: 'proposal_sent',
-    date: '2026-12-10',
+    date: dateAfter(30),
     budget: 60000,
     guests: 150,
     proposals: [
@@ -289,7 +290,7 @@ test('1. Proposal Review Modal: displays full details, pricing, advance deposit,
         organizerFee: 12000,
         taxes: 10800,
         status: 'pending_client',
-        validUntil: '2026-11-20',
+        validUntil: dateAfter(10),
         eventPlan: 'Full banquet setup, AV equipment, and catering.',
         timeline: '09:00 Setup; 11:00 Registration; 17:00 Wrap-up',
         includedServices: 'Venue coordination, staffing, catering',

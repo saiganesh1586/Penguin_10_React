@@ -2,7 +2,7 @@ import React from 'react';
 export function FinanceAreaChart({ financeMoney, rows }) {
   if (!rows?.length) return <div className="empty">No revenue in this date range.</div>;
   const points = rows.slice(-18);
-  const max = Math.max(...points.map((row, index) => Number(row.revenue) || 0), 1);
+  const max = Math.max(...points.map((row) => Number(row.revenue) || 0), 1);
   const x = index => 36 + index * (648 / Math.max(points.length - 1, 1));
   const y = value => 198 - ((Number(value) || 0) / max) * 158;
   const line = points
@@ -48,7 +48,7 @@ export function FinanceAreaChart({ financeMoney, rows }) {
             <title>{`   ${row.date} :  ${financeMoney(row.revenue)}   `}</title>
           </circle>
         ))}
-        {labels.map((index, rowIndex) => (
+        {labels.map((index) => (
           <text x={x(index)} y="225" textAnchor="middle" fill="#aab2c4" fontSize="11" key={index}>
             {points[index].date}
           </text>
@@ -67,7 +67,7 @@ export function FinanceStatusDonut({ rows }) {
   const total = (rows || []).reduce((sum, row) => sum + Number(row.count || 0), 0);
   if (!total) return <div className="empty">No payment activity in this date range.</div>;
   let start = 0;
-  const stops = rows.map((row, index) => {
+  const stops = rows.map((row) => {
     const end = start + (Number(row.count || 0) / total) * 100;
     const stop = `${colors[row.status] || '#76839f'} ${start}% ${end}%`;
     start = end;
@@ -122,7 +122,7 @@ export function FinanceStatusDonut({ rows }) {
 }
 export function FinanceEventBars({ financeMoney, rows }) {
   if (!rows?.length) return <div className="empty">No event revenue in this date range.</div>;
-  const max = Math.max(...rows.map((row, index) => row.revenue), 1);
+  const max = Math.max(...rows.map((row) => row.revenue), 1);
   return (
     <div className="finance-event-bars">
       {rows.slice(0, 8).map((row, index) => (

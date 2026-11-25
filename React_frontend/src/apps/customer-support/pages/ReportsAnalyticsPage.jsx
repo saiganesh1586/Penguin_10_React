@@ -6,7 +6,7 @@ export default function ReportsAnalyticsPage() {
   const portalContext = useSupportExecutiveContext();
   const portalActions = portalContext.actions;
   const { getAllReportsList } = portalContext;
-  const reports = getAllReportsList();
+  const reports = portalContext.supportReports ?? getAllReportsList();
   const repQ = (sessionStorage.getItem('rep_q') || '').toLowerCase();
   const repType = sessionStorage.getItem('rep_type') || '';
   const repSt = sessionStorage.getItem('rep_st') || '';

@@ -12,22 +12,22 @@ The entries retain their existing session and permission checks. Customers can s
 ## Customer requests
 
 - `app/App.jsx` checks the session and redirects excluded accounts.
-- `pages/CustomerSupportPage.jsx` composes the request form and history with React state. `pages/TicketDetailsPage.jsx` contains the selected ticket's detail and conversation dialog.
-- `context/useStoredSession.js` and `context/useSupportRequests.js` own session and ticket state.
+- `pages/CustomerSupportPage.jsx` serves the standalone route and the help page inside the client, organizer, and attendee workspaces. The form draft and selected ticket ID stay in React state.
+- `store/supportTicketsSlice.js` dispatches ticket reads, submissions, follow-ups, and status changes through `api/supportApi.js`. The standalone entry reads the signed-in session.
 - `components/SupportRequestForm.jsx` and `components/SupportTicketTable.jsx` render the form and ticket table.
 
 ## Employee workspace
 
 - `app/SupportExecutiveApp.jsx` loads the common shell and registers the React page bridge.
 - `app/SupportExecutivePageContainer.jsx` selects the employee page and provides its data through `context/SupportExecutiveContext.jsx`.
-- `context/useSupportExecutiveData.js` loads employee workspace data through `api/support-executive-api.js` and the shared loading/retry Hook.
-- `context/useSupportQueue.js` loads received support tickets and merges event issues. `context/useSupportDialog.js` connects the existing reply, attachment and status-update dialog.
+- `app/SupportExecutivePageContainer.jsx` uses the support executive slice and the shared `usePortalData.js` hook.
+- `context/useSupportRequests.js` selects tickets from Redux for both support views. `pages/SupportIssuesPage.jsx` merges event issues and connects the reply and attachment dialog to the status update thunk.
 - Employee pages and components cover the dashboard, user/event management, requests, reports, notifications, profile and settings.
-- `app/runtime.js`, `api/portal-api.js` and `context/portal-state.js` retain existing navigation and API-backed workflow handlers. Role identifiers such as `support-executive`, `SUPPORT_EXECUTIVE` and `EventFlowSupportExecutiveRuntime` remain unchanged for session and runtime compatibility.
+- `app/runtime.js` handles navigation and workflow actions using the shared `src/app/employee-portal-api.js` and `src/app/portal-state.js` adapters.
 
 ## Shared support code
 
-- `api/client.js` handles authenticated requests and downloads; `api/supportApi.js` supplies ticket, upload, reply and follow-up endpoints.
+- `api/supportApi.js` handles authenticated ticket requests, replies, follow-ups, and attachment uploads and downloads.
 - `api/legacySupport.js` is the existing compatibility adapter used by role runtimes. The standalone customer page does not load it.
 - `api/supportReports.js` owns report submission, attachments and admin review integration.
 - `utils/` contains automatic refresh and the existing categories and presentation helpers.

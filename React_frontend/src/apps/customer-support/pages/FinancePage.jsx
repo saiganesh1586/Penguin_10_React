@@ -38,7 +38,6 @@ export default function FinancePage() {
         <FinancePreview
           financeTransactions={portalContext.DB.financeTransactions}
           financeRefunds={portalContext.DB.financeRefunds}
-          registrations={portalContext.DB.registrations}
           users={portalContext.DB.users}
           events={portalContext.DB.events}
           onSwitchFinanceTab={portalContext.actions.onSwitchFinanceTab}
@@ -101,36 +100,6 @@ export default function FinancePage() {
       {metric('Completed refunds', currency(totals.refundedAmount), 'var(--purple)')}
     </div>
   );
-  const tabs = [
-    ['dashboard', 'Dashboard'],
-    ['transactions', 'Payment Transactions'],
-    ['refunds', 'Refund Management'],
-    ['settlements', 'Organizer Settlements'],
-    ['commission', 'Commission & Revenue'],
-    ['reconciliation', 'Payment Reconciliation'],
-  ].map((item, index) => (
-    <button
-      className={`btn ${tab === item[0] ? 'btn-primary' : 'btn-ghost'}`}
-      onClick={() => portalActions.onSwitchFinanceTab(item[0])}
-      key={
-        item?.id ??
-        item?.eventReportId ??
-        item?.requestId ??
-        item?.registrationId ??
-        item?.ticketId ??
-        item?.eventId ??
-        item?.reportId ??
-        item?.paymentId ??
-        item?.refundId ??
-        item?.notificationId ??
-        item?.label ??
-        item?.fileName ??
-        index
-      }
-    >
-      {item[1]}
-    </button>
-  ));
   let content = '';
   if (tab === 'dashboard') {
     const rows = ((result && result.data) || []).slice(0, 8).map((item, index) => (
@@ -147,7 +116,7 @@ export default function FinancePage() {
     ));
     const eventMax = Math.max(
       1,
-      ...(dashboard.eventRevenue || []).map((item, index) => Number(item.revenue || 0))
+      ...(dashboard.eventRevenue || []).map((item) => Number(item.revenue || 0))
     );
     const eventBars = listOrEmpty(
       (dashboard.eventRevenue || []).map((item, index) => (

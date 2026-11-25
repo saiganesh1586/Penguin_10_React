@@ -1,6 +1,6 @@
 import ImageWithFallback from '../../../app/ImageWithFallback.jsx';
 import { useSupportExecutiveContext } from '../context/SupportExecutiveContext.jsx';
-import { EmployeeProfile } from '../components/EmployeeProfile.jsx';
+import { EmployeeProfile } from '../../../app/EmployeeProfile.jsx';
 export default function ProfilePage() {
   const portalContext = useSupportExecutiveContext();
   const portalActions = portalContext.actions;

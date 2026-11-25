@@ -1,6 +1,7 @@
 import React from 'react';
 import { act, fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import PortalProvider from '../src/app/state/PortalProvider.jsx';
 import DashboardActivity from '../src/apps/client/components/DashboardActivity.jsx';
 import DashboardUpcomingEvents from '../src/apps/client/components/DashboardUpcomingEvents.jsx';
 import OrganizerReviewForm from '../src/apps/client/components/OrganizerReviewForm.jsx';
@@ -8,6 +9,8 @@ import RequestDetailsPage from '../src/apps/client/pages/RequestDetailsPage.jsx'
 import { ClientContext } from '../src/apps/client/context/ClientContext.jsx';
 import useClientActivity from '../src/apps/client/context/useClientActivity.js';
 import { WorkflowFileReports } from '../src/apps/client/components/WorkflowDetails.jsx';
+import { registrationConfirmed } from '../src/apps/auth/authSlice.js';
+import { store } from '../src/app/state/store.js';
 import fixtures from './role-fixtures.cjs';
 
 describe('Client course concepts', () => {
@@ -48,28 +51,35 @@ describe('Client course concepts', () => {
 
   it('exposes a retry after an activity failure and ignores obsolete responses', async () => {
     const responses = [];
-    vi.stubGlobal('apiGetMyActivity', vi.fn(() => new Promise(resolve => responses.push(resolve))));
+    const response = id => new Response(JSON.stringify({ logs: [{ id }] }), {
+      headers: { 'Content-Type': 'application/json' },
+    });
+    store.dispatch(registrationConfirmed({ userId: 'client', role: 'client', token: 'test-token' }));
+    vi.stubGlobal('fetch', vi.fn(() => new Promise(resolve => responses.push(resolve))));
     const { result, rerender, unmount } = renderHook(
       ({ refreshKey }) => useClientActivity(refreshKey),
-      { initialProps: { refreshKey: 'first' } }
+      {
+        initialProps: { refreshKey: 'first' },
+        wrapper: ({ children }) => <PortalProvider>{children}</PortalProvider>,
+      }
     );
     await waitFor(() => expect(responses).toHaveLength(1));
     const retry = result.current.retry;
     rerender({ refreshKey: 'second' });
     await waitFor(() => expect(responses).toHaveLength(2));
-    await act(async () => responses[1]([{ id: 'new' }]));
+    await act(async () => responses[1](response('new')));
     expect(result.current.rows[0].id).toBe('new');
-    await act(async () => responses[0]([{ id: 'old' }]));
+    await act(async () => responses[0](response('old')));
     expect(result.current.rows[0].id).toBe('new');
     expect(result.current.retry).toBe(retry);
 
-    window.apiGetMyActivity.mockImplementationOnce(() => { throw new Error('Offline'); });
+    fetch.mockRejectedValueOnce(new Error('Offline'));
     act(() => result.current.retry());
     await waitFor(() => expect(result.current.error).toBe('Offline'));
     act(() => result.current.retry());
     await waitFor(() => expect(responses).toHaveLength(3));
-    await act(async () => responses[2]([{ id: 'retried' }]));
-    expect(result.current.rows[0].id).toBe('retried');
+    await act(async () => responses[2](response('retried')));
+    await waitFor(() => expect(result.current.rows[0].id).toBe('retried'));
     expect(result.current.error).toBe('');
     unmount();
   });
@@ -118,9 +128,11 @@ describe('Client course concepts', () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);
     data.actions = { ...data.actions, onSubmitClientOrganizerReview: onSubmit };
     const view = render(
-      <ClientContext.Provider value={data}>
-        <RequestDetailsPage id="request-1" />
-      </ClientContext.Provider>
+      <PortalProvider>
+        <ClientContext.Provider value={data}>
+          <RequestDetailsPage id="request-1" />
+        </ClientContext.Provider>
+      </PortalProvider>
     );
     fireEvent.change(screen.getByLabelText('Rating'), { target: { value: '5' } });
     fireEvent.change(screen.getByLabelText('Written review'), { target: { value: 'Excellent service' } });

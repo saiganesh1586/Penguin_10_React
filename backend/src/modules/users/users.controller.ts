@@ -10,7 +10,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiHeader, ApiParam } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiHeader } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { ChangePasswordDto, CreateUserDto, UpdateUserDto } from './dto/user.dto';
 import { RoleGuard } from '../../common/guards/role.guard';

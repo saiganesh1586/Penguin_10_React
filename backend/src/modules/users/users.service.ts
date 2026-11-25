@@ -106,6 +106,15 @@ export class UsersService {
     if (dto.address) user.address = dto.address;
     if (dto.phoneNo !== undefined) user.phoneNo = dto.phoneNo;
     if (dto.bio !== undefined) user.bio = dto.bio;
+    if (dto.preferences) {
+      user.preferences = {
+        emailNotifications:
+          dto.preferences.emailNotifications ?? user.preferences?.emailNotifications ?? true,
+        smsReminders: dto.preferences.smsReminders ?? user.preferences?.smsReminders ?? false,
+        eventRecommendations:
+          dto.preferences.eventRecommendations ?? user.preferences?.eventRecommendations ?? true,
+      };
+    }
     if (dto.status && role === UserRole.SUPER_ADMIN) user.status = dto.status;
     user.updatedAt = new Date();
     const { password, ...safe } = user;

@@ -1,10 +1,21 @@
+import { useState } from 'react';
 import HoverCard from '../../../app/HoverCard.jsx';
 import ImageWithFallback from '../../../app/ImageWithFallback.jsx';
-import useOrganizerSearch from '../context/useOrganizerSearch.js';
 import { useClientContext } from '../context/ClientContext.jsx';
 import PortalSelect from '../../../app/PortalSelect.jsx';
 export default function FindOrganizersPage() {
-  const { filters, updateFilter } = useOrganizerSearch();
+  const [filters, setFilters] = useState(() =>
+    Object.fromEntries(
+      ['q', 'rating', 'category', 'city', 'pricing'].map(field => [
+        field,
+        sessionStorage.getItem(`search_org_${field}`) || (field === 'q' ? '' : 'all'),
+      ])
+    )
+  );
+  function updateFilter(field, value) {
+    sessionStorage.setItem(`search_org_${field}`, value);
+    setFilters(current => ({ ...current, [field]: value }));
+  }
   const portalContext = useClientContext();
   const portalActions = portalContext.actions;
   const { DB: workspaceData } = portalContext;
@@ -50,7 +61,7 @@ export default function FindOrganizersPage() {
   if (pricing !== 'all') {
     organizers = organizers.filter(organizer => {
       const prices = (organizer.packages || [])
-        .map((p, index) => Number(String(p.price || '').replace(/[^0-9]/g, '')))
+        .map((p) => Number(String(p.price || '').replace(/[^0-9]/g, '')))
         .filter(n => !isNaN(n) && n > 0);
       const minPrice = prices.length ? Math.min(...prices) : 35000;
       if (pricing === 'under_50k') return minPrice < 50000;
@@ -177,7 +188,7 @@ export default function FindOrganizersPage() {
             const rt = Number(organizer.rating) || 0;
             const rv = Number(organizer.reviewCount) || 0;
             const prices = (organizer.packages || [])
-              .map((p, index) => Number(String(p.price || '').replace(/[^0-9]/g, '')))
+              .map((p) => Number(String(p.price || '').replace(/[^0-9]/g, '')))
               .filter(n => !isNaN(n) && n > 0);
             const startPrice = prices.length ? Math.min(...prices) : 35000;
             const orgAv = organizer.avatarImage ? (

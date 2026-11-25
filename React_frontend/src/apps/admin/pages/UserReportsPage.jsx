@@ -19,7 +19,7 @@ export default function UserReportsPage() {
   const activeRate = totalUsers > 0 ? Math.round((activeUsers / totalUsers) * 100) : 0;
   const inactiveRate = totalUsers > 0 ? Math.round((inactiveUsers / totalUsers) * 100) : 0;
   const roles = ['attendee', 'employee', 'client', 'organizer', 'superuser'];
-  const roleBreakdown = roles.map((role, index) => {
+  const roleBreakdown = roles.map((role) => {
     const list = allUsers.filter(u => u.role === role);
     const active = list.filter(u => u.status === 'active').length;
     const inactive = list.length - active;
@@ -79,7 +79,7 @@ export default function UserReportsPage() {
   }));
 
   // 2. Grouped Active vs Inactive Bar Graph by Role
-  const activeInactiveGroups = roleBreakdown.map((r, index) => ({
+  const activeInactiveGroups = roleBreakdown.map((r) => ({
     label: r.label,
     bars: [
       {

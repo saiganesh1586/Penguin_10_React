@@ -1,7 +1,6 @@
-import React from 'react';
 import { legacyEvent } from '../../../app/legacyEvents.js';
 
-export default function PublicHomePage() {
+export default function PublicHomePage({ showEmployeeEntry = false }) {
   return (
     <div id="landing">
       <nav className="l-nav">
@@ -229,6 +228,20 @@ export default function PublicHomePage() {
             </p>
             <span className="badge badge-green">End User</span>
           </div>
+          {showEmployeeEntry && (
+            <div
+              className="role-card"
+              onClick={event => legacyEvent("gotoLogin('employee1')", event)}
+            >
+              <div className="role-card-emoji">👔</div>
+              <div className="role-card-title">Employee</div>
+              <p className="role-card-desc">
+                Manage internal operations, facilitate registration, and handle event support
+                functions.
+              </p>
+              <span className="badge badge-blue">Department Executives</span>
+            </div>
+          )}
         </div>
       </section>
       <section className="l-section l-section-alt" id="how">

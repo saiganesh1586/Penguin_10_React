@@ -6,7 +6,7 @@ export default defineConfig({
   build: { outDir: 'build' },
   test: {
     environment: 'jsdom',
-    include: ['scripts/*.test.jsx'],
+    include: ['scripts/*.test.jsx', 'src/features/**/*.test.js'],
     setupFiles: ['scripts/setup.js'],
     restoreMocks: true,
   },
