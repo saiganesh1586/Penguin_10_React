@@ -1,6 +1,6 @@
 import { useClientContext } from '../context/ClientContext.jsx';
 import { EventCard } from '../components/EventCards.jsx';
-import { compareNewestFirst } from '../../../app/record-order.js';
+import { compareNewestFirst } from '../../../app/utils/record-order.js';
 export default function UpcomingEventsPage() {
   const portalContext = useClientContext();
   const { CU: currentUser, DB: workspaceData } = portalContext;

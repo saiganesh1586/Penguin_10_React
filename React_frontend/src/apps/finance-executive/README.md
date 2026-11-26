@@ -7,7 +7,7 @@
 - `api/finance-executive-api.js` refreshes data and delegates actions to the existing API-backed handlers.
 - `pages/` contains JSX pages. `components/` contains reusable cards, tables and workflow sections.
 - `app/runtime.js` retains navigation, modal/workflow actions, and compatibility renderers.
-- The runtime uses the shared `src/app/employee-portal-api.js` and `src/app/portal-state.js`.
+- The runtime uses the shared `src/app/runtime/employee-portal-api.js` and `src/app/runtime/portal-state.js`.
 
 `api/finance-executive-api.js` loads financial records with the existing filters. `app/finance-workspace.js` handles navigation, exports, report submission and refund actions.
 

@@ -1,9 +1,9 @@
 import CustomerSupportPage from '../../customer-support/pages/CustomerSupportPage.jsx';
 import { OrganizerContext } from '../context/OrganizerContext.jsx';
-import usePortalData from '../../../app/usePortalData.js';
-import { organizerSlice } from '../store/organizerSlice.js';
+import usePortalData from '../../../store/hooks/usePortalData.js';
+import { organizerSlice } from '../../../store/slices/organizerSlice.js';
 import { organizerActions } from '../api/organizer-api.js';
-import { LoadingState, ErrorState } from '../../../app/PageFeedback.jsx';
+import { LoadingState, ErrorState } from '../../../app/components/PageFeedback.jsx';
 import AttendeesPage from '../pages/AttendeesPage.jsx';
 import CompletedEventsPage from '../pages/CompletedEventsPage.jsx';
 import DashboardPage from '../pages/DashboardPage.jsx';
@@ -14,10 +14,10 @@ import OngoingEventsPage from '../pages/OngoingEventsPage.jsx';
 import ProfilePage from '../pages/ProfilePage.jsx';
 import ReportsPage from '../pages/ReportsPage.jsx';
 import RequestDetailsPage from '../pages/RequestDetailsPage.jsx';
-import AccountSettingsPage from '../../../app/AccountSettingsPage.jsx';
+import AccountSettingsPage from '../../../app/components/AccountSettingsPage.jsx';
 import UpcomingEventsPage from '../pages/UpcomingEventsPage.jsx';
 import EventsPage from '../pages/EventsPage.jsx';
-import PortalProvider from '../../../app/state/PortalProvider.jsx';
+import PortalProvider from '../../../store/Provider.jsx';
 const pages = {
   'customer-support': CustomerSupportPage,
   attendees: AttendeesPage,

@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import HoverCard from '../../../app/HoverCard.jsx';
-import ImageWithFallback from '../../../app/ImageWithFallback.jsx';
+import HoverCard from '../../../app/components/HoverCard.jsx';
+import ImageWithFallback from '../../../app/components/ImageWithFallback.jsx';
 import { useClientContext } from '../context/ClientContext.jsx';
-import PortalSelect from '../../../app/PortalSelect.jsx';
+import PortalSelect from '../../../app/components/PortalSelect.jsx';
 export default function FindOrganizersPage() {
   const [filters, setFilters] = useState(() =>
     Object.fromEntries(

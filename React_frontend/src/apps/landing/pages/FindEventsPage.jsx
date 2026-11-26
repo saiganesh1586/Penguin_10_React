@@ -1,4 +1,4 @@
-import { legacyEvent } from '../../../app/legacyEvents.js';
+import { legacyEvent } from '../../../app/runtime/legacyEvents.js';
 import PublicEventCatalog from '../components/PublicEventCatalog.jsx';
 
 export default function FindEventsPage() {

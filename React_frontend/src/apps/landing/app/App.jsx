@@ -1,12 +1,12 @@
-import DashboardLayout from '../../../app/DashboardLayout.jsx';
+import DashboardLayout from '../../../app/components/DashboardLayout.jsx';
 import HomePage from '../pages/HomePage.jsx';
 import LoginPage from '../../auth/pages/UnifiedAuthPage.jsx';
 import FindEventsPage from '../pages/FindEventsPage.jsx';
 import GalleryPage from '../pages/GalleryPage.jsx';
 import AboutPage from '../pages/AboutPage.jsx';
 import ContactPage from '../pages/ContactPage.jsx';
-import LegacyRuntime from '../../../app/LegacyRuntime.jsx';
-import { legacyEvent } from '../../../app/legacyEvents.js';
+import LegacyRuntime from '../../../app/runtime/LegacyRuntime.jsx';
+import { legacyEvent } from '../../../app/runtime/legacyEvents.js';
 import source from './runtime.js?raw';
 import '../styles/landing.css';
 import '../styles/home.css';

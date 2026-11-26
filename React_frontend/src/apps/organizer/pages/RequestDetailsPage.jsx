@@ -1,6 +1,6 @@
 import { useOrganizerContext } from '../context/OrganizerContext.jsx';
-import { listOrEmpty } from '../../../app/view-utils.js';
-import EventDetailsLayout from '../../../app/EventDetailsLayout.jsx';
+import { listOrEmpty } from '../../../app/utils/view-utils.js';
+import EventDetailsLayout from '../../../app/components/EventDetailsLayout.jsx';
 import {
   WorkflowCancellation,
   WorkflowEventPolicy,

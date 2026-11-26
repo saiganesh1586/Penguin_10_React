@@ -1,7 +1,7 @@
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { newestRecords } from '../src/app/record-order.js';
+import { newestRecords } from '../src/app/utils/record-order.js';
 import { OrganizerContext } from '../src/apps/organizer/context/OrganizerContext.jsx';
 import { ClientContext } from '../src/apps/client/context/ClientContext.jsx';
 import EventsPage from '../src/apps/organizer/pages/EventsPage.jsx';

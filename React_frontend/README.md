@@ -1,8 +1,8 @@
 # EventFlow React frontend
 
-This frontend uses the DineTime Devs application-per-role folder structure. See [the structure guide](../FRONTEND_STRUCTURE.md) for the complete file tree.
+This frontend follows the role-based layout of the supplied `React_frontend.zip` reference. See [the structure guide](../FRONTEND_STRUCTURE.md) for the current file tree.
 
-- `src/app/`: root application, routing, session and common helpers.
+- `src/app/`: routing and configuration, with shared UI in `components/`, browser compatibility code in `runtime/`, and helpers in `utils/`. Redux lives in `src/store/`.
 - `src/apps/auth/pages/UnifiedAuthPage.jsx`: login entry reused by the role portals.
 - `src/apps/landing/app/App.jsx`: landing portal.
 - `src/apps/<role>/`: the role's app, pages, CSS and applicable API, component, hook and utility modules.

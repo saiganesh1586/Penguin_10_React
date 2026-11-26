@@ -1,4 +1,4 @@
-import { compareNewestFirst } from '../../../app/record-order.js';
+import { compareNewestFirst } from '../../../app/utils/record-order.js';
 
 export function ticketEvent(registration, events) {
   return (

@@ -6,14 +6,14 @@ All the requested concepts are present. The non-attendee portals use page compon
 | --- | --- |
 | Component composition | Used. Client `pages/DashboardPage.jsx` composes `DashboardActivity` and `DashboardUpcomingEvents`. `pages/RequestDetailsPage.jsx` composes workflow sections and `OrganizerReviewForm`. |
 | Lists with `.map()` and keys | Used. Dashboard activity uses activity IDs, upcoming events use event IDs, and workflow reports use report IDs. Employee metrics and finance filter options use stable labels or values. |
-| `useState` and state updates | Used. `components/OrganizerReviewForm.jsx` stores review values, errors and submission status. `src/app/AccountSettingsPage.jsx` updates profile, password and preferences with functional state updates. |
+| `useState` and state updates | Used. `components/OrganizerReviewForm.jsx` stores review values, errors and submission status. `src/app/components/AccountSettingsPage.jsx` updates profile, password and preferences with functional state updates. |
 | Lifting state, props and callback props | Used. `DashboardPage` owns the activity loading Hook and derives upcoming events, then passes results and callbacks to its panels. The review form passes validated values to `RequestDetailsPage`, which adds event and request IDs before saving. |
 | Search and filtering using derived data | Client `pages/FindOrganizersPage.jsx` derives visible organizers from workspace users and the page's filters. Organizer `components/EventPicker.jsx` derives visible events from search text. |
 | Controlled forms and validation | `OrganizerReviewForm` controls the rating and comment, rejects missing ratings and blank comments, disables duplicate submissions while saving, and retains a failed draft. `AccountSettingsPage` controls and validates account fields. |
 | Props versus Context | Used. `context/ClientContext.jsx` and the other role providers share workspace data with pages. Dashboard panels, event cards, workflow sections and review forms receive specific props instead of reading the entire workspace themselves. |
 | Conditional rendering | Used. Dashboard panels select loading, error, empty and populated views. Request details show review, payment and cancellation sections according to the current records. |
 | `useState` | Used for local form, filter, tab and feedback state. |
-| `useEffect` | Used in `context/useClientActivity.js` and `src/app/usePortalData.js` for loading and cleanup; obsolete responses cannot overwrite newer data. |
+| `useEffect` | Used in `hooks/useClientActivity.js` and `src/store/hooks/usePortalData.js` for loading and cleanup; obsolete responses cannot overwrite newer data. |
 | `useContext` | Used by `useClientContext` and the equivalent role context Hooks. |
 | `useCallback` | `useClientActivity` and `usePortalData` use stable retry callbacks. |
 | Custom Hooks | `usePortalData` handles workspace loads. `useSupportRequests` handles ticket reads and writes in both support views. |

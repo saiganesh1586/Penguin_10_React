@@ -1,7 +1,7 @@
 import { useOrganizerContext } from '../context/OrganizerContext.jsx';
 import { CancelledEvents } from '../components/EventCards.jsx';
-import CompletedEventsPage from '../pages/CompletedEventsPage.jsx';
-import OngoingEventsPage from '../pages/OngoingEventsPage.jsx';
+import CompletedEventsPage from './CompletedEventsPage.jsx';
+import OngoingEventsPage from './OngoingEventsPage.jsx';
 export default function MyEventsPage() {
   const portalContext = useOrganizerContext();
   const portalActions = portalContext.actions;

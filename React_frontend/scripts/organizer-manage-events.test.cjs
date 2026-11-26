@@ -6,7 +6,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 const runtime = portalSource('organizer');
-const sync = fs.readFileSync(path.join(__dirname, '../src/app/data-sync.js'), 'utf8');
+const sync = fs.readFileSync(path.join(__dirname, '../src/app/runtime/data-sync.js'), 'utf8');
 
 test('Manage Events exposes all required backend-driven views and filter controls', () => {
   const start = runtime.indexOf('function pageWorkflowEvents()');

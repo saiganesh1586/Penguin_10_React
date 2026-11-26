@@ -1,6 +1,6 @@
-import ImageWithFallback from '../../../app/ImageWithFallback.jsx';
+import ImageWithFallback from '../../../app/components/ImageWithFallback.jsx';
 import { useFinanceExecutiveContext } from '../context/FinanceExecutiveContext.jsx';
-import { EmployeeProfile } from '../../../app/EmployeeProfile.jsx';
+import { EmployeeProfile } from '../../../app/components/EmployeeProfile.jsx';
 export default function ProfilePage() {
   const portalContext = useFinanceExecutiveContext();
   const portalActions = portalContext.actions;

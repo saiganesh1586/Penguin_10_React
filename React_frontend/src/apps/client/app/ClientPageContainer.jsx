@@ -1,9 +1,9 @@
 import CustomerSupportPage from '../../customer-support/pages/CustomerSupportPage.jsx';
 import { ClientContext } from '../context/ClientContext.jsx';
-import usePortalData from '../../../app/usePortalData.js';
-import { clientSlice } from '../store/clientSlice.js';
+import usePortalData from '../../../store/hooks/usePortalData.js';
+import { clientSlice } from '../../../store/slices/clientSlice.js';
 import { clientActions } from '../api/client-api.js';
-import { LoadingState, ErrorState } from '../../../app/PageFeedback.jsx';
+import { LoadingState, ErrorState } from '../../../app/components/PageFeedback.jsx';
 import CompletedEventsPage from '../pages/CompletedEventsPage.jsx';
 import DashboardPage from '../pages/DashboardPage.jsx';
 import FindOrganizersPage from '../pages/FindOrganizersPage.jsx';
@@ -13,9 +13,9 @@ import OngoingEventsPage from '../pages/OngoingEventsPage.jsx';
 import ProfilePage from '../pages/ProfilePage.jsx';
 import RequestDetailsPage from '../pages/RequestDetailsPage.jsx';
 import RequestStatusPage from '../pages/RequestStatusPage.jsx';
-import AccountSettingsPage from '../../../app/AccountSettingsPage.jsx';
+import AccountSettingsPage from '../../../app/components/AccountSettingsPage.jsx';
 import UpcomingEventsPage from '../pages/UpcomingEventsPage.jsx';
-import PortalProvider from '../../../app/state/PortalProvider.jsx';
+import PortalProvider from '../../../store/Provider.jsx';
 const pages = {
   'customer-support': CustomerSupportPage,
   'completed-events': CompletedEventsPage,

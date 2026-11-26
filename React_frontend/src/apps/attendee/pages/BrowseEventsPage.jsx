@@ -2,8 +2,8 @@ import { useMemo, useState } from 'react';
 import EventCard from '../components/EventCard.jsx';
 import EventFilters from '../components/EventFilters.jsx';
 import PageHeader from '../components/PageHeader.jsx';
-import { EmptyState, ErrorState, LoadingState } from '../../../app/PageFeedback.jsx';
-import { compareNewestFirst } from '../../../app/record-order.js';
+import { EmptyState, ErrorState, LoadingState } from '../../../app/components/PageFeedback.jsx';
+import { compareNewestFirst } from '../../../app/utils/record-order.js';
 
 export default function BrowseEventsPage({
   events = [],

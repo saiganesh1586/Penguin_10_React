@@ -1,4 +1,4 @@
-import { createPortalRepository, readRuntimeData } from '../../../app/state/portalRepository.js';
+import { createPortalRepository, readRuntimeData } from '../../../store/api/portalRepository.js';
 
 // These are the same endpoints and filters used by the finance workflow handlers.
 export async function loadFinancePage(page, data) {

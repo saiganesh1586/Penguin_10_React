@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import TicketCard from '../components/TicketCard.jsx';
 import PageHeader from '../components/PageHeader.jsx';
-import { EmptyState, ErrorState, LoadingState } from '../../../app/PageFeedback.jsx';
+import { EmptyState, ErrorState, LoadingState } from '../../../app/components/PageFeedback.jsx';
 import { ticketEvent, ticketView } from '../utils/ticket-view.js';
 
 const stored = key => (typeof sessionStorage === 'undefined' ? null : sessionStorage.getItem(key));

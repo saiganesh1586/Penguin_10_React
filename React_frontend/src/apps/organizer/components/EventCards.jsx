@@ -1,4 +1,4 @@
-import ImageWithFallback from '../../../app/ImageWithFallback.jsx';
+import ImageWithFallback from '../../../app/components/ImageWithFallback.jsx';
 import { OrganizerEventActions } from './EventActions.jsx';
 export function EventCard({
   registrations,

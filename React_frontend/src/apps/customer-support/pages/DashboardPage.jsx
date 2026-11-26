@@ -1,5 +1,5 @@
 import { useSupportExecutiveContext } from '../context/SupportExecutiveContext.jsx';
-import { listOrEmpty } from '../../../app/view-utils.js';
+import { listOrEmpty } from '../../../app/utils/view-utils.js';
 export default function DashboardPage() {
   const portalContext = useSupportExecutiveContext();
   const portalActions = portalContext.actions;

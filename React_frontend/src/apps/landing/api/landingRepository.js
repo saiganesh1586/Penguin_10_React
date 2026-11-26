@@ -1,5 +1,5 @@
-import { createPortalRepository } from '../../../app/state/portalRepository.js';
-import { loadPublicEvents } from '../../../features/events/eventsSlice.js';
+import { createPortalRepository } from '../../../store/api/portalRepository.js';
+import { loadPublicEvents } from '../../../store/slices/eventsSlice.js';
 
 export const landingRepository = createPortalRepository(async ({ signal, dispatch }) => {
   try {

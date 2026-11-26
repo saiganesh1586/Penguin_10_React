@@ -1,5 +1,5 @@
 import PageHeader from '../components/PageHeader.jsx';
-import { EmptyState, ErrorState, LoadingState } from '../../../app/PageFeedback.jsx';
+import { EmptyState, ErrorState, LoadingState } from '../../../app/components/PageFeedback.jsx';
 
 const backgrounds = {
   success: 'var(--green-dim)',

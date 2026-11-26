@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useOrganizerContext } from '../context/OrganizerContext.jsx';
-import PortalSelect from '../../../app/PortalSelect.jsx';
+import PortalSelect from '../../../app/components/PortalSelect.jsx';
 import { EventCard } from '../components/EventCards.jsx';
 import { EventReportsOverview } from '../components/AnalyticsCharts.jsx';
-import { compareNewestFirst } from '../../../app/record-order.js';
+import { compareNewestFirst } from '../../../app/utils/record-order.js';
 export default function EventsPage() {
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('');

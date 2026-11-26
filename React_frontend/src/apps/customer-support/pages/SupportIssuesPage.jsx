@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useSelector } from 'react-redux';
-import { selectSession } from '../../auth/authSlice.js';
+import { selectSession } from '../../../store/slices/authSlice.js';
 import { useSupportExecutiveContext } from '../context/SupportExecutiveContext.jsx';
-import useSupportRequests from '../context/useSupportRequests.js';
+import useSupportRequests from '../hooks/useSupportRequests.js';
 import SupportTicketTable from '../components/SupportTicketTable.jsx';
 
 export default function SupportIssuesPage() {

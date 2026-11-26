@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-const policySource = fs.readFileSync(path.join(__dirname, '../src/app/account-policy.js'), 'utf8');
+const policySource = fs.readFileSync(path.join(__dirname, '../src/app/runtime/account-policy.js'), 'utf8');
 const apps = ['admin', 'attendee', 'client', 'employee1', 'employee2', 'landing', 'organizer'];
 const sourceFor = app =>
   portalSource(

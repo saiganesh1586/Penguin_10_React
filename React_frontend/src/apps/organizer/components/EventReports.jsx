@@ -1,5 +1,5 @@
-import FilterInput from '../../../app/FilterInput.jsx';
-import PortalSelect from '../../../app/PortalSelect.jsx';
+import FilterInput from '../../../app/components/FilterInput.jsx';
+import PortalSelect from '../../../app/components/PortalSelect.jsx';
 export function OperationalReports({
   operationalReports,
   onOpenSubmitOperationalReportModal,

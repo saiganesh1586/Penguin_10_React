@@ -1,4 +1,4 @@
-import PortalSelect from '../../../app/PortalSelect.jsx';
+import PortalSelect from '../../../app/components/PortalSelect.jsx';
 export function FinanceReportHistory({
   financeSentPage,
   onFinanceOpenSubmitReport,

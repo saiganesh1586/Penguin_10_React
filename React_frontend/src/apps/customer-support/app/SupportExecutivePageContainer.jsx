@@ -1,18 +1,18 @@
 import SupportIssuesPage from '../pages/SupportIssuesPage.jsx';
 import { SupportExecutiveContext } from '../context/SupportExecutiveContext.jsx';
-import usePortalData from '../../../app/usePortalData.js';
-import { supportExecutiveSlice } from '../store/supportExecutiveSlice.js';
+import usePortalData from '../../../store/hooks/usePortalData.js';
+import { supportExecutiveSlice } from '../../../store/slices/supportExecutiveSlice.js';
 import { supportExecutiveActions } from '../api/support-executive-api.js';
-import { LoadingState, ErrorState } from '../../../app/PageFeedback.jsx';
+import { LoadingState, ErrorState } from '../../../app/components/PageFeedback.jsx';
 import DashboardPage from '../pages/DashboardPage.jsx';
 import NotificationsPage from '../pages/NotificationsPage.jsx';
 import ProfilePage from '../pages/ProfilePage.jsx';
 import ReportsAnalyticsPage from '../pages/ReportsAnalyticsPage.jsx';
-import AccountSettingsPage from '../../../app/AccountSettingsPage.jsx';
+import AccountSettingsPage from '../../../app/components/AccountSettingsPage.jsx';
 import UserEventManagementPage from '../pages/UserEventManagementPage.jsx';
 import FinancePage from '../pages/FinancePage.jsx';
 import FinanceReportsPage from '../pages/FinanceReportsPage.jsx';
-import PortalProvider from '../../../app/state/PortalProvider.jsx';
+import PortalProvider from '../../../store/Provider.jsx';
 const pages = {
   'customer-requests': SupportIssuesPage,
   'support-issues': SupportIssuesPage,

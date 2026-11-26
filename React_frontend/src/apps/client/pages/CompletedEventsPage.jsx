@@ -1,4 +1,4 @@
-import ImageWithFallback from '../../../app/ImageWithFallback.jsx';
+import ImageWithFallback from '../../../app/components/ImageWithFallback.jsx';
 import { useClientContext } from '../context/ClientContext.jsx';
 export default function CompletedEventsPage({ embedded = false }) {
   const portalContext = useClientContext();

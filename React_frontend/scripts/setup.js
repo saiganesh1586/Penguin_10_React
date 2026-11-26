@@ -1,8 +1,8 @@
 import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
 import { afterEach, vi } from 'vitest';
-import { logout } from '../src/apps/auth/authSlice.js';
-import { store } from '../src/app/state/store.js';
+import { logout } from '../src/store/slices/authSlice.js';
+import { store } from '../src/store/store.js';
 
 afterEach(() => {
   cleanup();

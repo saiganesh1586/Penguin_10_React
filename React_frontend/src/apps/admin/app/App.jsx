@@ -1,14 +1,14 @@
-import DashboardLayout from '../../../app/DashboardLayout.jsx';
+import DashboardLayout from '../../../app/components/DashboardLayout.jsx';
 import PublicHomePage from '../../landing/pages/PortalPublicHomePage.jsx';
 import LoginPage from '../../auth/pages/UnifiedAuthPage.jsx';
 import FindEventsPage from '../../landing/pages/FindEventsPage.jsx';
 import GalleryPage from '../../landing/pages/GalleryPage.jsx';
 import AboutPage from '../../landing/pages/AboutPage.jsx';
 import ContactPage from '../../landing/pages/ContactPage.jsx';
-import LegacyRuntime from '../../../app/LegacyRuntime.jsx';
+import LegacyRuntime from '../../../app/runtime/LegacyRuntime.jsx';
 import runtime from './runtime.js?raw';
-import portalApi from '../../../app/employee-portal-api.js?raw';
-import portalState from '../../../app/portal-state.js?raw';
+import portalApi from '../../../app/runtime/employee-portal-api.js?raw';
+import portalState from '../../../app/runtime/portal-state.js?raw';
 import '../styles/admin.css';
 import AdminPageContainer, { adminPageNames } from './AdminPageContainer.jsx';
 import createPageBridge from '../../../app/createPageBridge.jsx';

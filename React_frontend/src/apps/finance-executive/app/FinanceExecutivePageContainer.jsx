@@ -1,17 +1,17 @@
 import { FinanceExecutiveContext } from '../context/FinanceExecutiveContext.jsx';
-import usePortalData from '../../../app/usePortalData.js';
-import { financeExecutiveSlice } from '../store/financeExecutiveSlice.js';
+import usePortalData from '../../../store/hooks/usePortalData.js';
+import { financeExecutiveSlice } from '../../../store/slices/financeExecutiveSlice.js';
 import { financeExecutiveActions } from '../api/finance-executive-api.js';
-import { ErrorState } from '../../../app/PageFeedback.jsx';
+import { ErrorState } from '../../../app/components/PageFeedback.jsx';
 import NotificationsPage from '../pages/NotificationsPage.jsx';
 import ProfilePage from '../pages/ProfilePage.jsx';
-import AccountSettingsPage from '../../../app/AccountSettingsPage.jsx';
+import AccountSettingsPage from '../../../app/components/AccountSettingsPage.jsx';
 import DashboardPage from '../pages/DashboardPage.jsx';
 import CommissionsPage from '../pages/CommissionsPage.jsx';
 import FinancePage from '../pages/FinancePage.jsx';
 import ReconciliationPage from '../pages/ReconciliationPage.jsx';
 import ReportsPage from '../pages/ReportsPage.jsx';
-import PortalProvider from '../../../app/state/PortalProvider.jsx';
+import PortalProvider from '../../../store/Provider.jsx';
 const pages = {
   notifications: NotificationsPage,
   profile: ProfilePage,

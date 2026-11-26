@@ -34,8 +34,8 @@ function fixture(t) {
   w.eval(read('public/assets/vendor/qrcode-1.5.4.js'));
   w.eval(read('src/apps/attendee/utils/ticket-scanner.js'));
   w.regForEvent = w.completeDemoPayment = () => {};
-  w.eval(read('src/app/paymentCheckout.js'));
-  w.eval(read('src/app/theme.js'));
+  w.eval(read('src/app/runtime/paymentCheckout.js'));
+  w.eval(read('src/app/runtime/theme.js'));
   d.dispatchEvent(new w.Event('DOMContentLoaded'));
   const calls = [];
   const open = (extra = {}) =>

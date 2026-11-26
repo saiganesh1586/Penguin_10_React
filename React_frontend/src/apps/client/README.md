@@ -9,6 +9,6 @@
 - `pages/DashboardPage.jsx` owns activity loading and derives upcoming events, passing data and callback props to its dashboard panels.
 - `components/OrganizerReviewForm.jsx` keeps rating/comment inputs in React state and validates them before passing a review payload to the request page and API adapter.
 - `app/runtime.js` retains navigation, modal/workflow actions, and compatibility renderers.
-- `api/portal-api.js` provides the role workflow APIs. The runtime uses the shared `src/app/portal-state.js`.
+- `api/portal-api.js` provides the role workflow APIs. The runtime uses the shared `src/app/runtime/portal-state.js`.
 
 This follows the attendee workspace's page/container/hook/API separation. Public pages and authentication are shared from `src/apps/landing/` and `src/apps/auth/`. Common application helpers live in `src/app/`.

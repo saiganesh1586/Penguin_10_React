@@ -1,7 +1,7 @@
-import FilterInput from '../../../app/FilterInput.jsx';
+import FilterInput from '../../../app/components/FilterInput.jsx';
 import { useSupportExecutiveContext } from '../context/SupportExecutiveContext.jsx';
-import PortalSelect from '../../../app/PortalSelect.jsx';
-import { listOrEmpty } from '../../../app/view-utils.js';
+import PortalSelect from '../../../app/components/PortalSelect.jsx';
+import { listOrEmpty } from '../../../app/utils/view-utils.js';
 import { FinancePreview } from '../components/FinancePreview.jsx';
 export default function FinancePage() {
   const portalContext = useSupportExecutiveContext();

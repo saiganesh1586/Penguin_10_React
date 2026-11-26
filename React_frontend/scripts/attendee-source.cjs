@@ -5,7 +5,7 @@ module.exports = function attendeeSource() {
   const root = path.join(__dirname, '../src/apps/attendee');
   const sections = {
     api: 'api/attendee-api.js',
-    state: 'context/attendee-state.js',
+    state: 'legacy/attendee-state.js',
     registration: 'components/RegistrationFlow.jsx',
   };
   let source = fs.readFileSync(path.join(root, 'app/runtime.js'), 'utf8');

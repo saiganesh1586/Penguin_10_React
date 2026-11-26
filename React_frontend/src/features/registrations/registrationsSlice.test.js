@@ -1,9 +1,9 @@
 import { expect, it, vi } from 'vitest';
-import { createRuntimeFetch } from '../../app/state/portalRepository.js';
-import { portalSlices, store } from '../../app/state/store.js';
-import { readWorkspace } from '../../app/state/workspaceActions.js';
-import { registrationConfirmed } from '../../apps/auth/authSlice.js';
-import { cancelRegistration, selectWorkspaceRegistrations } from './registrationsSlice.js';
+import { createRuntimeFetch } from '../../store/api/portalRepository.js';
+import { portalSlices, store } from '../../store/store.js';
+import { readWorkspace } from '../../store/actions/workspaceActions.js';
+import { registrationConfirmed } from '../../store/slices/authSlice.js';
+import { cancelRegistration, selectWorkspaceRegistrations } from '../../store/slices/registrationsSlice.js';
 
 it('routes an attendee cancellation through its named thunk and refreshes saved rows after success', async () => {
   store.dispatch(registrationConfirmed({ userId: 'attendee-1', role: 'attendee', token: 'signed-in' }));

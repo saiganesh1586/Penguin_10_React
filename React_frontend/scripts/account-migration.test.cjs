@@ -8,7 +8,7 @@ const vm = require('node:vm');
 function policy() {
   const context = vm.createContext({ window: {} });
   vm.runInContext(
-    fs.readFileSync(path.join(__dirname, '../src/app/account-policy.js'), 'utf8'),
+    fs.readFileSync(path.join(__dirname, '../src/app/runtime/account-policy.js'), 'utf8'),
     context
   );
   return context.window.EventFlowAccountPolicy;

@@ -61,7 +61,7 @@ function harness(role, state) {
     renderPage: async () => {},
   });
   vm.runInContext(
-    fs.readFileSync(path.join(__dirname, '../src/app/event-date-rules.js'), 'utf8'),
+    fs.readFileSync(path.join(__dirname, '../src/app/runtime/event-date-rules.js'), 'utf8'),
     context
   );
   vm.runInContext(

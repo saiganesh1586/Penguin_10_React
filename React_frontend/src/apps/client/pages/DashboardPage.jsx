@@ -1,8 +1,8 @@
 import DashboardUpcomingEvents from '../components/DashboardUpcomingEvents.jsx';
 import DashboardActivity from '../components/DashboardActivity.jsx';
 import { useClientContext } from '../context/ClientContext.jsx';
-import useClientActivity from '../context/useClientActivity.js';
-import { compareNewestFirst } from '../../../app/record-order.js';
+import useClientActivity from '../hooks/useClientActivity.js';
+import { compareNewestFirst } from '../../../app/utils/record-order.js';
 export default function DashboardPage() {
   const activity = useClientActivity();
   const portalContext = useClientContext();

@@ -1,4 +1,4 @@
-import ImageWithFallback from '../../../app/ImageWithFallback.jsx';
+import ImageWithFallback from '../../../app/components/ImageWithFallback.jsx';
 import { useOrganizerContext } from '../context/OrganizerContext.jsx';
 import { EventCard } from '../components/EventCards.jsx';
 import { OrganizerEventActions } from '../components/EventActions.jsx';

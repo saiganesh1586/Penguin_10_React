@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import PageHeader from '../components/PageHeader.jsx';
 import ProfileAvatar from '../components/ProfileAvatar.jsx';
-import { ErrorState, LoadingState } from '../../../app/PageFeedback.jsx';
+import { ErrorState, LoadingState } from '../../../app/components/PageFeedback.jsx';
 
 function ContactInformation({ user }) {
   return (

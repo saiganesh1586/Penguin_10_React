@@ -1,6 +1,6 @@
 import { useFinanceExecutiveContext } from '../context/FinanceExecutiveContext.jsx';
-import PortalSelect from '../../../app/PortalSelect.jsx';
-import { listOrEmpty } from '../../../app/view-utils.js';
+import PortalSelect from '../../../app/components/PortalSelect.jsx';
+import { listOrEmpty } from '../../../app/utils/view-utils.js';
 import { FinanceHeader, FinanceRanges, FinanceStat } from '../components/FinanceHeader.jsx';
 import { FinanceReportHistory } from '../components/ReportHistory.jsx';
 export default function ReportsPage() {

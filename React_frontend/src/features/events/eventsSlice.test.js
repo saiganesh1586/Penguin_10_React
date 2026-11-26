@@ -1,7 +1,7 @@
 import { expect, it, vi } from 'vitest';
-import { store } from '../../app/state/store.js';
-import { registrationConfirmed } from '../../apps/auth/authSlice.js';
-import { loadEvents, loadPublicEvents, selectPublicEvents } from './eventsSlice.js';
+import { store } from '../../store/store.js';
+import { registrationConfirmed } from '../../store/slices/authSlice.js';
+import { loadEvents, loadPublicEvents, selectPublicEvents } from '../../store/slices/eventsSlice.js';
 
 it('keeps the public catalog separate from signed-in event results and sends no public credentials', async () => {
   store.dispatch(registrationConfirmed({ userId: 'org-1', role: 'organizer', token: 'signed-in' }));

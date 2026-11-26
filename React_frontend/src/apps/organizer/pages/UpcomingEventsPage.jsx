@@ -1,5 +1,5 @@
 import { useOrganizerContext } from '../context/OrganizerContext.jsx';
-import { compareNewestFirst } from '../../../app/record-order.js';
+import { compareNewestFirst } from '../../../app/utils/record-order.js';
 import { EventCard } from '../components/EventCards.jsx';
 export default function UpcomingEventsPage() {
   const portalContext = useOrganizerContext();

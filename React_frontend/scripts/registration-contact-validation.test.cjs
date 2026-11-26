@@ -82,9 +82,9 @@ async function fixture(t, portal = portals[0]) {
   w.eval(
     source.slice(source.indexOf('function openModal('), source.indexOf('function closeModalOnBg('))
   );
-  w.eval(read('src/app/theme.js'));
+  w.eval(read('src/app/runtime/theme.js'));
   w.eval(read('src/apps/organizer/utils/organizer-registration.js'));
-  w.eval(read('src/app/data-sync.js'));
+  w.eval(read('src/app/runtime/data-sync.js'));
   w.eval(source.slice(source.indexOf('/* ===== EventFlow source: validation.js ===== */')));
   d.dispatchEvent(new w.Event('DOMContentLoaded'));
   const input = (id, value) => {

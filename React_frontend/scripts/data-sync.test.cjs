@@ -4,8 +4,8 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-const source = fs.readFileSync(path.join(__dirname, '../src/app/data-sync.js'), 'utf8');
-const policy = fs.readFileSync(path.join(__dirname, '../src/app/account-policy.js'), 'utf8');
+const source = fs.readFileSync(path.join(__dirname, '../src/app/runtime/data-sync.js'), 'utf8');
+const policy = fs.readFileSync(path.join(__dirname, '../src/app/runtime/account-policy.js'), 'utf8');
 const runtime = portalSource('support-executive');
 
 function harness() {
@@ -163,7 +163,7 @@ function harness() {
     },
   });
   context.window = context;
-  vm.runInContext(fs.readFileSync(path.join(__dirname, '../src/app/event-date-rules.js'), 'utf8'), context);
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../src/app/runtime/event-date-rules.js'), 'utf8'), context);
   vm.runInContext(policy, context);
   vm.runInContext(
     runtime.slice(

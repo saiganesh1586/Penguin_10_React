@@ -1,7 +1,7 @@
 import { useClientContext } from '../context/ClientContext.jsx';
-import PortalSelect from '../../../app/PortalSelect.jsx';
+import PortalSelect from '../../../app/components/PortalSelect.jsx';
 import { WorkflowCancellation } from '../components/WorkflowDetails.jsx';
-import { compareNewestFirst } from '../../../app/record-order.js';
+import { compareNewestFirst } from '../../../app/utils/record-order.js';
 export default function RequestStatusPage() {
   const portalContext = useClientContext();
   const portalActions = portalContext.actions;

@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const portalSource = require('./portal-source.cjs');
-const rules = fs.readFileSync(path.join(__dirname, '../src/app/event-date-rules.js'), 'utf8');
+const rules = fs.readFileSync(path.join(__dirname, '../src/app/runtime/event-date-rules.js'), 'utf8');
 
 function harness() {
   let now = Date.parse('2026-11-02T04:00:00Z');

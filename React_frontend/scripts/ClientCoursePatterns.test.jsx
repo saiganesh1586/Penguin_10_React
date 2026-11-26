@@ -1,16 +1,16 @@
 import React from 'react';
 import { act, fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import PortalProvider from '../src/app/state/PortalProvider.jsx';
+import PortalProvider from '../src/store/Provider.jsx';
 import DashboardActivity from '../src/apps/client/components/DashboardActivity.jsx';
 import DashboardUpcomingEvents from '../src/apps/client/components/DashboardUpcomingEvents.jsx';
 import OrganizerReviewForm from '../src/apps/client/components/OrganizerReviewForm.jsx';
 import RequestDetailsPage from '../src/apps/client/pages/RequestDetailsPage.jsx';
 import { ClientContext } from '../src/apps/client/context/ClientContext.jsx';
-import useClientActivity from '../src/apps/client/context/useClientActivity.js';
+import useClientActivity from '../src/apps/client/hooks/useClientActivity.js';
 import { WorkflowFileReports } from '../src/apps/client/components/WorkflowDetails.jsx';
-import { registrationConfirmed } from '../src/apps/auth/authSlice.js';
-import { store } from '../src/app/state/store.js';
+import { registrationConfirmed } from '../src/store/slices/authSlice.js';
+import { store } from '../src/store/store.js';
 import fixtures from './role-fixtures.cjs';
 
 describe('Client course concepts', () => {

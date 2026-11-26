@@ -3,8 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import CustomerSupportWorkspace from '../src/apps/customer-support/app/App.jsx';
-import { restoreSession } from '../src/apps/auth/authSlice.js';
-import { store } from '../src/app/state/store.js';
+import { restoreSession } from '../src/store/slices/authSlice.js';
+import { store } from '../src/store/store.js';
 
 const customer = {
   id: 'client-1',

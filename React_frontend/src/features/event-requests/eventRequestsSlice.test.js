@@ -1,8 +1,8 @@
 import { expect, it, vi } from 'vitest';
-import { store } from '../../app/state/store.js';
-import { readWorkspace } from '../../app/state/workspaceActions.js';
-import { registrationConfirmed } from '../../apps/auth/authSlice.js';
-import { cancelEventRequest, createEventRequest, selectWorkspaceEventRequests } from './eventRequestsSlice.js';
+import { store } from '../../store/store.js';
+import { readWorkspace } from '../../store/actions/workspaceActions.js';
+import { registrationConfirmed } from '../../store/slices/authSlice.js';
+import { cancelEventRequest, createEventRequest, selectWorkspaceEventRequests } from '../../store/slices/eventRequestsSlice.js';
 
 it('invalidates the portal after a confirmed create and preserves its records on a rejected cancellation', async () => {
   store.dispatch(registrationConfirmed({ userId: 'client-1', role: 'client', token: 'signed-in' }));

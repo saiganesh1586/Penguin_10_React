@@ -2,13 +2,13 @@ import { configureStore } from '@reduxjs/toolkit';
 import { render, screen, waitFor } from '@testing-library/react';
 import { act } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { createPortalSlice } from '../src/app/state/createPortalSlice.js';
-import { createPortalRepository, createRuntimeFetch } from '../src/app/state/portalRepository.js';
-import { store } from '../src/app/state/store.js';
-import { clientSlice } from '../src/apps/client/store/clientSlice.js';
+import { createPortalSlice } from '../src/store/factories/createPortalSlice.js';
+import { createPortalRepository, createRuntimeFetch } from '../src/store/api/portalRepository.js';
+import { store } from '../src/store/store.js';
+import { clientSlice } from '../src/store/slices/clientSlice.js';
 import ClientPageContainer from '../src/apps/client/app/ClientPageContainer.jsx';
-import { login, logout, saveAccountPreferences, selectSession } from '../src/apps/auth/authSlice.js';
-import { selectWorkspace } from '../src/app/state/resources.js';
+import { login, logout, saveAccountPreferences, selectSession } from '../src/store/slices/authSlice.js';
+import { selectWorkspace } from '../src/store/slices/resourcesSlice.js';
 
 const json = (data, status = 200) => new Response(JSON.stringify(data), { status });
 

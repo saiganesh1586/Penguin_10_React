@@ -21,9 +21,9 @@ The entries retain their existing session and permission checks. Customers can s
 - `app/SupportExecutiveApp.jsx` loads the common shell and registers the React page bridge.
 - `app/SupportExecutivePageContainer.jsx` selects the employee page and provides its data through `context/SupportExecutiveContext.jsx`.
 - `app/SupportExecutivePageContainer.jsx` uses the support executive slice and the shared `usePortalData.js` hook.
-- `context/useSupportRequests.js` selects tickets from Redux for both support views. `pages/SupportIssuesPage.jsx` merges event issues and connects the reply and attachment dialog to the status update thunk.
+- `hooks/useSupportRequests.js` selects tickets from Redux for both support views. `hooks/useAutoRefresh.js` manages refresh timers. `pages/SupportIssuesPage.jsx` merges event issues and connects the reply and attachment dialog to the status update thunk.
 - Employee pages and components cover the dashboard, user/event management, requests, reports, notifications, profile and settings.
-- `app/runtime.js` handles navigation and workflow actions using the shared `src/app/employee-portal-api.js` and `src/app/portal-state.js` adapters.
+- `app/runtime.js` handles navigation and workflow actions using the shared `src/app/runtime/employee-portal-api.js` and `src/app/runtime/portal-state.js` adapters.
 
 ## Shared support code
 

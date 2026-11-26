@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { landingSlice } from '../store/landingSlice.js';
-import { selectEventsRevision, selectPublicEvents } from '../../../features/events/eventsSlice.js';
+import { landingSlice } from '../../../store/slices/landingSlice.js';
+import { selectEventsRevision, selectPublicEvents } from '../../../store/slices/eventsSlice.js';
 
 export default function PublicEventCatalog() {
   const dispatch = useDispatch();

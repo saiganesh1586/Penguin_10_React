@@ -1,5 +1,5 @@
 import { useFinanceExecutiveContext } from '../context/FinanceExecutiveContext.jsx';
-import PortalSelect from '../../../app/PortalSelect.jsx';
+import PortalSelect from '../../../app/components/PortalSelect.jsx';
 import {
   FinanceAreaChart,
   FinanceEventBars,

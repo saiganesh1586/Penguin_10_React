@@ -1,10 +1,10 @@
 import { useDispatch, useSelector } from 'react-redux';
 import { Navigate } from 'react-router-dom';
-import { workspaceFor } from '../../../app/session.js';
-import { logout, selectSession } from '../../auth/authSlice.js';
+import { workspaceFor } from '../../../store/session.js';
+import { logout, selectSession } from '../../../store/slices/authSlice.js';
 import { canRequestSupport } from '../utils/supportConfig.js';
 import CustomerSupportPage from '../pages/CustomerSupportPage.jsx';
-import PortalProvider from '../../../app/state/PortalProvider.jsx';
+import PortalProvider from '../../../store/Provider.jsx';
 import '../../attendee/styles/attendee.css';
 
 function CustomerSupportContent() {

@@ -1,6 +1,6 @@
-import FilterInput from '../../../app/FilterInput.jsx';
+import FilterInput from '../../../app/components/FilterInput.jsx';
 import { useOrganizerContext } from '../context/OrganizerContext.jsx';
-import PortalSelect from '../../../app/PortalSelect.jsx';
+import PortalSelect from '../../../app/components/PortalSelect.jsx';
 import { EventCard } from '../components/EventCards.jsx';
 export default function DashboardPage() {
   const portalContext = useOrganizerContext();

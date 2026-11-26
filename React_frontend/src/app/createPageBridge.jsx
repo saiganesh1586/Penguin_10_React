@@ -4,6 +4,7 @@ import { flushSync } from 'react-dom';
 // Existing navigation and workflow handlers keep their entry points, while React owns each page.
 export default function createPageBridge(PageContainer, pages) {
   let active = null;
+  const emptyPageProps = {};
   return {
     hasPage(page) {
       return pages.includes(page);
@@ -24,7 +25,13 @@ export default function createPageBridge(PageContainer, pages) {
         active = { container, root: createRoot(container) };
       }
       active.page = page;
-      const pageProps = data?.pageProps || {};
+      const incomingProps = data?.pageProps || emptyPageProps;
+      const pageProps = active.pageProps &&
+        Object.keys(active.pageProps).length === Object.keys(incomingProps).length &&
+        Object.keys(incomingProps).every(name => active.pageProps[name] === incomingProps[name])
+        ? active.pageProps
+        : incomingProps;
+      active.pageProps = pageProps;
       const key = `${page}:${pageProps.id || ''}`;
       flushSync(() =>
         active.root.render(<PageContainer key={key} page={page} pageProps={pageProps} />)

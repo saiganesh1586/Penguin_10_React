@@ -1,4 +1,4 @@
-import ImageWithFallback from '../../../app/ImageWithFallback.jsx';
+import ImageWithFallback from '../../../app/components/ImageWithFallback.jsx';
 export function WorkflowEventCard({
   onViewWorkflowRequestDrawer,
   onOpenClientPlanReview,

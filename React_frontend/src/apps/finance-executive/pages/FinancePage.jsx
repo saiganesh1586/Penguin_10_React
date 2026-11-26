@@ -1,8 +1,8 @@
-import FilterInput from '../../../app/FilterInput.jsx';
+import FilterInput from '../../../app/components/FilterInput.jsx';
 import React from 'react';
 import { useFinanceExecutiveContext } from '../context/FinanceExecutiveContext.jsx';
-import PortalSelect from '../../../app/PortalSelect.jsx';
-import { listOrEmpty } from '../../../app/view-utils.js';
+import PortalSelect from '../../../app/components/PortalSelect.jsx';
+import { listOrEmpty } from '../../../app/utils/view-utils.js';
 import { FinanceHeader, FinanceRanges } from '../components/FinanceHeader.jsx';
 export default function FinancePage({ page }) {
   const portalContext = useFinanceExecutiveContext();

@@ -1,9 +1,9 @@
-import ImageWithFallback from '../../../app/ImageWithFallback.jsx';
-import FilterInput from '../../../app/FilterInput.jsx';
+import ImageWithFallback from '../../../app/components/ImageWithFallback.jsx';
+import FilterInput from '../../../app/components/FilterInput.jsx';
 import { useOrganizerContext } from '../context/OrganizerContext.jsx';
-import PortalSelect from '../../../app/PortalSelect.jsx';
+import PortalSelect from '../../../app/components/PortalSelect.jsx';
 import { OrganizerRowActions } from '../components/EventActions.jsx';
-import { compareNewestFirst } from '../../../app/record-order.js';
+import { compareNewestFirst } from '../../../app/utils/record-order.js';
 export default function EventRequestsPage() {
   const portalContext = useOrganizerContext();
   const portalActions = portalContext.actions;

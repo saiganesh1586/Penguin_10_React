@@ -179,7 +179,7 @@ The frontend combines React components with preserved DOM-driven role runtimes l
 
 See [FRONTEND_STRUCTURE.md](FRONTEND_STRUCTURE.md) for the complete layout.
 
-The frontend follows the folder organization in `21_Dinetime_Devs_React-main.zip`: `src/app/` for the root application and common helpers, `src/apps/` for role portals, `src/styles/` for global CSS, and `scripts/` for checks. Authentication starts at `src/apps/auth/UnifiedAuthPage.jsx`; the landing portal starts at `src/apps/landing/LandingPage.jsx`. Other role entries are `src/apps/<role>/app/App.jsx`. API modules, components, hooks, and utilities belong to their respective portals.
+The frontend follows the folder organization in the supplied `React_frontend.zip` reference: `src/app/` for routing and common UI/runtime helpers, `src/store/` for Redux, `src/apps/` for role portals, `src/styles/` for global CSS, and `scripts/` for checks. Authentication starts at `src/apps/auth/pages/UnifiedAuthPage.jsx`; the landing portal starts at `src/apps/landing/app/App.jsx`. Other role entries are `src/apps/<role>/app/App.jsx`. API modules, components, hooks, and utilities belong to their respective portals.
 
 Customer Support uses React state and services. Other dashboard views retain their existing runtime behavior pending the remaining React migration.
 

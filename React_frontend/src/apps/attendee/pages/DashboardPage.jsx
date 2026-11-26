@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import EventCard from '../components/EventCard.jsx';
 import PageHeader from '../components/PageHeader.jsx';
-import { EmptyState, ErrorState, LoadingState } from '../../../app/PageFeedback.jsx';
+import { EmptyState, ErrorState, LoadingState } from '../../../app/components/PageFeedback.jsx';
 import { summarizeDashboard } from '../utils/dashboard-data.js';
 
 function StatCard({ icon, value, label, background, color }) {

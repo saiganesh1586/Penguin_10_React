@@ -1,20 +1,16 @@
-import DashboardLayout from '../../../app/DashboardLayout.jsx';
+import DashboardLayout from '../../../app/components/DashboardLayout.jsx';
 import PublicHomePage from '../../landing/pages/PortalPublicHomePage.jsx';
 import LoginPage from '../../auth/pages/UnifiedAuthPage.jsx';
 import FindEventsPage from '../../landing/pages/FindEventsPage.jsx';
 import GalleryPage from '../../landing/pages/GalleryPage.jsx';
 import AboutPage from '../../landing/pages/AboutPage.jsx';
 import ContactPage from '../../landing/pages/ContactPage.jsx';
-import { createRoot } from 'react-dom/client';
-import { flushSync } from 'react-dom';
-import AttendeePageContainer, { attendeeActions } from './AttendeePageContainer.jsx';
-import EventDetailsPage from '../pages/EventDetailsPage.jsx';
-import TicketCard from '../components/TicketCard.jsx';
-import LegacyRuntime from '../../../app/LegacyRuntime.jsx';
-import { legacyEvent } from '../../../app/legacyEvents.js';
+import attendeePageBridge from './attendeePageBridge.jsx';
+import LegacyRuntime from '../../../app/runtime/LegacyRuntime.jsx';
+import { legacyEvent } from '../../../app/runtime/legacyEvents.js';
 import runtime from './runtime.js?raw';
 import attendeeApi from '../api/attendee-api.js?raw';
-import attendeeState from '../context/attendee-state.js?raw';
+import attendeeState from '../legacy/attendee-state.js?raw';
 import registrationPage from '../components/RegistrationFlow.jsx?raw';
 import '../styles/attendee.css';
 
@@ -28,50 +24,6 @@ const source = Object.entries({
   if (!code.includes(marker)) throw new Error(`Missing Attendee source section: ${name}`);
   return code.replace(marker, () => page);
 }, runtime);
-
-let activePageRoot = null;
-let activeDetailsRoot = null;
-let activeTicketRoot = null;
-const attendeePageBridge = {
-  hasPage(page) {
-    return page === 'customer-support';
-  },
-  clear(container) {
-    if (activePageRoot?.container === container) {
-      activePageRoot.root.unmount();
-      activePageRoot = null;
-    }
-  },
-  render(container, page, payload) {
-    this.clear(container);
-    container.replaceChildren();
-    const root = createRoot(container);
-    activePageRoot = { container, root };
-    flushSync(() => root.render(<AttendeePageContainer page={page} {...payload} />));
-  },
-  clearDetails() {
-    if (activeDetailsRoot) {
-      activeDetailsRoot.unmount();
-      activeDetailsRoot = null;
-    }
-  },
-  renderDetails(container, payload) {
-    this.clearDetails();
-    activeDetailsRoot = createRoot(container);
-    flushSync(() => activeDetailsRoot.render(<EventDetailsPage {...payload} />));
-  },
-  clearTicket() {
-    if (activeTicketRoot) {
-      activeTicketRoot.unmount();
-      activeTicketRoot = null;
-    }
-  },
-  renderTicket(container, payload) {
-    this.clearTicket();
-    activeTicketRoot = createRoot(container);
-    flushSync(() => activeTicketRoot.render(<TicketCard {...payload} {...attendeeActions} />));
-  },
-};
 
 export default function AttendeeWorkspace() {
   if (typeof window !== 'undefined') {

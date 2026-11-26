@@ -1,6 +1,6 @@
-import FilterInput from '../../../app/FilterInput.jsx';
+import FilterInput from '../../../app/components/FilterInput.jsx';
 import React from 'react';
-import { listOrEmpty } from '../../../app/view-utils.js';
+import { listOrEmpty } from '../../../app/utils/view-utils.js';
 export function FinancePreview({
   financeTransactions,
   financeRefunds,

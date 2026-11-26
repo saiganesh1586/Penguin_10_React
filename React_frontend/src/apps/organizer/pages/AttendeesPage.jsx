@@ -1,7 +1,7 @@
 import EventPicker from '../components/EventPicker.jsx';
 import { useState, useEffect, useCallback } from 'react';
 import { useOrganizerContext } from '../context/OrganizerContext.jsx';
-import PortalSelect from '../../../app/PortalSelect.jsx';
+import PortalSelect from '../../../app/components/PortalSelect.jsx';
 import { AttendeeTable, OrganizerAttendeeTable } from '../components/AttendeeTable.jsx';
 export default function AttendeesPage() {
   const [selectedId, setSelectedId] = useState(() => sessionStorage.getItem('org_attendees_event'));

@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useSelector } from 'react-redux';
-import { selectSession } from '../../auth/authSlice.js';
-import useAutoRefresh from '../utils/useAutoRefresh.js';
-import useSupportRequests from '../context/useSupportRequests.js';
+import { selectSession } from '../../../store/slices/authSlice.js';
+import useAutoRefresh from '../hooks/useAutoRefresh.js';
+import useSupportRequests from '../hooks/useSupportRequests.js';
 import SupportRequestForm from '../components/SupportRequestForm.jsx';
 import SupportTicketTable from '../components/SupportTicketTable.jsx';
 import TicketDetailsPage from './TicketDetailsPage.jsx';

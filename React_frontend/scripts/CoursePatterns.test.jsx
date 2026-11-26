@@ -7,12 +7,12 @@ import {
   WorkflowFileReports,
 } from '../src/apps/client/components/WorkflowDetails.jsx';
 import EventPicker from '../src/apps/organizer/components/EventPicker.jsx';
-import AccountSettingsPage from '../src/app/AccountSettingsPage.jsx';
-import { restoreSession } from '../src/apps/auth/authSlice.js';
-import { store } from '../src/app/state/store.js';
-import ImageWithFallback from '../src/app/ImageWithFallback.jsx';
-import useSupportRequests from '../src/apps/customer-support/context/useSupportRequests.js';
-import PortalProvider from '../src/app/state/PortalProvider.jsx';
+import AccountSettingsPage from '../src/app/components/AccountSettingsPage.jsx';
+import { restoreSession } from '../src/store/slices/authSlice.js';
+import { store } from '../src/store/store.js';
+import ImageWithFallback from '../src/app/components/ImageWithFallback.jsx';
+import useSupportRequests from '../src/apps/customer-support/hooks/useSupportRequests.js';
+import PortalProvider from '../src/store/Provider.jsx';
 
 describe('Course React patterns retain existing behavior', () => {
   it('renders cancellation details with explicit props and no workspace provider', () => {

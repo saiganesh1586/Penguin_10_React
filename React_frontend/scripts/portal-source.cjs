@@ -10,7 +10,7 @@ module.exports = function portalSource(actor) {
   if (actor === 'attendee') return require('./attendee-source.cjs')();
   if (actor === 'landing') return fs.readFileSync(path.join(root, 'app/runtime.js'), 'utf8');
   const read = file => fs.readFileSync(path.join(root, file), 'utf8');
-  const readShared = file => fs.readFileSync(path.join(__dirname, '../src/app', file), 'utf8');
+  const readShared = file => fs.readFileSync(path.join(__dirname, '../src/app/runtime', file), 'utf8');
   const api = ['client', 'organizer'].includes(actor)
     ? read('api/portal-api.js')
     : readShared('employee-portal-api.js');

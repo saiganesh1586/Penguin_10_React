@@ -10,8 +10,8 @@ import ProfilePage from '../src/apps/attendee/pages/ProfilePage.jsx';
 import SettingsPage from '../src/apps/attendee/pages/SettingsPage.jsx';
 import EventDetailsPage from '../src/apps/attendee/pages/EventDetailsPage.jsx';
 import TicketCard from '../src/apps/attendee/components/TicketCard.jsx';
-import { registrationConfirmed } from '../src/apps/auth/authSlice.js';
-import { store } from '../src/app/state/store.js';
+import { registrationConfirmed } from '../src/store/slices/authSlice.js';
+import { store } from '../src/store/store.js';
 
 const publicEvent = {
   id: 'public-1',
@@ -50,9 +50,18 @@ function stubData({
   registrations = [],
   notifications = [],
 } = {}) {
-  vi.stubGlobal('apiGetEvents', vi.fn().mockResolvedValue(events));
-  vi.stubGlobal('apiGetAttendeeRegistrations', vi.fn().mockResolvedValue(registrations));
-  vi.stubGlobal('apiGetNotifications', vi.fn().mockResolvedValue(notifications));
+  const rows = { events, registrations, notifications };
+  const reads = Object.fromEntries(Object.entries(rows).map(([name, data]) => [
+    name, vi.fn().mockResolvedValue(data),
+  ]));
+  const fetchRows = vi.fn(async url => {
+    const name = String(url).split('/').pop();
+    const data = await reads[name]();
+    return new Response(JSON.stringify(data), {
+      headers: { 'Content-Type': 'application/json' },
+    });
+  });
+  vi.stubGlobal('EventFlowFetch', fetchRows);
   vi.stubGlobal('EventFlowAttendeeData', {
     setEvents: vi.fn(rows => rows),
     setRegistrations: vi.fn(rows => rows),
@@ -62,13 +71,14 @@ function stubData({
   vi.stubGlobal('regForEvent', vi.fn());
   vi.stubGlobal('goNav', vi.fn());
   vi.stubGlobal('markAllRead', vi.fn());
+  return { reads, fetchRows };
 }
 
 describe('Attendee JSX pages', () => {
   it('loads backend data in the container and passes registration actions to Browse', async () => {
     stubData();
     render(<AttendeePageContainer page="browse-events" />);
-    expect(screen.getByText('Loading events…')).toBeInTheDocument();
+    expect(screen.getByText('Loading…')).toBeInTheDocument();
     expect(await screen.findByText('Public Workshop')).toBeInTheDocument();
     expect(screen.getByText('Private Meeting')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Register' }));
@@ -105,11 +115,11 @@ describe('Attendee JSX pages', () => {
   });
 
   it('loads ticket event details from the backend after a fresh page mount', async () => {
-    stubData({ registrations: [registration] });
+    const { reads } = stubData({ registrations: [registration] });
     render(<AttendeePageContainer page="my-tickets" user={{ name: 'Attendee' }} />);
     expect(await screen.findByText('Public Workshop')).toBeInTheDocument();
-    expect(window.apiGetEvents).toHaveBeenCalled();
-    expect(window.apiGetAttendeeRegistrations).toHaveBeenCalled();
+    expect(reads.events).toHaveBeenCalled();
+    expect(reads.registrations).toHaveBeenCalled();
   });
 
   it('keeps historical ticket details supplied by the registration response', () => {
@@ -132,8 +142,8 @@ describe('Attendee JSX pages', () => {
   });
 
   it('does not show Browse cards when registration ownership cannot be loaded', async () => {
-    stubData();
-    window.apiGetAttendeeRegistrations.mockRejectedValueOnce(
+    const { reads } = stubData();
+    reads.registrations.mockRejectedValueOnce(
       new Error('Registration lookup failed')
     );
     render(<AttendeePageContainer page="browse-events" />);
@@ -170,8 +180,8 @@ describe('Attendee JSX pages', () => {
   });
 
   it('shows an API error and retries through the container', async () => {
-    stubData();
-    window.apiGetEvents.mockRejectedValueOnce(new Error('Server unavailable'));
+    const { reads } = stubData();
+    reads.events.mockRejectedValueOnce(new Error('Server unavailable'));
     render(<AttendeePageContainer page="browse-events" />);
     expect(await screen.findByText('Server unavailable')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Try Again' }));

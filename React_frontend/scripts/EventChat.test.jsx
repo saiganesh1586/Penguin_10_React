@@ -1,10 +1,10 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { expect, it, vi } from 'vitest';
-import EventDetailsLayout from '../src/app/EventDetailsLayout.jsx';
+import EventDetailsLayout from '../src/app/components/EventDetailsLayout.jsx';
 import { SESSION_KEY } from '../src/app/config.js';
-import { restoreSession } from '../src/apps/auth/authSlice.js';
-import PortalProvider from '../src/app/state/PortalProvider.jsx';
-import { store } from '../src/app/state/store.js';
+import { restoreSession } from '../src/store/slices/authSlice.js';
+import PortalProvider from '../src/store/Provider.jsx';
+import { store } from '../src/store/store.js';
 
 it('sends from the event panel and shows replies without reloading the details', async () => {
   vi.useFakeTimers();

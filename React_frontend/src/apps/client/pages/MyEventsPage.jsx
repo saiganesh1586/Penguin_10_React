@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useClientContext } from '../context/ClientContext.jsx';
 import { WorkflowEventCard } from '../components/EventCards.jsx';
-import { newestRecords } from '../../../app/record-order.js';
+import { newestRecords } from '../../../app/utils/record-order.js';
 export default function MyEventsPage() {
   const portalContext = useClientContext();
   const savedTab = portalContext._workflowEventTab;

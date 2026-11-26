@@ -1,7 +1,7 @@
-import { createPortalRepository, readRuntimeData } from '../../../app/state/portalRepository.js';
-import { resourceAction } from '../../../app/state/resources.js';
+import { createPortalRepository, readRuntimeData } from '../../../store/api/portalRepository.js';
+import { resourceAction } from '../../../store/slices/resourcesSlice.js';
 import { API_BASE_URL } from '../../../app/config.js';
-import { selectSession } from '../../auth/authSlice.js';
+import { selectSession } from '../../../store/slices/authSlice.js';
 
 export const clientRepository = createPortalRepository(async ({ page, pageProps, force = false }) => {
   await window.EventFlowData?.sync(undefined, undefined, { force, applyCached: false });

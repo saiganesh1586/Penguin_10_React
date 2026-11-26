@@ -1,16 +1,16 @@
 import { AdminContext } from '../context/AdminContext.jsx';
-import usePortalData from '../../../app/usePortalData.js';
-import { adminSlice } from '../store/adminSlice.js';
+import usePortalData from '../../../store/hooks/usePortalData.js';
+import { adminSlice } from '../../../store/slices/adminSlice.js';
 import { adminActions } from '../api/admin-api.js';
-import { LoadingState, ErrorState } from '../../../app/PageFeedback.jsx';
+import { LoadingState, ErrorState } from '../../../app/components/PageFeedback.jsx';
 import DashboardPage from '../pages/DashboardPage.jsx';
 import EmployeeReportsPage from '../pages/EmployeeReportsPage.jsx';
 import EventReportsPage from '../pages/EventReportsPage.jsx';
 import RevenueReportsPage from '../pages/RevenueReportsPage.jsx';
 import UserReportsPage from '../pages/UserReportsPage.jsx';
 import ProfilePage from '../pages/ProfilePage.jsx';
-import AccountSettingsPage from '../../../app/AccountSettingsPage.jsx';
-import PortalProvider from '../../../app/state/PortalProvider.jsx';
+import AccountSettingsPage from '../../../app/components/AccountSettingsPage.jsx';
+import PortalProvider from '../../../store/Provider.jsx';
 const pages = {
   dashboard: DashboardPage,
   'employee-reports': EmployeeReportsPage,

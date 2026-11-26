@@ -3282,17 +3282,22 @@ async function renderPageContent(pg) {
   _currentPage = pg;
   const element = g('page-content');
   const r = CU.role;
-  window.EventFlowAttendeePages?.clear(element);
   if (pg === 'customer-support') {
     if (!window.EventFlowSupport.canRequestSupport(CU)) return renderPageContent('settings');
     if (window.EventFlowAttendeePages?.hasPage?.(pg)) {
       window.EventFlowAttendeePages.render(element, pg);
       return;
     }
+    window.EventFlowAttendeePages?.clear(element);
     element.innerHTML = await window.EventFlowSupport.render(CU);
     window.EventFlowSupport.bind(element, CU, () => goNav('settings'));
     return;
   }
+  if (r === 'attendee' && window.EventFlowAttendeePages?.hasPage?.(pg)) {
+    window.EventFlowAttendeePages.render(element, pg);
+    return;
+  }
+  window.EventFlowAttendeePages?.clear(element);
   if (isDepartmentEmployee()) {
     const allowed =
       {
